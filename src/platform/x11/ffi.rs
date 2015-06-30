@@ -167,22 +167,22 @@ impl Default for XPrivDisplay {
 }
 pub type _XPrivDisplay = *mut XPrivDisplay;
 
-
 #[link(name="X11")]
 extern "C" {
    pub fn XOpenDisplay(display_name: *const c_char) -> *mut Display;
+   pub fn XCloseDisplay(display: *mut Display) -> c_int;
 }
 
 #[link(name="X11-xcb")]
 extern "C" {
-   pub fn XGetXCBConnection(dpy: *mut Display) -> *mut xcb_connection_t;
+   pub fn XGetXCBConnection(display: *mut Display) -> *mut xcb_connection_t;
 }
 
 #[macro_export]
 macro_rules! DefaultScreen {
-   ($dpy:expr) => (
+   ($display:expr) => (
       unsafe{
-         (*($dpy as $crate::platform::x11::xlib::ffi::_XPrivDisplay)).default_screen
+         (*($display as $crate::platform::x11::ffi::_XPrivDisplay)).default_screen
       }
    )
 }

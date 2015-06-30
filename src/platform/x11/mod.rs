@@ -1,1 +1,1 @@
-pub mod xlib;
+pub mod ffi;
