@@ -7,8 +7,12 @@ use polydraw::platform::x11::xlib::ffi::XOpenDisplay;
 
 fn main() {
    let display = unsafe { XOpenDisplay(ptr::null()) };
+   if display.is_null() {
+      println!("Can't open display");
+      return;
+   }
 
-   let screen = DefaultScreen!(display);
+   let default_screen = DefaultScreen!(display);
 
-   println!("{:?}", screen)
+   println!("{:?}", default_screen)
 }
