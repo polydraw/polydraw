@@ -3,7 +3,7 @@ extern crate polydraw;
 
 use std::ptr;
 
-use polydraw::platform::x11::xlib::ffi::XOpenDisplay;
+use polydraw::platform::x11::xlib::ffi::{XOpenDisplay, XGetXCBConnection};
 
 fn main() {
    let display = unsafe { XOpenDisplay(ptr::null()) };
@@ -14,5 +14,8 @@ fn main() {
 
    let default_screen = DefaultScreen!(display);
 
-   println!("{:?}", default_screen)
+   let connection = unsafe { XGetXCBConnection(display) };
+
+   println!("{:?}", default_screen);
+   println!("{:?}", connection);
 }

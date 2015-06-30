@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 use libc::{c_char, c_int, c_uint, c_long, c_ulong};
 use std::mem;
 
@@ -5,6 +7,7 @@ pub enum XDisplay { }
 pub enum XPrivate { }
 pub enum XrmHashBucketRec { }
 pub enum XGC { }
+pub enum xcb_connection_t { }
 
 pub type GC = *mut XGC;
 pub type Display = XDisplay;
@@ -168,6 +171,11 @@ pub type _XPrivDisplay = *mut XPrivDisplay;
 #[link(name="X11")]
 extern "C" {
    pub fn XOpenDisplay(display_name: *const c_char) -> *mut Display;
+}
+
+#[link(name="X11-xcb")]
+extern "C" {
+   pub fn XGetXCBConnection(dpy: *mut Display) -> *mut xcb_connection_t;
 }
 
 #[macro_export]
