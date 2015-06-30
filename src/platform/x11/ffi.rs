@@ -1,4 +1,5 @@
 #![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
 
 use libc::{c_char, c_int, c_uint, c_long, c_ulong};
 use std::mem;
@@ -16,6 +17,10 @@ pub type Colormap = XID;
 pub type Window = XID;
 pub type XPointer = *mut c_char;
 pub type VisualID = c_ulong;
+
+pub type XEventQueueOwner = c_uint;
+pub const XlibOwnsEventQueue: c_uint = 0;
+pub const XCBOwnsEventQueue: c_uint = 1;
 
 #[repr(C)]
 #[derive(Copy)]
@@ -176,6 +181,7 @@ extern "C" {
 #[link(name="X11-xcb")]
 extern "C" {
    pub fn XGetXCBConnection(display: *mut Display) -> *mut xcb_connection_t;
+    pub fn XSetEventQueueOwner(display: *mut Display, owner: XEventQueueOwner) -> ();
 }
 
 #[macro_export]
