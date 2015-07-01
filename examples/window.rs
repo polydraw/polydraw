@@ -55,11 +55,27 @@ fn main() {
 
    let mut nelements = 0;
 
-   unsafe {
+   let fb_configs = unsafe {
       glx::GetFBConfigs(display as *mut glx::types::Display, default_screen, &mut nelements)
    };
 
-   println!("nelements {}", nelements);
+   println!("nelements ............ : {}", nelements);
+
+   let mut visual_id = 0;
+
+   unsafe {
+      glx::GetFBConfigAttrib(display as *mut glx::types::Display, *fb_configs, glx::VISUAL_ID as i32, &mut visual_id)
+   };
+
+   println!("visual_id ............ : {}", visual_id);
+
+   let context = unsafe {
+      glx::CreateNewContext(display as *mut glx::types::Display, *fb_configs, glx::RGBA_TYPE as i32, ptr::null(), 1)
+   };
+
+   unsafe {
+      glx::DestroyContext(display as *mut glx::types::Display, context)
+   };
 
    unsafe { ffi::XCloseDisplay(display) };
 }
