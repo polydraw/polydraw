@@ -1,22 +1,32 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 
-use libc::{c_char, c_int, c_uint, c_long, c_ulong};
+pub use libc::{c_char, c_uchar, c_ushort, c_int, c_uint, c_long, c_ulong};
 use std::mem;
 
 pub enum XDisplay { }
 pub enum XPrivate { }
 pub enum XrmHashBucketRec { }
 pub enum XGC { }
+
 pub enum xcb_connection_t { }
 
+pub type uint8_t = c_uchar;
+pub type uint16_t = c_ushort;
+pub type uint32_t = c_uint;
+
+pub type XID = c_ulong;
 pub type GC = *mut XGC;
 pub type Display = XDisplay;
-pub type XID = c_ulong;
 pub type Colormap = XID;
 pub type Window = XID;
 pub type XPointer = *mut c_char;
 pub type VisualID = c_ulong;
+
+pub type xcb_keycode_t = uint8_t;
+pub type xcb_window_t = uint32_t;
+pub type xcb_colormap_t = uint32_t;
+pub type xcb_visualid_t = uint32_t;
 
 pub type XEventQueueOwner = c_uint;
 pub const XlibOwnsEventQueue: c_uint = 0;
@@ -172,6 +182,78 @@ impl Default for XPrivDisplay {
 }
 pub type _XPrivDisplay = *mut XPrivDisplay;
 
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_screen_t {
+   pub root: xcb_window_t,
+   pub default_colormap: xcb_colormap_t,
+   pub white_pixel: uint32_t,
+   pub black_pixel: uint32_t,
+   pub current_input_masks: uint32_t,
+   pub width_in_pixels: uint16_t,
+   pub height_in_pixels: uint16_t,
+   pub width_in_millimeters: uint16_t,
+   pub height_in_millimeters: uint16_t,
+   pub min_installed_maps: uint16_t,
+   pub max_installed_maps: uint16_t,
+   pub root_visual: xcb_visualid_t,
+   pub backing_stores: uint8_t,
+   pub save_unders: uint8_t,
+   pub root_depth: uint8_t,
+   pub allowed_depths_len: uint8_t,
+}
+impl ::std::clone::Clone for xcb_screen_t {
+   fn clone(&self) -> Self { *self }
+}
+impl ::std::default::Default for xcb_screen_t {
+   fn default() -> Self { unsafe { ::std::mem::zeroed() } }
+}
+
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_screen_iterator_t {
+   pub data: *mut xcb_screen_t,
+   pub rem: c_int,
+   pub index: c_int,
+}
+impl ::std::clone::Clone for xcb_screen_iterator_t {
+   fn clone(&self) -> Self { *self }
+}
+impl ::std::default::Default for xcb_screen_iterator_t {
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_setup_t {
+   pub status: uint8_t,
+   pub pad0: uint8_t,
+   pub protocol_major_version: uint16_t,
+   pub protocol_minor_version: uint16_t,
+   pub length: uint16_t,
+   pub release_number: uint32_t,
+   pub resource_id_base: uint32_t,
+   pub resource_id_mask: uint32_t,
+   pub motion_buffer_size: uint32_t,
+   pub vendor_len: uint16_t,
+   pub maximum_request_length: uint16_t,
+   pub roots_len: uint8_t,
+   pub pixmap_formats_len: uint8_t,
+   pub image_byte_order: uint8_t,
+   pub bitmap_format_bit_order: uint8_t,
+   pub bitmap_format_scanline_unit: uint8_t,
+   pub bitmap_format_scanline_pad: uint8_t,
+   pub min_keycode: xcb_keycode_t,
+   pub max_keycode: xcb_keycode_t,
+   pub pad1: [uint8_t; 4usize],
+}
+impl ::std::clone::Clone for xcb_setup_t {
+   fn clone(&self) -> Self { *self }
+}
+impl ::std::default::Default for xcb_setup_t {
+   fn default() -> Self { unsafe { ::std::mem::zeroed() } }
+}
+
 #[link(name="X11")]
 extern "C" {
    pub fn XOpenDisplay(display_name: *const c_char) -> *mut Display;
@@ -181,7 +263,14 @@ extern "C" {
 #[link(name="X11-xcb")]
 extern "C" {
    pub fn XGetXCBConnection(display: *mut Display) -> *mut xcb_connection_t;
-    pub fn XSetEventQueueOwner(display: *mut Display, owner: XEventQueueOwner) -> ();
+   pub fn XSetEventQueueOwner(display: *mut Display, owner: XEventQueueOwner) -> ();
+}
+
+#[link(name="xcb")]
+extern "C" {
+   pub fn xcb_get_setup(c: *mut xcb_connection_t) -> *const xcb_setup_t;
+   pub fn xcb_setup_roots_iterator(R: *const xcb_setup_t) -> xcb_screen_iterator_t;
+   pub fn xcb_screen_next(i: *mut xcb_screen_iterator_t) -> ();
 }
 
 #[macro_export]
