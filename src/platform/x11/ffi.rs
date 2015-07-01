@@ -29,6 +29,7 @@ pub type xcb_colormap_t = uint32_t;
 pub type xcb_visualid_t = uint32_t;
 
 pub type XEventQueueOwner = c_uint;
+
 pub const XlibOwnsEventQueue: c_uint = 0;
 pub const XCBOwnsEventQueue: c_uint = 1;
 
@@ -271,6 +272,10 @@ extern "C" {
    pub fn xcb_get_setup(c: *mut xcb_connection_t) -> *const xcb_setup_t;
    pub fn xcb_setup_roots_iterator(R: *const xcb_setup_t) -> xcb_screen_iterator_t;
    pub fn xcb_screen_next(i: *mut xcb_screen_iterator_t) -> ();
+}
+
+#[link(name="GL")]
+extern "C" {
 }
 
 #[macro_export]

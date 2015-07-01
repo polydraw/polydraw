@@ -4,3 +4,6 @@ version = "0.1.0"
 
 [dependencies]
 libc = "*"
+
+[dependencies.glx]
+git = "https://github.com/servo/rust-glx.git"

@@ -1,3 +1,5 @@
+extern crate glx;
+
 #[macro_use]
 extern crate polydraw;
 
@@ -50,6 +52,14 @@ fn main() {
    let screen = screen_of_display(connection, default_screen);
 
    unsafe { print_screen_info(&(*screen)) };
+
+   let mut nelements = 0;
+
+   unsafe {
+      glx::GetFBConfigs(display as *mut glx::types::Display, default_screen, &mut nelements)
+   };
+
+   println!("nelements {}", nelements);
 
    unsafe { ffi::XCloseDisplay(display) };
 }
