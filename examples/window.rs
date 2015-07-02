@@ -93,10 +93,15 @@ fn main() {
       )
    };
 
+   println!("GL context ........... : {:?}", context);
+
    let colormap = unsafe { ffi::xcb_generate_id(connection) };
    let window = unsafe { ffi::xcb_generate_id(connection) };
 
-   unsafe {
+   println!("colormap ............. : {:?}", colormap);
+   println!("window ............... : {:?}", window);
+
+   let colormap_res = unsafe {
       ffi::xcb_create_colormap(
          connection,
          ffi::XCB_COLORMAP_ALLOC_NONE as u8,
@@ -106,11 +111,13 @@ fn main() {
       )
    };
 
+   println!("colormap res ......... : {:?}", colormap_res.sequence);
+
    let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE | ffi::XCB_EVENT_MASK_KEY_PRESS;
    let valuelist = [eventmask, colormap, 0];
    let valuemask = ffi::XCB_CW_EVENT_MASK | ffi::XCB_CW_COLORMAP;
 
-   unsafe {
+   let window_res = unsafe {
       ffi::xcb_create_window(
          connection,
          ffi::XCB_COPY_FROM_PARENT as u8,
@@ -124,6 +131,49 @@ fn main() {
          valuemask,
          valuelist.as_ptr()
       )
+   };
+
+   println!("window res ........... : {:?}", window_res.sequence);
+
+   let map_res = unsafe {
+      ffi::xcb_map_window(connection, window)
+   };
+
+   println!("map res .............. : {:?}", map_res.sequence);
+
+   let glxwindow = unsafe {
+      glx::CreateWindow(
+         display as *mut glx::types::Display,
+         *fb_configs,
+         window as u64,
+         ptr::null()
+      )
+   };
+
+   println!("glxwindow ............ : {:?}", glxwindow);
+
+   let drawable = glxwindow;
+
+   let made_current = unsafe {
+      glx::MakeContextCurrent(
+         display as *mut glx::types::Display,
+         drawable,
+         drawable,
+         context
+      )
+   };
+
+   println!("made current ......... : {:?}", made_current);
+
+   unsafe {
+      glx::DestroyWindow(
+         display as *mut glx::types::Display,
+         glxwindow
+      )
+   };
+
+   unsafe {
+      ffi::xcb_destroy_window(connection, window)
    };
 
    unsafe {

@@ -2,7 +2,7 @@
 #![allow(non_upper_case_globals)]
 
 pub use libc::{c_char, c_uchar, c_short, c_ushort, c_int, c_uint, c_long,
-   c_ulong};
+   c_ulong, c_void};
 use std::mem;
 
 pub enum XDisplay { }
@@ -368,6 +368,16 @@ extern "C" {
       visual: xcb_visualid_t,
       value_mask: uint32_t,
       value_list: *const uint32_t
+   ) -> xcb_void_cookie_t;
+
+   pub fn xcb_destroy_window(
+      c: *mut xcb_connection_t,
+      window: xcb_window_t
+   ) -> xcb_void_cookie_t;
+
+   pub fn xcb_map_window(
+      c: *mut xcb_connection_t,
+      window: xcb_window_t
    ) -> xcb_void_cookie_t;
 }
 
