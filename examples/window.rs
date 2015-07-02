@@ -7,8 +7,13 @@ use std::ptr;
 
 use polydraw::platform::x11::ffi;
 
-fn screen_of_display(connection: *mut ffi::xcb_connection_t, screen: ffi::c_int) -> *mut ffi::xcb_screen_t {
-   let mut iter = unsafe { ffi::xcb_setup_roots_iterator(ffi::xcb_get_setup(connection)) };
+fn screen_of_display(
+   connection: *mut ffi::xcb_connection_t, screen: ffi::c_int
+) -> *mut ffi::xcb_screen_t {
+
+   let mut iter = unsafe {
+      ffi::xcb_setup_roots_iterator(ffi::xcb_get_setup(connection))
+   };
 
    let mut screen_num = screen;
 
@@ -56,7 +61,11 @@ fn main() {
    let mut nelements = 0;
 
    let fb_configs = unsafe {
-      glx::GetFBConfigs(display as *mut glx::types::Display, default_screen, &mut nelements)
+      glx::GetFBConfigs(
+         display as *mut glx::types::Display,
+         default_screen,
+         &mut nelements
+      )
    };
 
    println!("nelements ............ : {}", nelements);
@@ -64,13 +73,57 @@ fn main() {
    let mut visual_id = 0;
 
    unsafe {
-      glx::GetFBConfigAttrib(display as *mut glx::types::Display, *fb_configs, glx::VISUAL_ID as i32, &mut visual_id)
+      glx::GetFBConfigAttrib(
+         display as *mut glx::types::Display,
+         *fb_configs,
+         glx::VISUAL_ID as i32,
+         &mut visual_id
+      )
    };
 
    println!("visual_id ............ : {}", visual_id);
 
    let context = unsafe {
-      glx::CreateNewContext(display as *mut glx::types::Display, *fb_configs, glx::RGBA_TYPE as i32, ptr::null(), 1)
+      glx::CreateNewContext(
+         display as *mut glx::types::Display,
+         *fb_configs,
+         glx::RGBA_TYPE as i32,
+         ptr::null(),
+         1
+      )
+   };
+
+   let colormap = unsafe { ffi::xcb_generate_id(connection) };
+   let window = unsafe { ffi::xcb_generate_id(connection) };
+
+   unsafe {
+      ffi::xcb_create_colormap(
+         connection,
+         ffi::XCB_COLORMAP_ALLOC_NONE as u8,
+         colormap,
+         (*screen).root,
+         visual_id as u32
+      )
+   };
+
+   let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE | ffi::XCB_EVENT_MASK_KEY_PRESS;
+   let valuelist = [eventmask, colormap, 0];
+   let valuemask = ffi::XCB_CW_EVENT_MASK | ffi::XCB_CW_COLORMAP;
+
+   unsafe {
+      ffi::xcb_create_window(
+         connection,
+         ffi::XCB_COPY_FROM_PARENT as u8,
+         window,
+         (*screen).root,
+         0, 0,
+         150, 150,
+         0,
+         ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
+         visual_id as u32,
+         valuemask,
+         valuelist.as_ptr()
+      )
    };
 
    unsafe {
