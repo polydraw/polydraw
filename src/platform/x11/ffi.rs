@@ -2,7 +2,7 @@
 #![allow(non_upper_case_globals)]
 
 pub use libc::{c_char, c_uchar, c_short, c_ushort, c_int, c_uint, c_long,
-   c_ulong, c_void};
+   c_ulong, c_void, free};
 use std::mem;
 
 pub enum XDisplay { }
@@ -86,6 +86,9 @@ pub const XCB_COPY_FROM_PARENT:  c_uint = 0;
 pub const XCB_WINDOW_CLASS_COPY_FROM_PARENT:  c_uint = 0;
 pub const XCB_WINDOW_CLASS_INPUT_OUTPUT:      c_uint = 1;
 pub const XCB_WINDOW_CLASS_INPUT_ONLY:        c_uint = 2;
+
+pub const XCB_KEY_PRESS:  c_uchar = 2;
+pub const XCB_EXPOSE:     c_uchar = 12;
 
 #[repr(C)]
 #[derive(Copy)]
@@ -321,10 +324,27 @@ impl ::std::default::Default for xcb_void_cookie_t {
     fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_generic_event_t {
+    pub response_type: uint8_t,
+    pub pad0: uint8_t,
+    pub sequence: uint16_t,
+    pub pad: [uint32_t; 7usize],
+    pub full_sequence: uint32_t,
+}
+impl ::std::clone::Clone for xcb_generic_event_t {
+    fn clone(&self) -> Self { *self }
+}
+impl ::std::default::Default for xcb_generic_event_t {
+    fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
 #[link(name="X11")]
 extern "C" {
    pub fn XOpenDisplay(display_name: *const c_char) -> *mut Display;
    pub fn XCloseDisplay(display: *mut Display) -> c_int;
+   pub fn XFree(data: *mut c_void) -> c_int;
 }
 
 #[link(name="X11-xcb")]
@@ -339,8 +359,9 @@ extern "C" {
 #[link(name="xcb")]
 extern "C" {
    pub fn xcb_get_setup(c: *mut xcb_connection_t) -> *const xcb_setup_t;
-   pub fn xcb_screen_next(i: *mut xcb_screen_iterator_t) -> ();
    pub fn xcb_generate_id(c: *mut xcb_connection_t) -> uint32_t;
+   pub fn xcb_flush(c: *mut xcb_connection_t) -> c_int;
+   pub fn xcb_screen_next(i: *mut xcb_screen_iterator_t) -> ();
 
    pub fn xcb_setup_roots_iterator(
       R: *const xcb_setup_t
@@ -379,6 +400,10 @@ extern "C" {
       c: *mut xcb_connection_t,
       window: xcb_window_t
    ) -> xcb_void_cookie_t;
+
+   pub fn xcb_wait_for_event(
+      c: *mut xcb_connection_t
+   ) -> *mut xcb_generic_event_t;
 }
 
 #[link(name="GL")]

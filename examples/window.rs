@@ -1,10 +1,13 @@
 extern crate glx;
+extern crate gleam;
 
 #[macro_use]
 extern crate polydraw;
 
 use std::ptr;
+use std::ffi::CString;
 
+use gleam::gl;
 use polydraw::platform::x11::ffi;
 
 fn screen_of_display(
@@ -124,7 +127,7 @@ fn main() {
          window,
          (*screen).root,
          0, 0,
-         150, 150,
+         800, 450,
          0,
          ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
          visual_id as u32,
@@ -152,6 +155,8 @@ fn main() {
 
    println!("glxwindow ............ : {:?}", glxwindow);
 
+   gl::load_with(|s| unsafe { glx::GetProcAddress(CString::new(s).unwrap().as_ptr() as *const u8) as *const ffi::c_void });
+
    let drawable = glxwindow;
 
    let made_current = unsafe {
@@ -164,6 +169,48 @@ fn main() {
    };
 
    println!("made current ......... : {:?}", made_current);
+
+   loop {
+      let event = unsafe {
+         ffi::xcb_wait_for_event(connection)
+      };
+      if event.is_null() {
+         break;
+      }
+
+      let event_type = unsafe { (*event).response_type & !0x80 };
+
+      match event_type {
+         ffi::XCB_KEY_PRESS => {
+            unsafe { ffi::free(event as *mut ffi::c_void) };
+            break;
+         },
+         ffi::XCB_EXPOSE => {
+            unsafe {
+               gl::clear_color(0.0, 0.7, 1.0, 1.0);
+               gl::clear(gl::COLOR_BUFFER_BIT);
+               gl::flush();
+
+               glx::SwapBuffers(
+                  display as *mut glx::types::Display,
+                  drawable
+               );
+            };
+         }
+         _ => {}
+      }
+
+      unsafe { ffi::free(event as *mut ffi::c_void) };
+   }
+
+   unsafe {
+      glx::MakeContextCurrent(
+         display as *mut glx::types::Display,
+         0,
+         0,
+         ptr::null()
+      )
+   };
 
    unsafe {
       glx::DestroyWindow(
@@ -179,6 +226,8 @@ fn main() {
    unsafe {
       glx::DestroyContext(display as *mut glx::types::Display, context)
    };
+
+   unsafe { ffi::XFree(fb_configs as *mut ffi::c_void) };
 
    unsafe { ffi::XCloseDisplay(display) };
 }
