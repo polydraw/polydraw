@@ -1,13 +1,9 @@
-extern crate gleam;
-
 #[macro_use]
 extern crate polydraw;
 
 use std::ptr;
 use std::mem;
-use std::ffi::CString;
 
-use gleam::gl;
 use polydraw::platform::x11::ffi;
 
 fn screen_of_display(
@@ -94,8 +90,6 @@ fn main() {
    if unsafe { ffi::eglBindAPI(ffi::EGL_OPENGL_API) } == 0 {
       panic!("eglBindAPI failed");
    }
-
-   gl::load_with(|s| unsafe { ffi::eglGetProcAddress(CString::new(s).unwrap().as_ptr() as *const _) as *const _ });
 
    let egl_display = unsafe { ffi::eglGetDisplay(display) };
 
@@ -228,9 +222,9 @@ fn main() {
          },
          ffi::XCB_EXPOSE => {
             unsafe {
-               gl::clear_color(0.0, 0.7, 1.0, 1.0);
-               gl::clear(gl::COLOR_BUFFER_BIT);
-               gl::flush();
+               ffi::glClearColor(0.0, 0.7, 1.0, 1.0);
+               ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
+               ffi::glFlush();
 
                ffi::eglSwapBuffers(egl_display, surface);
             };

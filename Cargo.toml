@@ -4,6 +4,3 @@ version = "0.0.1"
 
 [dependencies]
 libc = "*"
-
-[dependencies.gleam]
-git = "https://github.com/servo/gleam.git"
