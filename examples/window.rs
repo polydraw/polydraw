@@ -9,7 +9,6 @@ use std::ffi::CString;
 
 use gleam::gl;
 use polydraw::platform::x11::ffi;
-use polydraw::platform::egl;
 
 fn screen_of_display(
    connection: *mut ffi::xcb_connection_t,
@@ -92,62 +91,53 @@ fn main() {
 
    println!("map res .............. : {:?}", map_res.sequence);
 
-   let libegl = unsafe {
-      ffi::dlopen(b"libEGL.so\0".as_ptr() as *const _, ffi::RTLD_NOW)
-   };
-
-   egl::load_with(|sym| {
-      let sym = CString::new(sym).unwrap();
-      unsafe { ffi::dlsym(libegl, sym.as_ptr()) }
-   });
-
-   if unsafe { egl::BindAPI(egl::OPENGL_API) } == 0 {
+   if unsafe { ffi::eglBindAPI(ffi::EGL_OPENGL_API) } == 0 {
       panic!("eglBindAPI failed");
    }
 
-   gl::load_with(|s| unsafe { egl::GetProcAddress(CString::new(s).unwrap().as_ptr() as *const _) as *const _ });
+   gl::load_with(|s| unsafe { ffi::eglGetProcAddress(CString::new(s).unwrap().as_ptr() as *const _) as *const _ });
 
-   let egl_display = unsafe { egl::GetDisplay(display) };
+   let egl_display = unsafe { ffi::eglGetDisplay(display) };
 
    println!("egl display .......... : {:?}", egl_display);
 
-   let mut major: egl::types::EGLint = unsafe { mem::uninitialized() };
-   let mut minor: egl::types::EGLint = unsafe { mem::uninitialized() };
+   let mut major: ffi::EGLint = unsafe { mem::uninitialized() };
+   let mut minor: ffi::EGLint = unsafe { mem::uninitialized() };
 
-   if unsafe { egl::Initialize(egl_display, &mut major, &mut minor) } == 0 {
-       panic!("eglInitialize failed");
+   if unsafe { ffi::eglInitialize(egl_display, &mut major, &mut minor) } == 0 {
+      panic!("eglInitialize failed");
    }
 
    println!("egl version .......... : {:?}.{:?}", major, minor);
 
    let config_attribs = [
-      egl::COLOR_BUFFER_TYPE,    egl::RGB_BUFFER,
-      egl::BUFFER_SIZE,          32,
-      egl::RED_SIZE,             8,
-      egl::GREEN_SIZE,           8,
-      egl::BLUE_SIZE,            8,
-      egl::ALPHA_SIZE,           8,
+      ffi::EGL_COLOR_BUFFER_TYPE,    ffi::EGL_RGB_BUFFER,
+      ffi::EGL_BUFFER_SIZE,          32,
+      ffi::EGL_RED_SIZE,             8,
+      ffi::EGL_GREEN_SIZE,           8,
+      ffi::EGL_BLUE_SIZE,            8,
+      ffi::EGL_ALPHA_SIZE,           8,
 
-      egl::DEPTH_SIZE,           24,
-      egl::STENCIL_SIZE,         8,
+      ffi::EGL_DEPTH_SIZE,           24,
+      ffi::EGL_STENCIL_SIZE,         8,
 
-      egl::SAMPLE_BUFFERS,       0,
-      egl::SAMPLES,              0,
+      ffi::EGL_SAMPLE_BUFFERS,       0,
+      ffi::EGL_SAMPLES,              0,
 
-      egl::SURFACE_TYPE,         egl::WINDOW_BIT,
-      egl::RENDERABLE_TYPE,      egl::OPENGL_BIT,
+      ffi::EGL_SURFACE_TYPE,         ffi::EGL_WINDOW_BIT,
+      ffi::EGL_RENDERABLE_TYPE,      ffi::EGL_OPENGL_BIT,
 
-      egl::NONE
+      ffi::EGL_NONE
    ];
 
-   let mut num_config: egl::types::EGLint = unsafe { mem::uninitialized() };
-   let mut configs: [egl::types::EGLConfig; 64] = unsafe { mem::uninitialized() };
+   let mut num_config: ffi::EGLint = unsafe { mem::uninitialized() };
+   let mut configs: [ffi::EGLConfig; 64] = unsafe { mem::uninitialized() };
 
    let chosen = unsafe {
-      egl::ChooseConfig(
+      ffi::eglChooseConfig(
          egl_display,
          config_attribs.as_ptr() as *const _,
-         configs.as_mut_ptr(),
+         configs.as_mut_ptr() as *mut *mut _,
          64,
          &mut num_config
       )
@@ -164,13 +154,13 @@ fn main() {
 
    let config = configs[0];
 
-   let context_attribs = [egl::NONE];
+   let context_attribs = [ffi::EGL_NONE];
 
    let context = unsafe {
-      egl::CreateContext(
+      ffi::eglCreateContext(
          egl_display,
-         config,
-         egl::NO_CONTEXT,
+         config as *mut _,
+         ffi::EGL_NO_CONTEXT as *mut _,
          context_attribs.as_ptr() as *const _,
       )
    };
@@ -179,14 +169,14 @@ fn main() {
    }
 
    let surface_attribs = [
-      egl::RENDER_BUFFER, egl::BACK_BUFFER,
-      egl::NONE
+      ffi::EGL_RENDER_BUFFER, ffi::EGL_BACK_BUFFER,
+      ffi::EGL_NONE
    ];
 
    let surface = unsafe {
-      egl::CreateWindowSurface(
+      ffi::eglCreateWindowSurface(
          egl_display,
-         config,
+         config as *mut _,
          window,
          surface_attribs.as_ptr() as *const _,
       )
@@ -196,19 +186,19 @@ fn main() {
    }
 
    let made_current = unsafe {
-      egl::MakeCurrent(egl_display, surface, surface, context)
+      ffi::eglMakeCurrent(egl_display, surface, surface, context)
    };
    if made_current == 0 {
       panic!("eglMakeCurrent failed");
    }
 
-   let mut render_buffer: egl::types::EGLint = unsafe { mem::uninitialized() };
+   let mut render_buffer: ffi::EGLint = unsafe { mem::uninitialized() };
 
    let ok = unsafe {
-      egl::QueryContext(
+      ffi::eglQueryContext(
          egl_display,
          context,
-         egl::RENDER_BUFFER as i32,
+         ffi::EGL_RENDER_BUFFER as i32,
          &mut render_buffer
       )
    };
@@ -217,8 +207,8 @@ fn main() {
       panic!("eglQueyContext(EGL_RENDER_BUFFER) failed");
    }
 
-   if render_buffer == egl::SINGLE_BUFFER as i32 {
-        println!("warn: EGL surface is single buffered");
+   if render_buffer == ffi::EGL_SINGLE_BUFFER as i32 {
+      println!("warn: EGL surface is single buffered");
    }
 
    loop {
@@ -242,7 +232,7 @@ fn main() {
                gl::clear(gl::COLOR_BUFFER_BIT);
                gl::flush();
 
-               egl::SwapBuffers(egl_display, surface);
+               ffi::eglSwapBuffers(egl_display, surface);
             };
          }
          _ => {}

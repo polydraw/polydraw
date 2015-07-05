@@ -2,15 +2,8 @@
 name = "polydraw"
 version = "0.0.1"
 
-build = "build.rs"
-
 [dependencies]
-gl_common = "*"
 libc = "*"
 
 [dependencies.gleam]
 git = "https://github.com/servo/gleam.git"
-
-[build-dependencies]
-gl_generator = "*"
-khronos_api = "*"
