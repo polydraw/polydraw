@@ -1,12 +1,16 @@
 [package]
 name = "polydraw"
-version = "0.1.0"
+version = "0.0.1"
+
+build = "build.rs"
 
 [dependencies]
+gl_common = "*"
 libc = "*"
-
-[dependencies.glx]
-git = "https://github.com/servo/rust-glx.git"
 
 [dependencies.gleam]
 git = "https://github.com/servo/gleam.git"
+
+[build-dependencies]
+gl_generator = "*"
+khronos_api = "*"

@@ -315,29 +315,49 @@ impl ::std::default::Default for xcb_setup_t {
 #[repr(C)]
 #[derive(Copy)]
 pub struct xcb_void_cookie_t {
-    pub sequence: c_uint,
+   pub sequence: c_uint,
 }
 impl ::std::clone::Clone for xcb_void_cookie_t {
-    fn clone(&self) -> Self { *self }
+   fn clone(&self) -> Self { *self }
 }
 impl ::std::default::Default for xcb_void_cookie_t {
-    fn default() -> Self { unsafe { mem::zeroed() } }
+   fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
 #[repr(C)]
 #[derive(Copy)]
 pub struct xcb_generic_event_t {
-    pub response_type: uint8_t,
-    pub pad0: uint8_t,
-    pub sequence: uint16_t,
-    pub pad: [uint32_t; 7usize],
-    pub full_sequence: uint32_t,
+   pub response_type: uint8_t,
+   pub pad0: uint8_t,
+   pub sequence: uint16_t,
+   pub pad: [uint32_t; 7usize],
+   pub full_sequence: uint32_t,
 }
 impl ::std::clone::Clone for xcb_generic_event_t {
-    fn clone(&self) -> Self { *self }
+   fn clone(&self) -> Self { *self }
 }
 impl ::std::default::Default for xcb_generic_event_t {
-    fn default() -> Self { unsafe { mem::zeroed() } }
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_generic_error_t {
+   pub response_type: uint8_t,
+   pub error_code: uint8_t,
+   pub sequence: uint16_t,
+   pub resource_id: uint32_t,
+   pub minor_code: uint16_t,
+   pub major_code: uint8_t,
+   pub pad0: uint8_t,
+   pub pad: [uint32_t; 5usize],
+   pub full_sequence: uint32_t,
+}
+impl ::std::clone::Clone for xcb_generic_error_t {
+   fn clone(&self) -> Self { *self }
+}
+impl ::std::default::Default for xcb_generic_error_t {
+   fn default() -> Self { unsafe { ::std::mem::zeroed() } }
 }
 
 #[link(name="X11")]
@@ -359,9 +379,19 @@ extern "C" {
 #[link(name="xcb")]
 extern "C" {
    pub fn xcb_get_setup(c: *mut xcb_connection_t) -> *const xcb_setup_t;
+
    pub fn xcb_generate_id(c: *mut xcb_connection_t) -> uint32_t;
+
    pub fn xcb_flush(c: *mut xcb_connection_t) -> c_int;
+
    pub fn xcb_screen_next(i: *mut xcb_screen_iterator_t) -> ();
+
+   pub fn xcb_connect(
+      displayname: *const c_char,
+      screenp: *mut c_int
+   ) -> *mut xcb_connection_t;
+
+   pub fn xcb_connection_has_error(c: *mut xcb_connection_t) -> c_int;
 
    pub fn xcb_setup_roots_iterator(
       R: *const xcb_setup_t
@@ -408,6 +438,21 @@ extern "C" {
 
 #[link(name="GL")]
 extern "C" {
+}
+
+#[link(name="EGL")]
+extern "C" {
+}
+
+pub const RTLD_LAZY: c_int = 0x001;
+pub const RTLD_NOW: c_int = 0x002;
+
+#[link(name="dl")]
+extern "C" {
+   pub fn dlopen(filename: *const c_char, flag: c_int) -> *mut c_void;
+   pub fn dlerror() -> *mut c_char;
+   pub fn dlsym(handle: *mut c_void, symbol: *const c_char) -> *mut c_void;
+   pub fn dlclose(handle: *mut c_void) -> c_int;
 }
 
 #[macro_export]
