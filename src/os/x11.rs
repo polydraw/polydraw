@@ -5,6 +5,7 @@ pub mod ffi {
       c_char, c_int, c_uint, c_long, c_ulong, c_void
    };
    use std::mem;
+   use ::os::xcb::ffi::xcb_connection_t;
 
    pub enum XDisplay { }
    pub enum XPrivate { }
@@ -180,6 +181,18 @@ pub mod ffi {
       pub fn XCloseDisplay(display: *mut Display) -> c_int;
       pub fn XFree(data: *mut c_void) -> c_int;
    }
+
+   #[link(name="X11-xcb")]
+   extern "C" {
+      pub fn XGetXCBConnection(
+         display: *mut Display
+      ) -> *mut xcb_connection_t;
+
+      pub fn XSetEventQueueOwner(
+         display: *mut Display,
+         owner: XEventQueueOwner
+      ) -> ();
+   }
 }
 
 use std::ptr;
@@ -188,6 +201,7 @@ use std::ffi::{CString, CStr};
 use libc::c_char;
 
 use ::error::{RuntimeError, ErrorKind};
+use ::os::xcb::Connection;
 
 pub struct Display {
    pub display_ptr: *mut ffi::Display
@@ -226,6 +240,31 @@ impl Display {
          }
       )
    }
+
+   pub fn xcb_connection(self: &Self) -> Result<Connection, RuntimeError> {
+      let connection = unsafe {
+         ffi::XGetXCBConnection(self.display_ptr)
+      };
+      if connection.is_null() {
+         return Err(RuntimeError::new(
+            ErrorKind::Xlib,
+            "Getting XCB connection from display failed".to_string()
+         ));
+      }
+
+      Ok(
+         Connection::new(connection)
+      )
+   }
+
+   pub fn xcb_own_event_queue(self: &Self) {
+      unsafe {
+         ffi::XSetEventQueueOwner(
+            self.display_ptr,
+            ffi::XCBOwnsEventQueue
+         )
+      };
+   }
 }
 
 impl Drop for Display {
@@ -260,6 +299,11 @@ mod test {
    #[test]
    fn test_create_display_nul_str() {
       assert!(Display::new(&b"one\0two"[..]).is_err());
+   }
+
+   #[test]
+   fn test_create_get_xcb_connection() {
+      assert!(Display::default().unwrap().xcb_connection().is_ok());
    }
 }
 

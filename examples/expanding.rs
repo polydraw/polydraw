@@ -3,12 +3,13 @@ extern crate polydraw;
 use polydraw::os::x11::{Display};
 
 fn main() {
-   let display = match Display::new(":3") {
-      Ok(display) => display,
-      Err(err) => {
-         panic!(err.description);
-      }
-   };
+   let display = Display::default().unwrap();
 
    println!("{:?}", display.display_ptr);
+
+   let connection = display.xcb_connection().unwrap();
+
+   println!("{:?}", connection.connection_ptr);
+
+   display.xcb_own_event_queue();
 }

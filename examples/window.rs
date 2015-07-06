@@ -36,21 +36,23 @@ fn print_screen_info(screen: &ffi::xcb_screen_t) {
 fn main() {
    let display = match Display::default() {
       Ok(display) => display,
-      Err(_) => {
-         panic!("Can't open display");
+      Err(e) => {
+         panic!(e.description);
       }
    };
 
    let ptr = display.display_ptr as *mut ffi::Display;
 
-   let connection = unsafe { ffi::XGetXCBConnection(ptr) };
-   if connection.is_null() {
-      panic!("Can't get xcb connection from display");
-   }
-
-   unsafe {
-      ffi::XSetEventQueueOwner(ptr, ffi::XCBOwnsEventQueue)
+   let conn = match display.xcb_connection() {
+      Ok(conn) => conn,
+      Err(e) => {
+         panic!(e.description);
+      }
    };
+
+   let connection = conn.connection_ptr as *mut ffi::xcb_connection_t;
+
+   display.xcb_own_event_queue();
 
    let default_screen = DefaultScreen!(ptr);
 
@@ -62,7 +64,8 @@ fn main() {
 
    println!("window ............... : {:?}", window);
 
-   let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE | ffi::XCB_EVENT_MASK_KEY_PRESS;
+   let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
+      ffi::XCB_EVENT_MASK_KEY_PRESS;
    let valuelist = [eventmask, 0];
    let valuemask = ffi::XCB_CW_EVENT_MASK;
 
