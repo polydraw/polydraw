@@ -183,19 +183,11 @@ pub mod ffi {
 }
 
 use std::ptr;
-use std::ffi::CString;
-pub use std::ffi::NulError;
+use std::ffi::{CString, CStr};
 
 use libc::c_char;
 
-#[derive(Copy, Clone, Debug)]
-pub struct RuntimeError;
-
-impl From<NulError> for RuntimeError {
-   fn from(_: NulError) -> RuntimeError {
-      RuntimeError
-   }
-}
+use ::error::{RuntimeError, ErrorKind};
 
 pub struct Display {
    pub display_ptr: *mut ffi::Display
@@ -218,7 +210,14 @@ impl Display {
       };
 
       if display_ptr.is_null() {
-         return Err(RuntimeError);
+         let description = format!(
+            "Opening X display '{}' failed",
+            unsafe { CStr::from_ptr(name).to_str().unwrap() }
+         );
+         return Err(RuntimeError::new(
+            ErrorKind::Xlib,
+            description
+         ));
       }
 
       Ok(
