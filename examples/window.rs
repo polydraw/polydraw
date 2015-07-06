@@ -34,7 +34,7 @@ fn print_screen_info(screen: &ffi::xcb_screen_t) {
 }
 
 fn main() {
-   let display = match Display::new() {
+   let display = match Display::default() {
       Ok(display) => display,
       Err(_) => {
          panic!("Can't open display");

@@ -183,22 +183,42 @@ pub mod ffi {
 }
 
 use std::ptr;
+use std::ffi::CString;
+pub use std::ffi::NulError;
+
+use libc::c_char;
 
 #[derive(Copy, Clone, Debug)]
-pub struct NotAvailable;
+pub struct RuntimeError;
+
+impl From<NulError> for RuntimeError {
+   fn from(_: NulError) -> RuntimeError {
+      RuntimeError
+   }
+}
 
 pub struct Display {
    pub display_ptr: *mut ffi::Display
 }
 
 impl Display {
-   pub fn new() -> Result<Self, NotAvailable> {
+   pub fn default() -> Result<Self, RuntimeError> {
+      Display::from_ptr(ptr::null())
+   }
+
+   pub fn new<T: Into<Vec<u8>>>(name: T) -> Result<Self, RuntimeError> {
+      let c_name = try!(CString::new(name.into()));
+
+      Display::from_ptr(c_name.as_ptr())
+   }
+
+   fn from_ptr(name: *const c_char) -> Result<Self, RuntimeError> {
       let display_ptr = unsafe {
-         ffi::XOpenDisplay(ptr::null())
+         ffi::XOpenDisplay(name)
       };
 
       if display_ptr.is_null() {
-          return Err(NotAvailable);
+         return Err(RuntimeError);
       }
 
       Ok(
@@ -217,7 +237,30 @@ impl Drop for Display {
    }
 }
 
-#[test]
-fn test_create_display() {
-   assert!(Display::new().is_ok());
+#[cfg(test)]
+mod test {
+   use std::env;
+   use super::Display;
+
+   #[test]
+   fn test_create_display() {
+      assert!(Display::default().is_ok());
+   }
+
+   #[test]
+   fn test_create_display_from_env() {
+      let name = env::var("DISPLAY").unwrap();
+      assert!(Display::new(name).is_ok());
+   }
+
+   #[test]
+   fn test_create_display_error_str() {
+      assert!(Display::new("ErrorStringHere").is_err());
+   }
+
+   #[test]
+   fn test_create_display_nul_str() {
+      assert!(Display::new(&b"one\0two"[..]).is_err());
+   }
 }
+
