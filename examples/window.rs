@@ -1,10 +1,10 @@
 #[macro_use]
 extern crate polydraw;
 
-use std::ptr;
 use std::mem;
 
 use polydraw::platform::x11::ffi;
+use polydraw::os::x11::{Display};
 
 fn screen_of_display(
    connection: *mut ffi::xcb_connection_t,
@@ -34,22 +34,25 @@ fn print_screen_info(screen: &ffi::xcb_screen_t) {
 }
 
 fn main() {
-   let display = unsafe { ffi::XOpenDisplay(ptr::null()) };
-   if display.is_null() {
-      panic!("Can't open display");
-   }
+   let display = match Display::new() {
+      Ok(display) => display,
+      Err(_) => {
+         panic!("Can't open display");
+      }
+   };
 
-   let connection = unsafe { ffi::XGetXCBConnection(display) };
+   let ptr = display.display_ptr as *mut ffi::Display;
+
+   let connection = unsafe { ffi::XGetXCBConnection(ptr) };
    if connection.is_null() {
-      unsafe { ffi::XCloseDisplay(display) };
       panic!("Can't get xcb connection from display");
    }
 
    unsafe {
-      ffi::XSetEventQueueOwner(display, ffi::XCBOwnsEventQueue)
+      ffi::XSetEventQueueOwner(ptr, ffi::XCBOwnsEventQueue)
    };
 
-   let default_screen = DefaultScreen!(display);
+   let default_screen = DefaultScreen!(ptr);
 
    let screen = screen_of_display(connection, default_screen);
 
@@ -91,7 +94,7 @@ fn main() {
       panic!("eglBindAPI failed");
    }
 
-   let egl_display = unsafe { ffi::eglGetDisplay(display) };
+   let egl_display = unsafe { ffi::eglGetDisplay(ptr) };
 
    println!("egl display .......... : {:?}", egl_display);
 
@@ -238,6 +241,4 @@ fn main() {
    unsafe {
       ffi::xcb_destroy_window(connection, window)
    };
-
-   unsafe { ffi::XCloseDisplay(display) };
 }
