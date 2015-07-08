@@ -97,6 +97,10 @@ pub mod ffi {
       pub fn xcb_setup_roots_iterator(
          R: *const xcb_setup_t
       ) -> xcb_screen_iterator_t;
+
+      pub fn xcb_generate_id(
+         c: *mut xcb_connection_t
+      ) -> c_uint;
    }
 }
 
@@ -111,10 +115,7 @@ impl Connection {
       }
    }
 
-   pub fn screen_of_display(
-      &self,
-      screen: ffi::c_int
-   ) -> Screen {
+   pub fn screen_of_display(&self, screen: ffi::c_int) -> Screen {
       let mut iter = unsafe {
          ffi::xcb_setup_roots_iterator(
             ffi::xcb_get_setup(self.ptr)
@@ -129,6 +130,12 @@ impl Connection {
       }
 
       Screen::new(iter.data)
+   }
+
+   pub fn generate_id(&self) -> ffi::c_uint {
+      unsafe {
+         ffi::xcb_generate_id(self.ptr)
+      }
    }
 }
 

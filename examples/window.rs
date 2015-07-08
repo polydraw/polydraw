@@ -43,7 +43,7 @@ fn main() {
 
    print_screen_info(&scr);
 
-   let window = unsafe { ffi::xcb_generate_id(connection) };
+   let window = conn.generate_id();
 
    println!("window ............... : {:?}", window);
 
