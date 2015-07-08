@@ -12,6 +12,55 @@ pub mod ffi {
    pub type xcb_colormap_t = c_uint;
    pub type xcb_visualid_t = c_uint;
 
+   pub const XCB_EVENT_MASK_NO_EVENT:               c_uint = 0;
+   pub const XCB_EVENT_MASK_KEY_PRESS:              c_uint = 1;
+   pub const XCB_EVENT_MASK_KEY_RELEASE:            c_uint = 2;
+   pub const XCB_EVENT_MASK_BUTTON_PRESS:           c_uint = 4;
+   pub const XCB_EVENT_MASK_BUTTON_RELEASE:         c_uint = 8;
+   pub const XCB_EVENT_MASK_ENTER_WINDOW:           c_uint = 16;
+   pub const XCB_EVENT_MASK_LEAVE_WINDOW:           c_uint = 32;
+   pub const XCB_EVENT_MASK_POINTER_MOTION:         c_uint = 64;
+   pub const XCB_EVENT_MASK_POINTER_MOTION_HINT:    c_uint = 128;
+   pub const XCB_EVENT_MASK_BUTTON_1_MOTION:        c_uint = 256;
+   pub const XCB_EVENT_MASK_BUTTON_2_MOTION:        c_uint = 512;
+   pub const XCB_EVENT_MASK_BUTTON_3_MOTION:        c_uint = 1024;
+   pub const XCB_EVENT_MASK_BUTTON_4_MOTION:        c_uint = 2048;
+   pub const XCB_EVENT_MASK_BUTTON_5_MOTION:        c_uint = 4096;
+   pub const XCB_EVENT_MASK_BUTTON_MOTION:          c_uint = 8192;
+   pub const XCB_EVENT_MASK_KEYMAP_STATE:           c_uint = 16384;
+   pub const XCB_EVENT_MASK_EXPOSURE:               c_uint = 32768;
+   pub const XCB_EVENT_MASK_VISIBILITY_CHANGE:      c_uint = 65536;
+   pub const XCB_EVENT_MASK_STRUCTURE_NOTIFY:       c_uint = 131072;
+   pub const XCB_EVENT_MASK_RESIZE_REDIRECT:        c_uint = 262144;
+   pub const XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY:    c_uint = 524288;
+   pub const XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT:  c_uint = 1048576;
+   pub const XCB_EVENT_MASK_FOCUS_CHANGE:           c_uint = 2097152;
+   pub const XCB_EVENT_MASK_PROPERTY_CHANGE:        c_uint = 4194304;
+   pub const XCB_EVENT_MASK_COLOR_MAP_CHANGE:       c_uint = 8388608;
+   pub const XCB_EVENT_MASK_OWNER_GRAB_BUTTON:      c_uint = 16777216;
+
+   pub const XCB_CW_BACK_PIXMAP:        c_uint = 1;
+   pub const XCB_CW_BACK_PIXEL:         c_uint = 2;
+   pub const XCB_CW_BORDER_PIXMAP:      c_uint = 4;
+   pub const XCB_CW_BORDER_PIXEL:       c_uint = 8;
+   pub const XCB_CW_BIT_GRAVITY:        c_uint = 16;
+   pub const XCB_CW_WIN_GRAVITY:        c_uint = 32;
+   pub const XCB_CW_BACKING_STORE:      c_uint = 64;
+   pub const XCB_CW_BACKING_PLANES:     c_uint = 128;
+   pub const XCB_CW_BACKING_PIXEL:      c_uint = 256;
+   pub const XCB_CW_OVERRIDE_REDIRECT:  c_uint = 512;
+   pub const XCB_CW_SAVE_UNDER:         c_uint = 1024;
+   pub const XCB_CW_EVENT_MASK:         c_uint = 2048;
+   pub const XCB_CW_DONT_PROPAGATE:     c_uint = 4096;
+   pub const XCB_CW_COLORMAP:           c_uint = 8192;
+   pub const XCB_CW_CURSOR:             c_uint = 16384;
+
+   pub const XCB_COPY_FROM_PARENT:  c_uint = 0;
+
+   pub const XCB_WINDOW_CLASS_COPY_FROM_PARENT:  c_uint = 0;
+   pub const XCB_WINDOW_CLASS_INPUT_OUTPUT:      c_uint = 1;
+   pub const XCB_WINDOW_CLASS_INPUT_ONLY:        c_uint = 2;
+
    #[repr(C)]
    #[derive(Copy)]
    pub struct xcb_screen_t {
@@ -84,6 +133,34 @@ pub mod ffi {
       fn default() -> Self { unsafe { ::std::mem::zeroed() } }
    }
 
+   #[repr(C)]
+   #[derive(Copy)]
+   pub struct xcb_void_cookie_t {
+      pub sequence: c_uint,
+   }
+   impl ::std::clone::Clone for xcb_void_cookie_t {
+      fn clone(&self) -> Self { *self }
+   }
+   impl ::std::default::Default for xcb_void_cookie_t {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
+   #[repr(C)]
+   #[derive(Copy)]
+   pub struct xcb_generic_event_t {
+      pub response_type: c_uchar,
+      pub pad0: c_uchar,
+      pub sequence: c_ushort,
+      pub pad: [c_uint; 7usize],
+      pub full_sequence: c_uint,
+   }
+   impl ::std::clone::Clone for xcb_generic_event_t {
+      fn clone(&self) -> Self { *self }
+   }
+   impl ::std::default::Default for xcb_generic_event_t {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
    #[link(name="xcb")]
    extern "C" {
       pub fn xcb_get_setup(
@@ -101,6 +178,36 @@ pub mod ffi {
       pub fn xcb_generate_id(
          c: *mut xcb_connection_t
       ) -> c_uint;
+
+      pub fn xcb_create_window(
+         c: *mut xcb_connection_t,
+         depth: c_uchar,
+         wid: xcb_window_t,
+         parent: xcb_window_t,
+         x: c_short,
+         y: c_short,
+         width: c_ushort,
+         height: c_ushort,
+         border_width: c_ushort,
+         _class: c_ushort,
+         visual: xcb_visualid_t,
+         value_mask: c_uint,
+         value_list: *const c_uint
+      ) -> xcb_void_cookie_t;
+
+      pub fn xcb_destroy_window(
+         c: *mut xcb_connection_t,
+         window: xcb_window_t
+      ) -> xcb_void_cookie_t;
+
+      pub fn xcb_map_window(
+         c: *mut xcb_connection_t,
+         window: xcb_window_t
+      ) -> xcb_void_cookie_t;
+
+      pub fn xcb_wait_for_event(
+         c: *mut xcb_connection_t
+      ) -> *mut xcb_generic_event_t;
    }
 }
 
@@ -136,6 +243,35 @@ impl Connection {
       unsafe {
          ffi::xcb_generate_id(self.ptr)
       }
+   }
+
+   pub fn create_window(
+      &self,
+      wid: ffi::xcb_window_t,
+      screen: &Screen,
+      x: ffi::c_short, y: ffi::c_short,
+      width: ffi::c_ushort, height: ffi::c_ushort,
+   ) {
+      let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
+         ffi::XCB_EVENT_MASK_KEY_PRESS;
+      let valuelist = [eventmask, 0];
+      let valuemask = ffi::XCB_CW_EVENT_MASK;
+
+      unsafe {
+         ffi::xcb_create_window(
+            self.ptr,
+            ffi::XCB_COPY_FROM_PARENT as u8,
+            wid,
+            screen.root(),
+            x, y,
+            width, height,
+            0,
+            ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
+            screen.root_visual(),
+            valuemask,
+            valuelist.as_ptr()
+         )
+      };
    }
 }
 

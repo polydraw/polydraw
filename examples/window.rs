@@ -39,7 +39,6 @@ fn main() {
    let default_screen = DefaultScreen!(ptr);
 
    let scr = conn.screen_of_display(default_screen);
-   let screen = scr.ptr as *mut ffi::xcb_screen_t;
 
    print_screen_info(&scr);
 
@@ -47,28 +46,12 @@ fn main() {
 
    println!("window ............... : {:?}", window);
 
-   let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
-      ffi::XCB_EVENT_MASK_KEY_PRESS;
-   let valuelist = [eventmask, 0];
-   let valuemask = ffi::XCB_CW_EVENT_MASK;
-
-   let window_res = unsafe {
-      ffi::xcb_create_window(
-         connection,
-         ffi::XCB_COPY_FROM_PARENT as u8,
-         window,
-         (*screen).root,
-         0, 0,
-         800, 450,
-         0,
-         ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
-         (*screen).root_visual,
-         valuemask,
-         valuelist.as_ptr()
-      )
-   };
-
-   println!("window res ........... : {:?}", window_res.sequence);
+   conn.create_window(
+      window,
+      &scr,
+      0, 0,
+      800, 450,
+   );
 
    let map_res = unsafe {
       ffi::xcb_map_window(connection, window)
