@@ -273,6 +273,15 @@ impl Connection {
          )
       };
    }
+
+   pub fn map_window(
+      &self,
+      window: ffi::xcb_window_t
+   ) {
+      unsafe {
+         ffi::xcb_map_window(self.ptr, window)
+      };
+   }
 }
 
 pub struct Screen {

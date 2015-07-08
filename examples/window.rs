@@ -53,11 +53,7 @@ fn main() {
       800, 450,
    );
 
-   let map_res = unsafe {
-      ffi::xcb_map_window(connection, window)
-   };
-
-   println!("map res .............. : {:?}", map_res.sequence);
+   conn.map_window(window);
 
    if unsafe { ffi::eglBindAPI(ffi::EGL_OPENGL_API) } == 0 {
       panic!("eglBindAPI failed");
