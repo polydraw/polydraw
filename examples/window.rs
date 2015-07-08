@@ -4,44 +4,26 @@ extern crate polydraw;
 use std::mem;
 
 use polydraw::platform::x11::ffi;
-use polydraw::os::x11::{Display};
+use polydraw::os::xcb;
+use polydraw::os::x11;
 
-fn screen_of_display(
-   connection: *mut ffi::xcb_connection_t,
-   screen: ffi::c_int
-) -> *mut ffi::xcb_screen_t {
-
-   let mut iter = unsafe {
-      ffi::xcb_setup_roots_iterator(ffi::xcb_get_setup(connection))
-   };
-
-   let mut screen_num = screen;
-
-   while screen_num > 0 && iter.rem != 0 {
-      unsafe { ffi::xcb_screen_next(&mut iter) };
-      screen_num -= 1;
-   }
-
-   iter.data
-}
-
-fn print_screen_info(screen: &ffi::xcb_screen_t) {
-   println!("Informations of screen : {}", screen.root);
-   println!("   width ............. : {}", screen.width_in_pixels);
-   println!("   height ............ : {}", screen.height_in_pixels);
-   println!("   white pixel ....... : {}", screen.white_pixel);
-   println!("   black pixel ....... : {}", screen.black_pixel);
+fn print_screen_info(screen: &xcb::Screen) {
+   println!("Informations of screen : {}", screen.root());
+   println!("   width ............. : {}", screen.width_in_pixels());
+   println!("   height ............ : {}", screen.height_in_pixels());
+   println!("   white pixel ....... : {}", screen.white_pixel());
+   println!("   black pixel ....... : {}", screen.black_pixel());
 }
 
 fn main() {
-   let display = match Display::default() {
+   let display = match x11::Display::default() {
       Ok(display) => display,
       Err(e) => {
          panic!(e.description);
       }
    };
 
-   let ptr = display.display_ptr as *mut ffi::Display;
+   let ptr = display.ptr as *mut ffi::Display;
 
    let conn = match display.xcb_connection() {
       Ok(conn) => conn,
@@ -50,15 +32,16 @@ fn main() {
       }
    };
 
-   let connection = conn.connection_ptr as *mut ffi::xcb_connection_t;
+   let connection = conn.ptr as *mut ffi::xcb_connection_t;
 
    display.xcb_own_event_queue();
 
    let default_screen = DefaultScreen!(ptr);
 
-   let screen = screen_of_display(connection, default_screen);
+   let scr = conn.screen_of_display(default_screen);
+   let screen = scr.ptr as *mut ffi::xcb_screen_t;
 
-   unsafe { print_screen_info(&(*screen)) };
+   print_screen_info(&scr);
 
    let window = unsafe { ffi::xcb_generate_id(connection) };
 

@@ -204,7 +204,7 @@ use ::error::{RuntimeError, ErrorKind};
 use ::os::xcb::Connection;
 
 pub struct Display {
-   pub display_ptr: *mut ffi::Display
+   pub ptr: *mut ffi::Display
 }
 
 impl Display {
@@ -236,14 +236,14 @@ impl Display {
 
       Ok(
          Display {
-            display_ptr: display_ptr
+            ptr: display_ptr
          }
       )
    }
 
    pub fn xcb_connection(self: &Self) -> Result<Connection, RuntimeError> {
       let connection = unsafe {
-         ffi::XGetXCBConnection(self.display_ptr)
+         ffi::XGetXCBConnection(self.ptr)
       };
       if connection.is_null() {
          return Err(RuntimeError::new(
@@ -260,7 +260,7 @@ impl Display {
    pub fn xcb_own_event_queue(self: &Self) {
       unsafe {
          ffi::XSetEventQueueOwner(
-            self.display_ptr,
+            self.ptr,
             ffi::XCBOwnsEventQueue
          )
       };
@@ -270,7 +270,7 @@ impl Display {
 impl Drop for Display {
    fn drop (&mut self) {
       unsafe {
-         ffi::XCloseDisplay(self.display_ptr);
+         ffi::XCloseDisplay(self.ptr);
       }
    }
 }
