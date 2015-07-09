@@ -241,7 +241,7 @@ impl Display {
       )
    }
 
-   pub fn xcb_connection(self: &Self) -> Result<Connection, RuntimeError> {
+   pub fn xcb_connection(&self) -> Result<Connection, RuntimeError> {
       let connection = unsafe {
          ffi::XGetXCBConnection(self.ptr)
       };
@@ -257,7 +257,7 @@ impl Display {
       )
    }
 
-   pub fn xcb_own_event_queue(self: &Self) {
+   pub fn xcb_own_event_queue(&self) {
       unsafe {
          ffi::XSetEventQueueOwner(
             self.ptr,
