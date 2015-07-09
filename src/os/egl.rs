@@ -8,6 +8,9 @@ pub mod ffi {
    use ::os::x11::ffi::Display;
    use ::os::xcb::ffi::xcb_window_t;
 
+   pub type EGLNativeDisplayType = *mut Display;
+   pub type EGLNativeWindowType = xcb_window_t;
+
    pub type khronos_int32_t = c_int;
 
    pub type EGLenum = c_uint;
@@ -17,9 +20,6 @@ pub mod ffi {
    pub type EGLConfig = *mut c_void;
    pub type EGLContext = *mut c_void;
    pub type EGLSurface = *mut c_void;
-
-   pub type EGLNativeDisplayType = *mut Display;
-   pub type EGLNativeWindowType = xcb_window_t;
 
    pub const EGL_NO_CONTEXT:                   EGLContext = 0 as EGLContext;
 
