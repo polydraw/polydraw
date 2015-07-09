@@ -1,7 +1,7 @@
 pub mod ffi {
    #![allow(non_upper_case_globals)]
 
-   use libc::{
+   pub use libc::{
       c_char, c_int, c_uint, c_long, c_ulong, c_void
    };
    use std::mem;
@@ -264,6 +264,15 @@ impl Display {
             ffi::XCBOwnsEventQueue
          )
       };
+   }
+
+   #[inline]
+   pub fn default_screen(&self) -> ffi::c_int {
+      unsafe{
+         (
+            *(self.ptr as ffi::_XPrivDisplay)
+         ).default_screen
+      }
    }
 }
 

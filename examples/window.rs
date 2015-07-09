@@ -36,7 +36,7 @@ fn main() {
 
    display.xcb_own_event_queue();
 
-   let default_screen = DefaultScreen!(ptr);
+   let default_screen = display.default_screen();
 
    let scr = conn.screen_of_display(default_screen);
 
