@@ -6,6 +6,7 @@ use std::mem;
 use polydraw::platform::x11::ffi;
 use polydraw::os::xcb;
 use polydraw::os::x11;
+use polydraw::os::egl;
 
 fn print_screen_info(screen: &xcb::Screen) {
    println!("Informations of screen : {}", screen.root());
@@ -47,15 +48,13 @@ fn main() {
    println!("window ............... : {:?}", window);
 
    conn.create_window(
-      window,
-      &scr,
-      0, 0,
-      800, 450,
+      window, &scr,
+      0, 0, 800, 450,
    );
 
    conn.map_window(window);
 
-   if unsafe { ffi::eglBindAPI(ffi::EGL_OPENGL_API) } == 0 {
+   if !egl::bind_api(egl::API::OpenGL) {
       panic!("eglBindAPI failed");
    }
 

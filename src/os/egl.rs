@@ -167,3 +167,25 @@ pub mod ffi {
    }
 }
 
+pub enum API {
+    OpenGLES,
+    OpenVG,
+    OpenGL,
+}
+
+impl Into<ffi::EGLenum> for API {
+   #[inline]
+   fn into(self) -> ffi::EGLenum {
+      match self {
+         API::OpenGLES => ffi::EGL_OPENGL_ES_API,
+         API::OpenVG => ffi::EGL_OPENVG_API,
+         API::OpenGL => ffi::EGL_OPENGL_API,
+      }
+   }
+}
+
+pub fn bind_api(api: API) -> bool {
+   unsafe {
+      ffi::eglBindAPI(api.into()) != 0
+   }
+}
