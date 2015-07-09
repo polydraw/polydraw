@@ -268,10 +268,8 @@ impl Display {
 
    #[inline]
    pub fn default_screen(&self) -> ffi::c_int {
-      unsafe{
-         (
-            *(self.ptr as ffi::_XPrivDisplay)
-         ).default_screen
+      unsafe {
+         (*(self.ptr as ffi::_XPrivDisplay)).default_screen
       }
    }
 }
