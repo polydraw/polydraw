@@ -167,6 +167,10 @@ pub mod ffi {
    }
 }
 
+use ::os::x11;
+
+pub type NativeDisplay = x11::Display;
+
 pub enum API {
     OpenGLES,
     OpenVG,
@@ -187,5 +191,17 @@ impl Into<ffi::EGLenum> for API {
 pub fn bind_api(api: API) -> bool {
    unsafe {
       ffi::eglBindAPI(api.into()) != 0
+   }
+}
+
+pub struct Display {
+   pub ptr: ffi::EGLDisplay
+}
+
+pub fn get_display(display: &NativeDisplay) -> Display {
+   Display {
+      ptr: unsafe {
+         ffi::eglGetDisplay(display.ptr)
+      }
    }
 }

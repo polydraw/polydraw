@@ -24,8 +24,6 @@ fn main() {
       }
    };
 
-   let ptr = display.ptr as *mut ffi::Display;
-
    let conn = match display.xcb_connection() {
       Ok(conn) => conn,
       Err(e) => {
@@ -58,7 +56,8 @@ fn main() {
       panic!("eglBindAPI failed");
    }
 
-   let egl_display = unsafe { ffi::eglGetDisplay(ptr) };
+   let egl_d = egl::get_display(&display);
+   let egl_display = egl_d.ptr;
 
    println!("egl display .......... : {:?}", egl_display);
 
