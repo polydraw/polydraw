@@ -21,7 +21,31 @@ pub mod ffi {
    pub type EGLContext = *mut c_void;
    pub type EGLSurface = *mut c_void;
 
+   pub const EGL_FALSE:                        EGLenum = 0;
+   pub const EGL_TRUE:                         EGLenum = 1;
+
+   pub const EGL_DEFAULT_DISPLAY:              EGLNativeDisplayType = 0 as EGLNativeDisplayType;
    pub const EGL_NO_CONTEXT:                   EGLContext = 0 as EGLContext;
+   pub const EGL_NO_DISPLAY:                   EGLDisplay = 0 as EGLDisplay;
+   pub const EGL_NO_SURFACE:                   EGLSurface = 0 as EGLSurface;
+
+   pub const EGL_DONT_CARE:                    EGLint = -1;
+
+   pub const EGL_SUCCESS:                      EGLenum = 0x3000;
+   pub const EGL_NOT_INITIALIZED:              EGLenum = 0x3001;
+   pub const EGL_BAD_ACCESS:                   EGLenum = 0x3002;
+   pub const EGL_BAD_ALLOC:                    EGLenum = 0x3003;
+   pub const EGL_BAD_ATTRIBUTE:                EGLenum = 0x3004;
+   pub const EGL_BAD_CONFIG:                   EGLenum = 0x3005;
+   pub const EGL_BAD_CONTEXT:                  EGLenum = 0x3006;
+   pub const EGL_BAD_CURRENT_SURFACE:          EGLenum = 0x3007;
+   pub const EGL_BAD_DISPLAY:                  EGLenum = 0x3008;
+   pub const EGL_BAD_MATCH:                    EGLenum = 0x3009;
+   pub const EGL_BAD_NATIVE_PIXMAP:            EGLenum = 0x300A;
+   pub const EGL_BAD_NATIVE_WINDOW:            EGLenum = 0x300B;
+   pub const EGL_BAD_PARAMETER:                EGLenum = 0x300C;
+   pub const EGL_BAD_SURFACE:                  EGLenum = 0x300D;
+   pub const EGL_CONTEXT_LOST:                 EGLenum = 0x300E;
 
    pub const EGL_BUFFER_SIZE:                  EGLenum = 0x3020;
    pub const EGL_ALPHA_SIZE:                   EGLenum = 0x3021;
@@ -167,6 +191,9 @@ pub mod ffi {
    }
 }
 
+use std::mem;
+
+use ::error::{RuntimeError, ErrorKind};
 use ::os::x11;
 
 pub type NativeDisplay = x11::Display;
@@ -203,5 +230,51 @@ pub fn get_display(display: &NativeDisplay) -> Display {
       ptr: unsafe {
          ffi::eglGetDisplay(display.ptr)
       }
+   }
+}
+
+pub struct EGLVersion {
+   pub major: ffi::EGLint,
+   pub minor: ffi::EGLint,
+}
+
+pub fn initialize(display: &Display) -> Result<EGLVersion, RuntimeError> {
+   let mut major: ffi::EGLint = unsafe {
+      mem::uninitialized()
+   };
+   let mut minor: ffi::EGLint = unsafe {
+      mem::uninitialized()
+   };
+
+   let result = unsafe {
+      ffi::eglInitialize(display.ptr, &mut major, &mut minor)
+   };
+
+   match result {
+      ffi::EGL_FALSE => {
+         return Err(RuntimeError::new(
+            ErrorKind::EGL,
+            "eglInitialize failed".to_string()
+         ));
+      },
+      ffi::EGL_BAD_DISPLAY => {
+         return Err(RuntimeError::new(
+            ErrorKind::EGL,
+            "not an EGL display connection".to_string()
+         ));
+      },
+      ffi::EGL_NOT_INITIALIZED => {
+         return Err(RuntimeError::new(
+            ErrorKind::EGL,
+            "display cannot be initialized".to_string()
+         ));
+      },
+      ffi::EGL_TRUE => {
+         return Ok(EGLVersion {
+            major: major,
+            minor: minor
+         });
+      },
+      _ => panic!("Unknown eglInitialize error")
    }
 }

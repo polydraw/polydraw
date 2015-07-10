@@ -61,14 +61,14 @@ fn main() {
 
    println!("egl display .......... : {:?}", egl_display);
 
-   let mut major: ffi::EGLint = unsafe { mem::uninitialized() };
-   let mut minor: ffi::EGLint = unsafe { mem::uninitialized() };
+   let version = match egl::initialize(&egl_d) {
+      Ok(version) => version,
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
 
-   if unsafe { ffi::eglInitialize(egl_display, &mut major, &mut minor) } == 0 {
-      panic!("eglInitialize failed");
-   }
-
-   println!("egl version .......... : {:?}.{:?}", major, minor);
+   println!("egl version .......... : {:?}.{:?}", version.major, version.minor);
 
    let config_attribs = [
       ffi::EGL_COLOR_BUFFER_TYPE,    ffi::EGL_RGB_BUFFER,
