@@ -233,12 +233,12 @@ pub fn get_display(display: &NativeDisplay) -> Display {
    }
 }
 
-pub struct EGLVersion {
+pub struct Version {
    pub major: ffi::EGLint,
    pub minor: ffi::EGLint,
 }
 
-pub fn initialize(display: &Display) -> Result<EGLVersion, RuntimeError> {
+pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
    let mut major: ffi::EGLint = unsafe {
       mem::uninitialized()
    };
@@ -260,21 +260,88 @@ pub fn initialize(display: &Display) -> Result<EGLVersion, RuntimeError> {
       ffi::EGL_BAD_DISPLAY => {
          return Err(RuntimeError::new(
             ErrorKind::EGL,
-            "not an EGL display connection".to_string()
+            "Not an EGL display connection".to_string()
          ));
       },
       ffi::EGL_NOT_INITIALIZED => {
          return Err(RuntimeError::new(
             ErrorKind::EGL,
-            "display cannot be initialized".to_string()
+            "Display cannot be initialized".to_string()
          ));
       },
       ffi::EGL_TRUE => {
-         return Ok(EGLVersion {
+         return Ok(Version {
             major: major,
             minor: minor
          });
       },
-      _ => panic!("Unknown eglInitialize error")
+      _ => {
+         return Err(RuntimeError::new(
+            ErrorKind::EGL,
+            "Unknown eglInitialize error".to_string()
+         ));
+      }
    }
+}
+
+pub struct Config {
+   pub ptr: ffi::EGLConfig
+}
+
+pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
+   let config_attribs = [
+      ffi::EGL_COLOR_BUFFER_TYPE,    ffi::EGL_RGB_BUFFER,
+      ffi::EGL_BUFFER_SIZE,          32,
+      ffi::EGL_RED_SIZE,             8,
+      ffi::EGL_GREEN_SIZE,           8,
+      ffi::EGL_BLUE_SIZE,            8,
+      ffi::EGL_ALPHA_SIZE,           8,
+
+      ffi::EGL_DEPTH_SIZE,           24,
+      ffi::EGL_STENCIL_SIZE,         8,
+
+      ffi::EGL_SAMPLE_BUFFERS,       0,
+      ffi::EGL_SAMPLES,              0,
+
+      ffi::EGL_SURFACE_TYPE,         ffi::EGL_WINDOW_BIT,
+      ffi::EGL_RENDERABLE_TYPE,      ffi::EGL_OPENGL_BIT,
+
+      ffi::EGL_NONE
+   ];
+
+   let mut num_config: ffi::EGLint = unsafe {
+      mem::uninitialized()
+   };
+
+   let mut configs: [ffi::EGLConfig; 64] = unsafe {
+      mem::uninitialized()
+   };
+
+   let result = unsafe {
+      ffi::eglChooseConfig(
+         display.ptr,
+         config_attribs.as_ptr() as *const _,
+         configs.as_mut_ptr() as *mut *mut _,
+         64,
+         &mut num_config
+      )
+   };
+
+   if result != ffi::EGL_TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "Choosing config failed".to_string()
+      ));
+   }
+
+   if num_config == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "Failed to find suitable EGLConfig".to_string()
+      ));
+   }
+
+   Ok(Config {
+      ptr: configs[0]
+   })
 }

@@ -70,56 +70,19 @@ fn main() {
 
    println!("egl version .......... : {:?}.{:?}", version.major, version.minor);
 
-   let config_attribs = [
-      ffi::EGL_COLOR_BUFFER_TYPE,    ffi::EGL_RGB_BUFFER,
-      ffi::EGL_BUFFER_SIZE,          32,
-      ffi::EGL_RED_SIZE,             8,
-      ffi::EGL_GREEN_SIZE,           8,
-      ffi::EGL_BLUE_SIZE,            8,
-      ffi::EGL_ALPHA_SIZE,           8,
-
-      ffi::EGL_DEPTH_SIZE,           24,
-      ffi::EGL_STENCIL_SIZE,         8,
-
-      ffi::EGL_SAMPLE_BUFFERS,       0,
-      ffi::EGL_SAMPLES,              0,
-
-      ffi::EGL_SURFACE_TYPE,         ffi::EGL_WINDOW_BIT,
-      ffi::EGL_RENDERABLE_TYPE,      ffi::EGL_OPENGL_BIT,
-
-      ffi::EGL_NONE
-   ];
-
-   let mut num_config: ffi::EGLint = unsafe { mem::uninitialized() };
-   let mut configs: [ffi::EGLConfig; 64] = unsafe { mem::uninitialized() };
-
-   let chosen = unsafe {
-      ffi::eglChooseConfig(
-         egl_display,
-         config_attribs.as_ptr() as *const _,
-         configs.as_mut_ptr() as *mut *mut _,
-         64,
-         &mut num_config
-      )
+   let config = match egl::choose_config(&egl_d) {
+      Ok(config) => config,
+      Err(e) => {
+         panic!(e.description);
+      }
    };
-   if chosen == 0 {
-      panic!("eglChooseConfig failed");
-   }
-
-   println!("num config ........... : {:?}", num_config);
-
-   if num_config == 0 {
-      panic!("Failed to find suitable EGLConfig");
-   }
-
-   let config = configs[0];
 
    let context_attribs = [ffi::EGL_NONE];
 
    let context = unsafe {
       ffi::eglCreateContext(
          egl_display,
-         config as *mut _,
+         config.ptr as *mut _,
          ffi::EGL_NO_CONTEXT as *mut _,
          context_attribs.as_ptr() as *const _,
       )
@@ -136,7 +99,7 @@ fn main() {
    let surface = unsafe {
       ffi::eglCreateWindowSurface(
          egl_display,
-         config as *mut _,
+         config.ptr as *mut _,
          window,
          surface_attribs.as_ptr() as *const _,
       )
