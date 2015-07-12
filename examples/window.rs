@@ -95,12 +95,12 @@ fn main() {
 
    println!("surface ptr .......... : {:?}", surface.ptr);
 
-   let made_current = unsafe {
-      ffi::eglMakeCurrent(egl_display, surface.ptr, surface.ptr, context.ptr)
+   match egl::make_current(&egl_d, &surface, &surface, &context) {
+      Ok(_) => {},
+      Err(e) => {
+         panic!(e.description);
+      }
    };
-   if made_current == 0 {
-      panic!("eglMakeCurrent failed");
-   }
 
    let mut render_buffer: ffi::EGLint = unsafe { mem::uninitialized() };
 

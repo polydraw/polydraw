@@ -409,3 +409,29 @@ pub fn create_window_surface(
       ptr: surface
    })
 }
+
+pub fn make_current(
+   display: &Display,
+   draw: &Surface,
+   read: &Surface,
+   context: &Context,
+) -> Result<(), RuntimeError> {
+
+   let made_current = unsafe {
+      ffi::eglMakeCurrent(
+         display.ptr,
+         draw.ptr,
+         read.ptr,
+         context.ptr
+      )
+   };
+
+   if made_current != ffi::EGL_TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglMakeCurrent failed".to_string()
+      ));
+   }
+
+   Ok(())
+}
