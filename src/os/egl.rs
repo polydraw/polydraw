@@ -435,3 +435,36 @@ pub fn make_current(
 
    Ok(())
 }
+
+pub fn query_context(
+   display: &Display,
+   context: &Context,
+) -> Result<(), RuntimeError> {
+
+   let mut render_buffer: ffi::EGLint = unsafe { mem::uninitialized() };
+
+   let result = unsafe {
+      ffi::eglQueryContext(
+         display.ptr,
+         context.ptr,
+         ffi::EGL_RENDER_BUFFER as i32,
+         &mut render_buffer
+      )
+   };
+
+   if result != ffi::EGL_TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglQueyContext (EGL_RENDER_BUFFER) failed".to_string()
+      ));
+   }
+
+   if render_buffer == ffi::EGL_SINGLE_BUFFER as i32 {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "EGL surface is single buffered".to_string()
+      ));
+   }
+
+   Ok(())
+}

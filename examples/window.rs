@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate polydraw;
 
-use std::mem;
-
 use polydraw::platform::x11::ffi;
 use polydraw::os::xcb;
 use polydraw::os::x11;
@@ -102,24 +100,12 @@ fn main() {
       }
    };
 
-   let mut render_buffer: ffi::EGLint = unsafe { mem::uninitialized() };
-
-   let ok = unsafe {
-      ffi::eglQueryContext(
-         egl_display,
-         context.ptr,
-         ffi::EGL_RENDER_BUFFER as i32,
-         &mut render_buffer
-      )
+   match egl::query_context(&egl_d, &context) {
+      Ok(_) => {},
+      Err(e) => {
+         panic!(e.description);
+      }
    };
-
-   if ok == 0 {
-      panic!("eglQueyContext(EGL_RENDER_BUFFER) failed");
-   }
-
-   if render_buffer == ffi::EGL_SINGLE_BUFFER as i32 {
-      println!("warn: EGL surface is single buffered");
-   }
 
    loop {
       let event = unsafe {
