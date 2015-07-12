@@ -77,19 +77,14 @@ fn main() {
       }
    };
 
-   let context_attribs = [ffi::EGL_NONE];
-
-   let context = unsafe {
-      ffi::eglCreateContext(
-         egl_display,
-         config.ptr as *mut _,
-         ffi::EGL_NO_CONTEXT as *mut _,
-         context_attribs.as_ptr() as *const _,
-      )
+   let context = match egl::create_context(&egl_d, &config) {
+      Ok(context) => context,
+      Err(e) => {
+         panic!(e.description);
+      }
    };
-   if context.is_null() {
-      panic!("eglCreateContext failed");
-   }
+
+   println!("context ptr.. ........ : {:?}", context.ptr);
 
    let surface_attribs = [
       ffi::EGL_RENDER_BUFFER, ffi::EGL_BACK_BUFFER,
@@ -109,7 +104,7 @@ fn main() {
    }
 
    let made_current = unsafe {
-      ffi::eglMakeCurrent(egl_display, surface, surface, context)
+      ffi::eglMakeCurrent(egl_display, surface, surface, context.ptr)
    };
    if made_current == 0 {
       panic!("eglMakeCurrent failed");
@@ -120,7 +115,7 @@ fn main() {
    let ok = unsafe {
       ffi::eglQueryContext(
          egl_display,
-         context,
+         context.ptr,
          ffi::EGL_RENDER_BUFFER as i32,
          &mut render_buffer
       )

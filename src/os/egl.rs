@@ -215,14 +215,27 @@ impl Into<ffi::EGLenum> for API {
    }
 }
 
+pub struct Display {
+   pub ptr: ffi::EGLDisplay
+}
+
+pub struct Config {
+   pub ptr: ffi::EGLConfig
+}
+
+pub struct Context {
+   pub ptr: ffi::EGLContext
+}
+
+pub struct Version {
+   pub major: ffi::EGLint,
+   pub minor: ffi::EGLint,
+}
+
 pub fn bind_api(api: API) -> bool {
    unsafe {
       ffi::eglBindAPI(api.into()) != 0
    }
-}
-
-pub struct Display {
-   pub ptr: ffi::EGLDisplay
 }
 
 pub fn get_display(display: &NativeDisplay) -> Display {
@@ -231,11 +244,6 @@ pub fn get_display(display: &NativeDisplay) -> Display {
          ffi::eglGetDisplay(display.ptr)
       }
    }
-}
-
-pub struct Version {
-   pub major: ffi::EGLint,
-   pub minor: ffi::EGLint,
 }
 
 pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
@@ -282,10 +290,6 @@ pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
          ));
       }
    }
-}
-
-pub struct Config {
-   pub ptr: ffi::EGLConfig
 }
 
 pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
@@ -343,5 +347,28 @@ pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
 
    Ok(Config {
       ptr: configs[0]
+   })
+}
+
+pub fn create_context(display: &Display, config: &Config) -> Result<Context, RuntimeError> {
+   let context_attribs = [ffi::EGL_NONE];
+
+   let context = unsafe {
+      ffi::eglCreateContext(
+         display.ptr,
+         config.ptr as *mut _,
+         ffi::EGL_NO_CONTEXT as *mut _,
+         context_attribs.as_ptr() as *const _,
+      )
+   };
+   if context.is_null() {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglCreateContext failed".to_string()
+      ));
+   }
+
+   Ok(Context {
+      ptr: context
    })
 }
