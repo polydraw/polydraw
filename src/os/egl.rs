@@ -1,15 +1,17 @@
+use ::os::x11::ffi::Display as X11Display;
+use ::os::xcb::ffi::xcb_window_t;
+
+pub type EGLNativeDisplayType = *mut X11Display;
+pub type EGLNativeWindowType = xcb_window_t;
+
 pub mod ffi {
    #![allow(non_camel_case_types)]
+
+   use super::{EGLNativeDisplayType, EGLNativeWindowType};
 
    use libc::{
       c_char, c_int, c_uint, c_void
    };
-
-   use ::os::x11::ffi::Display;
-   use ::os::xcb::ffi::xcb_window_t;
-
-   pub type EGLNativeDisplayType = *mut Display;
-   pub type EGLNativeWindowType = xcb_window_t;
 
    pub type khronos_int32_t = c_int;
 
@@ -227,6 +229,10 @@ pub struct Context {
    pub ptr: ffi::EGLContext
 }
 
+pub struct Surface {
+   pub ptr: ffi::EGLSurface
+}
+
 pub struct Version {
    pub major: ffi::EGLint,
    pub minor: ffi::EGLint,
@@ -370,5 +376,36 @@ pub fn create_context(display: &Display, config: &Config) -> Result<Context, Run
 
    Ok(Context {
       ptr: context
+   })
+}
+
+pub fn create_window_surface(
+   display: &Display,
+   config: &Config,
+   window: &EGLNativeWindowType
+) -> Result<Surface, RuntimeError> {
+
+   let surface_attribs = [
+      ffi::EGL_RENDER_BUFFER, ffi::EGL_BACK_BUFFER,
+      ffi::EGL_NONE
+   ];
+
+   let surface = unsafe {
+      ffi::eglCreateWindowSurface(
+         display.ptr,
+         config.ptr as *mut _,
+         *window,
+         surface_attribs.as_ptr() as *const _,
+      )
+   };
+   if surface.is_null() {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglCreateWindowSurface failed".to_string()
+      ));
+   }
+
+   Ok(Surface {
+      ptr: surface
    })
 }

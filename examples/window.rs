@@ -84,27 +84,19 @@ fn main() {
       }
    };
 
-   println!("context ptr.. ........ : {:?}", context.ptr);
+   println!("context ptr .......... : {:?}", context.ptr);
 
-   let surface_attribs = [
-      ffi::EGL_RENDER_BUFFER, ffi::EGL_BACK_BUFFER,
-      ffi::EGL_NONE
-   ];
-
-   let surface = unsafe {
-      ffi::eglCreateWindowSurface(
-         egl_display,
-         config.ptr as *mut _,
-         window,
-         surface_attribs.as_ptr() as *const _,
-      )
+   let surface = match egl::create_window_surface(&egl_d, &config, &window) {
+      Ok(surface) => surface,
+      Err(e) => {
+         panic!(e.description);
+      }
    };
-   if surface.is_null() {
-      panic!("eglCreateWindowSurface failed");
-   }
+
+   println!("surface ptr .......... : {:?}", surface.ptr);
 
    let made_current = unsafe {
-      ffi::eglMakeCurrent(egl_display, surface, surface, context.ptr)
+      ffi::eglMakeCurrent(egl_display, surface.ptr, surface.ptr, context.ptr)
    };
    if made_current == 0 {
       panic!("eglMakeCurrent failed");
@@ -150,7 +142,7 @@ fn main() {
                ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
                ffi::glFlush();
 
-               ffi::eglSwapBuffers(egl_display, surface);
+               ffi::eglSwapBuffers(egl_display, surface.ptr);
             };
          }
          _ => {}
