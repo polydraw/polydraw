@@ -468,3 +468,22 @@ pub fn query_context(
 
    Ok(())
 }
+
+pub fn swap_buffers(
+   display: &Display,
+   surface: &Surface
+) -> Result<(), RuntimeError> {
+
+   let result = unsafe {
+      ffi::eglSwapBuffers(display.ptr, surface.ptr)
+   };
+
+   if result != ffi::EGL_TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglSwapBuffers failed".to_string()
+      ));
+   }
+
+   Ok(())
+}

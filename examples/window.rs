@@ -127,8 +127,13 @@ fn main() {
                ffi::glClearColor(0.0, 0.7, 1.0, 1.0);
                ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
                ffi::glFlush();
+            };
 
-               ffi::eglSwapBuffers(egl_display, surface.ptr);
+            match egl::swap_buffers(&egl_d, &surface) {
+               Ok(_) => {},
+               Err(e) => {
+                  panic!(e.description);
+               }
             };
          }
          _ => {}
