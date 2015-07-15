@@ -37,8 +37,7 @@ pub mod ffi {
          red: GLclampf,
          green: GLclampf,
          blue: GLclampf,
-         alpha:
-         GLclampf
+         alpha: GLclampf
       ) -> ();
 
       pub fn glClear(
@@ -46,5 +45,26 @@ pub mod ffi {
       ) -> ();
 
       pub fn glFlush() -> ();
+   }
+}
+
+#[inline]
+pub fn clear_color(red: f32, green: f32, blue: f32, alpha: f32) {
+   unsafe {
+      ffi::glClearColor(red, green, blue, alpha);
+   }
+}
+
+#[inline]
+pub fn clear() {
+   unsafe {
+      ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
+   }
+}
+
+#[inline]
+pub fn flush() {
+   unsafe {
+      ffi::glFlush();
    }
 }

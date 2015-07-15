@@ -5,6 +5,7 @@ use polydraw::platform::x11::ffi;
 use polydraw::os::xcb;
 use polydraw::os::x11;
 use polydraw::os::egl;
+use polydraw::os::gl;
 
 fn print_screen_info(screen: &xcb::Screen) {
    println!("Informations of screen : {}", screen.root());
@@ -123,11 +124,9 @@ fn main() {
             break;
          },
          ffi::XCB_EXPOSE => {
-            unsafe {
-               ffi::glClearColor(0.0, 0.7, 1.0, 1.0);
-               ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
-               ffi::glFlush();
-            };
+            gl::clear_color(0.0, 0.7, 1.0, 1.0);
+            gl::clear();
+            gl::flush();
 
             match egl::swap_buffers(&egl_d, &surface) {
                Ok(_) => {},
