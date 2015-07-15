@@ -3,5 +3,4 @@
 extern crate libc;
 
 pub mod error;
-pub mod platform;
 pub mod os;
