@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate polydraw;
 
 use polydraw::os::xcb;
@@ -135,7 +134,5 @@ fn main() {
       }
    }
 
-//   unsafe {
-//      ffi::xcb_destroy_window(connection, window)
-//   };
+   connection.destroy_window(window);
 }

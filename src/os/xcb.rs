@@ -308,10 +308,7 @@ impl Connection {
       };
    }
 
-   pub fn map_window(
-      &self,
-      window: ffi::xcb_window_t
-   ) {
+   pub fn map_window(&self, window: ffi::xcb_window_t) {
       unsafe {
          ffi::xcb_map_window(self.ptr, window)
       };
@@ -329,6 +326,12 @@ impl Connection {
       Some(
          Event::new(event_ptr)
       )
+   }
+
+   pub fn destroy_window(&self, window: ffi::xcb_window_t) {
+      unsafe {
+         ffi::xcb_destroy_window(self.ptr, window)
+      };
    }
 }
 
