@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate polydraw;
 
-use polydraw::platform::x11::ffi;
 use polydraw::os::xcb;
 use polydraw::os::x11;
 use polydraw::os::egl;
@@ -23,33 +22,31 @@ fn main() {
       }
    };
 
-   let conn = match display.xcb_connection() {
-      Ok(conn) => conn,
+   let connection = match display.xcb_connection() {
+      Ok(connection) => connection,
       Err(e) => {
          panic!(e.description);
       }
    };
 
-   let connection = conn.ptr as *mut ffi::xcb_connection_t;
-
    display.xcb_own_event_queue();
 
    let default_screen = display.default_screen();
 
-   let scr = conn.screen_of_display(default_screen);
+   let scr = connection.screen_of_display(default_screen);
 
    print_screen_info(&scr);
 
-   let window = conn.generate_id();
+   let window = connection.generate_id();
 
    println!("window ............... : {:?}", window);
 
-   conn.create_window(
+   connection.create_window(
       window, &scr,
       0, 0, 800, 450,
    );
 
-   conn.map_window(window);
+   connection.map_window(window);
 
    if !egl::bind_api(egl::API::OpenGL) {
       panic!("eglBindAPI failed");
@@ -109,21 +106,20 @@ fn main() {
    };
 
    loop {
-      let event = unsafe {
-         ffi::xcb_wait_for_event(connection)
+      let event = match connection.wait_for_event() {
+         None => {
+            return;
+         },
+         Some(event) => event
       };
-      if event.is_null() {
-         break;
-      }
 
-      let event_type = unsafe { (*event).response_type & !0x80 };
+      let event_type = event.event_type();
 
       match event_type {
-         ffi::XCB_KEY_PRESS => {
-            unsafe { ffi::free(event as *mut ffi::c_void) };
+         xcb::EventType::KeyPress => {
             break;
          },
-         ffi::XCB_EXPOSE => {
+         xcb::EventType::Expose => {
             gl::clear_color(0.0, 0.7, 1.0, 1.0);
             gl::clear();
             gl::flush();
@@ -137,11 +133,9 @@ fn main() {
          }
          _ => {}
       }
-
-      unsafe { ffi::free(event as *mut ffi::c_void) };
    }
 
-   unsafe {
-      ffi::xcb_destroy_window(connection, window)
-   };
+//   unsafe {
+//      ffi::xcb_destroy_window(connection, window)
+//   };
 }

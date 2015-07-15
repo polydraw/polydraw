@@ -3,7 +3,7 @@ pub mod ffi {
 
    use std::mem;
 
-   pub use libc::{c_uchar, c_short, c_ushort, c_int, c_uint};
+   pub use libc::{c_uchar, c_short, c_ushort, c_int, c_uint, free};
 
    pub enum xcb_connection_t { }
 
@@ -39,27 +39,61 @@ pub mod ffi {
    pub const XCB_EVENT_MASK_COLOR_MAP_CHANGE:       c_uint = 8388608;
    pub const XCB_EVENT_MASK_OWNER_GRAB_BUTTON:      c_uint = 16777216;
 
-   pub const XCB_CW_BACK_PIXMAP:        c_uint = 1;
-   pub const XCB_CW_BACK_PIXEL:         c_uint = 2;
-   pub const XCB_CW_BORDER_PIXMAP:      c_uint = 4;
-   pub const XCB_CW_BORDER_PIXEL:       c_uint = 8;
-   pub const XCB_CW_BIT_GRAVITY:        c_uint = 16;
-   pub const XCB_CW_WIN_GRAVITY:        c_uint = 32;
-   pub const XCB_CW_BACKING_STORE:      c_uint = 64;
-   pub const XCB_CW_BACKING_PLANES:     c_uint = 128;
-   pub const XCB_CW_BACKING_PIXEL:      c_uint = 256;
-   pub const XCB_CW_OVERRIDE_REDIRECT:  c_uint = 512;
-   pub const XCB_CW_SAVE_UNDER:         c_uint = 1024;
-   pub const XCB_CW_EVENT_MASK:         c_uint = 2048;
-   pub const XCB_CW_DONT_PROPAGATE:     c_uint = 4096;
-   pub const XCB_CW_COLORMAP:           c_uint = 8192;
-   pub const XCB_CW_CURSOR:             c_uint = 16384;
+   pub const XCB_CW_BACK_PIXMAP:                    c_uint = 1;
+   pub const XCB_CW_BACK_PIXEL:                     c_uint = 2;
+   pub const XCB_CW_BORDER_PIXMAP:                  c_uint = 4;
+   pub const XCB_CW_BORDER_PIXEL:                   c_uint = 8;
+   pub const XCB_CW_BIT_GRAVITY:                    c_uint = 16;
+   pub const XCB_CW_WIN_GRAVITY:                    c_uint = 32;
+   pub const XCB_CW_BACKING_STORE:                  c_uint = 64;
+   pub const XCB_CW_BACKING_PLANES:                 c_uint = 128;
+   pub const XCB_CW_BACKING_PIXEL:                  c_uint = 256;
+   pub const XCB_CW_OVERRIDE_REDIRECT:              c_uint = 512;
+   pub const XCB_CW_SAVE_UNDER:                     c_uint = 1024;
+   pub const XCB_CW_EVENT_MASK:                     c_uint = 2048;
+   pub const XCB_CW_DONT_PROPAGATE:                 c_uint = 4096;
+   pub const XCB_CW_COLORMAP:                       c_uint = 8192;
+   pub const XCB_CW_CURSOR:                         c_uint = 16384;
 
-   pub const XCB_COPY_FROM_PARENT:  c_uint = 0;
+   pub const XCB_COPY_FROM_PARENT:                  c_uint = 0;
 
-   pub const XCB_WINDOW_CLASS_COPY_FROM_PARENT:  c_uint = 0;
-   pub const XCB_WINDOW_CLASS_INPUT_OUTPUT:      c_uint = 1;
-   pub const XCB_WINDOW_CLASS_INPUT_ONLY:        c_uint = 2;
+   pub const XCB_WINDOW_CLASS_COPY_FROM_PARENT:     c_uint = 0;
+   pub const XCB_WINDOW_CLASS_INPUT_OUTPUT:         c_uint = 1;
+   pub const XCB_WINDOW_CLASS_INPUT_ONLY:           c_uint = 2;
+
+   pub const XCB_KEY_PRESS:                        c_uchar = 2;
+   pub const XCB_KEY_RELEASE:                      c_uchar = 3;
+   pub const XCB_BUTTON_PRESS:                     c_uchar = 4;
+   pub const XCB_BUTTON_RELEASE:                   c_uchar = 5;
+   pub const XCB_MOTION_NOTIFY:                    c_uchar = 6;
+   pub const XCB_ENTER_NOTIFY:                     c_uchar = 7;
+   pub const XCB_LEAVE_NOTIFY:                     c_uchar = 8;
+   pub const XCB_FOCUS_IN:                         c_uchar = 9;
+   pub const XCB_FOCUS_OUT:                        c_uchar = 10;
+   pub const XCB_KEYMAP_NOTIFY:                    c_uchar = 11;
+   pub const XCB_EXPOSE:                           c_uchar = 12;
+   pub const XCB_GRAPHICS_EXPOSURE:                c_uchar = 13;
+   pub const XCB_NO_EXPOSURE:                      c_uchar = 14;
+   pub const XCB_VISIBILITY_NOTIFY:                c_uchar = 15;
+   pub const XCB_CREATE_NOTIFY:                    c_uchar = 16;
+   pub const XCB_DESTROY_NOTIFY:                   c_uchar = 17;
+   pub const XCB_UNMAP_NOTIFY:                     c_uchar = 18;
+   pub const XCB_MAP_NOTIFY:                       c_uchar = 19;
+   pub const XCB_MAP_REQUEST:                      c_uchar = 20;
+   pub const XCB_REPARENT_NOTIFY:                  c_uchar = 21;
+   pub const XCB_CONFIGURE_NOTIFY:                 c_uchar = 22;
+   pub const XCB_CONFIGURE_REQUEST:                c_uchar = 23;
+   pub const XCB_GRAVITY_NOTIFY:                   c_uchar = 24;
+   pub const XCB_RESIZE_REQUEST:                   c_uchar = 25;
+   pub const XCB_CIRCULATE_NOTIFY:                 c_uchar = 26;
+   pub const XCB_PROPERTY_NOTIFY:                  c_uchar = 28;
+   pub const XCB_SELECTION_CLEAR:                  c_uchar = 29;
+   pub const XCB_SELECTION_REQUEST:                c_uchar = 30;
+   pub const XCB_SELECTION_NOTIFY:                 c_uchar = 31;
+   pub const XCB_COLORMAP_NOTIFY:                  c_uchar = 32;
+   pub const XCB_CLIENT_MESSAGE:                   c_uchar = 33;
+   pub const XCB_MAPPING_NOTIFY:                   c_uchar = 34;
+   pub const XCB_GE_GENERIC:                       c_uchar = 35;
 
    #[repr(C)]
    #[derive(Copy)]
@@ -282,6 +316,20 @@ impl Connection {
          ffi::xcb_map_window(self.ptr, window)
       };
    }
+
+   pub fn wait_for_event(&self) -> Option<Event> {
+      let event_ptr = unsafe {
+         ffi::xcb_wait_for_event(self.ptr)
+      };
+
+      if event_ptr.is_null() {
+         return None;
+      }
+
+      Some(
+         Event::new(event_ptr)
+      )
+   }
 }
 
 pub struct Screen {
@@ -326,4 +374,66 @@ impl Screen {
    getter!(root_depth, ffi::c_uchar);
 
    getter!(allowed_depths_len, ffi::c_uchar);
+}
+
+pub enum EventType {
+   KeyPress,
+   KeyRelease,
+   ButtonPress,
+   ButtonRelease,
+   MotionNotify,
+   EnterNotify,
+   LeaveNotify,
+   FocusIn,
+   FocusOut,
+   KeymapNotify,
+   Expose,
+   Unidentified,
+}
+
+impl EventType {
+   pub fn new(xcb_type: ffi::c_uchar) -> Self {
+      match xcb_type {
+         ffi::XCB_KEY_PRESS => EventType::KeyPress,
+         ffi::XCB_KEY_RELEASE => EventType::KeyRelease,
+         ffi::XCB_BUTTON_PRESS => EventType::ButtonPress,
+         ffi::XCB_BUTTON_RELEASE => EventType::ButtonRelease,
+         ffi::XCB_MOTION_NOTIFY => EventType::MotionNotify,
+         ffi::XCB_ENTER_NOTIFY => EventType::EnterNotify,
+         ffi::XCB_LEAVE_NOTIFY => EventType::LeaveNotify,
+         ffi::XCB_FOCUS_IN => EventType::FocusIn,
+         ffi::XCB_FOCUS_OUT => EventType::FocusOut,
+         ffi::XCB_KEYMAP_NOTIFY => EventType::KeymapNotify,
+         ffi::XCB_EXPOSE => EventType::Expose,
+         _ => EventType::Unidentified
+      }
+   }
+}
+
+pub struct Event {
+   pub ptr: *mut ffi::xcb_generic_event_t
+}
+
+impl Event {
+   pub fn new(event_ptr: *mut ffi::xcb_generic_event_t) -> Self {
+      Event {
+         ptr: event_ptr,
+      }
+   }
+
+   pub fn event_type(&self) -> EventType {
+      EventType::new(
+         unsafe {
+            (*self.ptr).response_type & !0x80
+         }
+      )
+   }
+}
+
+impl Drop for Event {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::free(self.ptr as *mut _);
+      }
+   }
 }
