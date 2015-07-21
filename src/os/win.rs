@@ -4,10 +4,10 @@ pub mod ffi {
    #![allow(non_snake_case)]
 
    pub use libc::{
-      c_int, c_uint, c_void, uintptr_t, c_ulong
+      c_int, c_uint, c_void, uintptr_t, c_long, c_ulong
    };
    pub use libc::types::os::arch::extra::{
-      HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID
+      HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID, BOOL
    };
    use std::mem;
 
@@ -119,8 +119,44 @@ pub mod ffi {
       fn default() -> Self { unsafe { mem::zeroed() } }
    }
 
+   #[repr(C)]
+   #[derive(Copy)]
+   pub struct POINT {
+      pub x: c_long,
+      pub y: c_long,
+   }
+   impl Clone for POINT {
+      fn clone(&self) -> Self { *self }
+   }
+   impl Default for POINT {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
+   #[repr(C)]
+   #[derive(Copy)]
+   pub struct MSG {
+      pub hwnd: HWND,
+      pub message: c_uint,
+      pub wParam: WPARAM,
+      pub lParam: LPARAM,
+      pub time: c_ulong,
+      pub pt: POINT,
+   }
+   impl Clone for MSG {
+      fn clone(&self) -> Self { *self }
+   }
+   impl Default for MSG {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
    extern "system" {
-      pub fn DefWindowProcW(hWnd: HWND, Msg: c_uint, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
+      pub fn DefWindowProcW(
+         hWnd: HWND,
+         Msg: c_uint,
+         wParam: WPARAM,
+         lParam: LPARAM
+      ) -> LRESULT;
+
       pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
       pub fn RegisterClassExW(lpWndClass: *const WNDCLASSEXW) -> ATOM;
 
@@ -138,6 +174,16 @@ pub mod ffi {
          hInstance: HINSTANCE,
          lpParam: LPVOID,
       ) -> HWND;
+
+      pub fn GetMessageW(
+         lpMsg: *const MSG,
+         hWnd: HWND,
+         wMsgFilterMin: c_uint,
+         wMsgFilterMax: c_uint
+      ) -> BOOL;
+
+      pub fn TranslateMessage(lpmsg: *const MSG) -> BOOL;
+      pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
    }
 }
 
@@ -183,20 +229,58 @@ pub fn register_window_class<S: AsRef<OsStr> + ?Sized>(class_name: &S) {
    }
 }
 
-pub fn create_window<S: AsRef<OsStr> + ?Sized>(width: ffi::c_int, height: ffi::c_int, title: &S, class_name: &S) {
-   unsafe {
-      ffi::CreateWindowExW(
-         ffi::WS_EX_CLIENTEDGE,
-         to_utf16_os(class_name).as_ptr(),
-         to_utf16_os(title).as_ptr(),
-         ffi::WS_OVERLAPPEDWINDOW,
-         ffi::CW_USEDEFAULT, ffi::CW_USEDEFAULT,
-         width, height,
-         ptr::null_mut(),
-         ptr::null_mut(),
-         ffi::GetModuleHandleW(ptr::null()),
-         ptr::null_mut()
-      )
-   };
+pub struct Window {
+   hwnd: ffi::HWND
 }
 
+impl Window {
+   pub fn create<S: AsRef<OsStr> + ?Sized>(width: ffi::c_int, height: ffi::c_int, title: &S, class_name: &S) -> Window {
+      let hwnd = unsafe {
+         ffi::CreateWindowExW(
+            ffi::WS_EX_CLIENTEDGE,
+            to_utf16_os(class_name).as_ptr(),
+            to_utf16_os(title).as_ptr(),
+            ffi::WS_OVERLAPPEDWINDOW,
+            ffi::CW_USEDEFAULT, ffi::CW_USEDEFAULT,
+            width, height,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            ffi::GetModuleHandleW(ptr::null()),
+            ptr::null_mut()
+         )
+      };
+
+      Window {
+         hwnd: hwnd
+      }
+   }
+}
+
+pub struct Message {
+   msg: ffi::MSG
+}
+
+impl Message {
+   pub fn get() -> Option<Self> {
+      let mut msg = unsafe { mem::uninitialized() };
+
+      match unsafe { ffi::GetMessageW(&mut msg, ptr::null_mut(), 0, 0) } {
+         0 => None,
+         _ => Some(Message {
+            msg: msg
+         })
+      }
+   }
+
+   pub fn translate(&self) {
+      unsafe {
+         ffi::TranslateMessage(&self.msg)
+      };
+   }
+
+   pub fn dispatch(&self) {
+      unsafe {
+         ffi::DispatchMessageW(&self.msg)
+      };
+   }
+}
