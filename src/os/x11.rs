@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 pub mod ffi {
    #![allow(non_upper_case_globals)]
 

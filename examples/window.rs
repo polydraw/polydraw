@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 extern crate polydraw;
 
 use polydraw::os::xcb;

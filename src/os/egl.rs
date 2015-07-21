@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 use ::os::x11::ffi::Display as X11Display;
 use ::os::xcb::ffi::xcb_window_t;
 

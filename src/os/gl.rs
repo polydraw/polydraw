@@ -1,3 +1,5 @@
+#![cfg(target_os = "linux")]
+
 pub mod ffi {
    #![allow(non_camel_case_types)]
 
