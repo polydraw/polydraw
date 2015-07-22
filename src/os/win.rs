@@ -240,7 +240,7 @@ impl Window {
             ffi::WS_EX_CLIENTEDGE,
             to_utf16_os(class_name).as_ptr(),
             to_utf16_os(title).as_ptr(),
-            ffi::WS_OVERLAPPEDWINDOW,
+            ffi::WS_OVERLAPPEDWINDOW | ffi::WS_VISIBLE,
             ffi::CW_USEDEFAULT, ffi::CW_USEDEFAULT,
             width, height,
             ptr::null_mut(),
