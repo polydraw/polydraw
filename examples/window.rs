@@ -6,6 +6,7 @@ use polydraw::os::xcb;
 use polydraw::os::x11;
 use polydraw::os::egl;
 use polydraw::os::gl;
+use polydraw::os::cl;
 
 fn print_screen_info(screen: &xcb::Screen) {
    println!("Informations of screen : {}", screen.root());
@@ -16,6 +17,17 @@ fn print_screen_info(screen: &xcb::Screen) {
 }
 
 fn main() {
+   let platforms = match cl::get_platforms() {
+      Ok(platforms) => platforms,
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
+
+   for (i, platform) in platforms.iter().enumerate() {
+      println!("CL platform [{}] ...... : {:?}", i, platform.ptr);
+   }
+
    let display = match x11::Display::default() {
       Ok(display) => display,
       Err(e) => {
