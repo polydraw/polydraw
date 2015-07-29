@@ -117,8 +117,8 @@ pub mod ffi {
 }
 
 use std::ptr;
-use std::ffi::CStr;
 use std::iter::repeat;
+use super::utils::from_cstr;
 
 use libc::{
    c_char, c_void
@@ -237,11 +237,7 @@ impl Platform {
       }
 
       Ok(
-         unsafe {
-            String::from_utf8_unchecked(
-               CStr::from_ptr(c_buf.as_ptr() as *const c_char).to_bytes().to_vec()
-            )
-         }
+         from_cstr(c_buf.as_ptr() as *const c_char)
       )
    }
 
