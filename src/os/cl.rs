@@ -2,11 +2,13 @@ pub mod ffi {
    #![allow(non_camel_case_types)]
 
    use libc::{
-      c_int, c_uint, c_void
+      c_int, c_uint, c_void, size_t
    };
 
    pub type cl_int = c_int;
    pub type cl_uint = c_uint;
+
+   pub type cl_platform_info = cl_uint;
 
    pub type cl_platform_id = *mut c_void;
 
@@ -71,6 +73,11 @@ pub mod ffi {
    pub const CL_INVALID_LINKER_OPTIONS:                    cl_int = -67;
    pub const CL_INVALID_DEVICE_PARTITION_COUNT:            cl_int = -68;
 
+   pub const CL_PLATFORM_PROFILE:                cl_platform_info = 0x0900;
+   pub const CL_PLATFORM_VERSION:                cl_platform_info = 0x0901;
+   pub const CL_PLATFORM_NAME:                   cl_platform_info = 0x0902;
+   pub const CL_PLATFORM_VENDOR:                 cl_platform_info = 0x0903;
+   pub const CL_PLATFORM_EXTENSIONS:             cl_platform_info = 0x0904;
 
    #[link(name="OpenCL")]
    extern "C" {
@@ -79,19 +86,28 @@ pub mod ffi {
          platforms: *mut cl_platform_id,
          num_platforms: *mut cl_uint
       ) -> cl_int;
+
+      pub fn clGetPlatformInfo(
+         platform: cl_platform_id,
+         param_name: cl_platform_info,
+         param_value_size: size_t,
+         param_value: *mut c_void,
+         param_value_size_ret: *mut size_t
+      ) -> cl_int;
    }
 }
 
 use std::ptr;
+use std::ffi::CStr;
 use std::iter::repeat;
+
+use libc::{
+   c_char, c_void, size_t
+};
 
 use ::error::{RuntimeError, ErrorKind};
 
-pub struct Platform {
-   pub ptr: ffi::cl_platform_id
-}
-
-pub fn get_platforms() -> Result<Vec<Platform>, RuntimeError> {
+pub fn platforms() -> Result<Vec<Platform>, RuntimeError> {
    let mut num_platforms = 0 as ffi::cl_uint;
 
    let result = unsafe {
@@ -135,3 +151,78 @@ pub fn get_platforms() -> Result<Vec<Platform>, RuntimeError> {
    )
 }
 
+pub struct Platform {
+   pub ptr: ffi::cl_platform_id
+}
+
+impl Platform {
+   pub fn profile(&self) -> Result<String, RuntimeError> {
+      self.info(ffi::CL_PLATFORM_PROFILE)
+   }
+
+   pub fn version(&self) -> Result<String, RuntimeError> {
+      self.info(ffi::CL_PLATFORM_VERSION)
+   }
+
+   pub fn name(&self) -> Result<String, RuntimeError> {
+      self.info(ffi::CL_PLATFORM_NAME)
+   }
+
+   pub fn vendor(&self) -> Result<String, RuntimeError> {
+      self.info(ffi::CL_PLATFORM_VENDOR)
+   }
+
+   pub fn extensions(&self) -> Result<String, RuntimeError> {
+      self.info(ffi::CL_PLATFORM_EXTENSIONS)
+   }
+
+   fn info(&self, platform_info: ffi::cl_platform_info) -> Result<String, RuntimeError> {
+      let mut size = 0 as size_t;
+
+      let result = unsafe {
+         ffi::clGetPlatformInfo(
+            self.ptr,
+            platform_info,
+            0,
+            ptr::null_mut(),
+            &mut size
+         )
+      };
+
+      if result != ffi::CL_SUCCESS {
+         return Err(RuntimeError::new(
+            ErrorKind::CL,
+            "Getting size of OpenCL platform info string failed".to_string()
+         ));
+      }
+
+      let mut c_buf = repeat(0u8)
+         .take(size as usize)
+         .collect::<Vec<_>>();
+
+      let result = unsafe {
+         ffi::clGetPlatformInfo(
+            self.ptr,
+            platform_info,
+            size,
+            c_buf.as_mut_ptr() as *mut c_void,
+            ptr::null_mut()
+         )
+      };
+
+      if result != ffi::CL_SUCCESS {
+         return Err(RuntimeError::new(
+            ErrorKind::CL,
+            "Getting OpenCL platform info string failed".to_string()
+         ));
+      }
+
+      Ok(
+         unsafe {
+            String::from_utf8_unchecked(
+               CStr::from_ptr(c_buf.as_ptr() as *const c_char).to_bytes().to_vec()
+            )
+         }
+      )
+   }
+}

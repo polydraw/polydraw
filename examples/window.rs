@@ -16,17 +16,26 @@ fn print_screen_info(screen: &xcb::Screen) {
    println!("   black pixel ....... : {}", screen.black_pixel());
 }
 
+fn print_platforms_info(platforms: &Vec<cl::Platform>) {
+   for (i, platform) in platforms.iter().enumerate() {
+      println!("CL platform [{}] ...... : {:?}", i, platform.ptr);
+      println!("   Vendor ............ : {}", platform.vendor().unwrap());
+      println!("   Name .............. : {}", platform.name().unwrap());
+      println!("   Profile ........... : {}", platform.profile().unwrap());
+      println!("   Version ........... : {}", platform.version().unwrap());
+      println!("   Extensions ........ : {}", platform.extensions().unwrap());
+   }
+}
+
 fn main() {
-   let platforms = match cl::get_platforms() {
+   let platforms = match cl::platforms() {
       Ok(platforms) => platforms,
       Err(e) => {
          panic!(e.description);
       }
    };
 
-   for (i, platform) in platforms.iter().enumerate() {
-      println!("CL platform [{}] ...... : {:?}", i, platform.ptr);
-   }
+   print_platforms_info(&platforms);
 
    let display = match x11::Display::default() {
       Ok(display) => display,
