@@ -24,6 +24,17 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
       println!("   Profile ........... : {}", platform.profile().unwrap());
       println!("   Version ........... : {}", platform.version().unwrap());
       println!("   Extensions ........ : {}", platform.extensions().unwrap());
+
+      let devices = match platform.all_devices() {
+         Ok(devices) => devices,
+         Err(e) => {
+            panic!(e.description);
+         }
+      };
+
+      for (j, device) in devices.iter().enumerate() {
+         println!("   CL device [{}] ..... : {:?}", j, device.ptr);
+      }
    }
 }
 

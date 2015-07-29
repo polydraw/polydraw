@@ -2,15 +2,19 @@ pub mod ffi {
    #![allow(non_camel_case_types)]
 
    use libc::{
-      c_int, c_uint, c_void, size_t
+      c_int, c_uint, c_ulong, c_void, size_t
    };
 
    pub type cl_int = c_int;
    pub type cl_uint = c_uint;
+   pub type cl_ulong = c_ulong;
 
    pub type cl_platform_info = cl_uint;
+   pub type cl_bitfield = cl_ulong;
+   pub type cl_device_type = cl_bitfield;
 
    pub type cl_platform_id = *mut c_void;
+   pub type cl_device_id = *mut c_void;
 
    pub const CL_SUCCESS:                                   cl_int = 0;
    pub const CL_DEVICE_NOT_FOUND:                          cl_int = -1;
@@ -79,6 +83,13 @@ pub mod ffi {
    pub const CL_PLATFORM_VENDOR:                 cl_platform_info = 0x0903;
    pub const CL_PLATFORM_EXTENSIONS:             cl_platform_info = 0x0904;
 
+   pub const CL_DEVICE_TYPE_DEFAULT:               cl_device_type = 1 << 0;
+   pub const CL_DEVICE_TYPE_CPU:                   cl_device_type = 1 << 1;
+   pub const CL_DEVICE_TYPE_GPU:                   cl_device_type = 1 << 2;
+   pub const CL_DEVICE_TYPE_ACCELERATOR:           cl_device_type = 1 << 3;
+   pub const CL_DEVICE_TYPE_CUSTOM:                cl_device_type = 1 << 4;
+   pub const CL_DEVICE_TYPE_ALL:                   cl_device_type = 0xFFFFFFFF;
+
    #[link(name="OpenCL")]
    extern "C" {
       pub fn clGetPlatformIDs(
@@ -94,6 +105,14 @@ pub mod ffi {
          param_value: *mut c_void,
          param_value_size_ret: *mut size_t
       ) -> cl_int;
+
+      pub fn clGetDeviceIDs(
+         platform: cl_platform_id,
+         device_type: cl_device_type,
+         num_entries: cl_uint,
+         devices: *mut cl_device_id,
+         num_devices: *mut cl_uint
+      ) -> cl_int;
    }
 }
 
@@ -102,13 +121,13 @@ use std::ffi::CStr;
 use std::iter::repeat;
 
 use libc::{
-   c_char, c_void, size_t
+   c_char, c_void
 };
 
 use ::error::{RuntimeError, ErrorKind};
 
 pub fn platforms() -> Result<Vec<Platform>, RuntimeError> {
-   let mut num_platforms = 0 as ffi::cl_uint;
+   let mut num_platforms = 0;
 
    let result = unsafe {
       ffi::clGetPlatformIDs(
@@ -177,7 +196,7 @@ impl Platform {
    }
 
    fn info(&self, platform_info: ffi::cl_platform_info) -> Result<String, RuntimeError> {
-      let mut size = 0 as size_t;
+      let mut size = 0;
 
       let result = unsafe {
          ffi::clGetPlatformInfo(
@@ -225,4 +244,85 @@ impl Platform {
          }
       )
    }
+
+   pub fn default_devices(&self) -> Result<Vec<Device>, RuntimeError> {
+      self.devices(ffi::CL_DEVICE_TYPE_DEFAULT)
+   }
+
+   pub fn cpu_devices(&self) -> Result<Vec<Device>, RuntimeError> {
+      self.devices(ffi::CL_DEVICE_TYPE_CPU)
+   }
+
+   pub fn gpu_devices(&self) -> Result<Vec<Device>, RuntimeError> {
+      self.devices(ffi::CL_DEVICE_TYPE_GPU)
+   }
+
+   pub fn accelerator_devices(&self) -> Result<Vec<Device>, RuntimeError> {
+      self.devices(ffi::CL_DEVICE_TYPE_ACCELERATOR)
+   }
+
+   pub fn custom_devices(&self) -> Result<Vec<Device>, RuntimeError> {
+      self.devices(ffi::CL_DEVICE_TYPE_CUSTOM)
+   }
+
+   pub fn all_devices(&self) -> Result<Vec<Device>, RuntimeError> {
+      self.devices(ffi::CL_DEVICE_TYPE_ALL)
+   }
+
+   fn devices(&self, device_type: ffi::cl_device_type) -> Result<Vec<Device>, RuntimeError> {
+      let mut num_devices = 0;
+
+      let result = unsafe {
+         ffi::clGetDeviceIDs(
+            self.ptr,
+            device_type,
+            0,
+            ptr::null_mut(),
+            &mut num_devices
+         )
+      };
+
+      if result == ffi::CL_DEVICE_NOT_FOUND {
+         return Ok(vec!());
+      }
+
+      if result != ffi::CL_SUCCESS {
+         return Err(RuntimeError::new(
+            ErrorKind::CL,
+            format!("Getting number of OpenCL devices failed {}", result).to_string()
+         ));
+      }
+
+      let mut device_ids = repeat(0 as ffi::cl_device_id)
+         .take(num_devices as usize)
+         .collect::<Vec<_>>();
+
+
+      let result = unsafe {
+         ffi::clGetDeviceIDs(
+            self.ptr,
+            device_type,
+            num_devices,
+            device_ids.as_mut_ptr(),
+            ptr::null_mut()
+         )
+      };
+
+      if result != ffi::CL_SUCCESS {
+         return Err(RuntimeError::new(
+            ErrorKind::CL,
+            "Getting OpenCL devices failed".to_string()
+         ));
+      }
+
+      Ok(
+         device_ids.iter()
+            .map(|device_id| { Device { ptr: *device_id } })
+            .collect()
+      )
+   }
+}
+
+pub struct Device {
+   pub ptr: ffi::cl_device_id
 }
