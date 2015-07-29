@@ -9,21 +9,21 @@ use polydraw::os::gl;
 use polydraw::os::cl;
 
 fn print_screen_info(screen: &xcb::Screen) {
-   println!("Informations of screen : {}", screen.root());
-   println!("   width ............. : {}", screen.width_in_pixels());
-   println!("   height ............ : {}", screen.height_in_pixels());
-   println!("   white pixel ....... : {}", screen.white_pixel());
-   println!("   black pixel ....... : {}", screen.black_pixel());
+   println!("Informations of screen .... : {}", screen.root());
+   println!("   width .................. : {}", screen.width_in_pixels());
+   println!("   height ................. : {}", screen.height_in_pixels());
+   println!("   white pixel ............ : {}", screen.white_pixel());
+   println!("   black pixel ............ : {}", screen.black_pixel());
 }
 
 fn print_platforms_info(platforms: &Vec<cl::Platform>) {
    for (i, platform) in platforms.iter().enumerate() {
-      println!("CL platform [{}] ...... : {:?}", i, platform.ptr);
-      println!("   Vendor ............ : {}", platform.vendor().unwrap());
-      println!("   Name .............. : {}", platform.name().unwrap());
-      println!("   Profile ........... : {}", platform.profile().unwrap());
-      println!("   Version ........... : {}", platform.version().unwrap());
-      println!("   Extensions ........ : {}", platform.extensions().unwrap());
+      println!("CL platform [{}] ........... : {:?}", i, platform.ptr);
+      println!("   Name ................... : {}", platform.name().unwrap());
+      println!("   Vendor ................. : {}", platform.vendor().unwrap());
+      println!("   Profile ................ : {}", platform.profile().unwrap());
+      println!("   Version ................ : {}", platform.version().unwrap());
+      println!("   Extensions ............. : {}", platform.extensions().unwrap());
 
       let devices = match platform.all_devices() {
          Ok(devices) => devices,
@@ -33,7 +33,22 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
       };
 
       for (j, device) in devices.iter().enumerate() {
-         println!("   CL device [{}] ..... : {:?}", j, device.ptr);
+         println!("   CL device [{}] .......... : {:?}", j, device.ptr);
+         println!("      Name ................ : {}", device.name().unwrap());
+         println!("      Vendor .............. : {}", device.vendor().unwrap());
+         println!("      Profile ............. : {}", device.profile().unwrap());
+         println!("      Version ............. : {}", device.version().unwrap());
+         println!("      OpenCL C version .... : {}", device.opencl_c_version().unwrap());
+         println!("      Driver version ...... : {}", device.driver_version().unwrap());
+         println!("      Built-in kernels .... : {}", device.built_in_kernels().unwrap());
+         println!("      Extensions .......... : {}", device.extensions().unwrap());
+         println!("      Available ........... : {}", device.available().unwrap());
+         println!("      Compiler available .. : {}", device.compiler_available().unwrap());
+         println!("      Linker available .... : {}", device.linker_available().unwrap());
+         println!("      Little endian ....... : {}", device.endian_little().unwrap());
+         println!("      Error correction .... : {}", device.error_correction().unwrap());
+         println!("      Unified memory ...... : {}", device.unified_memory().unwrap());
+         println!("      Image support ....... : {}", device.image_support().unwrap());
       }
    }
 }
@@ -72,7 +87,7 @@ fn main() {
 
    let window = connection.generate_id();
 
-   println!("window ............... : {:?}", window);
+   println!("window .................... : {:?}", window);
 
    connection.create_window(
       window, &scr,
@@ -88,7 +103,7 @@ fn main() {
    let egl_d = egl::get_display(&display);
    let egl_display = egl_d.ptr;
 
-   println!("egl display .......... : {:?}", egl_display);
+   println!("egl display ............... : {:?}", egl_display);
 
    let version = match egl::initialize(&egl_d) {
       Ok(version) => version,
@@ -97,7 +112,7 @@ fn main() {
       }
    };
 
-   println!("egl version .......... : {:?}.{:?}", version.major, version.minor);
+   println!("egl version ............... : {:?}.{:?}", version.major, version.minor);
 
    let config = match egl::choose_config(&egl_d) {
       Ok(config) => config,
@@ -113,7 +128,7 @@ fn main() {
       }
    };
 
-   println!("context ptr .......... : {:?}", context.ptr);
+   println!("context ptr ............... : {:?}", context.ptr);
 
    let surface = match egl::create_window_surface(&egl_d, &config, &window) {
       Ok(surface) => surface,
@@ -122,7 +137,7 @@ fn main() {
       }
    };
 
-   println!("surface ptr .......... : {:?}", surface.ptr);
+   println!("surface ptr ............... : {:?}", surface.ptr);
 
    match egl::make_current(&egl_d, &surface, &surface, &context) {
       Ok(_) => {},
