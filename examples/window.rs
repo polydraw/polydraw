@@ -2,6 +2,8 @@
 
 extern crate polydraw;
 
+use std::iter::repeat;
+
 use polydraw::os::xcb;
 use polydraw::os::x11;
 use polydraw::os::egl;
@@ -54,6 +56,9 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
 }
 
 fn main() {
+   let width: usize = 800;
+   let height: usize = 450;
+
    let platforms = match cl::platforms() {
       Ok(platforms) => platforms,
       Err(e) => {
@@ -91,7 +96,7 @@ fn main() {
 
    connection.create_window(
       window, &scr,
-      0, 0, 800, 450,
+      0, 0, width as u16, height as u16,
    );
 
    connection.map_window(window);
@@ -155,7 +160,11 @@ fn main() {
 
    gl::reset_pixelstore_alignment();
 
-   let texture = gl::create_texture();
+   let data = repeat(255u8)
+      .take(width * height * 3)
+      .collect::<Vec<_>>();
+
+   let texture = gl::create_texture(width, height, &data);
 
    println!("GL texture ................ : {:?}", texture);
 

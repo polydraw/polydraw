@@ -4,15 +4,28 @@ pub mod ffi {
    #![allow(non_camel_case_types)]
 
    use libc::{
-      c_int, c_uint, c_float
+      c_int, c_uint, c_float, c_void
    };
 
    pub type GLenum = c_uint;
    pub type GLint = c_int;
    pub type GLuint = c_uint;
    pub type GLsizei = c_int;
+   pub type GLvoid = c_void;
    pub type GLbitfield = c_uint;
    pub type GLclampf = c_float;
+
+   pub const GL_BYTE:                     GLenum = 0x1400;
+   pub const GL_UNSIGNED_BYTE:            GLenum = 0x1401;
+   pub const GL_SHORT:                    GLenum = 0x1402;
+   pub const GL_UNSIGNED_SHORT:           GLenum = 0x1403;
+   pub const GL_INT:                      GLenum = 0x1404;
+   pub const GL_UNSIGNED_INT:             GLenum = 0x1405;
+   pub const GL_FLOAT:                    GLenum = 0x1406;
+   pub const GL_2_BYTES:                  GLenum = 0x1407;
+   pub const GL_3_BYTES:                  GLenum = 0x1408;
+   pub const GL_4_BYTES:                  GLenum = 0x1409;
+   pub const GL_DOUBLE:                   GLenum = 0x140A;
 
    pub const GL_CURRENT_BIT:              GLenum = 0x00000001;
    pub const GL_POINT_BIT:                GLenum = 0x00000002;
@@ -92,18 +105,14 @@ pub mod ffi {
    pub const GL_TEXTURE_MAG_FILTER:       GLenum = 0x2800;
    pub const GL_TEXTURE_MIN_FILTER:       GLenum = 0x2801;
 
+   pub const GL_RGB:                      GLenum = 0x1907;
+   pub const GL_RGBA:                     GLenum = 0x1908;
+
    pub const GL_CLAMP_TO_EDGE:             GLint = 0x812F;
    pub const GL_NEAREST:                   GLint = 0x2600;
 
    #[link(name="GL")]
    extern "C" {
-      pub fn glClearColor(
-         red: GLclampf,
-         green: GLclampf,
-         blue: GLclampf,
-         alpha: GLclampf
-      ) -> ();
-
       pub fn glClear(mask: GLbitfield) -> ();
 
       pub fn glFlush() -> ();
@@ -115,6 +124,25 @@ pub mod ffi {
       pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
 
       pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
+
+      pub fn glClearColor(
+         red: GLclampf,
+         green: GLclampf,
+         blue: GLclampf,
+         alpha: GLclampf
+      ) -> ();
+
+      pub fn glTexImage2D(
+         target: GLenum,
+         level: GLint,
+         internalFormat: GLint,
+         width: GLsizei,
+         height: GLsizei,
+         border: GLint,
+         format: GLenum,
+         _type: GLenum,
+         pixels: *const GLvoid
+      ) -> ();
    }
 }
 
@@ -148,7 +176,7 @@ pub fn reset_pixelstore_alignment() {
    }
 }
 
-pub fn create_texture() -> ffi::GLuint {
+pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
    let mut texture: ffi::GLuint = unsafe { mem::uninitialized() };
 
    unsafe {
@@ -178,6 +206,18 @@ pub fn create_texture() -> ffi::GLuint {
          ffi::GL_TEXTURE_2D,
          ffi::GL_TEXTURE_MAG_FILTER,
          ffi::GL_NEAREST
+      );
+
+      ffi::glTexImage2D(
+         ffi::GL_TEXTURE_2D,
+         0,
+         ffi::GL_RGB as ffi::GLint,
+         width as ffi::GLsizei,
+         height as ffi::GLsizei,
+         0,
+         ffi::GL_RGB,
+         ffi::GL_UNSIGNED_BYTE,
+         data.as_ptr() as *const ffi::GLvoid
       );
    }
 
