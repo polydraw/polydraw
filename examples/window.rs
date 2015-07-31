@@ -155,11 +155,9 @@ fn main() {
 
    gl::reset_pixelstore_alignment();
 
-   let texture = gl::gen_texture();
+   let texture = gl::create_texture();
 
    println!("GL texture ................ : {:?}", texture);
-
-   gl::bind_texture(texture);
 
    loop {
       let event = match connection.wait_for_event() {

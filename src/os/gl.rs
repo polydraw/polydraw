@@ -87,6 +87,13 @@ pub mod ffi {
 
    pub const GL_TEXTURE_1D:               GLenum = 0x0DE0;
    pub const GL_TEXTURE_2D:               GLenum = 0x0DE1;
+   pub const GL_TEXTURE_WRAP_S:           GLenum = 0x2802;
+   pub const GL_TEXTURE_WRAP_T:           GLenum = 0x2803;
+   pub const GL_TEXTURE_MAG_FILTER:       GLenum = 0x2800;
+   pub const GL_TEXTURE_MIN_FILTER:       GLenum = 0x2801;
+
+   pub const GL_CLAMP_TO_EDGE:             GLint = 0x812F;
+   pub const GL_NEAREST:                   GLint = 0x2600;
 
    #[link(name="GL")]
    extern "C" {
@@ -97,9 +104,7 @@ pub mod ffi {
          alpha: GLclampf
       ) -> ();
 
-      pub fn glClear(
-         mask: GLbitfield
-      ) -> ();
+      pub fn glClear(mask: GLbitfield) -> ();
 
       pub fn glFlush() -> ();
 
@@ -108,6 +113,8 @@ pub mod ffi {
       pub fn glGenTextures(n: GLsizei, textures: *mut GLuint) -> ();
 
       pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
+
+      pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
    }
 }
 
@@ -141,20 +148,38 @@ pub fn reset_pixelstore_alignment() {
    }
 }
 
-#[inline]
-pub fn gen_texture() -> ffi::GLuint {
+pub fn create_texture() -> ffi::GLuint {
    let mut texture: ffi::GLuint = unsafe { mem::uninitialized() };
 
    unsafe {
       ffi::glGenTextures(1, &mut texture);
+
+      ffi::glBindTexture(ffi::GL_TEXTURE_2D, texture);
+
+      ffi::glTexParameteri(
+         ffi::GL_TEXTURE_2D,
+         ffi::GL_TEXTURE_WRAP_S,
+         ffi::GL_CLAMP_TO_EDGE
+      );
+
+      ffi::glTexParameteri(
+         ffi::GL_TEXTURE_2D,
+         ffi::GL_TEXTURE_WRAP_T,
+         ffi::GL_CLAMP_TO_EDGE
+      );
+
+      ffi::glTexParameteri(
+         ffi::GL_TEXTURE_2D,
+         ffi::GL_TEXTURE_MIN_FILTER,
+         ffi::GL_NEAREST
+      );
+
+      ffi::glTexParameteri(
+         ffi::GL_TEXTURE_2D,
+         ffi::GL_TEXTURE_MAG_FILTER,
+         ffi::GL_NEAREST
+      );
    }
 
    texture
-}
-
-#[inline]
-pub fn bind_texture(texture: ffi::GLuint) {
-   unsafe {
-      ffi::glBindTexture(ffi::GL_TEXTURE_2D, texture);
-   }
 }
