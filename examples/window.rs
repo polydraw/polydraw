@@ -58,8 +58,8 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
 }
 
 fn main() {
-   let width: usize = 800;
-   let height: usize = 450;
+   let width: usize = 1280;
+   let height: usize = 720;
 
    let platforms = match cl::platforms() {
       Ok(platforms) => platforms,
@@ -194,7 +194,7 @@ fn main() {
             //gl::clear_color(0.0, 0.7, 1.0, 1.0);
             //gl::clear();
 
-            gl::blit_framebuffer(framebuffer, width, height);
+            //gl::blit_framebuffer(framebuffer, width, height);
 
             gl::flush();
 
