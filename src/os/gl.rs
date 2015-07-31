@@ -113,8 +113,8 @@ pub mod ffi {
 
    pub const GL_COLOR_ATTACHMENT0:        GLenum = 0x8CE0;
 
-   pub const GL_CLAMP_TO_EDGE:             GLint = 0x812F;
-   pub const GL_NEAREST:                   GLint = 0x2600;
+   pub const GL_CLAMP_TO_EDGE:            GLenum = 0x812F;
+   pub const GL_NEAREST:                  GLenum = 0x2600;
 
    #[link(name="GL")]
    extern "C" {
@@ -217,25 +217,25 @@ pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
       ffi::glTexParameteri(
          ffi::GL_TEXTURE_2D,
          ffi::GL_TEXTURE_WRAP_S,
-         ffi::GL_CLAMP_TO_EDGE
+         ffi::GL_CLAMP_TO_EDGE as ffi::GLint
       );
 
       ffi::glTexParameteri(
          ffi::GL_TEXTURE_2D,
          ffi::GL_TEXTURE_WRAP_T,
-         ffi::GL_CLAMP_TO_EDGE
+         ffi::GL_CLAMP_TO_EDGE as ffi::GLint
       );
 
       ffi::glTexParameteri(
          ffi::GL_TEXTURE_2D,
          ffi::GL_TEXTURE_MIN_FILTER,
-         ffi::GL_NEAREST
+         ffi::GL_NEAREST as ffi::GLint
       );
 
       ffi::glTexParameteri(
          ffi::GL_TEXTURE_2D,
          ffi::GL_TEXTURE_MAG_FILTER,
-         ffi::GL_NEAREST
+         ffi::GL_NEAREST as ffi::GLint
       );
 
       ffi::glTexImage2D(
@@ -274,4 +274,19 @@ pub fn create_framebuffer(texture: ffi::GLuint) -> ffi::GLuint {
    }
 
    texture
+}
+
+pub fn blit_framebuffer(framebuffer: ffi::GLuint, width: usize, height: usize) {
+   unsafe {
+      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, framebuffer);
+
+      ffi::glBlitFramebuffer(
+         0, 0, width as ffi::GLint, height as ffi::GLint,
+         0, 0, width as ffi::GLint, height as ffi::GLint,
+         ffi::GL_COLOR_BUFFER_BIT,
+         ffi::GL_NEAREST
+      );
+
+      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
+   }
 }

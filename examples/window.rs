@@ -1,8 +1,10 @@
 #![cfg(target_os = "linux")]
 
 extern crate polydraw;
+extern crate rand;
 
 use std::iter::repeat;
+use rand::Rng;
 
 use polydraw::os::xcb;
 use polydraw::os::x11;
@@ -160,9 +162,11 @@ fn main() {
 
    gl::reset_pixelstore_alignment();
 
-   let data = repeat(255u8)
+   let mut data = repeat(0u8)
       .take(width * height * 3)
       .collect::<Vec<_>>();
+
+   rand::thread_rng().fill_bytes(&mut data);
 
    let texture = gl::create_texture(width, height, &data);
 
@@ -187,8 +191,11 @@ fn main() {
             break;
          },
          xcb::EventType::Expose => {
-            gl::clear_color(0.0, 0.7, 1.0, 1.0);
-            gl::clear();
+            //gl::clear_color(0.0, 0.7, 1.0, 1.0);
+            //gl::clear();
+
+            gl::blit_framebuffer(framebuffer, width, height);
+
             gl::flush();
 
             match egl::swap_buffers(&egl_d, &surface) {
