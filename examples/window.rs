@@ -168,6 +168,10 @@ fn main() {
 
    println!("GL texture ................ : {:?}", texture);
 
+   let framebuffer = gl::create_framebuffer(texture);
+
+   println!("GL framebuffer ............ : {:?}", framebuffer);
+
    loop {
       let event = match connection.wait_for_event() {
          None => {

@@ -108,6 +108,11 @@ pub mod ffi {
    pub const GL_RGB:                      GLenum = 0x1907;
    pub const GL_RGBA:                     GLenum = 0x1908;
 
+   pub const GL_READ_FRAMEBUFFER:         GLenum = 0x8CA8;
+   pub const GL_DRAW_FRAMEBUFFER:         GLenum = 0x8CA9;
+
+   pub const GL_COLOR_ATTACHMENT0:        GLenum = 0x8CE0;
+
    pub const GL_CLAMP_TO_EDGE:             GLint = 0x812F;
    pub const GL_NEAREST:                   GLint = 0x2600;
 
@@ -124,6 +129,10 @@ pub mod ffi {
       pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
 
       pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
+
+      pub fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) -> ();
+
+      pub fn glBindFramebuffer(target: GLenum, framebuffer: GLuint) -> ();
 
       pub fn glClearColor(
          red: GLclampf,
@@ -142,6 +151,27 @@ pub mod ffi {
          format: GLenum,
          _type: GLenum,
          pixels: *const GLvoid
+      ) -> ();
+
+      pub fn glFramebufferTexture2D(
+         target: GLenum,
+         attachment: GLenum,
+         textarget: GLenum,
+         texture: GLuint,
+         level: GLint
+      ) -> ();
+
+      pub fn glBlitFramebuffer(
+         srcX0: GLint,
+         srcY0: GLint,
+         srcX1: GLint,
+         srcY1: GLint,
+         dstX0: GLint,
+         dstY0: GLint,
+         dstX1: GLint,
+         dstY1: GLint,
+         mask: GLbitfield,
+         filter: GLenum
       ) -> ();
    }
 }
@@ -219,6 +249,28 @@ pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
          ffi::GL_UNSIGNED_BYTE,
          data.as_ptr() as *const ffi::GLvoid
       );
+   }
+
+   texture
+}
+
+pub fn create_framebuffer(texture: ffi::GLuint) -> ffi::GLuint {
+   let mut framebuffer: ffi::GLuint = unsafe { mem::uninitialized() };
+
+   unsafe {
+      ffi::glGenFramebuffers(1, &mut framebuffer);
+
+      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, framebuffer);
+
+      ffi::glFramebufferTexture2D(
+         ffi::GL_READ_FRAMEBUFFER,
+         ffi::GL_COLOR_ATTACHMENT0,
+         ffi::GL_TEXTURE_2D,
+         texture,
+         0
+      );
+
+      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
    }
 
    texture
