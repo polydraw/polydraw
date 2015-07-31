@@ -153,6 +153,8 @@ fn main() {
       }
    };
 
+   gl::reset_pixelstore_unpack_alignment();
+
    loop {
       let event = match connection.wait_for_event() {
          None => {
