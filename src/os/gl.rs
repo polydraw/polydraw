@@ -85,6 +85,9 @@ pub mod ffi {
    pub const GL_ZOOM_X:                   GLenum = 0x0D16;
    pub const GL_ZOOM_Y:                   GLenum = 0x0D17;
 
+   pub const GL_TEXTURE_1D:               GLenum = 0x0DE0;
+   pub const GL_TEXTURE_2D:               GLenum = 0x0DE1;
+
    #[link(name="GL")]
    extern "C" {
       pub fn glClearColor(
@@ -103,6 +106,8 @@ pub mod ffi {
       pub fn glPixelStorei(pname: GLenum, param: GLint) -> ();
 
       pub fn glGenTextures(n: GLsizei, textures: *mut GLuint) -> ();
+
+      pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
    }
 }
 
@@ -141,8 +146,15 @@ pub fn gen_texture() -> ffi::GLuint {
    let mut texture: ffi::GLuint = unsafe { mem::uninitialized() };
 
    unsafe {
-      ffi::glGenTextures(1, &mut texture)
-   };
+      ffi::glGenTextures(1, &mut texture);
+   }
 
    texture
+}
+
+#[inline]
+pub fn bind_texture(texture: ffi::GLuint) {
+   unsafe {
+      ffi::glBindTexture(ffi::GL_TEXTURE_2D, texture);
+   }
 }

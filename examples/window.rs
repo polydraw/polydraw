@@ -159,6 +159,8 @@ fn main() {
 
    println!("GL texture ................ : {:?}", texture);
 
+   gl::bind_texture(texture);
+
    loop {
       let event = match connection.wait_for_event() {
          None => {
