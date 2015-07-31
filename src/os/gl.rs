@@ -9,6 +9,8 @@ pub mod ffi {
 
    pub type GLenum = c_uint;
    pub type GLint = c_int;
+   pub type GLuint = c_uint;
+   pub type GLsizei = c_int;
    pub type GLbitfield = c_uint;
    pub type GLclampf = c_float;
 
@@ -99,8 +101,12 @@ pub mod ffi {
       pub fn glFlush() -> ();
 
       pub fn glPixelStorei(pname: GLenum, param: GLint) -> ();
+
+      pub fn glGenTextures(n: GLsizei, textures: *mut GLuint) -> ();
    }
 }
+
+use std::mem;
 
 #[inline]
 pub fn clear_color(red: f32, green: f32, blue: f32, alpha: f32) {
@@ -124,8 +130,19 @@ pub fn flush() {
 }
 
 #[inline]
-pub fn reset_pixelstore_unpack_alignment() {
+pub fn reset_pixelstore_alignment() {
    unsafe {
       ffi::glPixelStorei(ffi::GL_UNPACK_ALIGNMENT, 1);
    }
+}
+
+#[inline]
+pub fn gen_texture() -> ffi::GLuint {
+   let mut texture: ffi::GLuint = unsafe { mem::uninitialized() };
+
+   unsafe {
+      ffi::glGenTextures(1, &mut texture)
+   };
+
+   texture
 }

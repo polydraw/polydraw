@@ -153,7 +153,11 @@ fn main() {
       }
    };
 
-   gl::reset_pixelstore_unpack_alignment();
+   gl::reset_pixelstore_alignment();
+
+   let texture = gl::gen_texture();
+
+   println!("GL texture ................ : {:?}", texture);
 
    loop {
       let event = match connection.wait_for_event() {
