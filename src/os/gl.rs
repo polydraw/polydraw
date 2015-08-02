@@ -27,6 +27,14 @@ pub mod ffi {
    pub const GL_4_BYTES:                  GLenum = 0x1409;
    pub const GL_DOUBLE:                   GLenum = 0x140A;
 
+   pub const GL_NO_ERROR:                 GLenum = 0;
+   pub const GL_INVALID_ENUM:             GLenum = 0x0500;
+   pub const GL_INVALID_VALUE:            GLenum = 0x0501;
+   pub const GL_INVALID_OPERATION:        GLenum = 0x0502;
+   pub const GL_STACK_OVERFLOW:           GLenum = 0x0503;
+   pub const GL_STACK_UNDERFLOW:          GLenum = 0x0504;
+   pub const GL_OUT_OF_MEMORY:            GLenum = 0x0505;
+
    pub const GL_CURRENT_BIT:              GLenum = 0x00000001;
    pub const GL_POINT_BIT:                GLenum = 0x00000002;
    pub const GL_LINE_BIT:                 GLenum = 0x00000004;
@@ -118,6 +126,8 @@ pub mod ffi {
 
    #[link(name="GL")]
    extern "C" {
+      pub fn glGetError() -> GLenum;
+
       pub fn glClear(mask: GLbitfield) -> ();
 
       pub fn glFlush() -> ();
@@ -148,6 +158,18 @@ pub mod ffi {
          width: GLsizei,
          height: GLsizei,
          border: GLint,
+         format: GLenum,
+         _type: GLenum,
+         pixels: *const GLvoid
+      ) -> ();
+
+      pub fn glTexSubImage2D(
+         target: GLenum,
+         level: GLint,
+         xoffset: GLint,
+         yoffset: GLint,
+         width: GLsizei,
+         height: GLsizei,
          format: GLenum,
          _type: GLenum,
          pixels: *const GLvoid
@@ -252,6 +274,21 @@ pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
    }
 
    texture
+}
+
+pub fn update_texture(texture: ffi::GLuint, width: usize, height: usize, data: &[u8]) {
+   unsafe {
+      ffi::glBindTexture(ffi::GL_TEXTURE_2D, texture);
+
+      ffi::glTexSubImage2D(
+         ffi::GL_TEXTURE_2D,
+         0,
+         0, 0, width as ffi::GLsizei, height as ffi::GLsizei,
+         ffi::GL_RGB,
+         ffi::GL_UNSIGNED_BYTE,
+         data.as_ptr() as *const ffi::GLvoid
+      );
+   }
 }
 
 pub fn create_framebuffer(texture: ffi::GLuint) -> ffi::GLuint {

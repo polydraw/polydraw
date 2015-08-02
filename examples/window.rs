@@ -186,6 +186,7 @@ fn main() {
    gl::reset_pixelstore_alignment();
 
    let mut seed: u64 = 0;
+   let mut counter: u64 = 0;
    let mut data = create_data(width, height);
    update_data(&mut data, width, height, &mut seed);
 
@@ -207,20 +208,24 @@ fn main() {
 
       let event_type = event.event_type();
 
-      unsafe {
+/*      unsafe {
          println!(
             "XCB Event                   : R {}  S {}  F {}",
             (*event.ptr).response_type,
             (*event.ptr).sequence,
             (*event.ptr).full_sequence
          );
-      }
+      }*/
 
       match event_type {
-         xcb::EventType::KeyPress => {
-            break;
-         },
-         xcb::EventType::Expose => {
+         xcb::EventType::KeyPress | xcb::EventType::Expose => {
+            counter += 1;
+            seed = counter;
+
+            update_data(&mut data, width, height, &mut seed);
+
+            gl::update_texture(texture, width, height, &data);
+
             gl::blit_framebuffer(framebuffer, width, height);
 
             gl::flush();
