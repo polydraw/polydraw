@@ -124,6 +124,8 @@ fn main() {
 
    connection.map_window(window);
 
+   connection.register_close_event(window);
+
    if !egl::bind_api(egl::API::OpenGL) {
       panic!("eglBindAPI failed");
    }
@@ -229,7 +231,10 @@ fn main() {
                   panic!(e.description);
                }
             };
-         }
+         },
+         xcb::EventType::ClientMessage => {
+            break;
+         },
          _ => {}
       }
    }
