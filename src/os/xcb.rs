@@ -305,6 +305,49 @@ pub mod ffi {
 
    #[repr(C)]
    #[derive(Copy)]
+   pub struct xcb_client_message_event_t {
+      pub response_type: c_uchar,
+      pub format: c_uchar,
+      pub sequence: c_ushort,
+      pub window: xcb_window_t,
+      pub _type: xcb_atom_t,
+      pub data: xcb_client_message_data_t,
+   }
+   impl Clone for xcb_client_message_event_t {
+      fn clone(&self) -> Self { *self }
+   }
+   impl Default for xcb_client_message_event_t {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
+   #[repr(C)]
+   #[derive(Copy)]
+   pub struct xcb_client_message_data_t {
+      pub _bindgen_data_: [u32; 5usize],
+   }
+   impl xcb_client_message_data_t {
+      pub unsafe fn data8(&mut self) -> *mut [c_uchar; 20usize] {
+         let raw: *mut u8 = mem::transmute(&self._bindgen_data_);
+         mem::transmute(raw.offset(0))
+      }
+      pub unsafe fn data16(&mut self) -> *mut [c_ushort; 10usize] {
+         let raw: *mut u8 = mem::transmute(&self._bindgen_data_);
+         mem::transmute(raw.offset(0))
+      }
+      pub unsafe fn data32(&mut self) -> *mut [c_uint; 5usize] {
+         let raw: *mut u8 = mem::transmute(&self._bindgen_data_);
+         mem::transmute(raw.offset(0))
+      }
+   }
+   impl Clone for xcb_client_message_data_t {
+      fn clone(&self) -> Self { *self }
+   }
+   impl Default for xcb_client_message_data_t {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
+   #[repr(C)]
+   #[derive(Copy)]
    pub struct xcb_generic_error_t {
        pub response_type: c_uchar,
        pub error_code: c_uchar,
@@ -527,47 +570,49 @@ impl Connection {
       }
    }
 
-   pub fn register_close_event(&self, wid: ffi::xcb_window_t) {
+   pub fn register_close_event(&self, wid: ffi::xcb_window_t) -> (ffi::xcb_atom_t, ffi::xcb_atom_t) {
       unsafe {
-         let cookie_pr = ffi::xcb_intern_atom(
+         let protocols_cookie = ffi::xcb_intern_atom(
             self.ptr,
             true as ffi::c_uchar,
             12,
             b"WM_PROTOCOLS\0" as *const u8 as *const _
          );
 
-         let reply_pr = ffi::xcb_intern_atom_reply(
+         let protocols_reply = ffi::xcb_intern_atom_reply(
             self.ptr,
-            cookie_pr,
+            protocols_cookie,
             ptr::null_mut()
          );
 
-         let cookie_dw = ffi::xcb_intern_atom(
+         let delete_window_cookie = ffi::xcb_intern_atom(
             self.ptr,
             false as ffi::c_uchar,
             16,
             b"WM_DELETE_WINDOW\0" as *const u8 as *const _
          );
 
-         let reply_dw = ffi::xcb_intern_atom_reply(
+         let delete_window_reply = ffi::xcb_intern_atom_reply(
             self.ptr,
-            cookie_dw,
+            delete_window_cookie,
             ptr::null_mut()
          );
 
-         let atom_pr = (*reply_pr).atom;
-         let atom_dw = (*reply_dw).atom;
+         let protocols_atom = (*protocols_reply).atom;
+         let delete_window_atom = (*delete_window_reply).atom;
 
          ffi::xcb_change_property(
             self.ptr,
             ffi::XCB_PROP_MODE_REPLACE,
             wid,
-            atom_pr,
+            protocols_atom,
             ffi::XCB_ATOM_ATOM,
             32,
             1,
-            &atom_dw as *const u32 as *const _
+            &delete_window_atom as *const u32 as *const _
          );
+
+         (protocols_atom, delete_window_atom)
       }
    }
 }
@@ -684,6 +729,28 @@ impl Event {
             (*self.ptr).response_type & !0x80
          }
       )
+   }
+
+   pub fn is_close_event(
+      &self,
+      protocols_atom: ffi::xcb_atom_t,
+      delete_window_atom: ffi::xcb_atom_t
+   ) -> bool {
+      let ptr = self.ptr as *mut ffi::xcb_client_message_event_t;
+
+      if unsafe { (*ptr).format } != 32 {
+         return false;
+      }
+
+      if unsafe { (*ptr)._type } != protocols_atom {
+         return false;
+      }
+
+      if unsafe { (*((*ptr).data.data32()))[0] } != delete_window_atom {
+         return false;
+      }
+
+      true
    }
 }
 

@@ -125,7 +125,7 @@ fn main() {
 
    connection.map_window(window);
 
-   connection.register_close_event(window);
+   let (protocols_atom, delete_window_atom) = connection.register_close_event(window);
 
    if !egl::bind_api(egl::API::OpenGL) {
       panic!("eglBindAPI failed");
@@ -247,7 +247,12 @@ fn main() {
                }
             };
          },
-         xcb::EventType::KeyPress | xcb::EventType::ClientMessage => {
+         xcb::EventType::ClientMessage => {
+            if event.is_close_event(protocols_atom, delete_window_atom) {
+               break;
+            }
+         },
+         xcb::EventType::KeyPress => {
             break;
          },
          _ => {}
