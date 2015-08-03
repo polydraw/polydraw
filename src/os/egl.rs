@@ -11,7 +11,7 @@ pub mod ffi {
 
    use super::{EGLNativeDisplayType, EGLNativeWindowType};
 
-   use libc::{
+   pub use libc::{
       c_char, c_int, c_uint, c_void
    };
 
@@ -191,6 +191,11 @@ pub mod ffi {
       pub fn eglSwapBuffers(
          dpy: EGLDisplay,
          surface: EGLSurface
+      ) -> EGLBoolean;
+
+      pub fn eglSwapInterval(
+         dpy: EGLDisplay,
+         interval: EGLint
       ) -> EGLBoolean;
    }
 }
@@ -484,6 +489,25 @@ pub fn swap_buffers(
       return Err(RuntimeError::new(
          ErrorKind::EGL,
          "eglSwapBuffers failed".to_string()
+      ));
+   }
+
+   Ok(())
+}
+
+pub fn swap_interval(
+   display: &Display,
+   interval: ffi::c_int
+) -> Result<(), RuntimeError> {
+
+   let result = unsafe {
+      ffi::eglSwapInterval(display.ptr, interval)
+   };
+
+   if result != ffi::EGL_TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglSwapInterval failed".to_string()
       ));
    }
 

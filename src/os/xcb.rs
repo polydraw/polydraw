@@ -371,6 +371,10 @@ pub mod ffi {
          c: *mut xcb_connection_t
       ) -> *mut xcb_generic_event_t;
 
+      pub fn xcb_poll_for_event(
+         c: *mut xcb_connection_t
+      ) -> *mut xcb_generic_event_t;
+
       pub fn xcb_flush(
          c: *mut xcb_connection_t
       ) -> c_int;
@@ -398,7 +402,6 @@ pub mod ffi {
          cookie: xcb_intern_atom_cookie_t,
          e: *mut *mut xcb_generic_error_t
       ) -> *mut xcb_intern_atom_reply_t;
-
    }
 }
 
@@ -476,6 +479,20 @@ impl Connection {
    pub fn wait_for_event(&self) -> Option<Event> {
       let event_ptr = unsafe {
          ffi::xcb_wait_for_event(self.ptr)
+      };
+
+      if event_ptr.is_null() {
+         return None;
+      }
+
+      Some(
+         Event::new(event_ptr)
+      )
+   }
+
+   pub fn poll_for_event(&self) -> Option<Event> {
+      let event_ptr = unsafe {
+         ffi::xcb_poll_for_event(self.ptr)
       };
 
       if event_ptr.is_null() {

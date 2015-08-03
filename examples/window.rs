@@ -1,6 +1,7 @@
 #![cfg(target_os = "linux")]
 
 extern crate polydraw;
+extern crate time;
 
 use std::iter::repeat;
 
@@ -198,27 +199,18 @@ fn main() {
 
    println!("GL framebuffer ............ : {:?}", framebuffer);
 
+   match egl::swap_interval(&egl_d, 0) {
+      Ok(_) => {},
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
+
+   let start_time = time::precise_time_ns();
+
    loop {
-      let event = match connection.wait_for_event() {
+      let event = match connection.poll_for_event() {
          None => {
-            return;
-         },
-         Some(event) => event
-      };
-
-      let event_type = event.event_type();
-
-/*      unsafe {
-         println!(
-            "XCB Event                   : R {}  S {}  F {}",
-            (*event.ptr).response_type,
-            (*event.ptr).sequence,
-            (*event.ptr).full_sequence
-         );
-      }*/
-
-      match event_type {
-         xcb::EventType::KeyPress | xcb::EventType::Expose => {
             counter += 1;
             seed = counter;
 
@@ -236,13 +228,36 @@ fn main() {
                   panic!(e.description);
                }
             };
+
+            continue;
          },
-         xcb::EventType::ClientMessage => {
+         Some(event) => event
+      };
+
+      let event_type = event.event_type();
+
+/*      unsafe {
+         println!(
+            "XCB Event                   : R {}  S {}  F {}",
+            (*event.ptr).response_type,
+            (*event.ptr).sequence,
+            (*event.ptr).full_sequence
+         );
+      }*/
+
+      match event_type {
+         xcb::EventType::KeyPress | xcb::EventType::ClientMessage => {
             break;
          },
          _ => {}
       }
    }
+
+   let end_time = time::precise_time_ns();
+
+   println!("Time ns ................... : {:?}", end_time - start_time);
+   println!("Cycles .................... : {:?}", counter);
+   println!("FPS ....................... : {:?}", counter * 1000000000 / (end_time - start_time) );
 
    connection.destroy_window(window);
 }
