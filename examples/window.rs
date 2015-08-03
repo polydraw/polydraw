@@ -211,6 +211,24 @@ fn main() {
    loop {
       let event = match connection.poll_for_event() {
          None => {
+            break;
+         },
+         Some(event) => event
+      };
+
+      let event_type = event.event_type();
+
+/*      unsafe {
+         println!(
+            "XCB Event                   : R {}  S {}  F {}",
+            (*event.ptr).response_type,
+            (*event.ptr).sequence,
+            (*event.ptr).full_sequence
+         );
+      }*/
+
+      match event_type {
+         xcb::EventType::Expose | xcb::EventType::Empty => {
             counter += 1;
             seed = counter;
 
@@ -228,24 +246,7 @@ fn main() {
                   panic!(e.description);
                }
             };
-
-            continue;
          },
-         Some(event) => event
-      };
-
-      let event_type = event.event_type();
-
-/*      unsafe {
-         println!(
-            "XCB Event                   : R {}  S {}  F {}",
-            (*event.ptr).response_type,
-            (*event.ptr).sequence,
-            (*event.ptr).full_sequence
-         );
-      }*/
-
-      match event_type {
          xcb::EventType::KeyPress | xcb::EventType::ClientMessage => {
             break;
          },

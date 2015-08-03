@@ -402,6 +402,10 @@ pub mod ffi {
          cookie: xcb_intern_atom_cookie_t,
          e: *mut *mut xcb_generic_error_t
       ) -> *mut xcb_intern_atom_reply_t;
+
+      pub fn xcb_connection_has_error(
+         c: *mut xcb_connection_t
+      ) -> c_int;
    }
 }
 
@@ -496,7 +500,13 @@ impl Connection {
       };
 
       if event_ptr.is_null() {
-         return None;
+         if unsafe { ffi::xcb_connection_has_error(self.ptr) } != 0 {
+            return None;
+         }
+
+         return Some(
+            Event::empty()
+         );
       }
 
       Some(
@@ -618,6 +628,7 @@ pub enum EventType {
    KeymapNotify,
    Expose,
    ClientMessage,
+   Empty,
    Unidentified,
 }
 
@@ -639,6 +650,10 @@ impl EventType {
          _ => EventType::Unidentified
       }
    }
+
+   pub fn empty() -> Self {
+      EventType::Empty
+   }
 }
 
 pub struct Event {
@@ -652,7 +667,17 @@ impl Event {
       }
    }
 
+   pub fn empty() -> Self {
+      Event {
+         ptr: ptr::null_mut(),
+      }
+   }
+
    pub fn event_type(&self) -> EventType {
+      if self.ptr.is_null() {
+         return EventType::empty();
+      }
+
       EventType::new(
          unsafe {
             (*self.ptr).response_type & !0x80
