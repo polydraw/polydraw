@@ -495,6 +495,7 @@ impl Connection {
    }
 
    pub fn poll_for_event(&self) -> Option<Event> {
+      // xcb_poll_for_queued_event ?
       let event_ptr = unsafe {
          ffi::xcb_poll_for_event(self.ptr)
       };
