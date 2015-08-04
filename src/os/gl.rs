@@ -199,6 +199,7 @@ pub mod ffi {
 }
 
 use std::mem;
+use std::ptr;
 
 #[inline]
 pub fn clear_color(red: f32, green: f32, blue: f32, alpha: f32) {
@@ -274,6 +275,24 @@ pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
    }
 
    texture
+}
+
+pub fn resize_texture(texture: ffi::GLuint, width: usize, height: usize) {
+   unsafe {
+      ffi::glBindTexture(ffi::GL_TEXTURE_2D, texture);
+
+      ffi::glTexImage2D(
+         ffi::GL_TEXTURE_2D,
+         0,
+         ffi::GL_RGB as ffi::GLint,
+         width as ffi::GLsizei,
+         height as ffi::GLsizei,
+         0,
+         ffi::GL_RGB,
+         ffi::GL_UNSIGNED_BYTE,
+         ptr::null()
+      );
+   }
 }
 
 pub fn update_texture(texture: ffi::GLuint, width: usize, height: usize, data: &[u8]) {

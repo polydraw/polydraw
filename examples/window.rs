@@ -80,8 +80,8 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
 }
 
 fn main() {
-   let width: usize = 1280;
-   let height: usize = 720;
+   let mut width: usize = 1280;
+   let mut height: usize = 720;
 
    let platforms = match cl::platforms() {
       Ok(platforms) => platforms,
@@ -208,54 +208,81 @@ fn main() {
 
    let start_time = time::precise_time_ns();
 
+   let mut exit = false;
+
+   let mut new_width: usize = width;
+   let mut new_height: usize = height;
+
    loop {
-      let event = match connection.poll_for_event() {
-         None => {
-            break;
-         },
-         Some(event) => event
-      };
-
-      let event_type = event.event_type();
-
-/*      unsafe {
-         println!(
-            "XCB Event                   : R {}  S {}  F {}",
-            (*event.ptr).response_type,
-            (*event.ptr).sequence,
-            (*event.ptr).full_sequence
-         );
-      }*/
-
-      match event_type {
-         xcb::EventType::Expose | xcb::EventType::Empty => {
-            counter += 1;
-            seed = counter;
-
-            update_data(&mut data, width, height, &mut seed);
-
-            gl::update_texture(texture, width, height, &data);
-
-            gl::blit_framebuffer(framebuffer, width, height);
-
-            gl::flush();
-
-            match egl::swap_buffers(&egl_d, &surface) {
-               Ok(_) => {},
-               Err(e) => {
-                  panic!(e.description);
-               }
-            };
-         },
-         xcb::EventType::ClientMessage => {
-            if event.is_close_event(protocols_atom, delete_window_atom) {
-               break;
+      for result in connection.poll_event_iter() {
+         let event = match result {
+            Ok(event) => event,
+            Err(e) => {
+               panic!(e.description);
             }
-         },
-         xcb::EventType::KeyPress => {
-            break;
-         },
-         _ => {}
+         };
+
+         let event_type = event.event_type();
+
+         match event_type {
+            xcb::EventType::Expose | xcb::EventType::Empty => {
+               counter += 1;
+               seed = counter;
+
+               if new_width != width || new_height != height {
+                  width = new_width;
+                  height = new_height;
+
+                  data = create_data(width, height);
+                  gl::resize_texture(texture, width, height);
+               }
+
+               update_data(&mut data, width, height, &mut seed);
+
+               gl::update_texture(texture, width, height, &data);
+
+               gl::blit_framebuffer(framebuffer, width, height);
+
+               gl::flush();
+
+               match egl::swap_buffers(&egl_d, &surface) {
+                  Ok(_) => {},
+                  Err(e) => {
+                     panic!(e.description);
+                  }
+               };
+            },
+            xcb::EventType::ClientMessage => {
+               if event.is_close_event(protocols_atom, delete_window_atom) {
+                  exit = true;
+                  break;
+               }
+            },
+            xcb::EventType::ConfigureNotify => {
+               let (e_window, e_width, e_height) = event.resize_properties();
+               //println!("ConfigureNotify             : Win {} Wid {}  Hei {}", e_window, e_width, e_height);
+
+               if e_window != window {
+                  continue;
+               }
+
+               if (e_width != width) || (e_height != height) {
+                  new_width = e_width;
+                  new_height = e_height;
+
+                  //println!("Resize                      : Wid {}  Hei {}", width, height);
+               }
+            },
+            xcb::EventType::KeyPress => {
+               exit = true;
+               break;
+            },
+            _ => {}
+         }
+      }
+
+      if exit {
+         break;
       }
    }
 

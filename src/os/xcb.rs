@@ -322,6 +322,30 @@ pub mod ffi {
 
    #[repr(C)]
    #[derive(Copy)]
+   pub struct xcb_configure_notify_event_t {
+      pub response_type: c_uchar,
+      pub pad0: c_uchar,
+      pub sequence: c_uchar,
+      pub event: xcb_window_t,
+      pub window: xcb_window_t,
+      pub above_sibling: xcb_window_t,
+      pub x: c_short,
+      pub y: c_short,
+      pub width: c_ushort,
+      pub height: c_ushort,
+      pub border_width: c_ushort,
+      pub override_redirect: c_uchar,
+      pub pad1: c_uchar,
+   }
+   impl Clone for xcb_configure_notify_event_t {
+      fn clone(&self) -> Self { *self }
+   }
+   impl Default for xcb_configure_notify_event_t {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
+   #[repr(C)]
+   #[derive(Copy)]
    pub struct xcb_client_message_data_t {
       pub _bindgen_data_: [u32; 5usize],
    }
@@ -418,6 +442,10 @@ pub mod ffi {
          c: *mut xcb_connection_t
       ) -> *mut xcb_generic_event_t;
 
+      pub fn xcb_poll_for_queued_event(
+         c: *mut xcb_connection_t
+      ) -> *mut xcb_generic_event_t;
+
       pub fn xcb_flush(
          c: *mut xcb_connection_t
       ) -> c_int;
@@ -453,6 +481,8 @@ pub mod ffi {
 }
 
 use std::ptr;
+
+use ::error::{RuntimeError, ErrorKind};
 
 pub struct Connection {
    pub ptr: *mut ffi::xcb_connection_t
@@ -496,7 +526,8 @@ impl Connection {
       width: ffi::c_ushort, height: ffi::c_ushort,
    ) {
       let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
-         ffi::XCB_EVENT_MASK_KEY_PRESS;
+         ffi::XCB_EVENT_MASK_KEY_PRESS |
+         ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY;
       let valuelist = [eventmask, 0];
       let valuemask = ffi::XCB_CW_EVENT_MASK;
 
@@ -537,25 +568,8 @@ impl Connection {
       )
    }
 
-   pub fn poll_for_event(&self) -> Option<Event> {
-      // xcb_poll_for_queued_event ?
-      let event_ptr = unsafe {
-         ffi::xcb_poll_for_event(self.ptr)
-      };
-
-      if event_ptr.is_null() {
-         if unsafe { ffi::xcb_connection_has_error(self.ptr) } != 0 {
-            return None;
-         }
-
-         return Some(
-            Event::empty()
-         );
-      }
-
-      Some(
-         Event::new(event_ptr)
-      )
+   pub fn poll_event_iter(&self) -> EventIterator {
+      EventIterator::new(self.ptr)
    }
 
    pub fn destroy_window(&self, window: ffi::xcb_window_t) {
@@ -674,6 +688,7 @@ pub enum EventType {
    KeymapNotify,
    Expose,
    ClientMessage,
+   ConfigureNotify,
    Empty,
    Unidentified,
 }
@@ -693,6 +708,7 @@ impl EventType {
          ffi::XCB_KEYMAP_NOTIFY => EventType::KeymapNotify,
          ffi::XCB_EXPOSE => EventType::Expose,
          ffi::XCB_CLIENT_MESSAGE => EventType::ClientMessage,
+         ffi::XCB_CONFIGURE_NOTIFY => EventType::ConfigureNotify,
          _ => EventType::Unidentified
       }
    }
@@ -736,21 +752,27 @@ impl Event {
       protocols_atom: ffi::xcb_atom_t,
       delete_window_atom: ffi::xcb_atom_t
    ) -> bool {
-      let ptr = self.ptr as *mut ffi::xcb_client_message_event_t;
+      unsafe {
+         let ptr = self.ptr as *mut ffi::xcb_client_message_event_t;
 
-      if unsafe { (*ptr).format } != 32 {
-         return false;
+         let data = (*ptr).data.data32();
+
+         if (*ptr).format != 32 ||
+            (*ptr)._type != protocols_atom ||
+            (*data)[0] != delete_window_atom {
+            return false;
+         }
+
+         true
       }
+   }
 
-      if unsafe { (*ptr)._type } != protocols_atom {
-         return false;
+   pub fn resize_properties(&self) -> (ffi::xcb_window_t, usize, usize) {
+      unsafe {
+         let ptr = self.ptr as *mut ffi::xcb_configure_notify_event_t;
+
+         ((*ptr).window, (*ptr).width as usize, (*ptr).height as usize)
       }
-
-      if unsafe { (*((*ptr).data.data32()))[0] } != delete_window_atom {
-         return false;
-      }
-
-      true
    }
 }
 
@@ -759,5 +781,61 @@ impl Drop for Event {
       unsafe {
          ffi::free(self.ptr as *mut _);
       }
+   }
+}
+
+pub struct EventIterator {
+   ptr: *mut ffi::xcb_connection_t,
+   started: bool,
+   completed: bool,
+}
+
+impl EventIterator {
+   pub fn new(connection_ptr: *mut ffi::xcb_connection_t) -> Self {
+      EventIterator {
+         ptr: connection_ptr,
+         started: false,
+         completed: false,
+      }
+   }
+}
+
+impl Iterator for EventIterator {
+   type Item = Result<Event, RuntimeError>;
+
+   fn next(&mut self) -> Option<Result<Event, RuntimeError>> {
+      if self.completed {
+         return None;
+      }
+
+      let event_ptr = unsafe {
+         if !self.started {
+            self.started = true;
+            ffi::xcb_poll_for_event(self.ptr)
+         } else {
+            ffi::xcb_poll_for_queued_event(self.ptr)
+         }
+      };
+
+      if event_ptr.is_null() {
+         self.completed = true;
+
+         if unsafe { ffi::xcb_connection_has_error(self.ptr) } != 0 {
+            return Some(
+               Err(RuntimeError::new(
+                  ErrorKind::XCB,
+                  "Poll event failed".to_string()
+               ))
+            );
+         }
+
+         return Some(
+            Ok(Event::empty())
+         );
+      }
+
+      Some(
+         Ok(Event::new(event_ptr))
+      )
    }
 }
