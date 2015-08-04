@@ -79,6 +79,7 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
    }
 }
 
+#[allow(unused_assignments)]
 fn main() {
    let mut width: usize = 1280;
    let mut height: usize = 720;
@@ -186,12 +187,10 @@ fn main() {
 
    gl::reset_pixelstore_alignment();
 
-   let mut seed: u64 = 0;
    let mut counter: u64 = 0;
    let mut data = create_data(width, height);
-   update_data(&mut data, width, height, &mut seed);
 
-   let texture = gl::create_texture(width, height, &data);
+   let texture = gl::create_texture(width, height);
 
    println!("GL texture ................ : {:?}", texture);
 
@@ -209,6 +208,7 @@ fn main() {
    let start_time = time::precise_time_ns();
 
    let mut exit = false;
+   let mut seed = 0;
 
    let mut new_width: usize = width;
    let mut new_height: usize = height;
@@ -260,7 +260,6 @@ fn main() {
             },
             xcb::EventType::ConfigureNotify => {
                let (e_window, e_width, e_height) = event.resize_properties();
-               //println!("ConfigureNotify             : Win {} Wid {}  Hei {}", e_window, e_width, e_height);
 
                if e_window != window {
                   continue;
@@ -269,8 +268,6 @@ fn main() {
                if (e_width != width) || (e_height != height) {
                   new_width = e_width;
                   new_height = e_height;
-
-                  //println!("Resize                      : Wid {}  Hei {}", width, height);
                }
             },
             xcb::EventType::KeyPress => {

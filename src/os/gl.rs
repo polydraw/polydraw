@@ -229,7 +229,7 @@ pub fn reset_pixelstore_alignment() {
    }
 }
 
-pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
+pub fn create_texture(width: usize, height: usize) -> ffi::GLuint {
    let mut texture: ffi::GLuint = unsafe { mem::uninitialized() };
 
    unsafe {
@@ -270,7 +270,7 @@ pub fn create_texture(width: usize, height: usize, data: &[u8]) -> ffi::GLuint {
          0,
          ffi::GL_RGB,
          ffi::GL_UNSIGNED_BYTE,
-         data.as_ptr() as *const ffi::GLvoid
+         ptr::null()
       );
    }
 
