@@ -194,9 +194,9 @@ fn main() {
 
    println!("GL texture ................ : {:?}", texture.name);
 
-   let framebuffer = gl::create_framebuffer(&texture);
+   let framebuffer = gl::Framebuffer::new(&texture);
 
-   println!("GL framebuffer ............ : {:?}", framebuffer);
+   println!("GL framebuffer ............ : {:?}", framebuffer.name);
 
    match egl::swap_interval(&egl_d, 0) {
       Ok(_) => {},
@@ -241,7 +241,7 @@ fn main() {
 
                texture.update(width, height, &data);
 
-               gl::blit_framebuffer(framebuffer, width, height);
+               framebuffer.blit(width, height);
 
                gl::flush();
 

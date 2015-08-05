@@ -144,6 +144,8 @@ pub mod ffi {
 
       pub fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) -> ();
 
+      pub fn glDeleteFramebuffers(n: GLsizei, framebuffers: *const GLuint) -> ();
+
       pub fn glBindFramebuffer(target: GLenum, framebuffer: GLuint) -> ();
 
       pub fn glClearColor(
@@ -328,39 +330,55 @@ impl Drop for Texture {
    }
 }
 
-pub fn create_framebuffer(texture: &Texture) -> ffi::GLuint {
-   let mut framebuffer: ffi::GLuint = unsafe { mem::uninitialized() };
-
-   unsafe {
-      ffi::glGenFramebuffers(1, &mut framebuffer);
-
-      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, framebuffer);
-
-      ffi::glFramebufferTexture2D(
-         ffi::GL_READ_FRAMEBUFFER,
-         ffi::GL_COLOR_ATTACHMENT0,
-         ffi::GL_TEXTURE_2D,
-         texture.name,
-         0
-      );
-
-      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
-   }
-
-   framebuffer
+pub struct Framebuffer {
+   pub name: ffi::GLuint,
 }
 
-pub fn blit_framebuffer(framebuffer: ffi::GLuint, width: usize, height: usize) {
-   unsafe {
-      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, framebuffer);
+impl Framebuffer {
+   pub fn new(texture: &Texture) -> Self {
+      let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
-      ffi::glBlitFramebuffer(
-         0, 0, width as ffi::GLint, height as ffi::GLint,
-         0, 0, width as ffi::GLint, height as ffi::GLint,
-         ffi::GL_COLOR_BUFFER_BIT,
-         ffi::GL_NEAREST
-      );
+      unsafe {
+         ffi::glGenFramebuffers(1, &mut name);
 
-      ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
+         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, name);
+
+         ffi::glFramebufferTexture2D(
+            ffi::GL_READ_FRAMEBUFFER,
+            ffi::GL_COLOR_ATTACHMENT0,
+            ffi::GL_TEXTURE_2D,
+            texture.name,
+            0
+         );
+
+         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
+      }
+
+      Framebuffer {
+         name: name,
+      }
+   }
+
+   pub fn blit(&self, width: usize, height: usize) {
+      unsafe {
+         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name);
+
+         ffi::glBlitFramebuffer(
+            0, 0, width as ffi::GLint, height as ffi::GLint,
+            0, 0, width as ffi::GLint, height as ffi::GLint,
+            ffi::GL_COLOR_BUFFER_BIT,
+            ffi::GL_NEAREST
+         );
+
+         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
+      }
+   }
+}
+
+impl Drop for Framebuffer {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::glDeleteFramebuffers(1, &self.name);
+      }
    }
 }
