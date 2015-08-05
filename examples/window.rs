@@ -190,11 +190,11 @@ fn main() {
    let mut counter: u64 = 0;
    let mut data = create_data(width, height);
 
-   let texture = gl::create_texture(width, height);
+   let texture = gl::Texture::new(width, height);
 
-   println!("GL texture ................ : {:?}", texture);
+   println!("GL texture ................ : {:?}", texture.name);
 
-   let framebuffer = gl::create_framebuffer(texture);
+   let framebuffer = gl::create_framebuffer(&texture);
 
    println!("GL framebuffer ............ : {:?}", framebuffer);
 
@@ -234,12 +234,12 @@ fn main() {
                   height = new_height;
 
                   data = create_data(width, height);
-                  gl::resize_texture(texture, width, height);
+                  texture.resize(width, height);
                }
 
                update_data(&mut data, width, height, &mut seed);
 
-               gl::update_texture(texture, width, height, &data);
+               texture.update(width, height, &data);
 
                gl::blit_framebuffer(framebuffer, width, height);
 
