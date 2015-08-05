@@ -96,6 +96,8 @@ pub mod ffi {
 
    pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
 
+   pub const WM_CLOSE:                    c_uint = 16;
+
    #[repr(C)]
    #[derive(Copy)]
    pub struct WNDCLASSEXW {
@@ -150,15 +152,22 @@ pub mod ffi {
    }
 
    extern "system" {
+      pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
+
+      pub fn RegisterClassExW(lpWndClass: *const WNDCLASSEXW) -> ATOM;
+
+      pub fn PostQuitMessage(nExitCode: c_int);
+
+      pub fn TranslateMessage(lpmsg: *const MSG) -> BOOL;
+
+      pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
+
       pub fn DefWindowProcW(
          hWnd: HWND,
          Msg: c_uint,
          wParam: WPARAM,
          lParam: LPARAM
       ) -> LRESULT;
-
-      pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
-      pub fn RegisterClassExW(lpWndClass: *const WNDCLASSEXW) -> ATOM;
 
       pub fn CreateWindowExW(
          dwExStyle: c_ulong,
@@ -181,9 +190,6 @@ pub mod ffi {
          wMsgFilterMin: c_uint,
          wMsgFilterMax: c_uint
       ) -> BOOL;
-
-      pub fn TranslateMessage(lpmsg: *const MSG) -> BOOL;
-      pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
    }
 }
 
@@ -206,7 +212,16 @@ pub fn register_window_class<S: AsRef<OsStr> + ?Sized>(class_name: &S) {
       wparam: ffi::WPARAM,
       lparam: ffi::LPARAM
    ) -> ffi::LRESULT {
-      ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
+      match msg {
+         ffi::WM_CLOSE => {
+            ffi::PostQuitMessage(0);
+         },
+         _ => {
+            return ffi::DefWindowProcW(hwnd, msg, wparam, lparam);
+         }
+      }
+
+      return 0;
    }
 
    unsafe {
