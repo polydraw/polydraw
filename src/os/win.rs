@@ -245,7 +245,7 @@ pub fn register_window_class<S: AsRef<OsStr> + ?Sized>(class_name: &S) {
 }
 
 pub struct Window {
-   hwnd: ffi::HWND
+   pub hwnd: ffi::HWND
 }
 
 impl Window {
