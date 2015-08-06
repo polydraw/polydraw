@@ -12,6 +12,7 @@ pub enum ErrorKind {
    Xlib,
    XCB,
    EGL,
+   WGL,
    CL,
    Other,
 }

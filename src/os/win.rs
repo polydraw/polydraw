@@ -15,6 +15,7 @@ pub mod ffi {
    pub type HICON = HANDLE;
    pub type HBRUSH = HANDLE;
    pub type HMENU = HANDLE;
+   pub type HDC = HANDLE;
    pub type HCURSOR = HICON;
 
    pub type WPARAM = uintptr_t;
@@ -162,8 +163,10 @@ pub mod ffi {
 
       pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
 
+      pub fn GetDC(hwnd: HWND) -> HDC;
+
       pub fn DefWindowProcW(
-         hWnd: HWND,
+         hwnd: HWND,
          Msg: c_uint,
          wParam: WPARAM,
          lParam: LPARAM
@@ -186,7 +189,7 @@ pub mod ffi {
 
       pub fn GetMessageW(
          lpMsg: *const MSG,
-         hWnd: HWND,
+         hwnd: HWND,
          wMsgFilterMin: c_uint,
          wMsgFilterMax: c_uint
       ) -> BOOL;
@@ -267,6 +270,14 @@ impl Window {
 
       Window {
          hwnd: hwnd
+      }
+   }
+
+   pub fn dc(&self) -> ffi::HDC {
+      {
+         unsafe {
+            ffi::GetDC(self.hwnd)
+         }
       }
    }
 }
