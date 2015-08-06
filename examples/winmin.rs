@@ -16,6 +16,8 @@ fn main() {
       }
    };
 
+   let context = wgl::Context::create(dc);
+
    loop {
       let message = match win::Message::get() {
          Some(message) => message,

@@ -9,7 +9,7 @@ pub mod ffi {
       c_char, c_int, c_uint, c_void
    };
    pub use libc::types::os::arch::extra::{
-      WORD, DWORD, BYTE, BOOL
+      WORD, DWORD, BYTE, BOOL, HANDLE
    };
    pub use libc::consts::os::extra::{
       TRUE
@@ -17,6 +17,8 @@ pub mod ffi {
    pub use os::win::ffi::{
       HDC
    };
+
+   pub type HGLRC = HANDLE;
 
    pub const PFD_TYPE_RGBA:          BYTE = 0;
 
@@ -68,10 +70,17 @@ pub mod ffi {
       pub fn wglChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) -> c_int;
 
       pub fn wglSetPixelFormat(hdc: HDC, iPixelFormat: c_int, ppfd: *const PIXELFORMATDESCRIPTOR) -> BOOL;
+
+      pub fn wglCreateContext(hdc: HDC) -> HGLRC;
+
+      pub fn wglMakeCurrent(hdc: HDC, rc: HGLRC) -> BOOL;
+
+      pub fn wglDeleteContext(rc: HGLRC) -> BOOL;
    }
 }
 
 use std::mem;
+use std::ptr;
 
 use ::error::{RuntimeError, ErrorKind};
 
@@ -95,8 +104,8 @@ pub fn init_pixel_format(
       dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0
    };
 
-
    let pixel_format = unsafe { ffi::wglChoosePixelFormat(hdc, &pfd) };
+
    let result = unsafe { ffi::wglSetPixelFormat(hdc, pixel_format, &pfd) };
 
    if result != ffi::TRUE {
@@ -107,4 +116,42 @@ pub fn init_pixel_format(
    }
 
    Ok(())
+}
+
+pub struct Context {
+   pub rc: ffi::HGLRC
+}
+
+impl Context {
+   pub fn create(hdc: ffi::HDC) -> Result<Self, RuntimeError> {
+      let rc = unsafe { ffi::wglCreateContext(hdc) };
+
+      if rc == ptr::null_mut() {
+         return Err(RuntimeError::new(
+            ErrorKind::WGL,
+            "wglCreateContext failed".to_string()
+         ));
+      }
+
+      let result = unsafe { ffi::wglMakeCurrent(hdc, rc) };
+
+      if result != ffi::TRUE {
+         return Err(RuntimeError::new(
+            ErrorKind::WGL,
+            "wglMakeCurrent failed".to_string()
+         ));
+      }
+
+      Ok(Context {
+         rc: rc,
+      })
+   }
+}
+
+impl Drop for Context {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::wglDeleteContext(self.rc);
+      }
+   }
 }

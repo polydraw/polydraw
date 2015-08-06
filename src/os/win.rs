@@ -252,7 +252,7 @@ pub struct Window {
 }
 
 impl Window {
-   pub fn create<S: AsRef<OsStr> + ?Sized>(width: ffi::c_int, height: ffi::c_int, title: &S, class_name: &S) -> Window {
+   pub fn create<S: AsRef<OsStr> + ?Sized>(width: ffi::c_int, height: ffi::c_int, title: &S, class_name: &S) -> Self {
       let hwnd = unsafe {
          ffi::CreateWindowExW(
             ffi::WS_EX_CLIENTEDGE,
