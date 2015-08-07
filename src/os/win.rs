@@ -97,6 +97,7 @@ pub mod ffi {
 
    pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
 
+   pub const WM_CREATE:                   c_uint = 1;
    pub const WM_CLOSE:                    c_uint = 16;
 
    pub const SW_SHOWNORMAL:                c_int = 1;
@@ -223,25 +224,28 @@ fn to_utf16_os(s: &str) -> Vec<u16> {
    v
 }
 
-pub fn register_window_class(class_name: &str) {
-   unsafe extern "system" fn wnd_proc(
-      hwnd: ffi::HWND,
-      msg: ffi::c_uint,
-      wparam: ffi::WPARAM,
-      lparam: ffi::LPARAM
-   ) -> ffi::LRESULT {
-      match msg {
-         ffi::WM_CLOSE => {
-            ffi::PostQuitMessage(0);
-         },
-         _ => {
-            return ffi::DefWindowProcW(hwnd, msg, wparam, lparam);
-         }
+unsafe extern "system" fn wnd_proc(
+   hwnd: ffi::HWND,
+   msg: ffi::c_uint,
+   wparam: ffi::WPARAM,
+   lparam: ffi::LPARAM
+) -> ffi::LRESULT {
+   match msg {
+      ffi::WM_CLOSE => {
+         ffi::PostQuitMessage(0);
+      },
+      ffi::WM_CREATE => {
+         return 0;
+      },
+      _ => {
+         return ffi::DefWindowProcW(hwnd, msg, wparam, lparam);
       }
-
-      return 0;
    }
 
+   return 0;
+}
+
+pub fn register_window_class(class_name: &str) {
    unsafe {
       let wnd_class = ffi::WNDCLASSEXW {
          cbSize: mem::size_of::<ffi::WNDCLASSEXW>() as ffi::c_uint,
@@ -270,10 +274,10 @@ impl Window {
    pub fn create(width: ffi::c_int, height: ffi::c_int, title: &str, class_name: &str) -> Self {
       let hwnd = unsafe {
          ffi::CreateWindowExW(
-            ffi::WS_EX_CLIENTEDGE,
+            ffi::WS_EX_APPWINDOW | ffi::WS_EX_WINDOWEDGE,
             to_utf16_os(class_name).as_ptr(),
             to_utf16_os(title).as_ptr(),
-            ffi::WS_OVERLAPPEDWINDOW | ffi::WS_VISIBLE,
+            ffi::WS_OVERLAPPEDWINDOW | ffi::WS_CLIPSIBLINGS | ffi::WS_CLIPCHILDREN,
             ffi::CW_USEDEFAULT, ffi::CW_USEDEFAULT,
             width, height,
             ptr::null_mut(),
