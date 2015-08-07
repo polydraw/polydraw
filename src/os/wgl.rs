@@ -69,6 +69,8 @@ pub mod ffi {
    extern "C" {
       pub fn ChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) -> c_int;
 
+      pub fn DescribePixelFormat(hdc: HDC, iPixelFormat: c_int, nBytes: c_uint, ppfd: *mut PIXELFORMATDESCRIPTOR) -> c_int;
+
       pub fn SetPixelFormat(hdc: HDC, iPixelFormat: c_int, ppfd: *const PIXELFORMATDESCRIPTOR) -> BOOL;
 
       pub fn SwapBuffers(rc: HDC) -> BOOL;
@@ -76,10 +78,6 @@ pub mod ffi {
 
    #[link(name="opengl32")]
    extern "C" {
-      pub fn wglChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) -> c_int;
-
-      pub fn wglSetPixelFormat(hdc: HDC, iPixelFormat: c_int, ppfd: *const PIXELFORMATDESCRIPTOR) -> BOOL;
-
       pub fn wglCreateContext(hdc: HDC) -> HGLRC;
 
       pub fn wglMakeCurrent(hdc: HDC, rc: HGLRC) -> BOOL;
@@ -87,8 +85,6 @@ pub mod ffi {
       pub fn wglDeleteContext(rc: HGLRC) -> BOOL;
 
       pub fn wglGetCurrentContext() -> HGLRC;
-
-      pub fn wglSwapBuffers(rc: HDC) -> BOOL;
 
       pub fn wglGetProcAddress(name: *const c_char) -> *const c_void;
    }
@@ -105,7 +101,7 @@ use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 pub fn init_pixel_format(
    hdc: ffi::HDC,
 ) -> Result<(), RuntimeError> {
-   let pfd = ffi::PIXELFORMATDESCRIPTOR {
+   let mut pfd = ffi::PIXELFORMATDESCRIPTOR {
       nSize: mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::WORD,
       nVersion: 1,
       dwFlags: ffi::PFD_DRAW_TO_WINDOW | ffi::PFD_SUPPORT_OPENGL | ffi::PFD_DOUBLEBUFFER,
@@ -132,6 +128,8 @@ pub fn init_pixel_format(
    }
 
    println!("PIXEL FORMAT: {:?}", pixel_format);
+
+   unsafe { ffi::DescribePixelFormat(hdc, pixel_format, mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::c_uint, &mut pfd) };
 
    let result = unsafe { ffi::SetPixelFormat(hdc, pixel_format, &pfd) };
 
