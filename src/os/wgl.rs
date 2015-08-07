@@ -65,6 +65,15 @@ pub mod ffi {
       fn default() -> Self { unsafe { mem::zeroed() } }
    }
 
+   #[link(name="gdi32")]
+   extern "C" {
+      pub fn ChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) -> c_int;
+
+      pub fn SetPixelFormat(hdc: HDC, iPixelFormat: c_int, ppfd: *const PIXELFORMATDESCRIPTOR) -> BOOL;
+
+      pub fn SwapBuffers(rc: HDC) -> BOOL;
+   }
+
    #[link(name="opengl32")]
    extern "C" {
       pub fn wglChoosePixelFormat(hdc: HDC, ppfd: *const PIXELFORMATDESCRIPTOR) -> c_int;
@@ -76,13 +85,22 @@ pub mod ffi {
       pub fn wglMakeCurrent(hdc: HDC, rc: HGLRC) -> BOOL;
 
       pub fn wglDeleteContext(rc: HGLRC) -> BOOL;
+
+      pub fn wglGetCurrentContext() -> HGLRC;
+
+      pub fn wglSwapBuffers(rc: HDC) -> BOOL;
+
+      pub fn wglGetProcAddress(name: *const c_char) -> *const c_void;
    }
 }
 
+use std::io;
 use std::mem;
 use std::ptr;
+use std::ffi::CString;
 
-use ::error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind};
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
 pub fn init_pixel_format(
    hdc: ffi::HDC,
@@ -92,7 +110,7 @@ pub fn init_pixel_format(
       nVersion: 1,
       dwFlags: ffi::PFD_DRAW_TO_WINDOW | ffi::PFD_SUPPORT_OPENGL | ffi::PFD_DOUBLEBUFFER,
       iPixelType: ffi::PFD_TYPE_RGBA,
-      cColorBits: 32,
+      cColorBits: 24,
       cRedBits: 0, cRedShift: 0, cGreenBits: 0, cGreenShift: 0, cBlueBits: 0, cBlueShift: 0,
       cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 0,
       cAccumRedBits: 0, cAccumGreenBits: 0, cAccumBlueBits: 0, cAccumAlphaBits: 0,
@@ -104,14 +122,23 @@ pub fn init_pixel_format(
       dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0
    };
 
-   let pixel_format = unsafe { ffi::wglChoosePixelFormat(hdc, &pfd) };
+   let pixel_format = unsafe { ffi::ChoosePixelFormat(hdc, &pfd) };
 
-   let result = unsafe { ffi::wglSetPixelFormat(hdc, pixel_format, &pfd) };
+   if pixel_format == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::WGL,
+         "Choosing pixel format failed".to_string()
+      ));
+   }
+
+   println!("PIXEL FORMAT: {:?}", pixel_format);
+
+   let result = unsafe { ffi::SetPixelFormat(hdc, pixel_format, &pfd) };
 
    if result != ffi::TRUE {
       return Err(RuntimeError::new(
          ErrorKind::WGL,
-         "wglSetPixelFormat failed".to_string()
+         "Setting pixel format failed".to_string()
       ));
    }
 
@@ -129,7 +156,7 @@ impl Context {
       if rc == ptr::null_mut() {
          return Err(RuntimeError::new(
             ErrorKind::WGL,
-            "wglCreateContext failed".to_string()
+            format!("Create WGL context failed: {}", io::Error::last_os_error())
          ));
       }
 
@@ -146,6 +173,21 @@ impl Context {
          rc: rc,
       })
    }
+
+   pub fn current() -> Result<Self, RuntimeError> {
+      let rc = unsafe { ffi::wglGetCurrentContext() };
+
+      if rc == ptr::null_mut() {
+         return Err(RuntimeError::new(
+            ErrorKind::WGL,
+            "Getting current WGL context failed".to_string()
+         ));
+      }
+
+      Ok(Context {
+         rc: rc,
+      })
+   }
 }
 
 impl Drop for Context {
@@ -153,5 +195,30 @@ impl Drop for Context {
       unsafe {
          ffi::wglDeleteContext(self.rc);
       }
+   }
+}
+
+pub fn swap_buffers(hdc: ffi::HDC) {
+   unsafe { ffi::SwapBuffers(hdc) };
+}
+
+pub struct Loader;
+
+impl Loader {
+   pub fn new() -> Self {
+      Loader
+   }
+}
+
+impl FnPtrLoader for Loader {
+   fn get_proc_addr(&self, name: &str) -> FnPtr {
+      let cname = CString::new(name).unwrap().as_ptr();
+
+      let addr = unsafe {
+         ffi::wglGetProcAddress(cname)
+      };
+      println!("{}: {:?}", name, addr);
+
+      addr
    }
 }

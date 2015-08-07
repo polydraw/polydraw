@@ -1,11 +1,15 @@
-#![cfg(target_os = "linux")]
-
 pub mod ffi {
    #![allow(non_camel_case_types)]
+   #![allow(non_snake_case)]
+
+   use std::mem;
+   use std::ptr;
 
    use libc::{
       c_int, c_uint, c_float, c_void
    };
+
+   use os::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
 
    pub type GLenum = c_uint;
    pub type GLint = c_int;
@@ -124,7 +128,56 @@ pub mod ffi {
    pub const GL_CLAMP_TO_EDGE:            GLenum = 0x812F;
    pub const GL_NEAREST:                  GLenum = 0x2600;
 
-   #[link(name="GL")]
+   static mut glGenFramebuffersPtr: FnPtr = NULL_PTR;
+   static mut glDeleteFramebuffersPtr: FnPtr = NULL_PTR;
+   static mut glBindFramebufferPtr: FnPtr = NULL_PTR;
+   static mut glFramebufferTexture2DPtr: FnPtr = NULL_PTR;
+   static mut glBlitFramebufferPtr: FnPtr = NULL_PTR;
+
+   pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
+      mem::transmute::<_, extern "system" fn(GLsizei, *mut GLuint) -> ()>(glGenFramebuffersPtr)(n, framebuffers)
+   }
+
+   pub unsafe fn glDeleteFramebuffers(n: GLsizei, framebuffers: *const GLuint) {
+      mem::transmute::<_, extern "system" fn(GLsizei, *const GLuint) -> ()>(glDeleteFramebuffersPtr)(n, framebuffers)
+   }
+
+   pub unsafe fn glBindFramebuffer(target: GLenum, framebuffer: GLuint) {
+      mem::transmute::<_, extern "system" fn(GLenum, GLuint) -> ()>(glBindFramebufferPtr)(target, framebuffer)
+   }
+
+   pub unsafe fn glFramebufferTexture2D(target: GLenum, attachment: GLenum, textarget: GLenum, texture: GLuint, level: GLint) {
+      mem::transmute::<_, extern "system" fn(GLenum, GLenum, GLenum, GLuint, GLint) -> ()>(glFramebufferTexture2DPtr)(target, attachment, textarget, texture, level)
+   }
+
+   pub unsafe fn glBlitFramebuffer(srcX0: GLint, srcY0: GLint, srcX1: GLint, srcY1: GLint, dstX0: GLint, dstY0: GLint, dstX1: GLint, dstY1: GLint, mask: GLbitfield, filter: GLenum) {
+      mem::transmute::<_, extern "system" fn(GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum) -> ()>(glBlitFramebufferPtr)(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
+   }
+
+   macro_rules! loadfn {
+      ( $loader:ident, $name:expr ) => {
+         {
+            let fn_ptr = $loader.get_proc_addr($name);
+            if fn_ptr == ptr::null() {
+               return false;
+            }
+            fn_ptr
+         }
+      }
+   }
+
+   pub unsafe fn load_functions<T: FnPtrLoader>(loader: T) -> bool {
+      glGenFramebuffersPtr = loadfn!(loader, "glGenFramebuffers");
+      glDeleteFramebuffersPtr = loadfn!(loader, "glDeleteFramebuffers");
+      glBindFramebufferPtr = loadfn!(loader, "glBindFramebuffer");
+      glFramebufferTexture2DPtr = loadfn!(loader, "glFramebufferTexture2D");
+      glBlitFramebufferPtr = loadfn!(loader, "glBlitFramebuffer");
+
+      true
+   }
+
+   #[cfg_attr(target_os="linux", link(name="GL"))]
+   #[cfg_attr(target_os="windows", link(name="opengl32"))]
    extern "C" {
       pub fn glGetError() -> GLenum;
 
@@ -141,12 +194,6 @@ pub mod ffi {
       pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
 
       pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
-
-      pub fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) -> ();
-
-      pub fn glDeleteFramebuffers(n: GLsizei, framebuffers: *const GLuint) -> ();
-
-      pub fn glBindFramebuffer(target: GLenum, framebuffer: GLuint) -> ();
 
       pub fn glClearColor(
          red: GLclampf,
@@ -178,32 +225,20 @@ pub mod ffi {
          _type: GLenum,
          pixels: *const GLvoid
       ) -> ();
-
-      pub fn glFramebufferTexture2D(
-         target: GLenum,
-         attachment: GLenum,
-         textarget: GLenum,
-         texture: GLuint,
-         level: GLint
-      ) -> ();
-
-      pub fn glBlitFramebuffer(
-         srcX0: GLint,
-         srcY0: GLint,
-         srcX1: GLint,
-         srcY1: GLint,
-         dstX0: GLint,
-         dstY0: GLint,
-         dstX1: GLint,
-         dstY1: GLint,
-         mask: GLbitfield,
-         filter: GLenum
-      ) -> ();
    }
 }
 
 use std::mem;
 use std::ptr;
+
+use super::utils::fn_ptr::FnPtrLoader;
+
+#[inline]
+pub fn load<T: FnPtrLoader>(loader: T) {
+   unsafe {
+      ffi::load_functions(loader)
+   };
+}
 
 #[inline]
 pub fn clear_color(red: f32, green: f32, blue: f32, alpha: f32) {
