@@ -99,6 +99,19 @@ pub mod ffi {
 
    pub const WM_CLOSE:                    c_uint = 16;
 
+   pub const SW_SHOWNORMAL:                c_int = 1;
+   pub const SW_SHOWMINIMIZED:             c_int = 2;
+   pub const SW_MAXIMIZE:                  c_int = 3;
+   pub const SW_SHOWMAXIMIZED:             c_int = 3;
+   pub const SW_SHOWNOACTIVATE:            c_int = 4;
+   pub const SW_SHOW:                      c_int = 5;
+   pub const SW_MINIMIZE:                  c_int = 6;
+   pub const SW_SHOWMINNOACTIVE:           c_int = 7;
+   pub const SW_SHOWNA:                    c_int = 8;
+   pub const SW_RESTORE:                   c_int = 9;
+   pub const SW_SHOWDEFAULT:               c_int = 10;
+   pub const SW_FORCEMINIMIZE:             c_int = 11;
+
    #[repr(C)]
    #[derive(Copy)]
    pub struct WNDCLASSEXW {
@@ -156,6 +169,8 @@ pub mod ffi {
       pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
 
       pub fn RegisterClassExW(lpWndClass: *const WNDCLASSEXW) -> ATOM;
+
+      pub fn ShowWindow(hwnd: HWND, nCmdShow: c_int) -> BOOL;
 
       pub fn PostQuitMessage(nExitCode: c_int);
 
@@ -274,11 +289,15 @@ impl Window {
    }
 
    pub fn dc(&self) -> ffi::HDC {
-      {
-         unsafe {
-            ffi::GetDC(self.hwnd)
-         }
+      unsafe {
+         ffi::GetDC(self.hwnd)
       }
+   }
+
+   pub fn show_normal(&self) {
+      unsafe {
+         ffi::ShowWindow(self.hwnd, ffi::SW_SHOWNORMAL)
+      };
    }
 }
 
