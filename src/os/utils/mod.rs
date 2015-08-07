@@ -1,3 +1,5 @@
+pub mod fn_ptr;
+
 use std::ffi::CStr;
 
 use libc::c_char;
