@@ -217,13 +217,13 @@ use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 
 
-fn to_utf16_os<S: AsRef<OsStr> + ?Sized>(s: &S) -> Vec<u16> {
+fn to_utf16_os(s: &str) -> Vec<u16> {
    let mut v: Vec<_> = OsStr::new(s).encode_wide().collect();
    v.push(0);
    v
 }
 
-pub fn register_window_class<S: AsRef<OsStr> + ?Sized>(class_name: &S) {
+pub fn register_window_class(class_name: &str) {
    unsafe extern "system" fn wnd_proc(
       hwnd: ffi::HWND,
       msg: ffi::c_uint,
@@ -267,7 +267,7 @@ pub struct Window {
 }
 
 impl Window {
-   pub fn create<S: AsRef<OsStr> + ?Sized>(width: ffi::c_int, height: ffi::c_int, title: &S, class_name: &S) -> Self {
+   pub fn create(width: ffi::c_int, height: ffi::c_int, title: &str, class_name: &str) -> Self {
       let hwnd = unsafe {
          ffi::CreateWindowExW(
             ffi::WS_EX_CLIENTEDGE,
