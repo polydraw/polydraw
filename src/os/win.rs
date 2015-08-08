@@ -7,7 +7,7 @@ pub mod ffi {
       c_int, c_uint, c_void, uintptr_t, c_long, c_ulong
    };
    pub use libc::types::os::arch::extra::{
-      HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID, BOOL
+      HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID, BOOL, DWORD
    };
    use std::mem;
 
@@ -97,8 +97,11 @@ pub mod ffi {
 
    pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
 
+   pub const GWLP_USERDATA:                c_int = -21;
+
    pub const WM_CREATE:                   c_uint = 1;
    pub const WM_CLOSE:                    c_uint = 16;
+   pub const WM_NCCREATE:                 c_uint = 129;
 
    pub const SW_SHOWNORMAL:                c_int = 1;
    pub const SW_SHOWMINIMIZED:             c_int = 2;
@@ -166,6 +169,29 @@ pub mod ffi {
       fn default() -> Self { unsafe { mem::zeroed() } }
    }
 
+   #[repr(C)]
+   #[derive(Copy)]
+   pub struct CREATESTRUCTW {
+      pub lpCreateParams: LPVOID,
+      pub hInstance: HINSTANCE,
+      pub hMenu: HMENU,
+      pub hwndParent: HWND,
+      pub cy: c_int,
+      pub cx: c_int,
+      pub y: c_int,
+      pub x: c_int,
+      pub style: c_long,
+      pub lpszName: LPCWSTR,
+      pub lpszClass: LPCWSTR,
+      pub dwExStyle: DWORD,
+   }
+   impl Clone for CREATESTRUCTW {
+      fn clone(&self) -> Self { *self }
+   }
+   impl Default for CREATESTRUCTW {
+      fn default() -> Self { unsafe { mem::zeroed() } }
+   }
+
    extern "system" {
       pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
 
@@ -180,6 +206,17 @@ pub mod ffi {
       pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
 
       pub fn GetDC(hwnd: HWND) -> HDC;
+
+      pub fn GetWindowLongPtrW(
+         hwnd: HWND,
+         nIndex: c_int
+      ) -> LONG_PTR;
+
+      pub fn SetWindowLongPtrW(
+         hwnd: HWND,
+         nIndex: c_int,
+         dwNewLong: LONG_PTR
+      ) -> LONG_PTR;
 
       pub fn DefWindowProcW(
          hwnd: HWND,
@@ -230,9 +267,18 @@ unsafe extern "system" fn wnd_proc(
    wparam: ffi::WPARAM,
    lparam: ffi::LPARAM
 ) -> ffi::LRESULT {
+
+   let window_ptr = ffi::GetWindowLongPtrW(hwnd, ffi::GWLP_USERDATA) as *mut Window;
+
    match msg {
+      ffi::WM_NCCREATE => {
+         let create_struct: *const ffi::CREATESTRUCTW = lparam as *const _;
+         ffi::SetWindowLongPtrW(hwnd, ffi::GWLP_USERDATA, (*create_struct).lpCreateParams as ffi::LONG_PTR);
+         println!("WINDOW: {:?}", (*create_struct).lpCreateParams);
+      },
       ffi::WM_CLOSE => {
          ffi::PostQuitMessage(0);
+         return 0;
       },
       ffi::WM_CREATE => {
          return 0;
@@ -242,28 +288,7 @@ unsafe extern "system" fn wnd_proc(
       }
    }
 
-   return 0;
-}
-
-pub fn register_window_class(class_name: &str) {
-   unsafe {
-      let wnd_class = ffi::WNDCLASSEXW {
-         cbSize: mem::size_of::<ffi::WNDCLASSEXW>() as ffi::c_uint,
-         style: ffi::CS_HREDRAW | ffi::CS_VREDRAW | ffi::CS_OWNDC,
-         lpfnWndProc: Some(wnd_proc),
-         cbClsExtra: 0,
-         cbWndExtra: 0,
-         hInstance: ffi::GetModuleHandleW(ptr::null()),
-         hIcon: ptr::null_mut(),
-         hCursor: ptr::null_mut(),
-         hbrBackground: ptr::null_mut(),
-         lpszMenuName: ptr::null(),
-         lpszClassName: to_utf16_os(class_name).as_ptr(),
-         hIconSm: ptr::null_mut(),
-      };
-
-      ffi::RegisterClassExW(&wnd_class);
-   }
+   ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
 }
 
 pub struct Window {
@@ -272,6 +297,33 @@ pub struct Window {
 
 impl Window {
    pub fn create(width: ffi::c_int, height: ffi::c_int, title: &str, class_name: &str) -> Self {
+      unsafe {
+         let wnd_class = ffi::WNDCLASSEXW {
+            cbSize: mem::size_of::<ffi::WNDCLASSEXW>() as ffi::c_uint,
+            style: ffi::CS_HREDRAW | ffi::CS_VREDRAW | ffi::CS_OWNDC,
+            lpfnWndProc: Some(wnd_proc),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: ffi::GetModuleHandleW(ptr::null()),
+            hIcon: ptr::null_mut(),
+            hCursor: ptr::null_mut(),
+            hbrBackground: ptr::null_mut(),
+            lpszMenuName: ptr::null(),
+            lpszClassName: to_utf16_os(class_name).as_ptr(),
+            hIconSm: ptr::null_mut(),
+         };
+
+         ffi::RegisterClassExW(&wnd_class);
+      }
+
+      let mut window: Window = Window {
+         hwnd: ptr::null_mut(),
+      };
+
+      let window_ptr = &mut window as *mut Window as *mut ffi::c_void;
+
+      println!("WINDOW: {:?}", window_ptr);
+
       let hwnd = unsafe {
          ffi::CreateWindowExW(
             ffi::WS_EX_APPWINDOW | ffi::WS_EX_WINDOWEDGE,
@@ -283,13 +335,13 @@ impl Window {
             ptr::null_mut(),
             ptr::null_mut(),
             ffi::GetModuleHandleW(ptr::null()),
-            ptr::null_mut()
+            window_ptr
          )
       };
 
-      Window {
-         hwnd: hwnd
-      }
+      window.hwnd = hwnd;
+
+      window
    }
 
    pub fn dc(&self) -> ffi::HDC {

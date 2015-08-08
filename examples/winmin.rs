@@ -5,8 +5,6 @@ use polydraw::os::wgl;
 use polydraw::os::gl;
 
 fn main() {
-   win::register_window_class("WinMinClass");
-
    let window = win::Window::create(800, 600, "Win Min", "WinMinClass");
    window.show_normal();
 
