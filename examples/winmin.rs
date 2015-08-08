@@ -32,6 +32,14 @@ fn main() {
 
    gl::load(wgl::Loader::new());
 
+   let texture = gl::Texture::new(width, height);
+
+   println!("GL texture ................ : {:?}", texture.name);
+
+   let framebuffer = gl::Framebuffer::new(&texture);
+
+   println!("GL framebuffer ............ : {:?}", framebuffer.name);
+
    loop {
       let message = match win::Message::get() {
          Some(message) => message,
