@@ -5,7 +5,10 @@ use polydraw::os::wgl;
 use polydraw::os::gl;
 
 fn main() {
-   let window = win::Window::create(800, 600, "Win Min", "WinMinClass");
+   let width: usize = 1280;
+   let height: usize = 720;
+
+   let window = win::Window::create(width, height, "Win Min", "WinMinClass");
    window.show_normal();
 
    let dc = window.dc();

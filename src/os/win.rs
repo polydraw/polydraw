@@ -296,7 +296,7 @@ pub struct Window {
 }
 
 impl Window {
-   pub fn create(width: ffi::c_int, height: ffi::c_int, title: &str, class_name: &str) -> Self {
+   pub fn create(width: usize, height: usize, title: &str, class_name: &str) -> Self {
       Window::register_class(class_name);
 
       let mut window: Window = Window {
@@ -314,7 +314,7 @@ impl Window {
             to_utf16_os(title).as_ptr(),
             ffi::WS_OVERLAPPEDWINDOW | ffi::WS_CLIPSIBLINGS | ffi::WS_CLIPCHILDREN,
             ffi::CW_USEDEFAULT, ffi::CW_USEDEFAULT,
-            width, height,
+            width as ffi::c_int, height as ffi::c_int,
             ptr::null_mut(),
             ptr::null_mut(),
             ffi::GetModuleHandleW(ptr::null()),
