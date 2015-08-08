@@ -201,9 +201,32 @@ pub mod ffi {
 }
 
 use std::mem;
+use std::ffi::CString;
 
 use ::error::{RuntimeError, ErrorKind};
-use ::os::x11;
+use super::x11;
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+
+pub struct Loader;
+
+impl Loader {
+   pub fn new() -> Self {
+      Loader
+   }
+}
+
+impl FnPtrLoader for Loader {
+   fn get_proc_addr(&self, name: &str) -> FnPtr {
+      let cname = CString::new(name).unwrap().as_ptr();
+
+      let addr = unsafe {
+         ffi::eglGetProcAddress(cname)
+      };
+      println!("{}: {:?}", name, addr);
+
+      addr
+   }
+}
 
 pub type NativeDisplay = x11::Display;
 

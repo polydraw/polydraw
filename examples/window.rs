@@ -162,6 +162,8 @@ fn main() {
 
    println!("context ptr ............... : {:?}", context.ptr);
 
+   gl::load(egl::Loader::new());
+
    let surface = match egl::create_window_surface(&egl_d, &config, &window) {
       Ok(surface) => surface,
       Err(e) => {
