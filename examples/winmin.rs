@@ -1,4 +1,5 @@
 extern crate polydraw;
+extern crate time;
 
 mod common;
 
@@ -47,16 +48,29 @@ fn main() {
 
    println!("GL framebuffer ............ : {:?}", framebuffer.name);
 
+   let start_time = time::precise_time_ns();
+
+   let mut exit = false;
    let mut seed = 0;
 
    loop {
-      let message = match win::Message::get() {
-         Some(message) => message,
-         None => break
-      };
+      loop {
+         let message = match win::Message::peek() {
+            Some(message) => message,
+            None => break
+         };
 
-      message.translate();
-      message.dispatch();
+         if message.is_quit() {
+            exit = true;
+         }
+
+         message.translate();
+         message.dispatch();
+      }
+
+      if exit {
+         break;
+      }
 
       counter += 1;
       seed = counter;
@@ -71,4 +85,11 @@ fn main() {
 
       wgl::swap_buffers(dc);
    }
+
+
+   let end_time = time::precise_time_ns();
+
+   println!("Time ns ................... : {:?}", end_time - start_time);
+   println!("Cycles .................... : {:?}", counter);
+   println!("FPS ....................... : {:?}", counter * 1000000000 / (end_time - start_time) );
 }

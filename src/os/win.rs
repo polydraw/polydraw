@@ -95,13 +95,14 @@ pub mod ffi {
    pub const WS_EX_COMPOSITED:           c_ulong = 0x02000000;
    pub const WS_EX_NOACTIVATE:           c_ulong = 0x08000000;
 
-   pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
-
-   pub const GWLP_USERDATA:                c_int = -21;
-
    pub const WM_CREATE:                   c_uint = 1;
    pub const WM_CLOSE:                    c_uint = 16;
+   pub const WM_QUIT:                     c_uint = 18;
    pub const WM_NCCREATE:                 c_uint = 129;
+
+   pub const PM_NOREMOVE:                 c_uint = 0;
+   pub const PM_REMOVE :                  c_uint = 1;
+   pub const PM_NOYIELD:                  c_uint = 2;
 
    pub const SW_SHOWNORMAL:                c_int = 1;
    pub const SW_SHOWMINIMIZED:             c_int = 2;
@@ -115,6 +116,10 @@ pub mod ffi {
    pub const SW_RESTORE:                   c_int = 9;
    pub const SW_SHOWDEFAULT:               c_int = 10;
    pub const SW_FORCEMINIMIZE:             c_int = 11;
+
+   pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
+
+   pub const GWLP_USERDATA:                c_int = -21;
 
    #[repr(C)]
    #[derive(Copy)]
@@ -245,6 +250,14 @@ pub mod ffi {
          hwnd: HWND,
          wMsgFilterMin: c_uint,
          wMsgFilterMax: c_uint
+      ) -> BOOL;
+
+      pub fn PeekMessageW(
+         lpMsg: *const MSG,
+         hWnd: HWND,
+         wMsgFilterMin: c_uint,
+         wMsgFilterMax: c_uint,
+         wRemoveMsg: c_uint,
       ) -> BOOL;
    }
 }
@@ -377,6 +390,17 @@ impl Message {
       }
    }
 
+   pub fn peek() -> Option<Self> {
+      let mut msg = unsafe { mem::uninitialized() };
+
+      match unsafe { ffi::PeekMessageW(&mut msg, ptr::null_mut(), 0, 0, ffi::PM_REMOVE) } {
+         0 => None,
+         _ => Some(Message {
+            msg: msg
+         })
+      }
+   }
+
    pub fn translate(&self) {
       unsafe {
          ffi::TranslateMessage(&self.msg)
@@ -387,5 +411,9 @@ impl Message {
       unsafe {
          ffi::DispatchMessageW(&self.msg)
       };
+   }
+
+   pub fn is_quit(&self) -> bool {
+      return self.msg.message == ffi::WM_QUIT
    }
 }
