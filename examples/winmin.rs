@@ -22,7 +22,7 @@ fn main() {
    };
 
    let context = match wgl::Context::create(dc) {
-      Ok(current) => current,
+      Ok(context) => context,
       Err(e) => {
          panic!(e.description);
       }
@@ -30,8 +30,8 @@ fn main() {
 
    println!("RC: {:?}", context.rc);
 
-   let current = match wgl::Context::current() {
-      Ok(current) => current,
+   match wgl::Context::current() {
+      Ok(_) => {},
       Err(e) => {
          panic!(e.description);
       }
