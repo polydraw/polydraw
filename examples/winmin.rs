@@ -30,13 +30,6 @@ fn main() {
 
    println!("RC: {:?}", context.rc);
 
-   match wgl::Context::current() {
-      Ok(_) => {},
-      Err(e) => {
-         panic!(e.description);
-      }
-   };
-
    gl::load(wgl::Loader::new());
 
    loop {
