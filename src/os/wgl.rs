@@ -14,7 +14,7 @@ pub mod ffi {
    pub use libc::consts::os::extra::{
       TRUE
    };
-   pub use os::win::ffi::{
+   pub use super::super::win::ffi::{
       HDC
    };
 
