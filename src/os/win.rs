@@ -297,24 +297,7 @@ pub struct Window {
 
 impl Window {
    pub fn create(width: ffi::c_int, height: ffi::c_int, title: &str, class_name: &str) -> Self {
-      unsafe {
-         let wnd_class = ffi::WNDCLASSEXW {
-            cbSize: mem::size_of::<ffi::WNDCLASSEXW>() as ffi::c_uint,
-            style: ffi::CS_HREDRAW | ffi::CS_VREDRAW | ffi::CS_OWNDC,
-            lpfnWndProc: Some(wnd_proc),
-            cbClsExtra: 0,
-            cbWndExtra: 0,
-            hInstance: ffi::GetModuleHandleW(ptr::null()),
-            hIcon: ptr::null_mut(),
-            hCursor: ptr::null_mut(),
-            hbrBackground: ptr::null_mut(),
-            lpszMenuName: ptr::null(),
-            lpszClassName: to_utf16_os(class_name).as_ptr(),
-            hIconSm: ptr::null_mut(),
-         };
-
-         ffi::RegisterClassExW(&wnd_class);
-      }
+      Window::register_class(class_name);
 
       let mut window: Window = Window {
          hwnd: ptr::null_mut(),
@@ -342,6 +325,27 @@ impl Window {
       window.hwnd = hwnd;
 
       window
+   }
+
+   pub fn register_class(class_name: &str) {
+      unsafe {
+         let wnd_class = ffi::WNDCLASSEXW {
+            cbSize: mem::size_of::<ffi::WNDCLASSEXW>() as ffi::c_uint,
+            style: ffi::CS_HREDRAW | ffi::CS_VREDRAW | ffi::CS_OWNDC,
+            lpfnWndProc: Some(wnd_proc),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: ffi::GetModuleHandleW(ptr::null()),
+            hIcon: ptr::null_mut(),
+            hCursor: ptr::null_mut(),
+            hbrBackground: ptr::null_mut(),
+            lpszMenuName: ptr::null(),
+            lpszClassName: to_utf16_os(class_name).as_ptr(),
+            hIconSm: ptr::null_mut(),
+         };
+
+         ffi::RegisterClassExW(&wnd_class);
+      }
    }
 
    pub fn dc(&self) -> ffi::HDC {
