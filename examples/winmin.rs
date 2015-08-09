@@ -13,7 +13,7 @@ fn main() {
    let width: usize = 1280;
    let height: usize = 720;
 
-   let window = win::Window::create(width, height, "Win Min", "WinMinClass");
+   let window = win::Window::create(width, height, "PolyDraw", "WinMinClass");
    window.show_normal();
 
    let dc = window.dc();
