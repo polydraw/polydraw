@@ -287,7 +287,6 @@ unsafe extern "system" fn wnd_proc(
       ffi::WM_NCCREATE => {
          let create_struct: *const ffi::CREATESTRUCTW = lparam as *const _;
          ffi::SetWindowLongPtrW(hwnd, ffi::GWLP_USERDATA, (*create_struct).lpCreateParams as ffi::LONG_PTR);
-         println!("WINDOW: {:?}", (*create_struct).lpCreateParams);
       },
       ffi::WM_CLOSE => {
          ffi::PostQuitMessage(0);
@@ -317,8 +316,6 @@ impl Window {
       };
 
       let window_ptr = &mut window as *mut Window as *mut ffi::c_void;
-
-      println!("WINDOW: {:?}", window_ptr);
 
       let hwnd = unsafe {
          ffi::CreateWindowExW(

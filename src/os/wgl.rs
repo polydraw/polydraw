@@ -127,8 +127,6 @@ pub fn init_pixel_format(
       ));
    }
 
-   println!("PIXEL FORMAT: {:?}", pixel_format);
-
    unsafe { ffi::DescribePixelFormat(hdc, pixel_format, mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::c_uint, &mut pfd) };
 
    let result = unsafe { ffi::SetPixelFormat(hdc, pixel_format, &pfd) };
@@ -215,7 +213,6 @@ impl FnPtrLoader for Loader {
       let addr = unsafe {
          ffi::wglGetProcAddress(cname)
       };
-      println!("{}: {:?}", name, addr);
 
       addr
    }
