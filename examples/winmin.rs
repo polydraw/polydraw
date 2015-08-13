@@ -7,7 +7,7 @@ use polydraw::os::win;
 use polydraw::os::wgl;
 use polydraw::os::gl;
 
-use common::{rand_u8, create_data, update_data};
+use common::{create_data, update_data};
 
 fn main() {
    let width: usize = 1280;

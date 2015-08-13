@@ -11,7 +11,7 @@ use polydraw::os::egl;
 use polydraw::os::gl;
 use polydraw::os::cl;
 
-use common::{rand_u8, create_data, update_data};
+use common::{create_data, update_data};
 
 fn print_screen_info(screen: &xcb::Screen) {
    println!("Informations of screen .... : {}", screen.root());
