@@ -1,7 +1,7 @@
 #![cfg(target_os = "linux")]
 
-use ::os::x11::ffi::Display as X11Display;
-use ::os::xcb::ffi::xcb_window_t;
+use ::sys::x11::ffi::Display as X11Display;
+use ::sys::xcb::ffi::xcb_window_t;
 
 pub type EGLNativeDisplayType = *mut X11Display;
 pub type EGLNativeWindowType = xcb_window_t;

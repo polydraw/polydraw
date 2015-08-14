@@ -265,7 +265,7 @@ pub mod ffi {
 use std::ptr;
 use std::mem;
 use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
+use std::sys::windows::ffi::OsStrExt;
 
 
 fn to_utf16_os(s: &str) -> Vec<u16> {

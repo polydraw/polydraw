@@ -9,7 +9,7 @@ pub mod ffi {
       c_int, c_uint, c_float, c_void
    };
 
-   use os::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
+   use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
 
    pub type GLenum = c_uint;
    pub type GLint = c_int;

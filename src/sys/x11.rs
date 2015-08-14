@@ -7,7 +7,7 @@ pub mod ffi {
       c_char, c_int, c_uint, c_long, c_ulong, c_void
    };
    use std::mem;
-   use ::os::xcb::ffi::xcb_connection_t;
+   use ::sys::xcb::ffi::xcb_connection_t;
 
    pub enum XDisplay { }
    pub enum XPrivate { }
@@ -203,7 +203,7 @@ use std::ffi::{CString, CStr};
 use libc::c_char;
 
 use ::error::{RuntimeError, ErrorKind};
-use ::os::xcb::Connection;
+use ::sys::xcb::Connection;
 
 pub struct Display {
    pub ptr: *mut ffi::Display

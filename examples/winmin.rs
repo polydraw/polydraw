@@ -3,9 +3,9 @@ extern crate time;
 
 mod common;
 
-use polydraw::os::win;
-use polydraw::os::wgl;
-use polydraw::os::gl;
+use polydraw::sys::win;
+use polydraw::sys::wgl;
+use polydraw::sys::gl;
 
 use common::{create_data, update_data};
 

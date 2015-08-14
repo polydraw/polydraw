@@ -5,11 +5,11 @@ extern crate time;
 
 mod common;
 
-use polydraw::os::xcb;
-use polydraw::os::x11;
-use polydraw::os::egl;
-use polydraw::os::gl;
-use polydraw::os::cl;
+use polydraw::sys::xcb;
+use polydraw::sys::x11;
+use polydraw::sys::egl;
+use polydraw::sys::gl;
+use polydraw::sys::cl;
 
 use common::{create_data, update_data};
 
