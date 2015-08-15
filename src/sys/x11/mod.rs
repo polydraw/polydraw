@@ -7,8 +7,9 @@ use std::ffi::{CString, CStr};
 
 use libc::c_char;
 
-use ::error::{RuntimeError, ErrorKind};
-use ::sys::xcb::Connection;
+use error::{RuntimeError, ErrorKind};
+
+use super::xcb::Connection;
 
 pub struct Display {
    pub ptr: *mut ffi::Display

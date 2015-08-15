@@ -4,7 +4,7 @@ pub mod ffi;
 
 use std::ptr;
 
-use ::error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind};
 
 pub struct Connection {
    pub ptr: *mut ffi::xcb_connection_t

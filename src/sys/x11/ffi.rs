@@ -3,8 +3,10 @@
 pub use libc::{
    c_char, c_int, c_uint, c_long, c_ulong, c_void
 };
+
 use std::mem;
-use ::sys::xcb::ffi::xcb_connection_t;
+
+use sys::xcb::ffi::xcb_connection_t;
 
 pub enum XDisplay { }
 pub enum XPrivate { }

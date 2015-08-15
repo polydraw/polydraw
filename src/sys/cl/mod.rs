@@ -10,7 +10,7 @@ use libc::{
    c_char, c_void
 };
 
-use ::error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind};
 
 pub fn platforms() -> Result<Vec<Platform>, RuntimeError> {
    let mut num_platforms = 0;

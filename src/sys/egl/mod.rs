@@ -2,18 +2,19 @@
 
 pub mod ffi;
 
-use ::sys::x11::ffi::Display as X11Display;
-use ::sys::xcb::ffi::xcb_window_t;
-
-pub type EGLNativeDisplayType = *mut X11Display;
-pub type EGLNativeWindowType = xcb_window_t;
-
 use std::mem;
 use std::ffi::CString;
 
-use ::error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind};
+
+use super::x11::ffi::Display as X11Display;
+use super::xcb::ffi::xcb_window_t;
+
 use super::x11;
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+
+pub type EGLNativeDisplayType = *mut X11Display;
+pub type EGLNativeWindowType = xcb_window_t;
 
 pub struct Loader;
 
