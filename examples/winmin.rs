@@ -3,7 +3,7 @@ extern crate time;
 
 mod common;
 
-use polydraw::sys::win;
+use polydraw::sys::win32;
 use polydraw::sys::wgl;
 use polydraw::sys::gl;
 
@@ -13,7 +13,7 @@ fn main() {
    let width: usize = 1280;
    let height: usize = 720;
 
-   let window = win::Window::create(width, height, "PolyDraw", "WinMinClass");
+   let window = win32::Window::create(width, height, "PolyDraw", "WinMinClass");
    window.show_normal();
 
    let dc = window.dc();
@@ -55,7 +55,7 @@ fn main() {
 
    loop {
       loop {
-         let message = match win::Message::peek() {
+         let message = match win32::Message::peek() {
             Some(message) => message,
             None => break
          };
