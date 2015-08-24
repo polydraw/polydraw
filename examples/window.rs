@@ -107,9 +107,12 @@ fn main() {
 
    let (protocols_atom, delete_window_atom) = connection.register_close_event(window);
 
-   if !egl::bind_api(egl::API::OpenGL) {
-      panic!("eglBindAPI failed");
-   }
+   match egl::bind_api(egl::API::OpenGL) {
+      Ok(_) => {},
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
 
    let egl_d = egl::get_display(&display);
    let egl_display = egl_d.ptr;

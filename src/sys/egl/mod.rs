@@ -77,10 +77,19 @@ pub struct Version {
    pub minor: ffi::EGLint,
 }
 
-pub fn bind_api(api: API) -> bool {
-   unsafe {
-      ffi::eglBindAPI(api.into()) != 0
+pub fn bind_api(api: API) -> Result<(), RuntimeError> {
+   let result = unsafe {
+      ffi::eglBindAPI(api.into())
+   };
+
+   if result == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglBindAPI failed".to_string()
+      ));
    }
+
+   Ok(())
 }
 
 pub fn get_display(display: &NativeDisplay) -> Display {
