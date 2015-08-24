@@ -3,7 +3,7 @@
 extern crate polydraw;
 extern crate time;
 
-mod common;
+mod support;
 
 use polydraw::sys::xcb;
 use polydraw::sys::x11;
@@ -11,7 +11,7 @@ use polydraw::sys::egl;
 use polydraw::sys::gl;
 use polydraw::sys::cl;
 
-use common::{create_data, update_data};
+use support::{create_data, update_data};
 
 fn print_screen_info(screen: &xcb::Screen) {
    println!("Informations of screen .... : {}", screen.root());

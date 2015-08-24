@@ -1,13 +1,15 @@
+#![cfg(target_os = "windows")]
+
 extern crate polydraw;
 extern crate time;
 
-mod common;
+mod support;
 
 use polydraw::sys::win32;
 use polydraw::sys::wgl;
 use polydraw::sys::gl;
 
-use common::{create_data, update_data};
+use support::{create_data, update_data};
 
 fn main() {
    let width: usize = 1280;
