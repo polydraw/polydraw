@@ -114,10 +114,14 @@ fn main() {
       }
    };
 
-   let egl_d = egl::get_display(&display);
-   let egl_display = egl_d.ptr;
+   let egl_d = match egl::Display::from_native(&display) {
+      Ok(egl_d) => egl_d,
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
 
-   println!("egl display ............... : {:?}", egl_display);
+   println!("egl display ............... : {:?}", egl_d.ptr);
 
    let version = match egl::initialize(&egl_d) {
       Ok(version) => version,

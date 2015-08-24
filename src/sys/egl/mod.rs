@@ -92,14 +92,6 @@ pub fn bind_api(api: API) -> Result<(), RuntimeError> {
    Ok(())
 }
 
-pub fn get_display(display: &NativeDisplay) -> Display {
-   Display {
-      ptr: unsafe {
-         ffi::eglGetDisplay(display.ptr)
-      }
-   }
-}
-
 pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
    let mut major: ffi::EGLint = unsafe {
       mem::uninitialized()
@@ -353,4 +345,23 @@ pub fn swap_interval(
    }
 
    Ok(())
+}
+
+impl Display {
+   pub fn from_native(native_display: &NativeDisplay) -> Result<Self, RuntimeError> {
+      let ptr = unsafe {
+         ffi::eglGetDisplay(native_display.ptr)
+      };
+
+      if ptr.is_null() {
+         return Err(RuntimeError::new(
+            ErrorKind::EGL,
+            "eglGetDisplay failed".to_string()
+         ));
+      }
+
+      Ok(Display {
+         ptr: ptr,
+      })
+   }
 }
