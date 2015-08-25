@@ -283,6 +283,4 @@ fn main() {
    println!("Time ns ................... : {:?}", end_time - start_time);
    println!("Cycles .................... : {:?}", counter);
    println!("FPS ....................... : {:?}", counter * 1000000000 / (end_time - start_time) );
-
-   connection.destroy_window(wid);
 }

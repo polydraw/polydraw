@@ -78,12 +78,6 @@ impl Connection {
       EventIterator::new(self.ptr)
    }
 
-   pub fn destroy_window(&self, window: ffi::xcb_window_t) {
-      unsafe {
-         ffi::xcb_destroy_window(self.ptr, window);
-      }
-   }
-
    pub fn flush(&self) {
       unsafe {
          ffi::xcb_flush(self.ptr);
@@ -395,5 +389,15 @@ impl Window {
          connection: connection.clone(),
          window_id: window_id,
       })
+   }
+}
+
+impl Drop for Window {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::xcb_destroy_window(
+            self.connection.ptr, self.window_id.id
+         );
+      }
    }
 }
