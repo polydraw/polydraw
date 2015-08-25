@@ -94,18 +94,23 @@ fn main() {
 
    print_screen_info(&scr);
 
-   let window = connection.generate_id();
+   let window_id = match connection.generate_id() {
+      Ok(window_id) => window_id,
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
 
-   println!("window .................... : {:?}", window);
+   println!("window .................... : {:?}", window_id.id);
 
    connection.create_window(
-      window, &scr,
+      window_id.id, &scr,
       0, 0, width as u16, height as u16,
    );
 
-   connection.map_window(window);
+   connection.map_window(window_id.id);
 
-   let (protocols_atom, delete_window_atom) = connection.register_close_event(window);
+   let (protocols_atom, delete_window_atom) = connection.register_close_event(window_id.id);
 
    match egl::bind_api(egl::API::OpenGL) {
       Ok(_) => {},
@@ -150,7 +155,7 @@ fn main() {
 
    gl::load(egl::Loader::new());
 
-   let surface = match egl::create_window_surface(&egl_d, &config, &window) {
+   let surface = match egl::create_window_surface(&egl_d, &config, &window_id.id) {
       Ok(surface) => surface,
       Err(e) => {
          panic!(e.description);
@@ -249,7 +254,7 @@ fn main() {
             xcb::EventType::ConfigureNotify => {
                let (e_window, e_width, e_height) = event.resize_properties();
 
-               if e_window != window {
+               if e_window != window_id.id {
                   continue;
                }
 
@@ -277,5 +282,5 @@ fn main() {
    println!("Cycles .................... : {:?}", counter);
    println!("FPS ....................... : {:?}", counter * 1000000000 / (end_time - start_time) );
 
-   connection.destroy_window(window);
+   connection.destroy_window(window_id.id);
 }

@@ -36,10 +36,21 @@ impl Connection {
       Screen::new(iter.data)
    }
 
-   pub fn generate_id(&self) -> ffi::c_uint {
-      unsafe {
+   pub fn generate_id(&self) -> Result<XID, RuntimeError> {
+      let id = unsafe {
          ffi::xcb_generate_id(self.ptr)
+      };
+
+      if id == -1 {
+         return Err(RuntimeError::new(
+            ErrorKind::XCB,
+            "Generating XID failed".to_string()
+         ));
       }
+
+      Ok(XID {
+         id: id
+      })
    }
 
    pub fn create_window(
@@ -153,6 +164,10 @@ impl Connection {
          (protocols_atom, delete_window_atom)
       }
    }
+}
+
+pub struct XID {
+   pub id: ffi::c_uint
 }
 
 pub struct Screen {
