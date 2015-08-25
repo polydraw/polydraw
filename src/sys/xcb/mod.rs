@@ -6,6 +6,8 @@ use std::ptr;
 
 use error::{RuntimeError, ErrorKind};
 
+use super::x11::ScreenID;
+
 pub struct Connection {
    pub ptr: *mut ffi::xcb_connection_t
 }
@@ -17,14 +19,14 @@ impl Connection {
       }
    }
 
-   pub fn screen_of_display(&self, screen: ffi::c_int) -> Screen {
+   pub fn screen_of_display(&self, screen_id: &ScreenID) -> Screen {
       let mut iter = unsafe {
          ffi::xcb_setup_roots_iterator(
             ffi::xcb_get_setup(self.ptr)
          )
       };
 
-      let mut screen_num = screen;
+      let mut screen_num = screen_id.screen;
 
       while screen_num > 0 && iter.rem != 0 {
          unsafe { ffi::xcb_screen_next(&mut iter) };

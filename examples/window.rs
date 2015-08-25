@@ -79,6 +79,8 @@ fn main() {
       }
    };
 
+   display.xcb_own_event_queue();
+
    let connection = match display.xcb_connection() {
       Ok(connection) => connection,
       Err(e) => {
@@ -86,11 +88,9 @@ fn main() {
       }
    };
 
-   display.xcb_own_event_queue();
+   let screen_id = display.default_screen();
 
-   let default_screen = display.default_screen();
-
-   let scr = connection.screen_of_display(default_screen);
+   let scr = connection.screen_of_display(&screen_id);
 
    print_screen_info(&scr);
 

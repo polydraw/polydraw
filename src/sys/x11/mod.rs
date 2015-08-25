@@ -53,10 +53,11 @@ impl Display {
       let connection = unsafe {
          ffi::XGetXCBConnection(self.ptr)
       };
+
       if connection.is_null() {
          return Err(RuntimeError::new(
             ErrorKind::Xlib,
-            "Getting XCB connection from display failed".to_string()
+            "Getting XCB connection failed".to_string()
          ));
       }
 
@@ -75,9 +76,13 @@ impl Display {
    }
 
    #[inline]
-   pub fn default_screen(&self) -> ffi::c_int {
-      unsafe {
+   pub fn default_screen(&self) -> ScreenID {
+      let screen = unsafe {
          (*(self.ptr as ffi::_XPrivDisplay)).default_screen
+      };
+
+      ScreenID {
+         screen: screen
       }
    }
 }
@@ -88,6 +93,10 @@ impl Drop for Display {
          ffi::XCloseDisplay(self.ptr);
       }
    }
+}
+
+pub struct ScreenID {
+   pub screen: ffi::c_int
 }
 
 #[cfg(test)]
