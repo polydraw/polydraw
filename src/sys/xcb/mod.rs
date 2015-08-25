@@ -3,6 +3,7 @@
 pub mod ffi;
 
 use std::ptr;
+use std::rc::Rc;
 
 use error::{RuntimeError, ErrorKind};
 
@@ -51,36 +52,6 @@ impl Connection {
       Ok(XID {
          id: id
       })
-   }
-
-   pub fn create_window(
-      &self,
-      wid: ffi::xcb_window_t,
-      screen: &Screen,
-      x: ffi::c_short, y: ffi::c_short,
-      width: ffi::c_ushort, height: ffi::c_ushort,
-   ) {
-      let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
-         ffi::XCB_EVENT_MASK_KEY_PRESS |
-         ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-      let valuelist = [eventmask, 0];
-      let valuemask = ffi::XCB_CW_EVENT_MASK;
-
-      unsafe {
-         ffi::xcb_create_window(
-            self.ptr,
-            ffi::XCB_COPY_FROM_PARENT as u8,
-            wid,
-            screen.root(),
-            x, y,
-            width, height,
-            0,
-            ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
-            screen.root_visual(),
-            valuemask,
-            valuelist.as_ptr()
-         )
-      };
    }
 
    pub fn map_window(&self, window: ffi::xcb_window_t) {
@@ -376,5 +347,53 @@ impl Iterator for EventIterator {
       Some(
          Ok(Event::new(event_ptr))
       )
+   }
+}
+
+pub struct Window {
+   pub connection: Rc<Connection>,
+   pub window_id: XID,
+}
+
+impl Window {
+   pub fn create(
+      connection: &Rc<Connection>,
+      screen: &Screen,
+      x: ffi::c_short,
+      y: ffi::c_short,
+      width: ffi::c_ushort,
+      height: ffi::c_ushort,
+   ) -> Result<Self, RuntimeError> {
+      let window_id = match connection.generate_id() {
+         Ok(window_id) => window_id,
+         Err(e) => return Err(e)
+      };
+
+      let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
+         ffi::XCB_EVENT_MASK_KEY_PRESS |
+         ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+      let valuelist = [eventmask, 0];
+      let valuemask = ffi::XCB_CW_EVENT_MASK;
+
+      unsafe {
+         ffi::xcb_create_window(
+            connection.ptr,
+            ffi::XCB_COPY_FROM_PARENT as u8,
+            window_id.id,
+            screen.root(),
+            x, y,
+            width, height,
+            0,
+            ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
+            screen.root_visual(),
+            valuemask,
+            valuelist.as_ptr()
+         )
+      };
+
+      Ok(Window {
+         connection: connection.clone(),
+         window_id: window_id,
+      })
    }
 }

@@ -5,6 +5,8 @@ extern crate time;
 
 mod support;
 
+use std::rc::Rc;
+
 use polydraw::sys::xcb;
 use polydraw::sys::x11;
 use polydraw::sys::egl;
@@ -81,12 +83,14 @@ fn main() {
 
    display.xcb_own_event_queue();
 
-   let connection = match display.xcb_connection() {
-      Ok(connection) => connection,
-      Err(e) => {
-         panic!(e.description);
+   let connection = Rc::new(
+      match display.xcb_connection() {
+         Ok(connection) => connection,
+         Err(e) => {
+            panic!(e.description);
+         }
       }
-   };
+   );
 
    let screen_id = display.default_screen();
 
@@ -94,23 +98,21 @@ fn main() {
 
    print_screen_info(&scr);
 
-   let window_id = match connection.generate_id() {
-      Ok(window_id) => window_id,
+   let window = match xcb::Window::create(
+      &connection, &scr,
+      0, 0, width as u16, height as u16,
+   ) {
+      Ok(window) => window,
       Err(e) => {
          panic!(e.description);
       }
    };
 
-   println!("window .................... : {:?}", window_id.id);
+   let wid = window.window_id.id;
 
-   connection.create_window(
-      window_id.id, &scr,
-      0, 0, width as u16, height as u16,
-   );
+   connection.map_window(wid);
 
-   connection.map_window(window_id.id);
-
-   let (protocols_atom, delete_window_atom) = connection.register_close_event(window_id.id);
+   let (protocols_atom, delete_window_atom) = connection.register_close_event(wid);
 
    match egl::bind_api(egl::API::OpenGL) {
       Ok(_) => {},
@@ -155,7 +157,7 @@ fn main() {
 
    gl::load(egl::Loader::new());
 
-   let surface = match egl::create_window_surface(&egl_d, &config, &window_id.id) {
+   let surface = match egl::create_window_surface(&egl_d, &config, &wid) {
       Ok(surface) => surface,
       Err(e) => {
          panic!(e.description);
@@ -254,7 +256,7 @@ fn main() {
             xcb::EventType::ConfigureNotify => {
                let (e_window, e_width, e_height) = event.resize_properties();
 
-               if e_window != window_id.id {
+               if e_window != wid {
                   continue;
                }
 
@@ -282,5 +284,5 @@ fn main() {
    println!("Cycles .................... : {:?}", counter);
    println!("FPS ....................... : {:?}", counter * 1000000000 / (end_time - start_time) );
 
-   connection.destroy_window(window_id.id);
+   connection.destroy_window(wid);
 }
