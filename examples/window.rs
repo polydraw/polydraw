@@ -108,11 +108,9 @@ fn main() {
       }
    };
 
-   let wid = window.window_id.id;
+   window.map();
 
-   connection.map_window(wid);
-
-   let (protocols_atom, delete_window_atom) = connection.register_close_event(wid);
+   let (protocols_atom, delete_window_atom) = window.register_close_event();
 
    match egl::bind_api(egl::API::OpenGL) {
       Ok(_) => {},
@@ -156,6 +154,8 @@ fn main() {
    println!("context ptr ............... : {:?}", context.ptr);
 
    gl::load(egl::Loader::new());
+
+   let wid = window.window_id.id;
 
    let surface = match egl::create_window_surface(&egl_d, &config, &wid) {
       Ok(surface) => surface,

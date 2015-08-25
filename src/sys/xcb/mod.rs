@@ -54,12 +54,6 @@ impl Connection {
       })
    }
 
-   pub fn map_window(&self, window: ffi::xcb_window_t) {
-      unsafe {
-         ffi::xcb_map_window(self.ptr, window)
-      };
-   }
-
    pub fn wait_for_event(&self) -> Option<Event> {
       let event_ptr = unsafe {
          ffi::xcb_wait_for_event(self.ptr)
@@ -81,52 +75,6 @@ impl Connection {
    pub fn flush(&self) {
       unsafe {
          ffi::xcb_flush(self.ptr);
-      }
-   }
-
-   pub fn register_close_event(&self, wid: ffi::xcb_window_t) -> (ffi::xcb_atom_t, ffi::xcb_atom_t) {
-      unsafe {
-         let protocols_cookie = ffi::xcb_intern_atom(
-            self.ptr,
-            true as ffi::c_uchar,
-            12,
-            b"WM_PROTOCOLS\0" as *const u8 as *const _
-         );
-
-         let protocols_reply = ffi::xcb_intern_atom_reply(
-            self.ptr,
-            protocols_cookie,
-            ptr::null_mut()
-         );
-
-         let delete_window_cookie = ffi::xcb_intern_atom(
-            self.ptr,
-            false as ffi::c_uchar,
-            16,
-            b"WM_DELETE_WINDOW\0" as *const u8 as *const _
-         );
-
-         let delete_window_reply = ffi::xcb_intern_atom_reply(
-            self.ptr,
-            delete_window_cookie,
-            ptr::null_mut()
-         );
-
-         let protocols_atom = (*protocols_reply).atom;
-         let delete_window_atom = (*delete_window_reply).atom;
-
-         ffi::xcb_change_property(
-            self.ptr,
-            ffi::XCB_PROP_MODE_REPLACE,
-            wid,
-            protocols_atom,
-            ffi::XCB_ATOM_ATOM,
-            32,
-            1,
-            &delete_window_atom as *const u32 as *const _
-         );
-
-         (protocols_atom, delete_window_atom)
       }
    }
 }
@@ -389,6 +337,58 @@ impl Window {
          connection: connection.clone(),
          window_id: window_id,
       })
+   }
+
+   pub fn map(&self) {
+      unsafe {
+         ffi::xcb_map_window(self.connection.ptr, self.window_id.id)
+      };
+   }
+
+   pub fn register_close_event(&self) -> (ffi::xcb_atom_t, ffi::xcb_atom_t) {
+      unsafe {
+         let protocols_cookie = ffi::xcb_intern_atom(
+            self.connection.ptr,
+            true as ffi::c_uchar,
+            12,
+            b"WM_PROTOCOLS\0" as *const u8 as *const _
+         );
+
+         let protocols_reply = ffi::xcb_intern_atom_reply(
+            self.connection.ptr,
+            protocols_cookie,
+            ptr::null_mut()
+         );
+
+         let delete_window_cookie = ffi::xcb_intern_atom(
+            self.connection.ptr,
+            false as ffi::c_uchar,
+            16,
+            b"WM_DELETE_WINDOW\0" as *const u8 as *const _
+         );
+
+         let delete_window_reply = ffi::xcb_intern_atom_reply(
+            self.connection.ptr,
+            delete_window_cookie,
+            ptr::null_mut()
+         );
+
+         let protocols_atom = (*protocols_reply).atom;
+         let delete_window_atom = (*delete_window_reply).atom;
+
+         ffi::xcb_change_property(
+            self.connection.ptr,
+            ffi::XCB_PROP_MODE_REPLACE,
+            self.window_id.id,
+            protocols_atom,
+            ffi::XCB_ATOM_ATOM,
+            32,
+            1,
+            &delete_window_atom as *const u32 as *const _
+         );
+
+         (protocols_atom, delete_window_atom)
+      }
    }
 }
 
