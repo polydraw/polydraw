@@ -4,6 +4,7 @@ pub mod ffi;
 
 use std::ptr;
 use std::rc::Rc;
+use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
 
@@ -75,6 +76,37 @@ impl Connection {
    pub fn flush(&self) {
       unsafe {
          ffi::xcb_flush(self.ptr);
+      }
+   }
+
+   pub fn intern_atom(&self, name: &str, existing_only: bool) -> InternAtomCookie {
+      let c_name = CString::new(name).unwrap();
+
+      let cookie = unsafe {
+         ffi::xcb_intern_atom(
+               self.ptr,
+               existing_only as ffi::c_uchar,
+               name.len() as ffi::c_ushort,
+               c_name.as_ptr()
+         )
+      };
+
+      InternAtomCookie {
+         cookie: cookie
+      }
+   }
+
+   pub fn intern_atom_reply(&self, cookie: &InternAtomCookie) -> InternAtomReply {
+      let reply = unsafe {
+         ffi::xcb_intern_atom_reply(
+            self.ptr,
+            cookie.cookie,
+            ptr::null_mut()
+         )
+      };
+
+      InternAtomReply {
+         reply: reply
       }
    }
 }
@@ -346,35 +378,15 @@ impl Window {
    }
 
    pub fn register_close_event(&self) -> (ffi::xcb_atom_t, ffi::xcb_atom_t) {
+      let protocols_cookie = self.connection.intern_atom("WM_PROTOCOLS", true);
+      let protocols_reply = self.connection.intern_atom_reply(&protocols_cookie);
+
+      let delete_window_cookie = self.connection.intern_atom("WM_DELETE_WINDOW", false);
+      let delete_window_reply = self.connection.intern_atom_reply(&delete_window_cookie);
+
       unsafe {
-         let protocols_cookie = ffi::xcb_intern_atom(
-            self.connection.ptr,
-            true as ffi::c_uchar,
-            12,
-            b"WM_PROTOCOLS\0" as *const u8 as *const _
-         );
-
-         let protocols_reply = ffi::xcb_intern_atom_reply(
-            self.connection.ptr,
-            protocols_cookie,
-            ptr::null_mut()
-         );
-
-         let delete_window_cookie = ffi::xcb_intern_atom(
-            self.connection.ptr,
-            false as ffi::c_uchar,
-            16,
-            b"WM_DELETE_WINDOW\0" as *const u8 as *const _
-         );
-
-         let delete_window_reply = ffi::xcb_intern_atom_reply(
-            self.connection.ptr,
-            delete_window_cookie,
-            ptr::null_mut()
-         );
-
-         let protocols_atom = (*protocols_reply).atom;
-         let delete_window_atom = (*delete_window_reply).atom;
+         let protocols_atom = (*(protocols_reply.reply)).atom;
+         let delete_window_atom = (*(delete_window_reply.reply)).atom;
 
          ffi::xcb_change_property(
             self.connection.ptr,
@@ -400,4 +412,12 @@ impl Drop for Window {
          );
       }
    }
+}
+
+pub struct InternAtomCookie {
+   cookie: ffi::xcb_intern_atom_cookie_t
+}
+
+pub struct InternAtomReply {
+   reply: *mut ffi::xcb_intern_atom_reply_t
 }
