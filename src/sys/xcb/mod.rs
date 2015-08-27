@@ -82,7 +82,7 @@ impl Connection {
    pub fn intern_atom(&self, name: &str, existing_only: bool) -> InternAtomCookie {
       let c_name = CString::new(name).unwrap();
 
-      let cookie = unsafe {
+      let xcb_cookie = unsafe {
          ffi::xcb_intern_atom(
                self.ptr,
                existing_only as ffi::c_uchar,
@@ -92,21 +92,21 @@ impl Connection {
       };
 
       InternAtomCookie {
-         cookie: cookie
+         xcb_cookie: xcb_cookie
       }
    }
 
    pub fn intern_atom_reply(&self, cookie: &InternAtomCookie) -> InternAtomReply {
-      let reply = unsafe {
+      let xcb_reply = unsafe {
          ffi::xcb_intern_atom_reply(
             self.ptr,
-            cookie.cookie,
+            cookie.xcb_cookie,
             ptr::null_mut()
          )
       };
 
       InternAtomReply {
-         reply: reply
+         xcb_reply: xcb_reply
       }
    }
 }
@@ -233,8 +233,8 @@ impl Event {
 
    pub fn is_close_event(
       &self,
-      protocols_atom: ffi::xcb_atom_t,
-      delete_window_atom: ffi::xcb_atom_t
+      protocols_atom: &Atom,
+      delete_window_atom: &Atom
    ) -> bool {
       unsafe {
          let ptr = self.ptr as *mut ffi::xcb_client_message_event_t;
@@ -242,8 +242,8 @@ impl Event {
          let data = (*ptr).data.data32();
 
          if (*ptr).format != 32 ||
-            (*ptr)._type != protocols_atom ||
-            (*data)[0] != delete_window_atom {
+            (*ptr)._type != protocols_atom.xcb_atom ||
+            (*data)[0] != delete_window_atom.xcb_atom {
             return false;
          }
 
@@ -377,7 +377,7 @@ impl Window {
       };
    }
 
-   pub fn register_close_event(&self) -> (ffi::xcb_atom_t, ffi::xcb_atom_t) {
+   pub fn register_close_event(&self) -> (Atom, Atom) {
       let protocols_cookie = self.connection.intern_atom("WM_PROTOCOLS", true);
       let protocols_reply = self.connection.intern_atom_reply(&protocols_cookie);
 
@@ -385,18 +385,18 @@ impl Window {
       let delete_window_reply = self.connection.intern_atom_reply(&delete_window_cookie);
 
       unsafe {
-         let protocols_atom = (*(protocols_reply.reply)).atom;
-         let delete_window_atom = (*(delete_window_reply.reply)).atom;
+         let protocols_atom = protocols_reply.atom();
+         let delete_window_atom = delete_window_reply.atom();
 
          ffi::xcb_change_property(
             self.connection.ptr,
             ffi::XCB_PROP_MODE_REPLACE,
             self.window_id.id,
-            protocols_atom,
+            protocols_atom.xcb_atom,
             ffi::XCB_ATOM_ATOM,
             32,
             1,
-            &delete_window_atom as *const u32 as *const _
+            &delete_window_atom.xcb_atom as *const u32 as *const _
          );
 
          (protocols_atom, delete_window_atom)
@@ -414,10 +414,23 @@ impl Drop for Window {
    }
 }
 
+pub struct Atom {
+   xcb_atom: ffi::xcb_atom_t
+}
+
 pub struct InternAtomCookie {
-   cookie: ffi::xcb_intern_atom_cookie_t
+   xcb_cookie: ffi::xcb_intern_atom_cookie_t
 }
 
 pub struct InternAtomReply {
-   reply: *mut ffi::xcb_intern_atom_reply_t
+   xcb_reply: *mut ffi::xcb_intern_atom_reply_t
+}
+
+impl InternAtomReply {
+   pub fn atom(&self) -> Atom {
+      let xcb_atom = unsafe { (*(self.xcb_reply)).atom };
+      Atom {
+         xcb_atom: xcb_atom
+      }
+   }
 }

@@ -248,7 +248,7 @@ fn main() {
                };
             },
             xcb::EventType::ClientMessage => {
-               if event.is_close_event(protocols_atom, delete_window_atom) {
+               if event.is_close_event(&protocols_atom, &delete_window_atom) {
                   exit = true;
                   break;
                }
