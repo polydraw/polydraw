@@ -1,7 +1,11 @@
 extern crate polydraw;
 
-use polydraw::window::Window;
+use polydraw::Application;
 
 fn main() {
-   let window = Window::new("PolyDraw");
+   let app = Application::new();
+
+   //let app.window("PolyDraw").size(800, 400).centered().create();
+
+   app.run();
 }
