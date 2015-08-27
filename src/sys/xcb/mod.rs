@@ -384,10 +384,10 @@ impl Window {
       let delete_window_cookie = self.connection.intern_atom("WM_DELETE_WINDOW", false);
       let delete_window_reply = self.connection.intern_atom_reply(&delete_window_cookie);
 
-      unsafe {
-         let protocols_atom = protocols_reply.atom();
-         let delete_window_atom = delete_window_reply.atom();
+      let protocols_atom = protocols_reply.atom();
+      let delete_window_atom = delete_window_reply.atom();
 
+      unsafe {
          ffi::xcb_change_property(
             self.connection.ptr,
             ffi::XCB_PROP_MODE_REPLACE,
@@ -398,9 +398,9 @@ impl Window {
             1,
             &delete_window_atom.xcb_atom as *const u32 as *const _
          );
-
-         (protocols_atom, delete_window_atom)
       }
+
+      (protocols_atom, delete_window_atom)
    }
 }
 
