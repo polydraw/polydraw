@@ -407,6 +407,23 @@ impl Window {
 
       (protocols_atom, delete_window_atom)
    }
+
+   pub fn set_title(&self, title: &str) {
+      let c_title = CString::new(title).unwrap();
+
+      unsafe {
+         ffi::xcb_change_property(
+            self.connection.ptr,
+            ffi::XCB_PROP_MODE_REPLACE,
+            self.window_id.id,
+            ffi::XCB_ATOM_WM_NAME,
+            ffi::XCB_ATOM_STRING,
+            8,
+            title.len() as ffi::c_uint,
+            c_title.as_ptr() as *const _
+         );
+      }
+   }
 }
 
 impl Drop for Window {

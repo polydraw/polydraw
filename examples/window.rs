@@ -108,6 +108,8 @@ fn main() {
       }
    };
 
+   window.set_title("PolyDraw");
+
    window.map();
 
    let (protocols_atom, delete_window_atom) = window.register_close_event();
