@@ -155,9 +155,7 @@ fn main() {
 
    gl::load(egl::Loader::new());
 
-   let wid = window.window_id.id;
-
-   let surface = match egl::create_window_surface(&egl_d, &config, &wid) {
+   let surface = match egl::create_window_surface(&egl_d, &config, &window.window_id.id) {
       Ok(surface) => surface,
       Err(e) => {
          panic!(e.description);
@@ -254,15 +252,15 @@ fn main() {
                }
             },
             xcb::EventType::ConfigureNotify => {
-               let (e_window, e_width, e_height) = event.resize_properties();
+               let (window_id, resize_width, resize_height) = event.resize_properties();
 
-               if e_window != wid {
+               if window_id != window.window_id {
                   continue;
                }
 
-               if (e_width != width) || (e_height != height) {
-                  new_width = e_width;
-                  new_height = e_height;
+               if (resize_width != width) || (resize_height != height) {
+                  new_width = resize_width;
+                  new_height = resize_height;
                }
             },
             xcb::EventType::KeyPress => {

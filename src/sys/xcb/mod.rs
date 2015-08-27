@@ -111,6 +111,7 @@ impl Connection {
    }
 }
 
+#[derive(PartialEq)]
 pub struct XID {
    pub id: ffi::c_uint
 }
@@ -251,11 +252,15 @@ impl Event {
       }
    }
 
-   pub fn resize_properties(&self) -> (ffi::xcb_window_t, usize, usize) {
+   pub fn resize_properties(&self) -> (XID, usize, usize) {
       unsafe {
          let ptr = self.ptr as *mut ffi::xcb_configure_notify_event_t;
 
-         ((*ptr).window, (*ptr).width as usize, (*ptr).height as usize)
+         let window_id = XID {
+            id: (*ptr).window
+         };
+
+         (window_id, (*ptr).width as usize, (*ptr).height as usize)
       }
    }
 }
