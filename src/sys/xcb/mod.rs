@@ -43,7 +43,7 @@ impl Connection {
          ffi::xcb_generate_id(self.ptr)
       };
 
-      if id == -1 {
+      if id == 0xffffffff {
          return Err(RuntimeError::new(
             ErrorKind::XCB,
             "Generating XID failed".to_string()
