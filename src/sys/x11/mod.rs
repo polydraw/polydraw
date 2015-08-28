@@ -17,24 +17,34 @@ pub struct Display {
 
 impl Display {
    pub fn default() -> Result<Self, RuntimeError> {
-      Display::from_ptr(ptr::null())
-   }
-
-   pub fn new<T: Into<Vec<u8>>>(name: T) -> Result<Self, RuntimeError> {
-      let c_name = try!(CString::new(name.into()));
-
-      Display::from_ptr(c_name.as_ptr())
-   }
-
-   fn from_ptr(name: *const c_char) -> Result<Self, RuntimeError> {
       let display_ptr = unsafe {
-         ffi::XOpenDisplay(name)
+         ffi::XOpenDisplay(ptr::null())
+      };
+
+      if display_ptr.is_null() {
+         return Err(RuntimeError::new(
+            ErrorKind::Xlib,
+            "Opening default X display failed".to_string()
+         ));
+      }
+
+      Ok(
+         Display {
+            ptr: display_ptr
+         }
+      )
+   }
+
+   pub fn new(name: &str) -> Result<Self, RuntimeError> {
+      let c_name = CString::new(name).unwrap();
+
+      let display_ptr = unsafe {
+         ffi::XOpenDisplay(c_name.as_ptr())
       };
 
       if display_ptr.is_null() {
          let description = format!(
-            "Opening X display '{}' failed",
-            unsafe { CStr::from_ptr(name).to_str().unwrap() }
+            "Opening X display '{}' failed", name
          );
          return Err(RuntimeError::new(
             ErrorKind::Xlib,
