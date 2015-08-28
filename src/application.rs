@@ -10,7 +10,7 @@ impl Application {
    pub fn run(&self) {
    }
 
-   pub fn window(&self, title: &str) -> WindowCreator {
-      WindowCreator::new(title)
+   pub fn window<'a>(&'a mut self, title: &'a str) -> WindowCreator {
+      WindowCreator::new(self, title)
    }
 }

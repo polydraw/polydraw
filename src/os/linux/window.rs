@@ -16,6 +16,8 @@ impl LinuxWindow {
          Err(e) => return Err(e)
       };
 
+      println!("X11 display ............... : {:?}", display.ptr);
+
       let connection = match display.xcb_connection() {
          Ok(connection) => connection,
          Err(e) => return Err(e)

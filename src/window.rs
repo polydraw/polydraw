@@ -1,29 +1,45 @@
 #[cfg(target_os = "linux")]
-pub use os::linux::window::LinuxWindow as Window;
+pub use os::linux::window::LinuxWindow as OSWindow;
 
-pub struct WindowCreator {
-   title: String,
+use application::Application;
+
+pub struct Window {
+   os_window: OSWindow,
+}
+
+impl Window {
+   pub fn new(creator: WindowCreator) -> Self {
+      Window {
+         os_window: OSWindow::new(creator.title).unwrap()
+      }
+   }
+}
+
+pub struct WindowCreator<'a> {
+   app: &'a mut Application,
+   title: &'a str,
    width: Option<usize>,
    height: Option<usize>,
    centered: bool,
 }
 
-impl WindowCreator {
-   pub fn new(title: &str) -> Self {
+impl<'a> WindowCreator<'a> {
+   pub fn new(app: &'a mut Application, title: &'a str) -> Self {
       WindowCreator {
-         title: String::from(title),
+         app: app,
+         title: title,
          width: None,
          height: None,
          centered: false,
       }
    }
 
-   pub fn create(self) {
-
+   pub fn create(self) -> Window {
+      Window::new(self)
    }
 
-   pub fn centered(mut self) -> Self {
-      self.centered = true;
+   pub fn centered(mut self, centered: bool) -> Self {
+      self.centered = centered;
       self
    }
 
