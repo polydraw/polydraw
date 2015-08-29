@@ -22,6 +22,7 @@ impl LinuxApplication {
       })
    }
 
+   #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
       self.screen.size()
    }
@@ -86,6 +87,7 @@ impl ScreenHandler {
       }
    }
 
+   #[inline]
    pub fn size(&self) -> (u32, u32) {
       (
          self.screen.width_in_pixels() as u32,
