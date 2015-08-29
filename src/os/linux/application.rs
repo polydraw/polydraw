@@ -4,18 +4,21 @@ use sys::x11;
 use sys::xcb;
 
 pub struct LinuxApplication {
-   pub x11_display_handler: X11DisplayHandler,
-   pub connection_handler: ConnectionHandler,
+   pub x11_display: X11DisplayHandler,
+   pub connection: ConnectionHandler,
+   pub screen: ScreenHandler,
 }
 
 impl LinuxApplication {
    pub fn new() -> Result<Self, RuntimeError> {
-      let x11_display_handler = try!(X11DisplayHandler::new());
-      let connection_handler = try!(ConnectionHandler::new(&x11_display_handler));
+      let x11_display = try!(X11DisplayHandler::new());
+      let connection = try!(ConnectionHandler::new(&x11_display));
+      let screen = ScreenHandler::new(&x11_display, &connection);
 
       Ok(LinuxApplication {
-         x11_display_handler: x11_display_handler,
-         connection_handler: connection_handler,
+         x11_display: x11_display,
+         connection: connection,
+         screen: screen,
       })
    }
 
@@ -44,6 +47,11 @@ impl X11DisplayHandler {
    pub fn connection(&self) -> Result<xcb::Connection, RuntimeError> {
       self.display.xcb_connection()
    }
+
+   #[inline]
+   pub fn screen_id(&self) -> x11::ScreenID {
+      self.display.default_screen()
+   }
 }
 
 pub struct ConnectionHandler {
@@ -52,9 +60,29 @@ pub struct ConnectionHandler {
 
 impl ConnectionHandler {
    #[inline]
-   pub fn new(display_handler: &X11DisplayHandler) -> Result<Self, RuntimeError> {
+   pub fn new(display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
       Ok(ConnectionHandler {
-         connection: try!(display_handler.connection())
+         connection: try!(display.connection())
       })
+   }
+
+   #[inline]
+   pub fn screen_of_display(&self, display: &X11DisplayHandler) -> xcb::Screen {
+      let screen_id = display.screen_id();
+
+      self.connection.screen_of_display(&screen_id)
+   }
+}
+
+pub struct ScreenHandler {
+   pub screen: xcb::Screen,
+}
+
+impl ScreenHandler {
+   #[inline]
+   pub fn new(display: &X11DisplayHandler, connection: &ConnectionHandler) -> Self {
+      ScreenHandler {
+         screen: connection.screen_of_display(display)
+      }
    }
 }
