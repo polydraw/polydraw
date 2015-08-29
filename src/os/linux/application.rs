@@ -31,8 +31,12 @@ pub struct X11DisplayHandler {
 impl X11DisplayHandler {
    #[inline]
    pub fn new() -> Result<Self, RuntimeError> {
+      let display = try!(x11::Display::default());
+
+      display.xcb_own_event_queue();
+
       Ok(X11DisplayHandler {
-         display: try!(x11::Display::default())
+         display: display
       })
    }
 
