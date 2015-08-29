@@ -8,9 +8,9 @@ pub struct Window {
 }
 
 impl Window {
-   pub fn new(creator: WindowCreator) -> Self {
+   pub fn new(title: &str) -> Self {
       Window {
-         os_window: OSWindow::new(creator.title).unwrap()
+         os_window: OSWindow::new(title).unwrap()
       }
    }
 }
@@ -18,34 +18,44 @@ impl Window {
 pub struct WindowCreator<'a> {
    app: &'a mut Application,
    title: &'a str,
-   width: Option<usize>,
-   height: Option<usize>,
-   centered: bool,
+   x: u32,
+   y: u32,
+   width: u32,
+   height: u32,
 }
 
 impl<'a> WindowCreator<'a> {
    pub fn new(app: &'a mut Application, title: &'a str) -> Self {
+      let (desktop_width, desktop_height) = app.desktop_size();
+
+      let width = 3 * desktop_width / 4;
+      let height = 3 * desktop_height / 4;
+      let x = (desktop_width - width) / 2;
+      let y = (desktop_height - height) / 2;
+
       WindowCreator {
          app: app,
          title: title,
-         width: None,
-         height: None,
-         centered: false,
+         width: width,
+         height: height,
+         x: x,
+         y: y,
       }
    }
 
    pub fn create(self) -> Window {
-      Window::new(self)
+      Window::new(self.title)
    }
 
-   pub fn centered(mut self, centered: bool) -> Self {
-      self.centered = centered;
+   pub fn size(mut self, width: u32, height: u32) -> Self {
+      self.width = width;
+      self.height = height;
       self
    }
 
-   pub fn size(mut self, width: usize, height: usize) -> Self {
-      self.width = Some(width);
-      self.height = Some(height);
+   pub fn position(mut self, x: u32, y: u32) -> Self {
+      self.x = x;
+      self.y = y;
       self
    }
 }

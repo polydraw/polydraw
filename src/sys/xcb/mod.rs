@@ -252,7 +252,7 @@ impl Event {
       }
    }
 
-   pub fn resize_properties(&self) -> (XID, usize, usize) {
+   pub fn resize_properties(&self) -> (XID, u32, u32) {
       unsafe {
          let ptr = self.ptr as *mut ffi::xcb_configure_notify_event_t;
 
@@ -260,7 +260,7 @@ impl Event {
             id: (*ptr).window
          };
 
-         (window_id, (*ptr).width as usize, (*ptr).height as usize)
+         (window_id, (*ptr).width as u32, (*ptr).height as u32)
       }
    }
 }

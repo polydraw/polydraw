@@ -62,8 +62,8 @@ fn print_platforms_info(platforms: &Vec<cl::Platform>) {
 
 #[allow(unused_assignments)]
 fn main() {
-   let mut width: usize = 1280;
-   let mut height: usize = 720;
+   let mut width: u32 = 1280;
+   let mut height: u32 = 720;
 
    let platforms = match cl::platforms() {
       Ok(platforms) => platforms,
@@ -205,8 +205,8 @@ fn main() {
    let mut exit = false;
    let mut seed = 0;
 
-   let mut new_width: usize = width;
-   let mut new_height: usize = height;
+   let mut new_width: u32 = width;
+   let mut new_height: u32 = height;
 
    loop {
       for result in connection.poll_event_iter() {

@@ -3,9 +3,7 @@
 pub mod ffi;
 
 use std::ptr;
-use std::ffi::{CString, CStr};
-
-use libc::c_char;
+use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
 

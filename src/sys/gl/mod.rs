@@ -45,7 +45,7 @@ pub struct Texture {
 }
 
 impl Texture {
-   pub fn new(width: usize, height: usize) -> Self {
+   pub fn new(width: u32, height: u32) -> Self {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
@@ -95,7 +95,7 @@ impl Texture {
       }
    }
 
-   pub fn resize(&self, width: usize, height: usize) {
+   pub fn resize(&self, width: u32, height: u32) {
       unsafe {
          ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
 
@@ -113,7 +113,7 @@ impl Texture {
       }
    }
 
-   pub fn update(&self, width: usize, height: usize, data: &[u8]) {
+   pub fn update(&self, width: u32, height: u32, data: &[u8]) {
       unsafe {
          ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
 
@@ -166,7 +166,7 @@ impl Framebuffer {
       }
    }
 
-   pub fn blit(&self, width: usize, height: usize) {
+   pub fn blit(&self, width: u32, height: u32) {
       unsafe {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name);
 

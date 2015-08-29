@@ -48,7 +48,7 @@ pub struct Window {
 }
 
 impl Window {
-   pub fn create(width: usize, height: usize, title: &str, class_name: &str) -> Self {
+   pub fn create(width: u32, height: u32, title: &str, class_name: &str) -> Self {
       Window::register_class(class_name);
 
       let mut window: Window = Window {

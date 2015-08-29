@@ -5,7 +5,7 @@ use polydraw::Application;
 fn main() {
    let mut app = Application::new();
 
-   let window = app.window("PolyDraw").size(800, 400).centered(false).create();
+   app.window("PolyDraw").size(800, 400).position(50, 50).create();
 
    app.run();
 }
