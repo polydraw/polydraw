@@ -21,7 +21,7 @@ impl Application {
       WindowCreator::new(self, title)
    }
 
-   pub fn desktop_size(&self) -> (u32, u32) {
-      self.os_application.desktop_size()
+   pub fn screen_size(&self) -> (u32, u32) {
+      self.os_application.screen_size()
    }
 }

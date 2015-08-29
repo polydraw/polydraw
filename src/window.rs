@@ -26,12 +26,12 @@ pub struct WindowCreator<'a> {
 
 impl<'a> WindowCreator<'a> {
    pub fn new(app: &'a mut Application, title: &'a str) -> Self {
-      let (desktop_width, desktop_height) = app.desktop_size();
+      let (screen_width, screen_height) = app.screen_size();
 
-      let width = 3 * desktop_width / 4;
-      let height = 3 * desktop_height / 4;
-      let x = (desktop_width - width) / 2;
-      let y = (desktop_height - height) / 2;
+      let width = 3 * screen_width / 4;
+      let height = 3 * screen_height / 4;
+      let x = (screen_width - width) / 2;
+      let y = (screen_height - height) / 2;
 
       WindowCreator {
          app: app,

@@ -22,8 +22,8 @@ impl LinuxApplication {
       })
    }
 
-   pub fn desktop_size(&self) -> (u32, u32) {
-      (1200, 800)
+   pub fn screen_size(&self) -> (u32, u32) {
+      self.screen.size()
    }
 }
 
@@ -84,5 +84,12 @@ impl ScreenHandler {
       ScreenHandler {
          screen: connection.screen_of_display(display)
       }
+   }
+
+   pub fn size(&self) -> (u32, u32) {
+      (
+         self.screen.width_in_pixels() as u32,
+         self.screen.height_in_pixels() as u32
+      )
    }
 }
