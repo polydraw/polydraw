@@ -4,25 +4,18 @@ use sys::x11;
 use sys::xcb;
 
 pub struct LinuxApplication {
-   pub display: x11::Display,
-   pub connection: xcb::Connection,
+   pub x11_display_handler: X11DisplayHandler,
+   pub connection_handler: ConnectionHandler,
 }
 
 impl LinuxApplication {
-   #[allow(unused_variables)]
    pub fn new() -> Result<Self, RuntimeError> {
-      let display = try!(Self::create_display());
-
-      println!("X11 display ............... : {:?}", display.ptr);
-
-      let connection = match display.xcb_connection() {
-         Ok(connection) => connection,
-         Err(e) => return Err(e)
-      };
+      let x11_display_handler = try!(X11DisplayHandler::new());
+      let connection_handler = try!(ConnectionHandler::new(&x11_display_handler));
 
       Ok(LinuxApplication {
-         display: display,
-         connection: connection,
+         x11_display_handler: x11_display_handler,
+         connection_handler: connection_handler,
       })
    }
 
@@ -31,13 +24,33 @@ impl LinuxApplication {
    }
 }
 
-trait X11DisplayHandler {
-   fn create_display() -> Result<x11::Display, RuntimeError>;
+pub struct X11DisplayHandler {
+   pub display: x11::Display,
 }
 
-impl X11DisplayHandler for LinuxApplication {
+impl X11DisplayHandler {
    #[inline]
-   fn create_display() -> Result<x11::Display, RuntimeError> {
-      x11::Display::default()
+   pub fn new() -> Result<Self, RuntimeError> {
+      Ok(X11DisplayHandler {
+         display: try!(x11::Display::default())
+      })
+   }
+
+   #[inline]
+   pub fn connection(&self) -> Result<xcb::Connection, RuntimeError> {
+      self.display.xcb_connection()
+   }
+}
+
+pub struct ConnectionHandler {
+   pub connection: xcb::Connection,
+}
+
+impl ConnectionHandler {
+   #[inline]
+   pub fn new(display_handler: &X11DisplayHandler) -> Result<Self, RuntimeError> {
+      Ok(ConnectionHandler {
+         connection: try!(display_handler.connection())
+      })
    }
 }
