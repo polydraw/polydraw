@@ -1,7 +1,11 @@
+use std::rc::Rc;
+
 use error::RuntimeError;
 
 use sys::x11;
 use sys::xcb;
+
+use super::window::LinuxWindow;
 
 pub struct LinuxApplication {
    pub x11_display: X11DisplayHandler,
@@ -25,6 +29,16 @@ impl LinuxApplication {
    #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
       self.screen.size()
+   }
+
+   pub fn create_os_window(
+      &self, title: &str, x: u32, y: u32, width: u32, height: u32
+   ) -> Result<LinuxWindow, RuntimeError> {
+      let xcb_window = try!(self.screen.create_window(
+         &self.connection, x, y, width, height
+      ));
+
+      Ok(LinuxWindow::new(xcb_window, title))
    }
 }
 
@@ -56,14 +70,14 @@ impl X11DisplayHandler {
 }
 
 pub struct ConnectionHandler {
-   pub connection: xcb::Connection,
+   pub connection: Rc<xcb::Connection>,
 }
 
 impl ConnectionHandler {
    #[inline]
    pub fn new(display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
       Ok(ConnectionHandler {
-         connection: try!(display.connection())
+         connection: Rc::new(try!(display.connection()))
       })
    }
 
@@ -92,6 +106,15 @@ impl ScreenHandler {
       (
          self.screen.width_in_pixels() as u32,
          self.screen.height_in_pixels() as u32
+      )
+   }
+
+   pub fn create_window(
+      &self, connection: &ConnectionHandler, x: u32, y: u32, width: u32, height: u32
+   ) -> Result<xcb::Window, RuntimeError> {
+
+      xcb::Window::create(
+         &connection.connection, &self.screen, x, y, width, height,
       )
    }
 }

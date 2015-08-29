@@ -100,7 +100,7 @@ fn main() {
 
    let window = match xcb::Window::create(
       &connection, &scr,
-      0, 0, width as u16, height as u16,
+      0, 0, width, height,
    ) {
       Ok(window) => window,
       Err(e) => {

@@ -338,10 +338,10 @@ impl Window {
    pub fn create(
       connection: &Rc<Connection>,
       screen: &Screen,
-      x: ffi::c_short,
-      y: ffi::c_short,
-      width: ffi::c_ushort,
-      height: ffi::c_ushort,
+      x: u32,
+      y: u32,
+      width: u32,
+      height: u32,
    ) -> Result<Self, RuntimeError> {
       let window_id = match connection.generate_id() {
          Ok(window_id) => window_id,
@@ -360,8 +360,8 @@ impl Window {
             ffi::XCB_COPY_FROM_PARENT as u8,
             window_id.id,
             screen.root(),
-            x, y,
-            width, height,
+            x as ffi::c_short, y as ffi::c_short,
+            width as ffi::c_ushort, height as ffi::c_ushort,
             0,
             ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
             screen.root_visual(),
