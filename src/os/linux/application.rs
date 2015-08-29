@@ -4,11 +4,13 @@ use error::RuntimeError;
 
 use sys::x11;
 use sys::xcb;
+use sys::egl;
 
 use super::window::LinuxWindow;
 
 pub struct LinuxApplication {
    pub x11_display: X11DisplayHandler,
+   pub egl_display: EglDisplayHandler,
    pub connection: ConnectionHandler,
    pub screen: ScreenHandler,
 }
@@ -18,9 +20,11 @@ impl LinuxApplication {
       let x11_display = try!(X11DisplayHandler::new());
       let connection = try!(ConnectionHandler::new(&x11_display));
       let screen = ScreenHandler::new(&x11_display, &connection);
+      let egl_display = try!(EglDisplayHandler::new(&x11_display));
 
       Ok(LinuxApplication {
          x11_display: x11_display,
+         egl_display: egl_display,
          connection: connection,
          screen: screen,
       })
@@ -116,5 +120,26 @@ impl ScreenHandler {
       xcb::Window::create(
          &connection.connection, &self.screen, x, y, width, height,
       )
+   }
+}
+
+pub struct EglDisplayHandler {
+   pub display: egl::Display,
+   pub version: egl::Version,
+}
+
+impl EglDisplayHandler {
+   #[inline]
+   pub fn new(x11_display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
+      try!(egl::bind_api(egl::API::OpenGL));
+
+      let display = try!(egl::Display::from_native(&x11_display.display));
+
+      let version = try!(egl::initialize(&display));
+
+      Ok(EglDisplayHandler {
+         display: display,
+         version: version,
+      })
    }
 }
