@@ -50,6 +50,8 @@ impl LinuxApplication {
 
       try!(self.egl_handler.make_current(&surface));
 
+      try!(self.egl_handler.reset_swap_interval());
+
       Ok(LinuxWindow::new(xcb_window, surface, title))
    }
 }
@@ -175,5 +177,10 @@ impl EglHandler {
          surface,
          &self.context
       )
+   }
+
+   #[inline]
+   pub fn reset_swap_interval(&self) -> Result<(), RuntimeError> {
+      egl::swap_interval(&self.display, 0)
    }
 }
