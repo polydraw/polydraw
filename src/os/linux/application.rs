@@ -5,6 +5,7 @@ use error::RuntimeError;
 use sys::x11;
 use sys::xcb;
 use sys::egl;
+use sys::gl;
 
 use super::window::LinuxWindow;
 
@@ -21,6 +22,8 @@ impl LinuxApplication {
       let connection = try!(ConnectionHandler::new(&x11_display));
       let screen = try!(ScreenHandler::new(&x11_display, &connection));
       let egl_display = try!(EglDisplayHandler::new(&x11_display));
+
+      gl::load(egl::Loader::new());
 
       Ok(LinuxApplication {
          x11_display: x11_display,
@@ -42,7 +45,11 @@ impl LinuxApplication {
          &self.connection, x, y, width, height
       ));
 
-      Ok(LinuxWindow::new(xcb_window, title))
+      let surface = try!(EglSurfaceHandler::new(&self.egl_display, &xcb_window));
+
+      try!(self.egl_display.make_current(&surface));
+
+      Ok(LinuxWindow::new(xcb_window, surface, title))
    }
 }
 
@@ -151,11 +158,21 @@ impl EglDisplayHandler {
    }
 
    #[inline]
-   pub fn create_surface(&self, window: &LinuxWindow) -> Result<egl::Surface, RuntimeError> {
+   pub fn create_surface(&self, xcb_window: &xcb::Window) -> Result<egl::Surface, RuntimeError> {
       egl::create_window_surface(
          &self.display,
          &self.config,
-         &window.window.window_id.id
+         &xcb_window.window_id.id
+      )
+   }
+
+   #[inline]
+   pub fn make_current(&self, surface: &EglSurfaceHandler) -> Result<(), RuntimeError> {
+      egl::make_current(
+         &self.display,
+         &surface.surface,
+         &surface.surface,
+         &self.context
       )
    }
 }
@@ -166,8 +183,8 @@ pub struct EglSurfaceHandler {
 
 impl EglSurfaceHandler {
    #[inline]
-   pub fn new(display: &EglDisplayHandler, window: &LinuxWindow) -> Result<Self, RuntimeError> {
-      let surface = try!(display.create_surface(&window));
+   pub fn new(display: &EglDisplayHandler, xcb_window: &xcb::Window) -> Result<Self, RuntimeError> {
+      let surface = try!(display.create_surface(xcb_window));
 
       Ok(EglSurfaceHandler {
          surface: surface,
