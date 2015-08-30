@@ -52,7 +52,11 @@ impl LinuxApplication {
 
       try!(self.egl_handler.reset_swap_interval());
 
-      Ok(LinuxWindow::new(xcb_window, surface, title))
+      let texture = gl::Texture::new(width, height);
+
+      let framebuffer = gl::Framebuffer::new(&texture);
+
+      Ok(LinuxWindow::new(xcb_window, surface, texture, framebuffer, title))
    }
 }
 
