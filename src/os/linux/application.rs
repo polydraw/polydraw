@@ -10,27 +10,27 @@ use sys::gl;
 use super::window::LinuxWindow;
 
 pub struct LinuxApplication {
-   pub x11_display: X11DisplayHandler,
+   pub x11_handler: X11Handler,
    pub connection: ConnectionHandler,
    pub screen: ScreenHandler,
-   pub egl: EglHandler,
+   pub egl_handler: EglHandler,
 }
 
 impl LinuxApplication {
    pub fn new() -> Result<Self, RuntimeError> {
-      let x11_display = try!(X11DisplayHandler::new());
-      let connection = try!(ConnectionHandler::new(&x11_display));
-      let screen = try!(ScreenHandler::new(&x11_display, &connection));
-      let egl = try!(EglHandler::new(&x11_display));
+      let x11_handler = try!(X11Handler::new());
+      let connection = try!(ConnectionHandler::new(&x11_handler));
+      let screen = try!(ScreenHandler::new(&x11_handler, &connection));
+      let egl_handler = try!(EglHandler::new(&x11_handler));
 
       gl::load(egl::Loader::new());
       gl::reset_pixelstore_alignment();
 
       Ok(LinuxApplication {
-         x11_display: x11_display,
+         x11_handler: x11_handler,
          connection: connection,
          screen: screen,
-         egl: egl,
+         egl_handler: egl_handler,
       })
    }
 
@@ -46,26 +46,26 @@ impl LinuxApplication {
          &self.connection, x, y, width, height
       ));
 
-      let surface = try!(self.egl.create_surface(&xcb_window));
+      let surface = try!(self.egl_handler.create_surface(&xcb_window));
 
-      try!(self.egl.make_current(&surface));
+      try!(self.egl_handler.make_current(&surface));
 
       Ok(LinuxWindow::new(xcb_window, surface, title))
    }
 }
 
-pub struct X11DisplayHandler {
+pub struct X11Handler {
    pub display: x11::Display,
 }
 
-impl X11DisplayHandler {
+impl X11Handler {
    #[inline]
    pub fn new() -> Result<Self, RuntimeError> {
       let display = try!(x11::Display::default());
 
       display.xcb_own_event_queue();
 
-      Ok(X11DisplayHandler {
+      Ok(X11Handler {
          display: display
       })
    }
@@ -87,15 +87,15 @@ pub struct ConnectionHandler {
 
 impl ConnectionHandler {
    #[inline]
-   pub fn new(display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
+   pub fn new(x11_handler: &X11Handler) -> Result<Self, RuntimeError> {
       Ok(ConnectionHandler {
-         connection: Rc::new(try!(display.connection()))
+         connection: Rc::new(try!(x11_handler.connection()))
       })
    }
 
    #[inline]
-   pub fn screen_of_display(&self, display: &X11DisplayHandler) -> Result<xcb::Screen, RuntimeError> {
-      let screen_id = display.screen_id();
+   pub fn screen_of_display(&self, x11_handler: &X11Handler) -> Result<xcb::Screen, RuntimeError> {
+      let screen_id = x11_handler.screen_id();
 
       self.connection.screen_of_display(&screen_id)
    }
@@ -107,9 +107,9 @@ pub struct ScreenHandler {
 
 impl ScreenHandler {
    #[inline]
-   pub fn new(display: &X11DisplayHandler, connection: &ConnectionHandler) -> Result<Self, RuntimeError> {
+   pub fn new(x11_handler: &X11Handler, connection: &ConnectionHandler) -> Result<Self, RuntimeError> {
       Ok(ScreenHandler {
-         screen: try!(connection.screen_of_display(display))
+         screen: try!(connection.screen_of_display(x11_handler))
       })
    }
 
@@ -140,10 +140,10 @@ pub struct EglHandler {
 }
 
 impl EglHandler {
-   pub fn new(x11_display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
+   pub fn new(x11_handler: &X11Handler) -> Result<Self, RuntimeError> {
       try!(egl::bind_api(egl::API::OpenGL));
 
-      let display = try!(egl::Display::from_native(&x11_display.display));
+      let display = try!(egl::Display::from_native(&x11_handler.display));
       let version = try!(egl::initialize(&display));
       let config = try!(egl::choose_config(&display));
       let context = try!(egl::create_context(&display, &config));
