@@ -24,6 +24,7 @@ impl LinuxApplication {
       let egl_display = try!(EglDisplayHandler::new(&x11_display));
 
       gl::load(egl::Loader::new());
+      gl::reset_pixelstore_alignment();
 
       Ok(LinuxApplication {
          x11_display: x11_display,
