@@ -21,11 +21,18 @@ impl Connection {
       }
    }
 
-   pub fn screen_of_display(&self, screen_id: &ScreenID) -> Screen {
+   pub fn screen_of_display(&self, screen_id: &ScreenID) -> Result<Screen, RuntimeError> {
+      let setup = unsafe { ffi::xcb_get_setup(self.ptr) };
+
+      if setup == ptr::null() {
+         return Err(RuntimeError::new(
+            ErrorKind::XCB,
+            "Getting XCB connection setup failed".to_string()
+         ));
+      }
+
       let mut iter = unsafe {
-         ffi::xcb_setup_roots_iterator(
-            ffi::xcb_get_setup(self.ptr)
-         )
+         ffi::xcb_setup_roots_iterator(setup)
       };
 
       let mut screen_num = screen_id.screen;
@@ -35,7 +42,7 @@ impl Connection {
          screen_num -= 1;
       }
 
-      Screen::new(iter.data)
+      Ok(Screen::new(iter.data))
    }
 
    pub fn generate_id(&self) -> Result<XID, RuntimeError> {

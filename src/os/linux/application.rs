@@ -10,23 +10,23 @@ use super::window::LinuxWindow;
 
 pub struct LinuxApplication {
    pub x11_display: X11DisplayHandler,
-   pub egl_display: EglDisplayHandler,
    pub connection: ConnectionHandler,
    pub screen: ScreenHandler,
+   pub egl_display: EglDisplayHandler,
 }
 
 impl LinuxApplication {
    pub fn new() -> Result<Self, RuntimeError> {
       let x11_display = try!(X11DisplayHandler::new());
       let connection = try!(ConnectionHandler::new(&x11_display));
-      let screen = ScreenHandler::new(&x11_display, &connection);
+      let screen = try!(ScreenHandler::new(&x11_display, &connection));
       let egl_display = try!(EglDisplayHandler::new(&x11_display));
 
       Ok(LinuxApplication {
          x11_display: x11_display,
-         egl_display: egl_display,
          connection: connection,
          screen: screen,
+         egl_display: egl_display,
       })
    }
 
@@ -86,7 +86,7 @@ impl ConnectionHandler {
    }
 
    #[inline]
-   pub fn screen_of_display(&self, display: &X11DisplayHandler) -> xcb::Screen {
+   pub fn screen_of_display(&self, display: &X11DisplayHandler) -> Result<xcb::Screen, RuntimeError> {
       let screen_id = display.screen_id();
 
       self.connection.screen_of_display(&screen_id)
@@ -99,10 +99,10 @@ pub struct ScreenHandler {
 
 impl ScreenHandler {
    #[inline]
-   pub fn new(display: &X11DisplayHandler, connection: &ConnectionHandler) -> Self {
-      ScreenHandler {
-         screen: connection.screen_of_display(display)
-      }
+   pub fn new(display: &X11DisplayHandler, connection: &ConnectionHandler) -> Result<Self, RuntimeError> {
+      Ok(ScreenHandler {
+         screen: try!(connection.screen_of_display(display))
+      })
    }
 
    #[inline]
@@ -113,6 +113,7 @@ impl ScreenHandler {
       )
    }
 
+   #[inline]
    pub fn create_window(
       &self, connection: &ConnectionHandler, x: u32, y: u32, width: u32, height: u32
    ) -> Result<xcb::Window, RuntimeError> {
@@ -126,20 +127,50 @@ impl ScreenHandler {
 pub struct EglDisplayHandler {
    pub display: egl::Display,
    pub version: egl::Version,
+   pub config: egl::Config,
+   pub context: egl::Context,
 }
 
 impl EglDisplayHandler {
-   #[inline]
    pub fn new(x11_display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
       try!(egl::bind_api(egl::API::OpenGL));
 
       let display = try!(egl::Display::from_native(&x11_display.display));
-
       let version = try!(egl::initialize(&display));
+      let config = try!(egl::choose_config(&display));
+      let context = try!(egl::create_context(&display, &config));
+
+      try!(egl::query_context(&display, &context));
 
       Ok(EglDisplayHandler {
          display: display,
          version: version,
+         config: config,
+         context: context,
+      })
+   }
+
+   #[inline]
+   pub fn create_surface(&self, window: &LinuxWindow) -> Result<egl::Surface, RuntimeError> {
+      egl::create_window_surface(
+         &self.display,
+         &self.config,
+         &window.window.window_id.id
+      )
+   }
+}
+
+pub struct EglSurfaceHandler {
+   pub surface: egl::Surface,
+}
+
+impl EglSurfaceHandler {
+   #[inline]
+   pub fn new(display: &EglDisplayHandler, window: &LinuxWindow) -> Result<Self, RuntimeError> {
+      let surface = try!(display.create_surface(&window));
+
+      Ok(EglSurfaceHandler {
+         surface: surface,
       })
    }
 }

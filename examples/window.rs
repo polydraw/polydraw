@@ -94,12 +94,17 @@ fn main() {
 
    let screen_id = display.default_screen();
 
-   let scr = connection.screen_of_display(&screen_id);
+   let screen = match connection.screen_of_display(&screen_id) {
+      Ok(screen) => screen,
+      Err(e) => {
+         panic!(e.description);
+      }
+   };
 
-   print_screen_info(&scr);
+   print_screen_info(&screen);
 
    let window = match xcb::Window::create(
-      &connection, &scr,
+      &connection, &screen,
       0, 0, width, height,
    ) {
       Ok(window) => window,
