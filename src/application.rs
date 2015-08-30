@@ -23,7 +23,7 @@ impl Application {
       WindowCreator::new(self, title)
    }
 
-   pub fn _create_window(
+   pub fn create_window(
       &self, title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<Window, RuntimeError> {
 

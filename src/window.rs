@@ -61,7 +61,7 @@ impl<'a> WindowCreator<'a> {
          None => (screen_height - height) / 2
       };
 
-      self.app._create_window(self.title, x, y, width, height)
+      self.app.create_window(self.title, x, y, width, height)
    }
 
    pub fn size(mut self, width: u32, height: u32) -> Self {
