@@ -13,7 +13,7 @@ pub struct LinuxApplication {
    pub x11_display: X11DisplayHandler,
    pub connection: ConnectionHandler,
    pub screen: ScreenHandler,
-   pub egl_display: EglDisplayHandler,
+   pub egl: EglHandler,
 }
 
 impl LinuxApplication {
@@ -21,7 +21,7 @@ impl LinuxApplication {
       let x11_display = try!(X11DisplayHandler::new());
       let connection = try!(ConnectionHandler::new(&x11_display));
       let screen = try!(ScreenHandler::new(&x11_display, &connection));
-      let egl_display = try!(EglDisplayHandler::new(&x11_display));
+      let egl = try!(EglHandler::new(&x11_display));
 
       gl::load(egl::Loader::new());
       gl::reset_pixelstore_alignment();
@@ -30,7 +30,7 @@ impl LinuxApplication {
          x11_display: x11_display,
          connection: connection,
          screen: screen,
-         egl_display: egl_display,
+         egl: egl,
       })
    }
 
@@ -46,9 +46,9 @@ impl LinuxApplication {
          &self.connection, x, y, width, height
       ));
 
-      let surface = try!(self.egl_display.create_surface(&xcb_window));
+      let surface = try!(self.egl.create_surface(&xcb_window));
 
-      try!(self.egl_display.make_current(&surface));
+      try!(self.egl.make_current(&surface));
 
       Ok(LinuxWindow::new(xcb_window, surface, title))
    }
@@ -132,14 +132,14 @@ impl ScreenHandler {
    }
 }
 
-pub struct EglDisplayHandler {
+pub struct EglHandler {
    pub display: egl::Display,
    pub version: egl::Version,
    pub config: egl::Config,
    pub context: egl::Context,
 }
 
-impl EglDisplayHandler {
+impl EglHandler {
    pub fn new(x11_display: &X11DisplayHandler) -> Result<Self, RuntimeError> {
       try!(egl::bind_api(egl::API::OpenGL));
 
@@ -150,7 +150,7 @@ impl EglDisplayHandler {
 
       try!(egl::query_context(&display, &context));
 
-      Ok(EglDisplayHandler {
+      Ok(EglHandler {
          display: display,
          version: version,
          config: config,
