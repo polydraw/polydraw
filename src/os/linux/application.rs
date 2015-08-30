@@ -46,7 +46,7 @@ impl LinuxApplication {
          &self.connection, x, y, width, height
       ));
 
-      let surface = try!(EglSurfaceHandler::new(&self.egl_display, &xcb_window));
+      let surface = try!(self.egl_display.create_surface(&xcb_window));
 
       try!(self.egl_display.make_current(&surface));
 
@@ -168,27 +168,12 @@ impl EglDisplayHandler {
    }
 
    #[inline]
-   pub fn make_current(&self, surface: &EglSurfaceHandler) -> Result<(), RuntimeError> {
+   pub fn make_current(&self, surface: &egl::Surface) -> Result<(), RuntimeError> {
       egl::make_current(
          &self.display,
-         &surface.surface,
-         &surface.surface,
+         surface,
+         surface,
          &self.context
       )
-   }
-}
-
-pub struct EglSurfaceHandler {
-   pub surface: egl::Surface,
-}
-
-impl EglSurfaceHandler {
-   #[inline]
-   pub fn new(display: &EglDisplayHandler, xcb_window: &xcb::Window) -> Result<Self, RuntimeError> {
-      let surface = try!(display.create_surface(xcb_window));
-
-      Ok(EglSurfaceHandler {
-         surface: surface,
-      })
    }
 }

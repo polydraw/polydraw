@@ -1,17 +1,16 @@
 use sys::xcb;
-
-use super::application::EglSurfaceHandler;
+use sys::egl;
 
 pub struct LinuxWindow {
    pub window: xcb::Window,
-   pub surface: EglSurfaceHandler,
+   pub surface: egl::Surface,
    pub protocols_atom: xcb::Atom,
    pub delete_window_atom: xcb::Atom,
 }
 
 impl LinuxWindow {
    #[allow(unused_variables)]
-   pub fn new(window: xcb::Window, surface: EglSurfaceHandler, title: &str) -> Self {
+   pub fn new(window: xcb::Window, surface: egl::Surface, title: &str) -> Self {
       window.set_title(title);
 
       window.map();
