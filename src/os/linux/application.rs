@@ -1,7 +1,10 @@
 use error::RuntimeError;
 
+use frame::RenderFrame;
+
 use super::desktop::LinuxDesktop;
 use super::initializer::LinuxInitializer;
+use super::event_loop::LinuxEventLoop;
 
 pub struct LinuxApplication {
    desktop: LinuxDesktop,
@@ -26,8 +29,19 @@ impl LinuxApplication {
       })
    }
 
-   pub fn run(&self) {
+   pub fn run(&self, render_frame: &mut RenderFrame) -> Result<(), RuntimeError> {
+      let mut event_loop = LinuxEventLoop::new(
+         render_frame,
+         &self.desktop.connection,
+         &self.initializer.window,
+         &self.initializer.atoms,
+         &self.initializer.gl.texture,
+         &self.initializer.gl.framebuffer,
+         &self.initializer.egl.display,
+         &self.initializer.egl.surface,
+      );
 
+      event_loop.run()
    }
 
    pub fn screen_size(&self) -> (u32, u32) {

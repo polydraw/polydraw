@@ -2,6 +2,7 @@
 
 pub mod ffi;
 
+use std::fmt;
 use std::ptr;
 use std::rc::Rc;
 use std::ffi::CString;
@@ -207,6 +208,30 @@ impl EventType {
 
    pub fn empty() -> Self {
       EventType::Empty
+   }
+}
+
+impl fmt::Display for EventType {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      let type_str = match *self {
+         EventType::KeyPress => "KeyPress",
+         EventType::KeyRelease => "KeyRelease",
+         EventType::ButtonPress => "ButtonPress",
+         EventType::ButtonRelease => "ButtonRelease",
+         EventType::MotionNotify => "MotionNotify",
+         EventType::EnterNotify => "EnterNotify",
+         EventType::LeaveNotify => "LeaveNotify",
+         EventType::FocusIn => "FocusIn",
+         EventType::FocusOut => "FocusOut",
+         EventType::KeymapNotify => "KeymapNotify",
+         EventType::Expose => "Expose",
+         EventType::ClientMessage => "ClientMessage",
+         EventType::ConfigureNotify => "ConfigureNotify",
+         EventType::Empty => "Empty",
+         EventType::Unidentified => "Unidentified",
+      };
+
+      write!(f, "{}", type_str)
    }
 }
 

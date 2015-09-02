@@ -53,7 +53,7 @@ impl LinuxInitializer {
 
       let window = try!(xcb::Window::create(
          connection, &screen,
-         0, 0, width, height,
+         x, y, width, height,
       ));
 
       window.set_title(title);
