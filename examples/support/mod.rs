@@ -5,6 +5,7 @@ pub fn rand_u8(seed: &mut u64) -> u8 {
     (seed.wrapping_shr(16) % 256) as u8
 }
 
+#[allow(dead_code)]
 pub fn create_data(width: u32, height: u32) -> Vec<u8> {
    repeat(0u8)
       .take((width * height * 3) as usize)

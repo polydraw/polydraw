@@ -5,6 +5,7 @@ pub use os::linux::application::LinuxApplication as OsApplication;
 pub use os::linux::desktop::LinuxDesktop as OsDesktop;
 
 use super::frame::RenderFrame;
+use super::renderer::Renderer;
 
 pub struct Application {
    pub os_application: OsApplication,
@@ -50,8 +51,8 @@ impl Application {
       }
    }
 
-   pub fn run(&mut self) {
-      match self.os_application.run(&mut self.render_frame) {
+   pub fn run(&mut self, renderer: &mut Renderer) {
+      match self.os_application.run(renderer, &mut self.render_frame) {
          Ok(_) => {},
          Err(e) => {
             panic!(e.description);

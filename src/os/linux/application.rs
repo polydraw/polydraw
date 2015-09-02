@@ -1,6 +1,7 @@
 use error::RuntimeError;
 
 use frame::RenderFrame;
+use renderer::Renderer;
 
 use super::desktop::LinuxDesktop;
 use super::initializer::LinuxInitializer;
@@ -29,8 +30,12 @@ impl LinuxApplication {
       })
    }
 
-   pub fn run(&self, render_frame: &mut RenderFrame) -> Result<(), RuntimeError> {
+   pub fn run(
+      &self, renderer: &mut Renderer, render_frame: &mut RenderFrame
+   ) -> Result<(), RuntimeError> {
+
       let mut event_loop = LinuxEventLoop::new(
+         renderer,
          render_frame,
          &self.desktop.connection,
          &self.initializer.window,

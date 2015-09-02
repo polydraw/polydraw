@@ -1,7 +1,9 @@
-pub use application::{OsDesktop, Application};
+pub use super::application::{OsDesktop, Application};
+pub use super::renderer::{Renderer, NullRenderer};
 
 pub struct ApplicationCreator<'a> {
    desktop: OsDesktop,
+   renderer: Option<&'a mut Renderer>,
    title: Option<&'a str>,
    x: Option<u32>,
    y: Option<u32>,
@@ -13,12 +15,18 @@ impl<'a> ApplicationCreator<'a> {
    pub fn new(desktop: OsDesktop) -> Self {
       ApplicationCreator {
          desktop: desktop,
+         renderer: None,
          title: None,
          x: None,
          y: None,
          width: None,
          height: None,
       }
+   }
+
+   pub fn renderer(mut self, renderer: &'a mut Renderer) -> Self {
+      self.renderer = Some(renderer);
+      self
    }
 
    pub fn title(mut self, title: &'a str) -> Self {
@@ -39,6 +47,13 @@ impl<'a> ApplicationCreator<'a> {
    }
 
    pub fn run(self) {
+      let mut null_renderer = NullRenderer;
+
+      let renderer: &mut Renderer = match self.renderer {
+         Some(mut renderer) => renderer,
+         None => &mut null_renderer as &mut Renderer
+      };
+
       let title = match self.title {
          Some(title) => title,
          None => "PolyDraw"
@@ -66,6 +81,6 @@ impl<'a> ApplicationCreator<'a> {
          None => (screen_height - height) / 2
       };
 
-      Application::create(self.desktop, title, x, y, width, height).run()
+      Application::create(self.desktop, title, x, y, width, height).run(renderer)
    }
 }

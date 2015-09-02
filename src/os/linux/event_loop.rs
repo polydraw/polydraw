@@ -7,10 +7,12 @@ use sys::gl;
 use sys::egl;
 
 use frame::RenderFrame;
+use renderer::Renderer;
 use super::initializer::XcbAtoms;
 
 
 pub struct LinuxEventLoop<'a> {
+   renderer: &'a mut Renderer,
    render_frame: &'a mut RenderFrame,
    connection: Rc<xcb::Connection>,
    window: &'a xcb::Window,
@@ -23,6 +25,7 @@ pub struct LinuxEventLoop<'a> {
 
 impl<'a> LinuxEventLoop<'a> {
    pub fn new(
+      renderer: &'a mut Renderer,
       render_frame: &'a mut RenderFrame,
       connection: &Rc<xcb::Connection>,
       window: &'a xcb::Window,
@@ -33,6 +36,7 @@ impl<'a> LinuxEventLoop<'a> {
       surface: &'a egl::Surface,
    ) -> Self {
       LinuxEventLoop {
+         renderer: renderer,
          render_frame: render_frame,
          connection: connection.clone(),
          window: window,
@@ -65,7 +69,7 @@ impl<'a> LinuxEventLoop<'a> {
                      self.texture.resize(self.render_frame.width, self.render_frame.height);
                   }
 
-                  //update_data(&mut data, width, height, &mut seed);
+                  self.renderer.render(self.render_frame);
 
                   self.texture.update(self.render_frame.width, self.render_frame.height, &self.render_frame.data);
 
