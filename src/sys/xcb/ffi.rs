@@ -57,6 +57,14 @@ pub const XCB_CW_DONT_PROPAGATE:                 c_uint = 4096;
 pub const XCB_CW_COLORMAP:                       c_uint = 8192;
 pub const XCB_CW_CURSOR:                         c_uint = 16384;
 
+pub const XCB_CONFIG_WINDOW_X:                   c_uint = 1;
+pub const XCB_CONFIG_WINDOW_Y:                   c_uint = 2;
+pub const XCB_CONFIG_WINDOW_WIDTH:               c_uint = 4;
+pub const XCB_CONFIG_WINDOW_HEIGHT:              c_uint = 8;
+pub const XCB_CONFIG_WINDOW_BORDER_WIDTH:        c_uint = 16;
+pub const XCB_CONFIG_WINDOW_SIBLING:             c_uint = 32;
+pub const XCB_CONFIG_WINDOW_STACK_MODE:          c_uint = 64;
+
 pub const XCB_COPY_FROM_PARENT:                  c_uint = 0;
 
 pub const XCB_WINDOW_CLASS_COPY_FROM_PARENT:     c_uint = 0;
@@ -429,6 +437,13 @@ extern "C" {
    pub fn xcb_map_window(
       c: *mut xcb_connection_t,
       window: xcb_window_t
+   ) -> xcb_void_cookie_t;
+
+   pub fn xcb_configure_window(
+      c: *mut xcb_connection_t,
+      window: xcb_window_t,
+      value_mask: c_ushort,
+      value_list: *const c_uint
    ) -> xcb_void_cookie_t;
 
    pub fn xcb_wait_for_event(

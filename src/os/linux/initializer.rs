@@ -52,13 +52,14 @@ impl LinuxInitializer {
    ) -> Result<xcb::Window, RuntimeError> {
 
       let window = try!(xcb::Window::create(
-         connection, &screen,
-         x, y, width, height,
+         connection, &screen, width, height,
       ));
 
       window.set_title(title);
 
       window.map();
+
+      window.position(x, y);
 
       Ok(window)
    }

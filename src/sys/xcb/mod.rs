@@ -370,8 +370,6 @@ impl Window {
    pub fn create(
       connection: &Rc<Connection>,
       screen: &Screen,
-      x: u32,
-      y: u32,
       width: u32,
       height: u32,
    ) -> Result<Self, RuntimeError> {
@@ -392,7 +390,7 @@ impl Window {
             ffi::XCB_COPY_FROM_PARENT as u8,
             window_id.id,
             screen.root(),
-            x as ffi::c_short, y as ffi::c_short,
+            0, 0,
             width as ffi::c_ushort, height as ffi::c_ushort,
             0,
             ffi::XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
@@ -411,6 +409,20 @@ impl Window {
    pub fn map(&self) {
       unsafe {
          ffi::xcb_map_window(self.connection.ptr, self.window_id.id)
+      };
+   }
+
+   pub fn position(&self, x: u32, y: u32) {
+      let value_mask = ffi::XCB_CONFIG_WINDOW_X | ffi::XCB_CONFIG_WINDOW_Y;
+      let value_list = [x as ffi::c_uint, y as ffi::c_uint, 0];
+
+      unsafe {
+         ffi::xcb_configure_window(
+            self.connection.ptr,
+            self.window_id.id,
+            value_mask as ffi::c_ushort,
+            value_list.as_ptr()
+         )
       };
    }
 
