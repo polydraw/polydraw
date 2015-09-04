@@ -55,18 +55,18 @@ impl LinuxInitializer {
          connection, &screen, width, height,
       ));
 
-      window.set_title(title);
+      try!(window.set_title(title));
 
-      window.map();
+      try!(window.map());
 
-      window.position(x, y);
+      try!(window.position(x, y));
 
       Ok(window)
    }
 
    #[inline]
    pub fn init_atoms(window: &xcb::Window) -> Result<XcbAtoms, RuntimeError> {
-      let (protocols_atom, delete_window_atom) = window.register_close_event();
+      let (protocols_atom, delete_window_atom) = try!(window.register_close_event());
 
       Ok(XcbAtoms {
          protocols_atom: protocols_atom,

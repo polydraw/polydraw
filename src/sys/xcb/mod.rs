@@ -384,8 +384,8 @@ impl Window {
       let valuelist = [eventmask, 0];
       let valuemask = ffi::XCB_CW_EVENT_MASK;
 
-      unsafe {
-         ffi::xcb_create_window(
+      let cookie = unsafe {
+         ffi::xcb_create_window_checked(
             connection.ptr,
             ffi::XCB_COPY_FROM_PARENT as u8,
             window_id.id,
@@ -400,33 +400,67 @@ impl Window {
          )
       };
 
+      match error_check(connection.ptr, cookie) {
+         Some(error_code) => {
+            return Err(RuntimeError::new(
+               ErrorKind::XCB,
+               format!("Create XCB window failed: {}", error_code)
+            ));
+         },
+         None => {}
+      }
+
       Ok(Window {
          connection: connection.clone(),
          window_id: window_id,
       })
    }
 
-   pub fn map(&self) {
-      unsafe {
-         ffi::xcb_map_window(self.connection.ptr, self.window_id.id)
+   pub fn map(&self) -> Result<(), RuntimeError> {
+      let cookie = unsafe {
+         ffi::xcb_map_window_checked(self.connection.ptr, self.window_id.id)
       };
+
+      match error_check(self.connection.ptr, cookie) {
+         Some(error_code) => {
+            return Err(RuntimeError::new(
+               ErrorKind::XCB,
+               format!("Mapping XCB window failed: {}", error_code)
+            ));
+         },
+         None => {}
+      }
+
+      Ok(())
    }
 
-   pub fn position(&self, x: u32, y: u32) {
+   pub fn position(&self, x: u32, y: u32) -> Result<(), RuntimeError> {
       let value_mask = ffi::XCB_CONFIG_WINDOW_X | ffi::XCB_CONFIG_WINDOW_Y;
       let value_list = [x as ffi::c_uint, y as ffi::c_uint, 0];
 
-      unsafe {
-         ffi::xcb_configure_window(
+      let cookie = unsafe {
+         ffi::xcb_configure_window_checked(
             self.connection.ptr,
             self.window_id.id,
             value_mask as ffi::c_ushort,
             value_list.as_ptr()
          )
       };
+
+      match error_check(self.connection.ptr, cookie) {
+         Some(error_code) => {
+            return Err(RuntimeError::new(
+               ErrorKind::XCB,
+               format!("Setting XCB window position failed: {}", error_code)
+            ));
+         },
+         None => {}
+      }
+
+      Ok(())
    }
 
-   pub fn register_close_event(&self) -> (Atom, Atom) {
+   pub fn register_close_event(&self) -> Result<(Atom, Atom), RuntimeError> {
       let protocols_cookie = self.connection.intern_atom("WM_PROTOCOLS", true);
       let protocols_reply = self.connection.intern_atom_reply(&protocols_cookie);
 
@@ -436,8 +470,8 @@ impl Window {
       let protocols_atom = protocols_reply.atom();
       let delete_window_atom = delete_window_reply.atom();
 
-      unsafe {
-         ffi::xcb_change_property(
+      let cookie = unsafe {
+         ffi::xcb_change_property_checked(
             self.connection.ptr,
             ffi::XCB_PROP_MODE_REPLACE,
             self.window_id.id,
@@ -446,17 +480,27 @@ impl Window {
             32,
             1,
             &delete_window_atom.xcb_atom as *const u32 as *const _
-         );
+         )
+      };
+
+      match error_check(self.connection.ptr, cookie) {
+         Some(error_code) => {
+            return Err(RuntimeError::new(
+               ErrorKind::XCB,
+               format!("Registering close event failed: {}", error_code)
+            ));
+         },
+         None => {}
       }
 
-      (protocols_atom, delete_window_atom)
+      Ok((protocols_atom, delete_window_atom))
    }
 
-   pub fn set_title(&self, title: &str) {
+   pub fn set_title(&self, title: &str) -> Result<(), RuntimeError> {
       let c_title = CString::new(title).unwrap();
 
-      unsafe {
-         ffi::xcb_change_property(
+      let cookie = unsafe {
+         ffi::xcb_change_property_checked(
             self.connection.ptr,
             ffi::XCB_PROP_MODE_REPLACE,
             self.window_id.id,
@@ -465,9 +509,41 @@ impl Window {
             8,
             title.len() as ffi::c_uint,
             c_title.as_ptr() as *const _
-         );
+         )
+      };
+
+      match error_check(self.connection.ptr, cookie) {
+         Some(error_code) => {
+            return Err(RuntimeError::new(
+               ErrorKind::XCB,
+               format!("Setting window title failed: {}", error_code)
+            ));
+         },
+         None => {}
       }
+
+      Ok(())
    }
+}
+
+fn error_check(
+   c: *mut ffi::xcb_connection_t,
+   cookie: ffi::xcb_void_cookie_t
+) -> Option<ffi::c_uchar> {
+
+   let error = unsafe {
+      ffi::xcb_request_check(c, cookie)
+   };
+
+   if error != ptr::null_mut() {
+      return Some(
+         unsafe {
+            (*error).error_code
+         }
+      )
+   }
+
+   None
 }
 
 impl Drop for Window {

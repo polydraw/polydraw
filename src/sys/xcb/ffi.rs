@@ -413,7 +413,7 @@ extern "C" {
       c: *mut xcb_connection_t
    ) -> c_uint;
 
-   pub fn xcb_create_window(
+   pub fn xcb_create_window_checked(
       c: *mut xcb_connection_t,
       depth: c_uchar,
       wid: xcb_window_t,
@@ -434,12 +434,12 @@ extern "C" {
       window: xcb_window_t
    ) -> xcb_void_cookie_t;
 
-   pub fn xcb_map_window(
+   pub fn xcb_map_window_checked(
       c: *mut xcb_connection_t,
       window: xcb_window_t
    ) -> xcb_void_cookie_t;
 
-   pub fn xcb_configure_window(
+   pub fn xcb_configure_window_checked(
       c: *mut xcb_connection_t,
       window: xcb_window_t,
       value_mask: c_ushort,
@@ -462,7 +462,7 @@ extern "C" {
       c: *mut xcb_connection_t
    ) -> c_int;
 
-   pub fn xcb_change_property(
+   pub fn xcb_change_property_checked(
       c: *mut xcb_connection_t,
       mode: c_uchar,
       window: xcb_window_t,
@@ -489,4 +489,9 @@ extern "C" {
    pub fn xcb_connection_has_error(
       c: *mut xcb_connection_t
    ) -> c_int;
+
+   pub fn xcb_request_check(
+      c: *mut xcb_connection_t,
+      cookie: xcb_void_cookie_t
+   ) -> *mut xcb_generic_error_t;
 }
