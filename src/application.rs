@@ -1,6 +1,10 @@
+#[cfg(target_os = "windows")]
+pub use os::windows::application::WindowsApplication as OsApplication;
 #[cfg(target_os = "linux")]
 pub use os::linux::application::LinuxApplication as OsApplication;
 
+#[cfg(target_os = "windows")]
+pub use os::windows::desktop::WindowsDesktop as OsDesktop;
 #[cfg(target_os = "linux")]
 pub use os::linux::desktop::LinuxDesktop as OsDesktop;
 

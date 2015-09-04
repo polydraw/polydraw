@@ -12,8 +12,8 @@ use polydraw::sys::gl;
 use support::{create_data, update_data};
 
 fn main() {
-   let width: usize = 1280;
-   let height: usize = 720;
+   let width: u32 = 1280;
+   let height: u32 = 720;
 
    let window = win32::Window::create(width, height, "PolyDraw", "WinMinClass");
    window.show_normal();
