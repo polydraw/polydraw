@@ -15,20 +15,20 @@ fn main() {
    let width: u32 = 1280;
    let height: u32 = 720;
 
-   let window = win32::Window::create(width, height, "PolyDraw", "WinMinClass");
+   let window = win32::Window::new(width, height, "PolyDraw", "WinMinClass");
    window.show_normal();
 
-   let dc = window.dc();
-   println!("DC: {:?}", dc);
+   let device_context = window.device_context();
+   println!("DC: {:?}", device_context.hdc);
 
-   match wgl::init_pixel_format(dc) {
+   match wgl::init_pixel_format(&device_context) {
       Ok(_) => {},
       Err(e) => {
          panic!(e.description);
       }
    };
 
-   let context = match wgl::Context::create(dc) {
+   let context = match wgl::Context::create(&device_context) {
       Ok(context) => context,
       Err(e) => {
          panic!(e.description);
@@ -85,7 +85,7 @@ fn main() {
 
       gl::flush();
 
-      wgl::swap_buffers(dc);
+      wgl::swap_buffers(&device_context);
    }
 
 

@@ -13,6 +13,7 @@ fn to_utf16_os(s: &str) -> Vec<u16> {
    v
 }
 
+#[allow(unused_variables)]
 unsafe extern "system" fn wnd_proc(
    hwnd: ffi::HWND,
    msg: ffi::c_uint,
@@ -47,8 +48,8 @@ pub struct Window {
 }
 
 impl Window {
-   pub fn create(width: u32, height: u32, title: &str, class_name: &str) -> Self {
-      Window::register_class(class_name);
+   pub fn new(width: u32, height: u32, title: &str, class_name: &str) -> Self {
+      Self::register_class(class_name);
 
       let mut window: Window = Window {
          hwnd: ptr::null_mut(),
@@ -97,9 +98,13 @@ impl Window {
       }
    }
 
-   pub fn dc(&self) -> ffi::HDC {
-      unsafe {
+   pub fn device_context(&self) -> DeviceContext {
+      let hdc = unsafe {
          ffi::GetDC(self.hwnd)
+      };
+
+      DeviceContext {
+         hdc: hdc
       }
    }
 
@@ -108,6 +113,10 @@ impl Window {
          ffi::ShowWindow(self.hwnd, ffi::SW_SHOWNORMAL)
       };
    }
+}
+
+pub struct DeviceContext {
+   pub hdc: ffi::HDC
 }
 
 pub struct Message {

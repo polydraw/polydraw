@@ -10,8 +10,10 @@ use std::ffi::CString;
 use error::{RuntimeError, ErrorKind};
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
+use super::win32;
+
 pub fn init_pixel_format(
-   hdc: ffi::HDC,
+   device_context: &win32::DeviceContext,
 ) -> Result<(), RuntimeError> {
    let mut pfd = ffi::PIXELFORMATDESCRIPTOR {
       nSize: mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::WORD,
@@ -30,7 +32,9 @@ pub fn init_pixel_format(
       dwLayerMask: 0, dwVisibleMask: 0, dwDamageMask: 0
    };
 
-   let pixel_format = unsafe { ffi::ChoosePixelFormat(hdc, &pfd) };
+   let pixel_format = unsafe {
+      ffi::ChoosePixelFormat(device_context.hdc, &pfd)
+   };
 
    if pixel_format == 0 {
       return Err(RuntimeError::new(
@@ -39,9 +43,17 @@ pub fn init_pixel_format(
       ));
    }
 
-   unsafe { ffi::DescribePixelFormat(hdc, pixel_format, mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::c_uint, &mut pfd) };
+   unsafe {
+      ffi::DescribePixelFormat(
+         device_context.hdc,
+         pixel_format,
+         mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::c_uint, &mut pfd
+      )
+   };
 
-   let result = unsafe { ffi::SetPixelFormat(hdc, pixel_format, &pfd) };
+   let result = unsafe {
+      ffi::SetPixelFormat(device_context.hdc, pixel_format, &pfd)
+   };
 
    if result != ffi::TRUE {
       return Err(RuntimeError::new(
@@ -58,8 +70,10 @@ pub struct Context {
 }
 
 impl Context {
-   pub fn create(hdc: ffi::HDC) -> Result<Self, RuntimeError> {
-      let rc = unsafe { ffi::wglCreateContext(hdc) };
+   pub fn create(device_context: &win32::DeviceContext) -> Result<Self, RuntimeError> {
+      let rc = unsafe {
+         ffi::wglCreateContext(device_context.hdc)
+      };
 
       if rc == ptr::null_mut() {
          return Err(RuntimeError::new(
@@ -68,7 +82,9 @@ impl Context {
          ));
       }
 
-      let result = unsafe { ffi::wglMakeCurrent(hdc, rc) };
+      let result = unsafe {
+         ffi::wglMakeCurrent(device_context.hdc, rc)
+      };
 
       if result != ffi::TRUE {
          return Err(RuntimeError::new(
@@ -82,6 +98,7 @@ impl Context {
       })
    }
 
+   #[inline]
    pub fn current() -> Result<Self, RuntimeError> {
       let rc = unsafe { ffi::wglGetCurrentContext() };
 
@@ -106,8 +123,11 @@ impl Drop for Context {
    }
 }
 
-pub fn swap_buffers(hdc: ffi::HDC) {
-   unsafe { ffi::SwapBuffers(hdc) };
+#[inline]
+pub fn swap_buffers(device_context: &win32::DeviceContext) {
+   unsafe {
+      ffi::SwapBuffers(device_context.hdc)
+   };
 }
 
 pub struct Loader;
