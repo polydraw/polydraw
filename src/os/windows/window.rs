@@ -4,7 +4,6 @@ use sys::win32;
 use sys::wgl;
 use sys::gl;
 
-use super::display::WindowsDisplay;
 use super::super::common::GlContext;
 
 pub struct WindowsWindow {
@@ -16,7 +15,7 @@ pub struct WindowsWindow {
 
 impl WindowsWindow {
    pub fn new(
-      _: &WindowsDisplay, title: &str, x: u32, y: u32, width: u32, height: u32
+      title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
       let window = try!(Self::init_window(title, x, y, width, height));

@@ -20,9 +20,7 @@ impl WindowsApplication {
       width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
-      let window = try!(WindowsWindow::new(
-         &display, title, x, y, width, height,
-      ));
+      let window = try!(WindowsWindow::new(title, x, y, width, height));
 
       Ok(WindowsApplication {
          display: display,
