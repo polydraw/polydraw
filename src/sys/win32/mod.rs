@@ -20,14 +20,7 @@ unsafe extern "system" fn wnd_proc(
    wparam: ffi::WPARAM,
    lparam: ffi::LPARAM
 ) -> ffi::LRESULT {
-
-   let window_ptr = ffi::GetWindowLongPtrW(hwnd, ffi::GWLP_USERDATA) as *mut Window;
-
    match msg {
-      ffi::WM_NCCREATE => {
-         let create_struct: *const ffi::CREATESTRUCTW = lparam as *const _;
-         ffi::SetWindowLongPtrW(hwnd, ffi::GWLP_USERDATA, (*create_struct).lpCreateParams as ffi::LONG_PTR);
-      },
       ffi::WM_CLOSE => {
          ffi::PostQuitMessage(0);
          return 0;
@@ -35,9 +28,7 @@ unsafe extern "system" fn wnd_proc(
       ffi::WM_CREATE => {
          return 0;
       },
-      _ => {
-         return ffi::DefWindowProcW(hwnd, msg, wparam, lparam);
-      }
+      _ => {}
    }
 
    ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
@@ -51,12 +42,6 @@ impl Window {
    pub fn new(width: u32, height: u32, title: &str, class_name: &str) -> Self {
       Self::register_class(class_name);
 
-      let mut window: Window = Window {
-         hwnd: ptr::null_mut(),
-      };
-
-      let window_ptr = &mut window as *mut Window as *mut ffi::c_void;
-
       let hwnd = unsafe {
          ffi::CreateWindowExW(
             ffi::WS_EX_APPWINDOW | ffi::WS_EX_WINDOWEDGE,
@@ -68,13 +53,13 @@ impl Window {
             ptr::null_mut(),
             ptr::null_mut(),
             ffi::GetModuleHandleW(ptr::null()),
-            window_ptr
+            ptr::null_mut()
          )
       };
 
-      window.hwnd = hwnd;
-
-      window
+      Window {
+         hwnd: hwnd,
+      }
    }
 
    #[inline]
