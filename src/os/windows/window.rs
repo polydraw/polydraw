@@ -4,30 +4,30 @@ use sys::win32;
 use sys::wgl;
 use sys::gl;
 
-use super::desktop::WindowsDesktop;
-use super::super::common::GlInitializer;
+use super::display::WindowsDisplay;
+use super::super::common::GlContext;
 
-pub struct WindowsInitializer {
+pub struct WindowsWindow {
    pub window: win32::Window,
    pub device_context: win32::DeviceContext,
-   pub wgl: WglInitializer,
-   pub gl: GlInitializer,
+   pub wgl: WglContext,
+   pub gl: GlContext,
 }
 
-impl WindowsInitializer {
+impl WindowsWindow {
    pub fn new(
-      _: &WindowsDesktop, title: &str, x: u32, y: u32, width: u32, height: u32
+      _: &WindowsDisplay, title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
       let window = try!(Self::init_window(title, x, y, width, height));
 
       let device_context = window.device_context();
 
-      let wgl = try!(WglInitializer::new(&device_context));
+      let wgl = try!(WglContext::new(&device_context));
 
-      let gl = try!(GlInitializer::new(width, height));
+      let gl = try!(GlContext::new(width, height));
 
-      Ok(WindowsInitializer {
+      Ok(WindowsWindow {
          window: window,
          device_context: device_context,
          wgl: wgl,
@@ -50,11 +50,11 @@ impl WindowsInitializer {
    }
 }
 
-pub struct WglInitializer {
+pub struct WglContext {
    pub context: wgl::Context,
 }
 
-impl WglInitializer {
+impl WglContext {
    pub fn new(device_context: &win32::DeviceContext) -> Result<Self, RuntimeError> {
       try!(wgl::init_pixel_format(device_context));
 
@@ -62,7 +62,7 @@ impl WglInitializer {
 
       Self::init_gl();
 
-      Ok(WglInitializer {
+      Ok(WglContext {
          context: context,
       })
    }

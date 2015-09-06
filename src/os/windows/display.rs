@@ -2,11 +2,11 @@ use error::RuntimeError;
 
 use sys::win32;
 
-pub struct WindowsDesktop;
+pub struct WindowsDisplay;
 
-impl WindowsDesktop {
+impl WindowsDisplay {
    pub fn new() -> Result<Self, RuntimeError> {
-      Ok(WindowsDesktop)
+      Ok(WindowsDisplay)
    }
 
    #[inline]

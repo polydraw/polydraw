@@ -7,38 +7,38 @@ use sys::xcb;
 use sys::egl;
 use sys::gl;
 
-use super::desktop::LinuxDesktop;
-use super::super::common::GlInitializer;
+use super::display::LinuxDisplay;
+use super::super::common::GlContext;
 
 pub struct XcbAtoms {
    pub protocols_atom: xcb::Atom,
    pub delete_window_atom: xcb::Atom,
 }
 
-pub struct LinuxInitializer {
+pub struct LinuxWindow {
    pub window: xcb::Window,
    pub atoms: XcbAtoms,
-   pub egl: EglInitializer,
-   pub gl: GlInitializer,
+   pub egl: EglContext,
+   pub gl: GlContext,
 }
 
-impl LinuxInitializer {
+impl LinuxWindow {
    pub fn new(
-      desktop: &LinuxDesktop, title: &str, x: u32, y: u32, width: u32, height: u32
+      display: &LinuxDisplay, title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
       let window = try!(Self::init_window(
-         &desktop.connection, &desktop.screen,
+         &display.connection, &display.screen,
          title, x, y, width, height
       ));
 
       let atoms = try!(Self::init_atoms(&window));
 
-      let egl = try!(EglInitializer::new(&desktop.display, &window));
+      let egl = try!(EglContext::new(&display.display, &window));
 
-      let gl = try!(GlInitializer::new(width, height));
+      let gl = try!(GlContext::new(width, height));
 
-      Ok(LinuxInitializer {
+      Ok(LinuxWindow {
          window: window,
          atoms: atoms,
          egl: egl,
@@ -76,7 +76,7 @@ impl LinuxInitializer {
    }
 }
 
-pub struct EglInitializer {
+pub struct EglContext {
    pub display: egl::Display,
    pub version: egl::Version,
    pub config: egl::Config,
@@ -84,7 +84,7 @@ pub struct EglInitializer {
    pub surface: egl::Surface,
 }
 
-impl EglInitializer {
+impl EglContext {
    pub fn new(x11_display: &x11::Display, window: &xcb::Window) -> Result<Self, RuntimeError> {
       try!(Self::bind());
 
@@ -100,7 +100,7 @@ impl EglInitializer {
 
       Self::init_gl();
 
-      Ok(EglInitializer {
+      Ok(EglContext {
          display: display,
          version: version,
          config: config,

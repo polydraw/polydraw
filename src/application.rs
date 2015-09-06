@@ -4,9 +4,9 @@ pub use os::windows::application::WindowsApplication as OsApplication;
 pub use os::linux::application::LinuxApplication as OsApplication;
 
 #[cfg(target_os = "windows")]
-pub use os::windows::desktop::WindowsDesktop as OsDesktop;
+pub use os::windows::display::WindowsDisplay as OsDisplay;
 #[cfg(target_os = "linux")]
-pub use os::linux::desktop::LinuxDesktop as OsDesktop;
+pub use os::linux::display::LinuxDisplay as OsDisplay;
 
 use super::frame::RenderFrame;
 use super::renderer::Renderer;
@@ -20,28 +20,28 @@ use super::creator::ApplicationCreator;
 
 impl Application {
    pub fn new<'a>() -> ApplicationCreator<'a> {
-      let desktop = match OsDesktop::new() {
+      let display = match OsDisplay::new() {
          Ok(os_application) => os_application,
          Err(e) => {
             panic!(e.description);
          }
       };
 
-      ApplicationCreator::new(desktop)
+      ApplicationCreator::new(display)
    }
 
    pub fn create(
-      desktop: OsDesktop,
+      display: OsDisplay,
       title: &str,
       x: u32, y: u32,
       width: u32, height: u32
    ) -> Self {
-      let (screen_width, screen_height) = desktop.screen_size();
+      let (screen_width, screen_height) = display.screen_size();
 
       let render_frame = RenderFrame::new(width, height, screen_width, screen_height);
 
       let os_application = match OsApplication::new(
-         desktop, title, x, y, width, height
+         display, title, x, y, width, height
       ) {
          Ok(os_application) => os_application,
          Err(e) => {

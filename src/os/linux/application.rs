@@ -3,30 +3,30 @@ use error::RuntimeError;
 use frame::RenderFrame;
 use renderer::Renderer;
 
-use super::desktop::LinuxDesktop;
-use super::initializer::LinuxInitializer;
+use super::display::LinuxDisplay;
+use super::window::LinuxWindow;
 use super::event_loop::LinuxEventLoop;
 
 pub struct LinuxApplication {
-   desktop: LinuxDesktop,
-   initializer: LinuxInitializer,
+   display: LinuxDisplay,
+   window: LinuxWindow,
 }
 
 impl LinuxApplication {
    pub fn new(
-      desktop: LinuxDesktop,
+      display: LinuxDisplay,
       title: &str,
       x: u32, y: u32,
       width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
-      let initializer = try!(LinuxInitializer::new(
-         &desktop, title, x, y, width, height,
+      let window = try!(LinuxWindow::new(
+         &display, title, x, y, width, height,
       ));
 
       Ok(LinuxApplication {
-         desktop: desktop,
-         initializer: initializer,
+         display: display,
+         window: window,
       })
    }
 
@@ -37,19 +37,19 @@ impl LinuxApplication {
       let mut event_loop = LinuxEventLoop::new(
          renderer,
          render_frame,
-         &self.desktop.connection,
-         &self.initializer.window,
-         &self.initializer.atoms,
-         &self.initializer.gl.texture,
-         &self.initializer.gl.framebuffer,
-         &self.initializer.egl.display,
-         &self.initializer.egl.surface,
+         &self.display.connection,
+         &self.window.window,
+         &self.window.atoms,
+         &self.window.gl.texture,
+         &self.window.gl.framebuffer,
+         &self.window.egl.display,
+         &self.window.egl.surface,
       );
 
       event_loop.run()
    }
 
    pub fn screen_size(&self) -> (u32, u32) {
-      self.desktop.screen_size()
+      self.display.screen_size()
    }
 }

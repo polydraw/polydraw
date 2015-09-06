@@ -8,7 +8,7 @@ use sys::egl;
 
 use frame::RenderFrame;
 use renderer::Renderer;
-use super::initializer::XcbAtoms;
+use super::window::XcbAtoms;
 
 
 pub struct LinuxEventLoop<'a> {

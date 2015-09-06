@@ -2,18 +2,18 @@ use error::RuntimeError;
 
 use sys::gl;
 
-pub struct GlInitializer {
+pub struct GlContext {
    pub texture: gl::Texture,
    pub framebuffer: gl::Framebuffer,
 }
 
-impl GlInitializer {
+impl GlContext {
    pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
       let texture = gl::Texture::new(width, height);
 
       let framebuffer = gl::Framebuffer::new(&texture);
 
-      Ok(GlInitializer {
+      Ok(GlContext {
          texture: texture,
          framebuffer: framebuffer,
       })

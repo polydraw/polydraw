@@ -5,13 +5,13 @@ use error::RuntimeError;
 use sys::x11;
 use sys::xcb;
 
-pub struct LinuxDesktop {
+pub struct LinuxDisplay {
    pub display: x11::Display,
    pub connection: Rc<xcb::Connection>,
    pub screen: xcb::Screen,
 }
 
-impl LinuxDesktop {
+impl LinuxDisplay {
    pub fn new() -> Result<Self, RuntimeError> {
       let display = try!(Self::init_display());
 
@@ -19,7 +19,7 @@ impl LinuxDesktop {
 
       let screen = try!(Self::init_screen(&display, &connection));
 
-      Ok(LinuxDesktop {
+      Ok(LinuxDisplay {
          display: display,
          connection: connection,
          screen: screen,
