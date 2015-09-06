@@ -94,6 +94,7 @@ pub const WS_EX_COMPOSITED:           c_ulong = 0x02000000;
 pub const WS_EX_NOACTIVATE:           c_ulong = 0x08000000;
 
 pub const WM_CREATE:                   c_uint = 1;
+pub const WM_SIZE:                     c_uint = 5;
 pub const WM_CLOSE:                    c_uint = 16;
 pub const WM_QUIT:                     c_uint = 18;
 pub const WM_NCCREATE:                 c_uint = 129;

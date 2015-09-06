@@ -5,6 +5,7 @@ use sys::wgl;
 use sys::gl;
 
 use super::super::common::GlContext;
+use super::wnd_proc::wnd_proc;
 
 pub struct WindowsWindow {
    pub window: win32::Window,
@@ -39,7 +40,10 @@ impl WindowsWindow {
    pub fn init_window(
       title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<win32::Window, RuntimeError> {
-      let window = win32::Window::new(width, height, title, "PolyDrawWndClass");
+
+      let window = win32::Window::new(
+         width, height, title, "PolyDrawWndClass", Some(wnd_proc)
+      );
 
       window.show_normal();
 

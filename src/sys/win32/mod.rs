@@ -13,34 +13,20 @@ fn to_utf16_os(s: &str) -> Vec<u16> {
    v
 }
 
-#[allow(unused_variables)]
-unsafe extern "system" fn wnd_proc(
-   hwnd: ffi::HWND,
-   msg: ffi::c_uint,
-   wparam: ffi::WPARAM,
-   lparam: ffi::LPARAM
-) -> ffi::LRESULT {
-   match msg {
-      ffi::WM_CLOSE => {
-         ffi::PostQuitMessage(0);
-         return 0;
-      },
-      ffi::WM_CREATE => {
-         return 0;
-      },
-      _ => {}
-   }
-
-   ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
-}
-
 pub struct Window {
    pub hwnd: ffi::HWND
 }
 
 impl Window {
-   pub fn new(width: u32, height: u32, title: &str, class_name: &str) -> Self {
-      Self::register_class(class_name);
+   pub fn new(
+      width: u32,
+      height: u32,
+      title: &str,
+      class_name: &str,
+      wnd_proc: ffi::WNDPROC
+   ) -> Self {
+
+      Self::register_class(class_name, wnd_proc);
 
       let hwnd = unsafe {
          ffi::CreateWindowExW(
@@ -63,12 +49,12 @@ impl Window {
    }
 
    #[inline]
-   pub fn register_class(class_name: &str) {
+   pub fn register_class(class_name: &str, wnd_proc: ffi::WNDPROC) {
       unsafe {
          let wnd_class = ffi::WNDCLASSEXW {
             cbSize: mem::size_of::<ffi::WNDCLASSEXW>() as ffi::c_uint,
             style: ffi::CS_HREDRAW | ffi::CS_VREDRAW | ffi::CS_OWNDC,
-            lpfnWndProc: Some(wnd_proc),
+            lpfnWndProc: wnd_proc,
             cbClsExtra: 0,
             cbWndExtra: 0,
             hInstance: ffi::GetModuleHandleW(ptr::null()),
