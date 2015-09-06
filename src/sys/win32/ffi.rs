@@ -115,6 +115,22 @@ pub const SW_RESTORE:                   c_int = 9;
 pub const SW_SHOWDEFAULT:               c_int = 10;
 pub const SW_FORCEMINIMIZE:             c_int = 11;
 
+pub const SWP_NOSIZE:                  c_uint = 0x0001;
+pub const SWP_NOMOVE:                  c_uint = 0x0002;
+pub const SWP_NOZORDER:                c_uint = 0x0004;
+pub const SWP_NOREDRAW:                c_uint = 0x0008;
+pub const SWP_NOACTIVATE:              c_uint = 0x0010;
+pub const SWP_FRAMECHANGED:            c_uint = 0x0020;
+pub const SWP_SHOWWINDOW:              c_uint = 0x0040;
+pub const SWP_HIDEWINDOW:              c_uint = 0x0080;
+pub const SWP_NOCOPYBITS:              c_uint = 0x0100;
+pub const SWP_NOOWNERZORDER:           c_uint = 0x0200;
+pub const SWP_NOSENDCHANGING:          c_uint = 0x0400;
+pub const SWP_DRAWFRAME:               c_uint = SWP_FRAMECHANGED;
+pub const SWP_NOREPOSITION:            c_uint = SWP_NOOWNERZORDER;
+pub const SWP_DEFERERASE:              c_uint = 0x2000;
+pub const SWP_ASYNCWINDOWPOS:          c_uint = 0x4000;
+
 pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
 
 pub const ENUM_CURRENT_SETTINGS:        DWORD = 0xFFFFFFFF;
@@ -305,5 +321,15 @@ extern "system" {
       lpszDeviceName: LPCWSTR,
       iModeNum: DWORD,
       lpDevMode: *mut DEVMODEW,
+   ) -> BOOL;
+
+   pub fn SetWindowPos(
+      hWnd: HWND,
+      hWndInsertAfter: HWND,
+      X: c_int,
+      Y: c_int,
+      cx: c_int,
+      cy: c_int,
+      uFlags: c_uint,
    ) -> BOOL;
 }

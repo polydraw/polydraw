@@ -77,6 +77,7 @@ impl Window {
       window
    }
 
+   #[inline]
    pub fn register_class(class_name: &str) {
       unsafe {
          let wnd_class = ffi::WNDCLASSEXW {
@@ -98,6 +99,7 @@ impl Window {
       }
    }
 
+   #[inline]
    pub fn device_context(&self) -> DeviceContext {
       let hdc = unsafe {
          ffi::GetDC(self.hwnd)
@@ -108,9 +110,23 @@ impl Window {
       }
    }
 
+   #[inline]
    pub fn show_normal(&self) {
       unsafe {
          ffi::ShowWindow(self.hwnd, ffi::SW_SHOWNORMAL)
+      };
+   }
+
+   #[inline]
+   pub fn position(&self, x: u32, y: u32) {
+      unsafe {
+         ffi::SetWindowPos(
+            self.hwnd,
+            ptr::null_mut(),
+            x as ffi::c_int, y as ffi::c_int,
+            0, 0,
+            ffi::SWP_NOZORDER | ffi::SWP_NOSIZE
+         )
       };
    }
 }
@@ -131,6 +147,7 @@ impl Message {
       }
    }
 
+   #[inline]
    pub fn peek() -> Option<Self> {
       let mut msg = unsafe { mem::uninitialized() };
 
@@ -142,18 +159,21 @@ impl Message {
       }
    }
 
+   #[inline]
    pub fn translate(&self) {
       unsafe {
          ffi::TranslateMessage(&self.msg)
       };
    }
 
+   #[inline]
    pub fn dispatch(&self) {
       unsafe {
          ffi::DispatchMessageW(&self.msg)
       };
    }
 
+   #[inline]
    pub fn is_quit(&self) -> bool {
       return self.msg.message == ffi::WM_QUIT
    }

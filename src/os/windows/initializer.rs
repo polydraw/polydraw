@@ -15,12 +15,11 @@ pub struct WindowsInitializer {
 }
 
 impl WindowsInitializer {
-   #[allow(unused_variables)]
    pub fn new(
-      desktop: &WindowsDesktop, title: &str, x: u32, y: u32, width: u32, height: u32
+      _: &WindowsDesktop, title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
-      let window = try!(Self::init_window(title, width, height));
+      let window = try!(Self::init_window(title, x, y, width, height));
 
       let device_context = window.device_context();
 
@@ -39,11 +38,13 @@ impl WindowsInitializer {
 
    #[inline]
    pub fn init_window(
-      title: &str, width: u32, height: u32
+      title: &str, x: u32, y: u32, width: u32, height: u32
    ) -> Result<win32::Window, RuntimeError> {
       let window = win32::Window::new(width, height, title, "PolyDrawWndClass");
 
       window.show_normal();
+
+      window.position(x, y);
 
       Ok(window)
    }
