@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 
 pub use libc::{
-   c_int, c_uint, c_void, uintptr_t, c_long, c_ulong
+   c_short, c_int, c_uint, c_long, c_ulong, c_void, uintptr_t
 };
 pub use libc::types::os::arch::extra::{
-   HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID, BOOL, DWORD
+   HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID, BOOL, DWORD,
+   WCHAR, WORD
 };
 use std::mem;
 
@@ -116,7 +117,12 @@ pub const SW_FORCEMINIMIZE:             c_int = 11;
 
 pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
 
+pub const ENUM_CURRENT_SETTINGS:        DWORD = 0xFFFFFFFF;
+
 pub const GWLP_USERDATA:                c_int = -21;
+
+pub const CCHDEVICENAME:                usize = 32;
+pub const CCHFORMNAME:                  usize = 32;
 
 #[repr(C)]
 #[derive(Copy)]
@@ -194,6 +200,44 @@ impl Default for CREATESTRUCTW {
    fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
+#[repr(C)]
+#[derive(Copy)]
+pub struct DEVMODEW {
+   pub dmDeviceName: [WCHAR; CCHDEVICENAME],
+   pub dmSpecVersion: WORD,
+   pub dmDriverVersion: WORD,
+   pub dmSize: WORD,
+   pub dmDriverExtra: WORD,
+   pub dmFields: DWORD,
+   pub union1: [u8; 16],
+   pub dmColor: c_short,
+   pub dmDuplex: c_short,
+   pub dmYResolution: c_short,
+   pub dmTTOption: c_short,
+   pub dmCollate: c_short,
+   pub dmFormName: [WCHAR; CCHFORMNAME],
+   pub dmLogPixels: WORD,
+   pub dmBitsPerPel: DWORD,
+   pub dmPelsWidth: DWORD,
+   pub dmPelsHeight: DWORD,
+   pub dmDisplayFlags: DWORD,
+   pub dmDisplayFrequency: DWORD,
+   pub dmICMMethod: DWORD,
+   pub dmICMIntent: DWORD,
+   pub dmMediaType: DWORD,
+   pub dmDitherType: DWORD,
+   pub dmReserved1: DWORD,
+   pub dmReserved2: DWORD,
+   pub dmPanningWidth: DWORD,
+   pub dmPanningHeight: DWORD,
+}
+impl Clone for DEVMODEW {
+   fn clone(&self) -> Self { *self }
+}
+impl Default for DEVMODEW {
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
 extern "system" {
    pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
 
@@ -255,5 +299,11 @@ extern "system" {
       wMsgFilterMin: c_uint,
       wMsgFilterMax: c_uint,
       wRemoveMsg: c_uint,
+   ) -> BOOL;
+
+   pub fn EnumDisplaySettingsW(
+      lpszDeviceName: LPCWSTR,
+      iModeNum: DWORD,
+      lpDevMode: *mut DEVMODEW,
    ) -> BOOL;
 }

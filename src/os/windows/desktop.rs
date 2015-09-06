@@ -1,5 +1,7 @@
 use error::RuntimeError;
 
+use sys::win32;
+
 pub struct WindowsDesktop;
 
 impl WindowsDesktop {
@@ -9,6 +11,6 @@ impl WindowsDesktop {
 
    #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
-      (1920, 1080)
+      win32::DeviceMode::enumerate().screen_size()
    }
 }

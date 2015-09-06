@@ -115,10 +115,6 @@ impl Window {
    }
 }
 
-pub struct DeviceContext {
-   pub hdc: ffi::HDC
-}
-
 pub struct Message {
    msg: ffi::MSG
 }
@@ -160,5 +156,37 @@ impl Message {
 
    pub fn is_quit(&self) -> bool {
       return self.msg.message == ffi::WM_QUIT
+   }
+}
+
+pub struct DeviceContext {
+   pub hdc: ffi::HDC
+}
+
+pub struct DeviceMode {
+   pub device_mode: ffi::DEVMODEW
+}
+
+impl DeviceMode {
+   pub fn enumerate() -> Self {
+      let mut device_mode = ffi::DEVMODEW::default();
+      device_mode.dmSize = mem::size_of::<ffi::DEVMODEW>() as ffi::WORD;
+
+      unsafe {
+         ffi::EnumDisplaySettingsW(
+            ptr::null(),
+            ffi::ENUM_CURRENT_SETTINGS,
+            &mut device_mode
+         )
+      };
+
+      DeviceMode {
+         device_mode: device_mode,
+      }
+   }
+
+   #[inline]
+   pub fn screen_size(&self) -> (u32, u32) {
+      (self.device_mode.dmPelsWidth, self.device_mode.dmPelsHeight)
    }
 }
