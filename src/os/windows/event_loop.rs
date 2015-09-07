@@ -34,27 +34,7 @@ impl<'a> WindowsEventLoop<'a> {
    }
 
    pub fn run(&mut self) -> Result<(), RuntimeError> {
-      let mut exit = false;
-
       loop {
-         loop {
-            let message = match win32::Message::peek() {
-               Some(message) => message,
-               None => break
-            };
-
-            if message.is_quit() {
-               exit = true;
-            }
-
-            message.translate();
-            message.dispatch();
-         }
-
-         if exit {
-            break;
-         }
-
          self.renderer.render(self.render_frame);
 
          self.texture.update(self.render_frame.width, self.render_frame.height, &self.render_frame.data);
@@ -64,6 +44,10 @@ impl<'a> WindowsEventLoop<'a> {
          gl::flush();
 
          wgl::swap_buffers(&self.device_context);
+
+         if false {
+            break;
+         }
       }
 
       Ok(())

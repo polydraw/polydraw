@@ -3,13 +3,18 @@ use error::RuntimeError;
 use frame::RenderFrame;
 use renderer::Renderer;
 
+use super::super::common::GlContext;
+
 use super::display::WindowsDisplay;
 use super::window::WindowsWindow;
+use super::wgl_context::WglContext;
 use super::event_loop::WindowsEventLoop;
 
 pub struct WindowsApplication {
    display: WindowsDisplay,
    window: WindowsWindow,
+   #[allow(dead_code)] wgl: WglContext,
+   gl: GlContext,
 }
 
 impl WindowsApplication {
@@ -22,9 +27,15 @@ impl WindowsApplication {
 
       let window = try!(WindowsWindow::new(title, x, y, width, height));
 
+      let wgl = try!(WglContext::new(&window.device_context));
+
+      let gl = try!(GlContext::new(width, height));
+
       Ok(WindowsApplication {
          display: display,
          window: window,
+         wgl: wgl,
+         gl: gl,
       })
    }
 
@@ -36,8 +47,8 @@ impl WindowsApplication {
          renderer,
          render_frame,
          &self.window.device_context,
-         &self.window.gl.texture,
-         &self.window.gl.framebuffer,
+         &self.gl.texture,
+         &self.gl.framebuffer,
       );
 
       event_loop.run()
