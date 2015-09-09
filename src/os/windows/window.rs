@@ -1,16 +1,19 @@
 use std::thread;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Receiver};
 use std::str::FromStr;
 
 use error::RuntimeError;
 
 use sys::win32;
 
-use super::wnd_proc::wnd_proc;
+use event::Event;
+
+use super::wnd_proc::{wnd_proc, SENDER};
 
 pub struct WindowsWindow {
    pub window: win32::Window,
    pub device_context: win32::DeviceContext,
+   pub event_receiver: Receiver<Event>,
 }
 
 unsafe impl Send for WindowsWindow {}
@@ -44,10 +47,23 @@ impl WindowsWindow {
 
       let device_context = window.device_context();
 
+      let event_receiver = Self::init_event_receiver();
+
       Ok(WindowsWindow {
          window: window,
          device_context: device_context,
+         event_receiver: event_receiver,
       })
+   }
+
+   #[inline]
+   fn init_event_receiver() -> Receiver<Event> {
+      let (sender, receiver) = channel();
+      let mut sender = Some(sender);
+      SENDER.with(|sender_cell| {
+         (*sender_cell.borrow_mut()) = Some(sender.take().unwrap());
+      });
+      receiver
    }
 
    #[inline]

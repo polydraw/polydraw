@@ -255,6 +255,14 @@ impl Default for DEVMODEW {
    fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
+pub fn LOWORD(dwValue: DWORD) -> WORD {
+    (dwValue & 0xffff) as WORD
+}
+
+pub fn HIWORD(dwValue: DWORD) -> WORD {
+    ((dwValue >> 16) & 0xffff) as WORD
+}
+
 extern "system" {
    pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
 

@@ -8,6 +8,7 @@ pub mod os;
 pub mod error;
 pub mod hook;
 pub mod frame;
+pub mod event;
 
 pub use application::Application;
 pub use renderer::Renderer;

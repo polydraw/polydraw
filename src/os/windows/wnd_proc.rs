@@ -1,4 +1,25 @@
+use std::sync::mpsc::Sender;
+use std::cell::RefCell;
+
 use sys::win32::ffi;
+
+use event::Event;
+
+thread_local!(
+   pub static SENDER: RefCell<Option<Sender<Event>>> = RefCell::new(None)
+);
+
+fn send(event: Event) {
+   SENDER.with(|sender_cell| {
+      let sender_option = sender_cell.borrow();
+      let sender = match *sender_option {
+         Some(ref sender) => sender,
+         None => return
+      };
+
+      sender.send(event).ok();
+   });
+}
 
 #[allow(unused_variables)]
 pub unsafe extern "system" fn wnd_proc(
@@ -10,16 +31,19 @@ pub unsafe extern "system" fn wnd_proc(
    match msg {
       ffi::WM_CLOSE => {
          ffi::PostQuitMessage(0);
-         return 0;
+         0
       },
       ffi::WM_SIZE => {
-         println!("WM SIZE");
+         let width = ffi::LOWORD(lparam as ffi::DWORD) as u32;
+         let height = ffi::HIWORD(lparam as ffi::DWORD) as u32;
+         send(Event::Resize(width, height));
+         0
       },
       ffi::WM_CREATE => {
-         return 0;
+         0
       },
-      _ => {}
+      _ => {
+         ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
+      }
    }
-
-   ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
 }
