@@ -49,13 +49,14 @@ impl WindowsApplication {
       let mut quit = false;
 
       loop {
+         let current_width = render_frame.width;
+         let current_height = render_frame.height;
+
          for event in self.window.poll_events() {
             match event {
                Event::Resize(width, height) => {
                   render_frame.width = width;
                   render_frame.height = height;
-
-                  self.gl.texture.resize(render_frame.width, render_frame.height);
                },
                Event::Quit => {
                   quit = true;
@@ -67,6 +68,10 @@ impl WindowsApplication {
 
          if quit {
             break
+         }
+
+         if current_width != render_frame.width || current_height != render_frame.height {
+            self.gl.texture.resize(render_frame.width, render_frame.height);
          }
 
          renderer.render(render_frame);
