@@ -95,8 +95,10 @@ pub const WS_EX_NOACTIVATE:           c_ulong = 0x08000000;
 
 pub const WM_CREATE:                   c_uint = 1;
 pub const WM_SIZE:                     c_uint = 5;
+pub const WM_PAINT:                    c_uint = 15;
 pub const WM_CLOSE:                    c_uint = 16;
 pub const WM_QUIT:                     c_uint = 18;
+pub const WM_ERASEBKGND:               c_uint = 20;
 pub const WM_NCCREATE:                 c_uint = 129;
 
 pub const PM_NOREMOVE:                 c_uint = 0;

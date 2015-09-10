@@ -97,4 +97,42 @@ impl WindowsWindow {
          message.dispatch();
       }
    }
+
+   #[inline]
+   pub fn poll_events(&self) -> PollEventsIterator {
+      PollEventsIterator {
+         window: self,
+      }
+   }
+
+   #[inline]
+   pub fn wait_events(&self) -> WaitEventsIterator {
+      WaitEventsIterator {
+         window: self,
+      }
+   }
+}
+
+pub struct PollEventsIterator<'a> {
+   window: &'a WindowsWindow,
+}
+
+impl<'a> Iterator for PollEventsIterator<'a> {
+   type Item = Event;
+
+   fn next(&mut self) -> Option<Event> {
+      self.window.event_receiver.try_recv().ok()
+   }
+}
+
+pub struct WaitEventsIterator<'a> {
+   window: &'a WindowsWindow,
+}
+
+impl<'a> Iterator for WaitEventsIterator<'a> {
+   type Item = Event;
+
+   fn next(&mut self) -> Option<Event> {
+     self.window.event_receiver.recv().ok()
+   }
 }

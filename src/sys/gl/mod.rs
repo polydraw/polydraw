@@ -132,8 +132,8 @@ impl Texture {
 impl Drop for Texture {
    fn drop (&mut self) {
       unsafe {
-         ffi::glDeleteTextures(1, &self.name);
-      }
+         ffi::glDeleteTextures(1, &self.name)
+      };
    }
 }
 
@@ -146,46 +146,64 @@ impl Framebuffer {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
-         ffi::glGenFramebuffers(1, &mut name);
+         ffi::glGenFramebuffers(1, &mut name)
+      };
 
-         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, name);
+      let framebuffer = Framebuffer {
+         name: name,
+      };
 
+      framebuffer.bind();
+      framebuffer.attach_texture(texture);
+      framebuffer.unbind();
+
+      framebuffer
+   }
+
+   #[inline]
+   pub fn bind(&self) {
+      unsafe {
+         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name)
+      };
+   }
+
+   #[inline]
+   pub fn unbind(&self) {
+      unsafe {
+         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0)
+      };
+   }
+
+   #[inline]
+   pub fn attach_texture(&self, texture: &Texture) {
+      unsafe {
          ffi::glFramebufferTexture2D(
             ffi::GL_READ_FRAMEBUFFER,
             ffi::GL_COLOR_ATTACHMENT0,
             ffi::GL_TEXTURE_2D,
             texture.name,
             0
-         );
-
-         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
-      }
-
-      Framebuffer {
-         name: name,
-      }
+         )
+      };
    }
 
+   #[inline]
    pub fn blit(&self, width: u32, height: u32) {
       unsafe {
-         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name);
-
          ffi::glBlitFramebuffer(
             0, 0, width as ffi::GLint, height as ffi::GLint,
             0, 0, width as ffi::GLint, height as ffi::GLint,
             ffi::GL_COLOR_BUFFER_BIT,
             ffi::GL_NEAREST
-         );
-
-         ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0);
-      }
+         )
+      };
    }
 }
 
 impl Drop for Framebuffer {
    fn drop (&mut self) {
       unsafe {
-         ffi::glDeleteFramebuffers(1, &self.name);
-      }
+         ffi::glDeleteFramebuffers(1, &self.name)
+      };
    }
 }

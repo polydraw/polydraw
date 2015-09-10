@@ -1,14 +1,16 @@
 use error::RuntimeError;
 
+use sys::wgl;
+
 use frame::RenderFrame;
 use renderer::Renderer;
+use event::Event;
 
 use super::super::common::GlContext;
 
 use super::display::WindowsDisplay;
 use super::window::WindowsWindow;
 use super::wgl_context::WglContext;
-use super::event_loop::WindowsEventLoop;
 
 pub struct WindowsApplication {
    display: WindowsDisplay,
@@ -42,16 +44,35 @@ impl WindowsApplication {
    pub fn run(
       &self, renderer: &mut Renderer, render_frame: &mut RenderFrame
    ) -> Result<(), RuntimeError> {
+      self.gl.framebuffer.bind();
 
-      let mut event_loop = WindowsEventLoop::new(
-         renderer,
-         render_frame,
-         &self.window.device_context,
-         &self.gl.texture,
-         &self.gl.framebuffer,
-      );
+      loop {
+         for event in self.window.poll_events() {
+            match event {
+               Event::Resize(width, height) => {
+                  render_frame.width = width;
+                  render_frame.height = height;
 
-      event_loop.run()
+                  self.gl.texture.resize(render_frame.width, render_frame.height);
+               },
+               _ => {}
+            }
+         }
+
+         renderer.render(render_frame);
+
+         self.gl.texture.update(render_frame.width, render_frame.height, &render_frame.data);
+
+         self.gl.framebuffer.blit(render_frame.width, render_frame.height);
+
+         wgl::swap_buffers(&self.window.device_context);
+
+         if false {
+            break;
+         }
+      }
+
+      Ok(())
    }
 
    pub fn screen_size(&self) -> (u32, u32) {
