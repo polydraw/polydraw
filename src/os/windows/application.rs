@@ -2,21 +2,17 @@ use error::RuntimeError;
 
 use sys::wgl;
 
-use frame::RenderFrame;
-use renderer::Renderer;
-use event::Event;
-
 use super::super::common::GlContext;
 
 use super::display::WindowsDisplay;
-use super::window::WindowsWindow;
+use super::window::{WindowsWindow, PollEventsIterator};
 use super::wgl_context::WglContext;
 
 pub struct WindowsApplication {
+   pub gl: GlContext,
    display: WindowsDisplay,
    window: WindowsWindow,
    #[allow(dead_code)] wgl: WglContext,
-   gl: GlContext,
 }
 
 impl WindowsApplication {
@@ -41,52 +37,18 @@ impl WindowsApplication {
       })
    }
 
-   pub fn run(
-      &self, renderer: &mut Renderer, render_frame: &mut RenderFrame
-   ) -> Result<(), RuntimeError> {
-      self.gl.framebuffer.bind();
-
-      let mut quit = false;
-
-      loop {
-         let current_width = render_frame.width;
-         let current_height = render_frame.height;
-
-         for event in self.window.poll_events() {
-            match event {
-               Event::Resize(width, height) => {
-                  render_frame.width = width;
-                  render_frame.height = height;
-               },
-               Event::Quit => {
-                  quit = true;
-                  break
-               },
-               _ => {}
-            }
-         }
-
-         if quit {
-            break
-         }
-
-         if current_width != render_frame.width || current_height != render_frame.height {
-            self.gl.texture.resize(render_frame.width, render_frame.height);
-         }
-
-         renderer.render(render_frame);
-
-         self.gl.texture.update(render_frame.width, render_frame.height, &render_frame.data);
-
-         self.gl.framebuffer.blit(render_frame.width, render_frame.height);
-
-         wgl::swap_buffers(&self.window.device_context);
-      }
-
-      Ok(())
-   }
-
+   #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
       self.display.screen_size()
+   }
+
+   #[inline]
+   pub fn poll_events(&self) -> PollEventsIterator {
+      self.window.poll_events()
+   }
+
+   #[inline]
+   pub fn swap_buffers(&self) {
+      wgl::swap_buffers(&self.window.device_context);
    }
 }

@@ -10,6 +10,7 @@ pub use os::linux::display::LinuxDisplay as OsDisplay;
 
 use super::frame::RenderFrame;
 use super::renderer::Renderer;
+use super::event_loop::EventLoop;
 
 pub struct Application {
    pub os_application: OsApplication,
@@ -56,7 +57,9 @@ impl Application {
    }
 
    pub fn run(&mut self, renderer: &mut Renderer) {
-      match self.os_application.run(renderer, &mut self.render_frame) {
+      let event_loop = EventLoop::new(&self.os_application);
+
+      match event_loop.run(renderer, &mut self.render_frame) {
          Ok(_) => {},
          Err(e) => {
             panic!(e.description);
