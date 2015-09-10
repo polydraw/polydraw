@@ -99,6 +99,7 @@ pub const WM_PAINT:                    c_uint = 15;
 pub const WM_CLOSE:                    c_uint = 16;
 pub const WM_QUIT:                     c_uint = 18;
 pub const WM_ERASEBKGND:               c_uint = 20;
+pub const WM_SETCURSOR:                c_uint = 32;
 pub const WM_NCCREATE:                 c_uint = 129;
 
 pub const PM_NOREMOVE:                 c_uint = 0;
@@ -133,6 +134,23 @@ pub const SWP_DRAWFRAME:               c_uint = SWP_FRAMECHANGED;
 pub const SWP_NOREPOSITION:            c_uint = SWP_NOOWNERZORDER;
 pub const SWP_DEFERERASE:              c_uint = 0x2000;
 pub const SWP_ASYNCWINDOWPOS:          c_uint = 0x4000;
+
+pub const IDC_ARROW:                  LPCWSTR = 32512 as LPCWSTR;
+pub const IDC_IBEAM:                  LPCWSTR = 32513 as LPCWSTR;
+pub const IDC_WAIT:                   LPCWSTR = 32514 as LPCWSTR;
+pub const IDC_CROSS:                  LPCWSTR = 32515 as LPCWSTR;
+pub const IDC_UPARROW:                LPCWSTR = 32516 as LPCWSTR;
+pub const IDC_SIZE:                   LPCWSTR = 32640 as LPCWSTR;
+pub const IDC_ICON:                   LPCWSTR = 32641 as LPCWSTR;
+pub const IDC_SIZENWSE:               LPCWSTR = 32642 as LPCWSTR;
+pub const IDC_SIZENESW:               LPCWSTR = 32643 as LPCWSTR;
+pub const IDC_SIZEWE:                 LPCWSTR = 32644 as LPCWSTR;
+pub const IDC_SIZENS:                 LPCWSTR = 32645 as LPCWSTR;
+pub const IDC_SIZEALL:                LPCWSTR = 32646 as LPCWSTR;
+pub const IDC_NO:                     LPCWSTR = 32648 as LPCWSTR;
+pub const IDC_HAND:                   LPCWSTR = 32649 as LPCWSTR;
+pub const IDC_APPSTARTING:            LPCWSTR = 32650 as LPCWSTR;
+pub const IDC_HELP:                   LPCWSTR = 32651 as LPCWSTR;
 
 pub const CW_USEDEFAULT:                c_int = 0x80000000u32 as c_int;
 
@@ -279,6 +297,10 @@ extern "system" {
    pub fn DispatchMessageW(lpmsg: *const MSG) -> LRESULT;
 
    pub fn GetDC(hwnd: HWND) -> HDC;
+
+   pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
+
+   pub fn LoadCursorW(hInstance: HINSTANCE, lpCursorName: LPCWSTR) -> HCURSOR;
 
    pub fn GetWindowLongPtrW(
       hwnd: HWND,

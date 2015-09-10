@@ -59,7 +59,7 @@ impl Window {
             cbWndExtra: 0,
             hInstance: ffi::GetModuleHandleW(ptr::null()),
             hIcon: ptr::null_mut(),
-            hCursor: ptr::null_mut(),
+            hCursor: Cursor::default().hcursor,
             hbrBackground: ptr::null_mut(),
             lpszMenuName: ptr::null(),
             lpszClassName: to_utf16_os(class_name).as_ptr(),
@@ -179,5 +179,33 @@ impl DeviceMode {
    #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
       (self.device_mode.dmPelsWidth, self.device_mode.dmPelsHeight)
+   }
+}
+
+pub struct Cursor {
+   pub hcursor: ffi::HCURSOR
+}
+
+impl Cursor {
+   #[inline]
+   pub fn activate(&self) {
+      unsafe {
+         ffi::SetCursor(self.hcursor)
+      };
+   }
+}
+
+impl Default for Cursor {
+   fn default() -> Self {
+      let hcursor = unsafe {
+         ffi::LoadCursorW(
+            ptr::null_mut(),
+            ffi::IDC_ARROW
+         )
+      };
+
+      Cursor {
+         hcursor: hcursor
+      }
    }
 }
