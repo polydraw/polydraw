@@ -46,6 +46,8 @@ impl WindowsApplication {
    ) -> Result<(), RuntimeError> {
       self.gl.framebuffer.bind();
 
+      let mut quit = false;
+
       loop {
          for event in self.window.poll_events() {
             match event {
@@ -55,8 +57,16 @@ impl WindowsApplication {
 
                   self.gl.texture.resize(render_frame.width, render_frame.height);
                },
+               Event::Quit => {
+                  quit = true;
+                  break
+               },
                _ => {}
             }
+         }
+
+         if quit {
+            break
          }
 
          renderer.render(render_frame);
@@ -66,10 +76,6 @@ impl WindowsApplication {
          self.gl.framebuffer.blit(render_frame.width, render_frame.height);
 
          wgl::swap_buffers(&self.window.device_context);
-
-         if false {
-            break;
-         }
       }
 
       Ok(())

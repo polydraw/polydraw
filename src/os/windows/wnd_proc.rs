@@ -31,6 +31,7 @@ pub unsafe extern "system" fn wnd_proc(
    match msg {
       ffi::WM_CLOSE => {
          ffi::PostQuitMessage(0);
+         send(Event::Quit);
          0
       },
       ffi::WM_ERASEBKGND => {
