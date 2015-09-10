@@ -1,15 +1,16 @@
 use error::RuntimeError;
 
-use frame::RenderFrame;
-use renderer::Renderer;
+use super::super::common::GlContext;
 
 use super::display::LinuxDisplay;
-use super::window::LinuxWindow;
-use super::event_loop::LinuxEventLoop;
+use super::window::{LinuxWindow, PollEventsIterator};
+use super::egl_context::EglContext;
 
 pub struct LinuxApplication {
+   pub gl: GlContext,
    display: LinuxDisplay,
    window: LinuxWindow,
+   egl: EglContext,
 }
 
 impl LinuxApplication {
@@ -24,32 +25,29 @@ impl LinuxApplication {
          &display, title, x, y, width, height,
       ));
 
+      let egl = try!(EglContext::new(&display.display, &window.window));
+
+      let gl = try!(GlContext::new(width, height));
+
       Ok(LinuxApplication {
          display: display,
          window: window,
+         egl: egl,
+         gl: gl,
       })
-   }
-
-   pub fn run(
-      &self, renderer: &mut Renderer, render_frame: &mut RenderFrame
-   ) -> Result<(), RuntimeError> {
-
-      let mut event_loop = LinuxEventLoop::new(
-         renderer,
-         render_frame,
-         &self.display.connection,
-         &self.window.window,
-         &self.window.atoms,
-         &self.window.gl.texture,
-         &self.window.gl.framebuffer,
-         &self.window.egl.display,
-         &self.window.egl.surface,
-      );
-
-      event_loop.run()
    }
 
    pub fn screen_size(&self) -> (u32, u32) {
       self.display.screen_size()
+   }
+
+   #[inline]
+   pub fn poll_events(&self) -> PollEventsIterator {
+      self.window.poll_events()
+   }
+
+   #[inline]
+   pub fn swap_buffers(&self) -> Result<(), RuntimeError> {
+      self.egl.swap_buffers()
    }
 }

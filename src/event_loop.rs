@@ -57,7 +57,7 @@ impl<'a> EventLoop<'a> {
 
          framebuffer.blit(render_frame.width, render_frame.height);
 
-         self.os_application.swap_buffers();
+         try!(self.os_application.swap_buffers());
       }
 
       Ok(())

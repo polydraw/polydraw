@@ -48,7 +48,8 @@ impl WindowsApplication {
    }
 
    #[inline]
-   pub fn swap_buffers(&self) {
+   pub fn swap_buffers(&self) -> Result<(), RuntimeError> {
       wgl::swap_buffers(&self.window.device_context);
+      Ok(())
    }
 }

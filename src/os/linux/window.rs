@@ -2,13 +2,11 @@ use std::rc::Rc;
 
 use error::RuntimeError;
 
-use sys::x11;
 use sys::xcb;
-use sys::egl;
-use sys::gl;
+
+use event::Event;
 
 use super::display::LinuxDisplay;
-use super::super::common::GlContext;
 
 pub struct XcbAtoms {
    pub protocols_atom: xcb::Atom,
@@ -18,8 +16,6 @@ pub struct XcbAtoms {
 pub struct LinuxWindow {
    pub window: xcb::Window,
    pub atoms: XcbAtoms,
-   pub egl: EglContext,
-   pub gl: GlContext,
 }
 
 impl LinuxWindow {
@@ -34,15 +30,9 @@ impl LinuxWindow {
 
       let atoms = try!(Self::init_atoms(&window));
 
-      let egl = try!(EglContext::new(&display.display, &window));
-
-      let gl = try!(GlContext::new(width, height));
-
       Ok(LinuxWindow {
          window: window,
          atoms: atoms,
-         egl: egl,
-         gl: gl,
       })
    }
 
@@ -74,87 +64,66 @@ impl LinuxWindow {
          delete_window_atom: delete_window_atom,
       })
    }
+
+   #[inline]
+   pub fn poll_events(&self) -> PollEventsIterator {
+      PollEventsIterator::new(&self.window, &self.atoms)
+   }
 }
 
-pub struct EglContext {
-   pub display: egl::Display,
-   pub version: egl::Version,
-   pub config: egl::Config,
-   pub context: egl::Context,
-   pub surface: egl::Surface,
+pub struct PollEventsIterator<'a> {
+   xcb_iterator: xcb::EventIterator,
+   atoms: &'a XcbAtoms,
 }
 
-impl EglContext {
-   pub fn new(x11_display: &x11::Display, window: &xcb::Window) -> Result<Self, RuntimeError> {
-      try!(Self::bind());
-
-      let display = try!(egl::Display::from_native(x11_display));
-
-      let version = try!(egl::initialize(&display));
-
-      let config = try!(egl::choose_config(&display));
-
-      let context = try!(Self::init_context(&display, &config));
-
-      let surface = try!(Self::init_surface(&display, &config, &context, window));
-
-      Self::init_gl();
-
-      Ok(EglContext {
-         display: display,
-         version: version,
-         config: config,
-         context: context,
-         surface: surface,
-      })
+impl<'a> PollEventsIterator<'a> {
+   #[inline]
+   pub fn new(window: &xcb::Window, atoms: &'a XcbAtoms) -> Self {
+      PollEventsIterator {
+         xcb_iterator: window.connection.poll_event_iter(),
+         atoms: atoms
+      }
    }
 
    #[inline]
-   pub fn bind() -> Result<(), RuntimeError> {
-      egl::bind_api(egl::API::OpenGL)
+   fn convert(&mut self, xcb_event: xcb::Event) -> Option<Event> {
+      match xcb_event.event_type() {
+         xcb::EventType::ClientMessage => {
+            if xcb_event.is_close_event(
+                  &self.atoms.protocols_atom,
+                  &self.atoms.delete_window_atom
+            ) {
+               return Some(Event::Quit);
+            }
+         },
+
+         xcb::EventType::ConfigureNotify => {
+            let (_, width, height) = xcb_event.resize_properties();
+            return Some(Event::Resize(width, height));
+         },
+
+         _ => {}
+      }
+
+      self.next()
    }
+}
+
+impl<'a> Iterator for PollEventsIterator<'a> {
+   type Item = Event;
 
    #[inline]
-   pub fn init_context(
-      display: &egl::Display, config: &egl::Config
-   ) -> Result<egl::Context, RuntimeError> {
-
-      let context = try!(egl::create_context(&display, &config));
-
-      try!(egl::query_context(&display, &context));
-
-      Ok(context)
-   }
-
-   #[inline]
-   pub fn init_surface(
-      display: &egl::Display,
-      config: &egl::Config,
-      context: &egl::Context,
-      window: &xcb::Window
-   ) -> Result<egl::Surface, RuntimeError> {
-
-      let surface = try!(egl::create_window_surface(
-         display,
-         config,
-         &window.window_id.id
-      ));
-
-      try!(egl::make_current(
-         display,
-         &surface,
-         &surface,
-         context
-      ));
-
-      try!(egl::swap_interval(display, 0));
-
-      Ok(surface)
-   }
-
-   #[inline]
-   pub fn init_gl() {
-      gl::load(egl::Loader::new());
-      gl::reset_pixelstore_alignment();
+   fn next(&mut self) -> Option<Event> {
+      match self.xcb_iterator.next() {
+         None => None,
+         Some(result) => {
+            match result {
+               Err(e) => panic!(e.description),
+               Ok(xcb_event) => {
+                  self.convert(xcb_event)
+               }
+            }
+         }
+      }
    }
 }
