@@ -29,23 +29,27 @@ pub unsafe extern "system" fn wnd_proc(
    lparam: ffi::LPARAM
 ) -> ffi::LRESULT {
    match msg {
-      ffi::WM_CLOSE => {
-         ffi::PostQuitMessage(0);
-         send(Event::Quit);
+      ffi::WM_CREATE => {
          0
       },
+
       ffi::WM_ERASEBKGND => {
          1
       },
+
       ffi::WM_SIZE => {
          let width = ffi::LOWORD(lparam as ffi::DWORD) as u32;
          let height = ffi::HIWORD(lparam as ffi::DWORD) as u32;
          send(Event::Resize(width, height));
          0
       },
-      ffi::WM_CREATE => {
+
+      ffi::WM_CLOSE => {
+         ffi::PostQuitMessage(0);
+         send(Event::Quit);
          0
       },
+
       _ => {
          ffi::DefWindowProcW(hwnd, msg, wparam, lparam)
       }
