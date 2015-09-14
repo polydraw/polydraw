@@ -277,6 +277,14 @@ impl Event {
          (window_id, (*ptr).width as u32, (*ptr).height as u32)
       }
    }
+
+   pub fn mouse_move_properties(&self) -> (u32, u32) {
+      unsafe {
+         let ptr = self.ptr as *mut ffi::xcb_motion_notify_event_t;
+
+         ((*ptr).event_x as u32, (*ptr).event_y as u32)
+      }
+   }
 }
 
 impl Drop for Event {
@@ -351,7 +359,8 @@ impl Window {
       };
 
       let eventmask = ffi::XCB_EVENT_MASK_KEY_PRESS |
-         ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+         ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+         ffi::XCB_EVENT_MASK_POINTER_MOTION;
       let valuelist = [eventmask, 0];
       let valuemask = ffi::XCB_CW_EVENT_MASK;
 

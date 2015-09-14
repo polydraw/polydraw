@@ -104,11 +104,14 @@ impl<'a> PollEventsIterator<'a> {
                return Some(Event::Resized(width, height));
             },
 
+            xcb::EventType::MotionNotify => {
+               let (x, y) = xcb_event.mouse_move_properties();
+               return Some(Event::MouseMoved(x, y));
+            },
+
             _ => {}
          }
       }
-
-
 
       self.next()
    }
