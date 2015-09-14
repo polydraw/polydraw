@@ -120,7 +120,7 @@ mod test {
    #[test]
    fn test_create_display_from_env() {
       let name = env::var("DISPLAY").unwrap();
-      assert!(Display::new(name).is_ok());
+      assert!(Display::new(name.as_ref()).is_ok());
    }
 
    #[test]
@@ -130,7 +130,7 @@ mod test {
 
    #[test]
    fn test_create_display_nul_str() {
-      assert!(Display::new(&b"one\0two"[..]).is_err());
+      assert!(Display::new("one\0two").is_err());
    }
 
    #[test]
