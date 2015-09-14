@@ -34,7 +34,18 @@ impl Display {
    }
 
    pub fn new(name: &str) -> Result<Self, RuntimeError> {
-      let c_name = CString::new(name).unwrap();
+      let c_name = match CString::new(name){
+         Ok(c_name) => c_name,
+         Err(e) => {
+            let description = format!(
+               "Opening X display with bad display name '{}'", name
+            );
+            return Err(RuntimeError::new(
+               ErrorKind::Xlib,
+               description
+            ));
+         }
+      };
 
       let display_ptr = unsafe {
          ffi::XOpenDisplay(c_name.as_ptr())
