@@ -1,19 +1,12 @@
-use std::ops::{Add, Sub, Mul};
-
-use super::float::FloatMath;
+use super::coordinate::Coordinate;
+use super::distance::Distance;
 
 pub struct Point<T> {
    x: T,
    y: T
 }
 
-impl<T> Point<T> where T:
-   Add<T, Output=T> +
-   Sub<T, Output=T> +
-   Mul<T, Output=T> +
-   FloatMath +
-   Default + Copy + Clone
-{
+impl<T> Point<T> where T: Coordinate {
    pub fn new(x: T, y: T) -> Self {
       Point {
          x: x,
@@ -21,7 +14,10 @@ impl<T> Point<T> where T:
       }
    }
 
-   pub fn distance(&self, other: &Point<T>) -> T {
+}
+
+impl<T> Distance<Point<T>, T> for Point<T> where T: Coordinate {
+   fn distance(&self, other: &Self) -> T {
       let x = other.x - self.x;
       let y = other.y - self.y;
       return (x * x + y * y).sqrt()
@@ -31,6 +27,8 @@ impl<T> Point<T> where T:
 #[cfg(test)]
 mod tests {
    use test::{Bencher, black_box};
+
+   use super::super::distance::Distance;
 
    use super::*;
 
