@@ -99,7 +99,7 @@ impl<'a> PollEventsIterator<'a> {
 
          xcb::EventType::ConfigureNotify => {
             let (_, width, height) = xcb_event.resize_properties();
-            return Some(Event::Resize(width, height));
+            return Some(Event::Resized(width, height));
          },
 
          _ => {}

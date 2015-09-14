@@ -40,7 +40,7 @@ pub unsafe extern "system" fn wnd_proc(
       ffi::WM_SIZE => {
          let width = ffi::LOWORD(lparam as ffi::DWORD) as u32;
          let height = ffi::HIWORD(lparam as ffi::DWORD) as u32;
-         send(Event::Resize(width, height));
+         send(Event::Resized(width, height));
          0
       },
 

@@ -31,7 +31,7 @@ impl<'a> EventLoop<'a> {
 
          for event in self.os_application.poll_events() {
             match event {
-               Event::Resize(width, height) => {
+               Event::Resized(width, height) => {
                   render_frame.width = width;
                   render_frame.height = height;
                },
