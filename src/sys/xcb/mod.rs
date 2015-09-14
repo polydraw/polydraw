@@ -352,8 +352,7 @@ impl Window {
          Err(e) => return Err(e)
       };
 
-      let eventmask = ffi::XCB_EVENT_MASK_EXPOSURE |
-         ffi::XCB_EVENT_MASK_KEY_PRESS |
+      let eventmask = ffi::XCB_EVENT_MASK_KEY_PRESS |
          ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY;
       let valuelist = [eventmask, 0];
       let valuemask = ffi::XCB_CW_EVENT_MASK;
