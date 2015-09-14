@@ -36,7 +36,7 @@ impl Display {
    pub fn new(name: &str) -> Result<Self, RuntimeError> {
       let c_name = match CString::new(name){
          Ok(c_name) => c_name,
-         Err(e) => {
+         Err(_) => {
             let description = format!(
                "Opening X display with bad display name '{}'", name
             );
