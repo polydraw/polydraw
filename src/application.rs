@@ -22,7 +22,7 @@ use super::creator::ApplicationCreator;
 impl Application {
    pub fn new<'a>() -> ApplicationCreator<'a> {
       let display = match OsDisplay::new() {
-         Ok(os_application) => os_application,
+         Ok(display) => display,
          Err(e) => {
             panic!(e.description);
          }
