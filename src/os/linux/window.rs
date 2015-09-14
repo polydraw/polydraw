@@ -88,22 +88,27 @@ impl<'a> PollEventsIterator<'a> {
    #[inline]
    fn convert(&mut self, xcb_event: xcb::Event) -> Option<Event> {
       match xcb_event.event_type() {
-         xcb::EventType::ClientMessage => {
-            if xcb_event.is_close_event(
-                  &self.atoms.protocols_atom,
-                  &self.atoms.delete_window_atom
-            ) {
-               return Some(Event::Quit);
-            }
-         },
+         None => {},
+         Some(event_type) => match event_type {
+            xcb::EventType::ClientMessage => {
+               if xcb_event.is_close_event(
+                     &self.atoms.protocols_atom,
+                     &self.atoms.delete_window_atom
+               ) {
+                  return Some(Event::Quit);
+               }
+            },
 
-         xcb::EventType::ConfigureNotify => {
-            let (_, width, height) = xcb_event.resize_properties();
-            return Some(Event::Resized(width, height));
-         },
+            xcb::EventType::ConfigureNotify => {
+               let (_, width, height) = xcb_event.resize_properties();
+               return Some(Event::Resized(width, height));
+            },
 
-         _ => {}
+            _ => {}
+         }
       }
+
+
 
       self.next()
    }

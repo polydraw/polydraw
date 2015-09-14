@@ -182,12 +182,11 @@ pub enum EventType {
    Expose,
    ClientMessage,
    ConfigureNotify,
-   Unidentified,
 }
 
 impl EventType {
-   pub fn new(xcb_type: ffi::c_uchar) -> Self {
-      match xcb_type {
+   pub fn new(xcb_type: ffi::c_uchar) -> Option<Self> {
+      Some(match xcb_type {
          ffi::XCB_KEY_PRESS => EventType::KeyPress,
          ffi::XCB_KEY_RELEASE => EventType::KeyRelease,
          ffi::XCB_BUTTON_PRESS => EventType::ButtonPress,
@@ -201,8 +200,8 @@ impl EventType {
          ffi::XCB_EXPOSE => EventType::Expose,
          ffi::XCB_CLIENT_MESSAGE => EventType::ClientMessage,
          ffi::XCB_CONFIGURE_NOTIFY => EventType::ConfigureNotify,
-         _ => EventType::Unidentified
-      }
+         _ => return None
+      })
    }
 }
 
@@ -222,7 +221,6 @@ impl fmt::Display for EventType {
          EventType::Expose => "Expose",
          EventType::ClientMessage => "ClientMessage",
          EventType::ConfigureNotify => "ConfigureNotify",
-         EventType::Unidentified => "Unidentified",
       };
 
       write!(f, "{}", type_str)
@@ -240,7 +238,7 @@ impl Event {
       }
    }
 
-   pub fn event_type(&self) -> EventType {
+   pub fn event_type(&self) -> Option<EventType> {
       EventType::new(
          unsafe {
             (*self.ptr).response_type & !0x80
