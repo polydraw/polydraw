@@ -13,7 +13,6 @@ impl<T> Point<T> where T: Coordinate {
          y: y
       }
    }
-
 }
 
 impl<T> Distance<Point<T>, T> for Point<T> where T: Coordinate {
