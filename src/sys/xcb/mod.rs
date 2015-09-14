@@ -182,7 +182,6 @@ pub enum EventType {
    Expose,
    ClientMessage,
    ConfigureNotify,
-   Empty,
    Unidentified,
 }
 
@@ -205,10 +204,6 @@ impl EventType {
          _ => EventType::Unidentified
       }
    }
-
-   pub fn empty() -> Self {
-      EventType::Empty
-   }
 }
 
 impl fmt::Display for EventType {
@@ -227,7 +222,6 @@ impl fmt::Display for EventType {
          EventType::Expose => "Expose",
          EventType::ClientMessage => "ClientMessage",
          EventType::ConfigureNotify => "ConfigureNotify",
-         EventType::Empty => "Empty",
          EventType::Unidentified => "Unidentified",
       };
 
@@ -246,17 +240,7 @@ impl Event {
       }
    }
 
-   pub fn empty() -> Self {
-      Event {
-         ptr: ptr::null_mut(),
-      }
-   }
-
    pub fn event_type(&self) -> EventType {
-      if self.ptr.is_null() {
-         return EventType::empty();
-      }
-
       EventType::new(
          unsafe {
             (*self.ptr).response_type & !0x80
@@ -308,7 +292,6 @@ impl Drop for Event {
 pub struct EventIterator {
    ptr: *mut ffi::xcb_connection_t,
    started: bool,
-   completed: bool,
 }
 
 impl EventIterator {
@@ -316,7 +299,6 @@ impl EventIterator {
       EventIterator {
          ptr: connection_ptr,
          started: false,
-         completed: false,
       }
    }
 }
@@ -325,10 +307,6 @@ impl Iterator for EventIterator {
    type Item = Result<Event, RuntimeError>;
 
    fn next(&mut self) -> Option<Result<Event, RuntimeError>> {
-      if self.completed {
-         return None;
-      }
-
       let event_ptr = unsafe {
          if !self.started {
             self.started = true;
@@ -339,8 +317,6 @@ impl Iterator for EventIterator {
       };
 
       if event_ptr.is_null() {
-         self.completed = true;
-
          if unsafe { ffi::xcb_connection_has_error(self.ptr) } != 0 {
             return Some(
                Err(RuntimeError::new(
@@ -350,9 +326,7 @@ impl Iterator for EventIterator {
             );
          }
 
-         return Some(
-            Ok(Event::empty())
-         );
+         return None;
       }
 
       Some(
