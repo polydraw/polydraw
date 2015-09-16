@@ -101,6 +101,7 @@ pub const WM_QUIT:                     c_uint = 18;
 pub const WM_ERASEBKGND:               c_uint = 20;
 pub const WM_SETCURSOR:                c_uint = 32;
 pub const WM_NCCREATE:                 c_uint = 129;
+pub const WM_MOUSEMOVE:                c_uint = 512;
 
 pub const PM_NOREMOVE:                 c_uint = 0;
 pub const PM_REMOVE :                  c_uint = 1;
@@ -275,12 +276,24 @@ impl Default for DEVMODEW {
    fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
+#[inline]
 pub fn LOWORD(dwValue: DWORD) -> WORD {
-    (dwValue & 0xffff) as WORD
+   (dwValue & 0xffff) as WORD
 }
 
+#[inline]
 pub fn HIWORD(dwValue: DWORD) -> WORD {
-    ((dwValue >> 16) & 0xffff) as WORD
+   ((dwValue >> 16) & 0xffff) as WORD
+}
+
+#[inline]
+pub fn GET_X_LPARAM(dwValue: LPARAM) -> c_int {
+   LOWORD(dwValue as DWORD) as c_short as c_int
+}
+
+#[inline]
+pub fn GET_Y_LPARAM(dwValue: LPARAM) -> c_int {
+   HIWORD(dwValue as DWORD) as c_short as c_int
 }
 
 extern "system" {
