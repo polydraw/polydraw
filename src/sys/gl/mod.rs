@@ -34,10 +34,31 @@ pub fn flush() {
 }
 
 #[inline]
+pub fn finish() {
+   unsafe {
+      ffi::glFinish();
+   }
+}
+
+#[inline]
 pub fn reset_pixelstore_alignment() {
    unsafe {
       ffi::glPixelStorei(ffi::GL_UNPACK_ALIGNMENT, 1);
    }
+}
+
+pub fn disable_all() {
+   unsafe {
+      ffi::glDisable(ffi::GL_SCISSOR_TEST);
+      ffi::glDisable(ffi::GL_BLEND);
+      ffi::glDisable(ffi::GL_CULL_FACE);
+      ffi::glDisable(ffi::GL_DEPTH_TEST);
+      ffi::glDisable(ffi::GL_DITHER);
+      ffi::glDisable(ffi::GL_POLYGON_OFFSET_FILL);
+      ffi::glDisable(ffi::GL_SAMPLE_ALPHA_TO_COVERAGE);
+      ffi::glDisable(ffi::GL_SAMPLE_COVERAGE);
+      ffi::glDisable(ffi::GL_STENCIL_TEST);
+   };
 }
 
 pub struct Texture {

@@ -127,6 +127,16 @@ pub const GL_COLOR_ATTACHMENT0:        GLenum = 0x8CE0;
 pub const GL_CLAMP_TO_EDGE:            GLenum = 0x812F;
 pub const GL_NEAREST:                  GLenum = 0x2600;
 
+pub const GL_SCISSOR_TEST:             GLenum = 0x0C11;
+pub const GL_CULL_FACE:                GLenum = 0x0B44;
+pub const GL_BLEND:                    GLenum = 0x0BE2;
+pub const GL_DITHER:                   GLenum = 0x0BD0;
+pub const GL_STENCIL_TEST:             GLenum = 0x0B90;
+pub const GL_DEPTH_TEST:               GLenum = 0x0B71;
+pub const GL_POLYGON_OFFSET_FILL:      GLenum = 0x8037;
+pub const GL_SAMPLE_ALPHA_TO_COVERAGE: GLenum = 0x809E;
+pub const GL_SAMPLE_COVERAGE:          GLenum = 0x80A0;
+
 static mut glGenFramebuffersPtr: FnPtr = NULL_PTR;
 static mut glDeleteFramebuffersPtr: FnPtr = NULL_PTR;
 static mut glBindFramebufferPtr: FnPtr = NULL_PTR;
@@ -183,6 +193,10 @@ extern "C" {
    pub fn glClear(mask: GLbitfield) -> ();
 
    pub fn glFlush() -> ();
+
+   pub fn glFinish() -> ();
+
+   pub fn glDisable(cap: GLenum) -> ();
 
    pub fn glPixelStorei(pname: GLenum, param: GLint) -> ();
 
