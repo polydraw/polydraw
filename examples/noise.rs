@@ -46,7 +46,7 @@ fn main() {
 
    Application::new()
       .renderer(&mut renderer)
-      .title("Generic")
+      .title("Noise")
       .size(800, 400)
       .position(400, 200)
       .run();

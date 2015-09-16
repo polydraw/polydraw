@@ -35,11 +35,13 @@ impl<'a> EventLoop<'a> {
                   render_frame.width = width;
                   render_frame.height = height;
                },
+               Event::MouseMoved(x, y) => {
+                  renderer.mouse_moved(x, render_frame.height - y - 1);
+               },
                Event::Quit => {
                   quit = true;
                   break
-               },
-               _ => {}
+               }
             }
          }
 
