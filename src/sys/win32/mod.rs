@@ -28,12 +28,30 @@ impl Window {
 
       Self::register_class(class_name, wnd_proc);
 
+      let mut rect = ffi::RECT {
+         left: 0,
+         top: 0,
+         right: width as ffi::c_int,
+         bottom: height as ffi::c_int,
+      };
+
+      let ex_style = ffi::WS_EX_APPWINDOW | ffi::WS_EX_WINDOWEDGE;
+
+      let style = ffi::WS_OVERLAPPEDWINDOW | ffi::WS_CLIPSIBLINGS | ffi::WS_CLIPCHILDREN;
+
+      unsafe {
+         ffi::AdjustWindowRectEx(&mut rect, style, 0, ex_style)
+      };
+
+      let width = rect.right - rect.left;
+      let height = rect.bottom - rect.top;
+
       let hwnd = unsafe {
          ffi::CreateWindowExW(
-            ffi::WS_EX_APPWINDOW | ffi::WS_EX_WINDOWEDGE,
+            ex_style,
             to_utf16_os(class_name).as_ptr(),
             to_utf16_os(title).as_ptr(),
-            ffi::WS_OVERLAPPEDWINDOW | ffi::WS_CLIPSIBLINGS | ffi::WS_CLIPCHILDREN,
+            style,
             ffi::CW_USEDEFAULT, ffi::CW_USEDEFAULT,
             width as ffi::c_int, height as ffi::c_int,
             ptr::null_mut(),

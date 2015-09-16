@@ -200,6 +200,21 @@ impl Default for POINT {
 
 #[repr(C)]
 #[derive(Copy)]
+pub struct RECT {
+   pub left: c_long,
+   pub top: c_long,
+   pub right: c_long,
+   pub bottom: c_long,
+}
+impl Clone for RECT {
+   fn clone(&self) -> Self { *self }
+}
+impl Default for RECT {
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
+#[repr(C)]
+#[derive(Copy)]
 pub struct MSG {
    pub hwnd: HWND,
    pub message: c_uint,
@@ -332,6 +347,13 @@ extern "system" {
       wParam: WPARAM,
       lParam: LPARAM
    ) -> LRESULT;
+
+   pub fn AdjustWindowRectEx(
+      lpRect: *mut RECT,
+      dwStyle: c_ulong,
+      bMenu: BOOL,
+      dwExStyle: c_ulong,
+   ) -> BOOL;
 
    pub fn CreateWindowExW(
       dwExStyle: c_ulong,
