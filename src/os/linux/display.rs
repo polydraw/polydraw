@@ -48,8 +48,8 @@ impl LinuxDisplay {
    #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
       (
-         self.screen.width_in_pixels() as u32,
-         self.screen.height_in_pixels() as u32
+         self.screen.width_in_pixels(),
+         self.screen.height_in_pixels()
       )
    }
 }
