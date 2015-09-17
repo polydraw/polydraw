@@ -11,7 +11,6 @@ pub mod application;
 pub mod renderer;
 pub mod creator;
 pub mod error;
-pub mod hook;
 pub mod frame;
 pub mod event;
 pub mod event_loop;
