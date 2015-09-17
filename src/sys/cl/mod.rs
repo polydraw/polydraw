@@ -4,7 +4,7 @@ pub mod ffi;
 
 use std::ptr;
 use std::iter::repeat;
-use super::utils::from_cstr;
+use super::utils::string::from_cstr;
 
 use libc::{
    c_char, c_void

@@ -135,37 +135,29 @@ impl Screen {
       }
    }
 
-   getter!(root, ffi::xcb_window_t);
+   pub fn root(&self) -> ffi::xcb_window_t {
+      unsafe {
+         (*self.ptr).root
+      }
+   }
 
-   getter!(default_colormap, ffi::xcb_colormap_t);
+   pub fn width_in_pixels(&self) -> ffi::c_ushort {
+      unsafe {
+         (*self.ptr).width_in_pixels
+      }
+   }
 
-   getter!(white_pixel, ffi::c_uint);
+   pub fn height_in_pixels(&self) -> ffi::c_ushort {
+      unsafe {
+         (*self.ptr).height_in_pixels
+      }
+   }
 
-   getter!(black_pixel, ffi::c_uint);
-
-   getter!(current_input_masks, ffi::c_uint);
-
-   getter!(width_in_pixels, ffi::c_ushort);
-
-   getter!(height_in_pixels, ffi::c_ushort);
-
-   getter!(width_in_millimeters, ffi::c_ushort);
-
-   getter!(height_in_millimeters, ffi::c_ushort);
-
-   getter!(min_installed_maps, ffi::c_ushort);
-
-   getter!(max_installed_maps, ffi::c_ushort);
-
-   getter!(root_visual, ffi::xcb_visualid_t);
-
-   getter!(backing_stores, ffi::c_uchar);
-
-   getter!(save_unders, ffi::c_uchar);
-
-   getter!(root_depth, ffi::c_uchar);
-
-   getter!(allowed_depths_len, ffi::c_uchar);
+   pub fn root_visual(&self) -> ffi::xcb_visualid_t {
+      unsafe {
+         (*self.ptr).root_visual
+      }
+   }
 }
 
 pub enum EventType {
