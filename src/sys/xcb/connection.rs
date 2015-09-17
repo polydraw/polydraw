@@ -118,5 +118,21 @@ impl Connection {
          xcb_reply: xcb_reply
       }
    }
+
+   pub fn error_check(&self, cookie: ffi::xcb_void_cookie_t) -> Option<ffi::c_uchar> {
+      let error = unsafe {
+         ffi::xcb_request_check(self.ptr, cookie)
+      };
+
+      if error != ptr::null_mut() {
+         return Some(
+            unsafe {
+               (*error).error_code
+            }
+         )
+      }
+
+      None
+   }
 }
 

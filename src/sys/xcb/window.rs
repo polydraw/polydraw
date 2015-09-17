@@ -5,7 +5,7 @@ use error::{RuntimeError, ErrorKind};
 
 use super::ffi;
 use super::connection::Connection;
-use super::{XID, error_check};
+use super::XID;
 use super::screen::Screen;
 use super::atom::Atom;
 
@@ -49,7 +49,7 @@ impl Window {
          )
       };
 
-      match error_check(connection.ptr, cookie) {
+      match connection.error_check(cookie) {
          Some(error_code) => {
             return Err(RuntimeError::new(
                ErrorKind::XCB,
@@ -70,7 +70,7 @@ impl Window {
          ffi::xcb_map_window_checked(self.connection.ptr, self.window_id.id)
       };
 
-      match error_check(self.connection.ptr, cookie) {
+      match self.connection.error_check(cookie) {
          Some(error_code) => {
             return Err(RuntimeError::new(
                ErrorKind::XCB,
@@ -96,7 +96,7 @@ impl Window {
          )
       };
 
-      match error_check(self.connection.ptr, cookie) {
+      match self.connection.error_check(cookie) {
          Some(error_code) => {
             return Err(RuntimeError::new(
                ErrorKind::XCB,
@@ -132,7 +132,7 @@ impl Window {
          )
       };
 
-      match error_check(self.connection.ptr, cookie) {
+      match self.connection.error_check(cookie) {
          Some(error_code) => {
             return Err(RuntimeError::new(
                ErrorKind::XCB,
@@ -161,7 +161,7 @@ impl Window {
          )
       };
 
-      match error_check(self.connection.ptr, cookie) {
+      match self.connection.error_check(cookie) {
          Some(error_code) => {
             return Err(RuntimeError::new(
                ErrorKind::XCB,
