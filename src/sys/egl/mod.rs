@@ -3,6 +3,7 @@
 pub mod ffi;
 
 use std::mem;
+use std::ptr;
 use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
@@ -136,6 +137,52 @@ pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
          ));
       }
    }
+}
+
+pub fn configs(display: &Display) -> Result<Vec<Config>, RuntimeError> {
+   let mut num_config = unsafe { mem::uninitialized() };
+
+   let result = unsafe {
+      ffi::eglGetConfigs(
+         display.ptr,
+         ptr::null_mut(),
+         0,
+         &mut num_config,
+      )
+   };
+
+   if result == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "Getting configs count eglGetConfigs failed".to_string()
+      ));
+   }
+
+   let mut config_ptrs = Vec::with_capacity(num_config as usize);
+
+   let result = unsafe {
+      ffi::eglGetConfigs(
+         display.ptr,
+         config_ptrs.as_mut_ptr(),
+         config_ptrs.capacity() as ffi::EGLint,
+         &mut num_config
+      )
+   };
+
+   unsafe {
+      config_ptrs.set_len(num_config as usize)
+   };
+
+   if result == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglGetConfigs failed".to_string()
+      ));
+   }
+
+   let configs = config_ptrs.iter().map(|&ptr| Config {ptr: ptr}).collect();
+
+   Ok(configs)
 }
 
 pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {

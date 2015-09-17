@@ -139,6 +139,13 @@ extern "C" {
       minor: *mut EGLint
    ) -> EGLBoolean;
 
+   pub fn eglGetConfigs(
+      dpy: EGLDisplay ,
+      configs: *mut EGLConfig,
+      config_size: EGLint,
+      num_config: *mut EGLint
+   ) -> EGLBoolean;
+
    pub fn eglChooseConfig(
       dpy: EGLDisplay,
       attrib_list: *const EGLint,
