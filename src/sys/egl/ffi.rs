@@ -134,20 +134,20 @@ extern "C" {
    ) -> EGLDisplay;
 
    pub fn eglInitialize(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       major: *mut EGLint,
       minor: *mut EGLint
    ) -> EGLBoolean;
 
    pub fn eglGetConfigs(
-      dpy: EGLDisplay ,
+      display: EGLDisplay ,
       configs: *mut EGLConfig,
       config_size: EGLint,
       num_config: *mut EGLint
    ) -> EGLBoolean;
 
    pub fn eglChooseConfig(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       attrib_list: *const EGLint,
       configs: *mut EGLConfig,
       config_size: EGLint,
@@ -159,40 +159,40 @@ extern "C" {
    ) -> __eglMustCastToProperFunctionPointerType;
 
    pub fn eglCreateContext(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       config: EGLConfig,
       share_context: EGLContext,
       attrib_list: *const EGLint
    ) -> EGLContext;
 
    pub fn eglCreateWindowSurface(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       config: EGLConfig,
       win: EGLNativeWindowType,
       attrib_list: *const EGLint
    ) -> EGLSurface;
 
    pub fn eglMakeCurrent(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       draw: EGLSurface,
       read: EGLSurface,
       ctx: EGLContext
    ) -> EGLBoolean;
 
    pub fn eglQueryContext(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       ctx: EGLContext,
       attribute: EGLint,
       value: *mut EGLint
    ) -> EGLBoolean;
 
    pub fn eglSwapBuffers(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       surface: EGLSurface
    ) -> EGLBoolean;
 
    pub fn eglSwapInterval(
-      dpy: EGLDisplay,
+      display: EGLDisplay,
       interval: EGLint
    ) -> EGLBoolean;
 }
