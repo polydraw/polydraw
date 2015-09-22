@@ -154,6 +154,13 @@ extern "C" {
       num_config: *mut EGLint
    ) -> EGLBoolean;
 
+   pub fn eglGetConfigAttrib(
+      display: EGLDisplay,
+      config: EGLConfig,
+      attribute: EGLint,
+      value: *mut EGLint
+   ) -> EGLBoolean;
+
    pub fn eglGetProcAddress(
       procname: *const c_char
    ) -> __eglMustCastToProperFunctionPointerType;

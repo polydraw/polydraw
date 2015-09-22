@@ -5,6 +5,7 @@ pub mod ffi;
 use std::mem;
 use std::ptr;
 use std::ffi::CString;
+use std::iter::Iterator;
 
 use error::{RuntimeError, ErrorKind};
 
@@ -182,6 +183,10 @@ pub fn configs(display: &Display) -> Result<Vec<Config>, RuntimeError> {
 
    let configs = config_ptrs.iter().map(|&ptr| Config {ptr: ptr}).collect();
 
+   for config in &configs {
+      print_config(display, config);
+   }
+
    Ok(configs)
 }
 
@@ -241,6 +246,73 @@ pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
    Ok(Config {
       ptr: configs[0]
    })
+}
+
+pub fn config_attrib(
+   display: &Display,
+   config: &Config,
+   attribute: ffi::EGLint
+) -> Result<ffi::EGLint, RuntimeError> {
+
+   let mut value: ffi::EGLint = unsafe { mem::uninitialized() };
+
+   let result = unsafe {
+      ffi::eglGetConfigAttrib(display.ptr, config.ptr, attribute, &mut value)
+   };
+
+   if result != ffi::EGL_TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::EGL,
+         "eglGetConfigAttrib failed".to_string()
+      ));
+   }
+
+   Ok(value)
+}
+
+pub fn print_config(display: &Display, config: &Config) {
+   println!("-------------------------");
+
+   pattr(display, config, "EGL_CONFIG_ID", ffi::EGL_CONFIG_ID);
+   pattr(display, config, "EGL_COLOR_BUFFER_TYPE", ffi::EGL_COLOR_BUFFER_TYPE);
+   pattr(display, config, "EGL_RENDERABLE_TYPE", ffi::EGL_RENDERABLE_TYPE);
+   pattr(display, config, "EGL_SURFACE_TYPE", ffi::EGL_SURFACE_TYPE);
+   pattr(display, config, "EGL_TRANSPARENT_TYPE", ffi::EGL_TRANSPARENT_TYPE);
+   pattr(display, config, "EGL_NATIVE_VISUAL_TYPE", ffi::EGL_NATIVE_VISUAL_TYPE);
+   pattr(display, config, "EGL_NATIVE_VISUAL_ID", ffi::EGL_NATIVE_VISUAL_ID);
+   pattr(display, config, "EGL_BUFFER_SIZE", ffi::EGL_BUFFER_SIZE);
+   pattr(display, config, "EGL_LUMINANCE_SIZE", ffi::EGL_LUMINANCE_SIZE);
+   pattr(display, config, "EGL_DEPTH_SIZE", ffi::EGL_DEPTH_SIZE);
+   pattr(display, config, "EGL_STENCIL_SIZE", ffi::EGL_STENCIL_SIZE);
+   pattr(display, config, "EGL_RED_SIZE", ffi::EGL_RED_SIZE);
+   pattr(display, config, "EGL_GREEN_SIZE", ffi::EGL_GREEN_SIZE);
+   pattr(display, config, "EGL_BLUE_SIZE", ffi::EGL_BLUE_SIZE);
+   pattr(display, config, "EGL_ALPHA_SIZE", ffi::EGL_ALPHA_SIZE);
+   pattr(display, config, "EGL_ALPHA_MASK_SIZE", ffi::EGL_ALPHA_MASK_SIZE);
+   pattr(display, config, "EGL_BIND_TO_TEXTURE_RGB", ffi::EGL_BIND_TO_TEXTURE_RGB);
+   pattr(display, config, "EGL_BIND_TO_TEXTURE_RGBA", ffi::EGL_BIND_TO_TEXTURE_RGBA);
+   pattr(display, config, "EGL_CONFIG_CAVEAT", ffi::EGL_CONFIG_CAVEAT);
+   pattr(display, config, "EGL_CONFORMANT", ffi::EGL_CONFORMANT);
+   pattr(display, config, "EGL_LEVEL", ffi::EGL_LEVEL);
+   pattr(display, config, "EGL_MAX_PBUFFER_WIDTH", ffi::EGL_MAX_PBUFFER_WIDTH);
+   pattr(display, config, "EGL_MAX_PBUFFER_HEIGHT", ffi::EGL_MAX_PBUFFER_HEIGHT);
+   pattr(display, config, "EGL_MAX_PBUFFER_PIXELS", ffi::EGL_MAX_PBUFFER_PIXELS);
+   pattr(display, config, "EGL_MAX_SWAP_INTERVAL", ffi::EGL_MAX_SWAP_INTERVAL);
+   pattr(display, config, "EGL_MIN_SWAP_INTERVAL", ffi::EGL_MIN_SWAP_INTERVAL);
+   pattr(display, config, "EGL_NATIVE_RENDERABLE", ffi::EGL_NATIVE_RENDERABLE);
+   pattr(display, config, "EGL_SAMPLE_BUFFERS", ffi::EGL_SAMPLE_BUFFERS);
+   pattr(display, config, "EGL_SAMPLES", ffi::EGL_SAMPLES);
+   pattr(display, config, "EGL_TRANSPARENT_RED_VALUE", ffi::EGL_TRANSPARENT_RED_VALUE);
+   pattr(display, config, "EGL_TRANSPARENT_GREEN_VALUE", ffi::EGL_TRANSPARENT_GREEN_VALUE);
+   pattr(display, config, "EGL_TRANSPARENT_BLUE_VALUE", ffi::EGL_TRANSPARENT_BLUE_VALUE);
+
+   println!("");
+}
+
+pub fn pattr(display: &Display, config: &Config, name: &str, attribute: ffi::EGLenum) {
+   println!(
+      "{}: {}", name, config_attrib(display, config, attribute as ffi::EGLint).unwrap()
+   );
 }
 
 pub fn create_context(display: &Display, config: &Config) -> Result<Context, RuntimeError> {
