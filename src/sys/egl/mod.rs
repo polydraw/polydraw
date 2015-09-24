@@ -193,14 +193,14 @@ pub fn configs(display: &Display) -> Result<Vec<Config>, RuntimeError> {
 pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
    let config_attribs = [
       ffi::EGL_COLOR_BUFFER_TYPE,    ffi::EGL_RGB_BUFFER,
-      ffi::EGL_BUFFER_SIZE,          32,
+      ffi::EGL_BUFFER_SIZE,          24,
       ffi::EGL_RED_SIZE,             8,
       ffi::EGL_GREEN_SIZE,           8,
       ffi::EGL_BLUE_SIZE,            8,
-      ffi::EGL_ALPHA_SIZE,           8,
+      ffi::EGL_ALPHA_SIZE,           0,
 
-      ffi::EGL_DEPTH_SIZE,           24,
-      ffi::EGL_STENCIL_SIZE,         8,
+      ffi::EGL_DEPTH_SIZE,           0,
+      ffi::EGL_STENCIL_SIZE,         0,
 
       ffi::EGL_SAMPLE_BUFFERS,       0,
       ffi::EGL_SAMPLES,              0,
