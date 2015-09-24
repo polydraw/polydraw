@@ -421,6 +421,41 @@ impl Default for xcb_generic_error_t {
     fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_query_pointer_reply_t {
+   pub response_type: c_uchar,
+   pub same_screen: c_uchar,
+   pub sequence: c_ushort,
+   pub length: c_uint,
+   pub root: xcb_window_t,
+   pub child: xcb_window_t,
+   pub root_x: c_short,
+   pub root_y: c_short,
+   pub win_x: c_short,
+   pub win_y: c_short,
+   pub mask: c_ushort,
+   pub pad0: [c_uchar; 2usize],
+}
+impl Clone for xcb_query_pointer_reply_t {
+   fn clone(&self) -> Self { *self }
+}
+impl Default for xcb_query_pointer_reply_t {
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
+#[repr(C)]
+#[derive(Copy)]
+pub struct xcb_query_pointer_cookie_t {
+   pub sequence: c_uint,
+}
+impl Clone for xcb_query_pointer_cookie_t {
+   fn clone(&self) -> Self { *self }
+}
+impl Default for xcb_query_pointer_cookie_t {
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
 #[link(name="xcb")]
 extern "C" {
    pub fn xcb_get_setup(
@@ -511,6 +546,17 @@ extern "C" {
       cookie: xcb_intern_atom_cookie_t,
       e: *mut *mut xcb_generic_error_t
    ) -> *mut xcb_intern_atom_reply_t;
+
+   pub fn xcb_query_pointer(
+      c: *mut xcb_connection_t,
+      window: xcb_window_t
+   ) -> xcb_query_pointer_cookie_t;
+
+   pub fn xcb_query_pointer_reply(
+      c: *mut xcb_connection_t,
+      cookie: xcb_query_pointer_cookie_t,
+      e: *mut *mut xcb_generic_error_t
+   ) -> *mut xcb_query_pointer_reply_t;
 
    pub fn xcb_connection_has_error(
       c: *mut xcb_connection_t

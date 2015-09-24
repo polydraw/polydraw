@@ -1,3 +1,4 @@
+use std::ptr;
 use std::rc::Rc;
 use std::ffi::CString;
 
@@ -173,6 +174,33 @@ impl Window {
 
       Ok(())
    }
+
+   pub fn query_pointer(&self) -> QueryPointerCookie {
+      let xcb_cookie = unsafe {
+         ffi::xcb_query_pointer(
+            self.connection.ptr,
+            self.window_id.id,
+         )
+      };
+
+      QueryPointerCookie {
+         xcb_cookie: xcb_cookie
+      }
+   }
+
+   pub fn query_pointer_reply(&self, cookie: &QueryPointerCookie) -> QueryPointerReply {
+      let xcb_reply = unsafe {
+         ffi::xcb_query_pointer_reply(
+            self.connection.ptr,
+            cookie.xcb_cookie,
+            ptr::null_mut()
+         )
+      };
+
+      QueryPointerReply {
+         xcb_reply: xcb_reply
+      }
+   }
 }
 
 impl Drop for Window {
@@ -183,4 +211,12 @@ impl Drop for Window {
          );
       }
    }
+}
+
+pub struct QueryPointerCookie {
+   pub xcb_cookie: ffi::xcb_query_pointer_cookie_t
+}
+
+pub struct QueryPointerReply {
+   pub xcb_reply: *mut ffi::xcb_query_pointer_reply_t
 }
