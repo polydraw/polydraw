@@ -45,8 +45,8 @@ pub unsafe extern "system" fn wnd_proc(
       },
 
       ffi::WM_MOUSEMOVE => {
-         let x = ffi::GET_X_LPARAM(lparam) as u32;
-         let y = ffi::GET_Y_LPARAM(lparam) as u32;
+         let x = ffi::GET_X_LPARAM(lparam);
+         let y = ffi::GET_Y_LPARAM(lparam);
          send(Event::MouseMoved(x, y));
          0
       },
