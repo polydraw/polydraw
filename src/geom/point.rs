@@ -2,8 +2,8 @@ use super::coordinate::Coordinate;
 use super::distance::Distance;
 
 pub struct Point<T> {
-   x: T,
-   y: T
+   pub x: T,
+   pub y: T
 }
 
 impl<T> Point<T> where T: Coordinate {
