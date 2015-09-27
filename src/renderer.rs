@@ -3,6 +3,7 @@ use super::frame::RenderFrame;
 pub trait Renderer {
    fn render(&mut self, &mut RenderFrame);
 
+   #[allow(unused_variables)]
    fn mouse_moved(&mut self, x: i32, y: i32) {}
 }
 
