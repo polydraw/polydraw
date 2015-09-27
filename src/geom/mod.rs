@@ -1,4 +1,4 @@
 pub mod point;
-pub mod float;
+pub mod number;
 pub mod distance;
 pub mod coordinate;

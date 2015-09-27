@@ -1,12 +1,12 @@
 use std::ops::{Add, Sub, Mul};
 
-use super::float::FloatOps;
+use super::number::NumberOps;
 
 pub trait Coordinate:
    Add<Self, Output=Self> +
    Sub<Self, Output=Self> +
    Mul<Self, Output=Self> +
-   FloatOps +
+   NumberOps +
    Default +
    Copy +
    Clone {}
