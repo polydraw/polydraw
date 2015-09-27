@@ -27,4 +27,10 @@ impl RenderFrame {
          .take((width * height * 3) as usize)
          .collect::<Vec<_>>()
    }
+
+   pub fn clear(&mut self) {
+      for i in 0 as usize..(self.width * self.height * 3) as usize {
+         self.data[i] = 0;
+      }
+   }
 }

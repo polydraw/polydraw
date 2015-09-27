@@ -20,9 +20,7 @@ impl MouseRenderer {
 
 impl Renderer for MouseRenderer {
    fn render(&mut self, frame: &mut RenderFrame) {
-      for i in 0 as usize..(frame.width * frame.height * 3) as usize {
-         frame.data[i] = 0;
-      }
+      frame.clear();
 
       let half = 35_u32;
 
