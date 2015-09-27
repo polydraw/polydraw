@@ -117,11 +117,11 @@ impl Event {
       }
    }
 
-   pub fn mouse_move_properties(&self) -> (u32, u32) {
+   pub fn mouse_move_properties(&self) -> (i32, i32) {
       unsafe {
          let ptr = self.ptr as *mut ffi::xcb_motion_notify_event_t;
 
-         ((*ptr).event_x as u32, (*ptr).event_y as u32)
+         ((*ptr).event_x as i32, (*ptr).event_y as i32)
       }
    }
 }

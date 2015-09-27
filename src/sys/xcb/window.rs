@@ -84,7 +84,7 @@ impl Window {
       Ok(())
    }
 
-   pub fn position(&self, x: u32, y: u32) -> Result<(), RuntimeError> {
+   pub fn position(&self, x: i32, y: i32) -> Result<(), RuntimeError> {
       let value_mask = ffi::XCB_CONFIG_WINDOW_X | ffi::XCB_CONFIG_WINDOW_Y;
       let value_list = [x as ffi::c_uint, y as ffi::c_uint, 0];
 

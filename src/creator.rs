@@ -5,8 +5,8 @@ pub struct ApplicationCreator<'a> {
    display: OsDisplay,
    renderer: Option<&'a mut Renderer>,
    title: Option<&'a str>,
-   x: Option<u32>,
-   y: Option<u32>,
+   x: Option<i32>,
+   y: Option<i32>,
    width: Option<u32>,
    height: Option<u32>,
 }
@@ -40,7 +40,7 @@ impl<'a> ApplicationCreator<'a> {
       self
    }
 
-   pub fn position(mut self, x: u32, y: u32) -> Self {
+   pub fn position(mut self, x: i32, y: i32) -> Self {
       self.x = Some(x);
       self.y = Some(y);
       self
@@ -73,12 +73,12 @@ impl<'a> ApplicationCreator<'a> {
 
       let x = match self.x {
          Some(x) => x,
-         None => (screen_width - width) / 2
+         None => ((screen_width - width) / 2) as i32
       };
 
       let y = match self.y {
          Some(y) => y,
-         None => (screen_height - height) / 2
+         None => ((screen_height - height) / 2) as i32
       };
 
       Application::create(self.display, title, x, y, width, height).run(renderer)

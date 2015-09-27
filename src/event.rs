@@ -4,5 +4,5 @@ pub enum Event {
 
    Resized(u32, u32),
 
-   MouseMoved(u32, u32),
+   MouseMoved(i32, i32),
 }

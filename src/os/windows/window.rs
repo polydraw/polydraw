@@ -21,7 +21,7 @@ unsafe impl Sync for WindowsWindow {}
 
 impl WindowsWindow {
    pub fn new(
-      title: &str, x: u32, y: u32, width: u32, height: u32
+      title: &str, x: i32, y: i32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
       let title = String::from_str(title).unwrap();
@@ -40,7 +40,7 @@ impl WindowsWindow {
    }
 
    fn create(
-      title: &str, x: u32, y: u32, width: u32, height: u32
+      title: &str, x: i32, y: i32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
       let window = try!(Self::init_window(&title, x, y, width, height));
@@ -68,7 +68,7 @@ impl WindowsWindow {
 
    #[inline]
    fn init_window(
-      title: &str, x: u32, y: u32, width: u32, height: u32
+      title: &str, x: i32, y: i32, width: u32, height: u32
    ) -> Result<win32::Window, RuntimeError> {
 
       let window = win32::Window::new(

@@ -34,7 +34,7 @@ impl Application {
    pub fn create(
       display: OsDisplay,
       title: &str,
-      x: u32, y: u32,
+      x: i32, y: i32,
       width: u32, height: u32
    ) -> Self {
       let (screen_width, screen_height) = display.screen_size();

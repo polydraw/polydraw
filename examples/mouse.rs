@@ -5,8 +5,8 @@ use std::cmp::{min, max};
 use polydraw::{Application, Renderer, RenderFrame};
 
 struct MouseRenderer {
-   mouse_x: u32,
-   mouse_y: u32,
+   mouse_x: i32,
+   mouse_y: i32,
 }
 
 impl MouseRenderer {
@@ -26,14 +26,14 @@ impl Renderer for MouseRenderer {
 
       let half = 35_u32;
 
-      let x_start = max(0, (self.mouse_x as i32) - half as i32) as u32;
-      let x_end = min(frame.width, self.mouse_x + half);
+      let x_start = max(0, self.mouse_x - half as i32);
+      let x_end = min(frame.width as i32, self.mouse_x + half as i32);
 
-      let y_start = max(0, (self.mouse_y as i32) - half as i32) as u32;
-      let y_end = min(frame.height, self.mouse_y + half);
+      let y_start = max(0, self.mouse_y - half as i32);
+      let y_end = min(frame.height as i32, self.mouse_y + half as i32);
 
       for y in y_start..y_end {
-         let row_i = 3 * y * frame.width;
+         let row_i = 3 * y * frame.width as i32;
          for x in x_start..x_end {
             let i = (3 * x + row_i) as usize;
             frame.data[i] = 33;
@@ -43,7 +43,7 @@ impl Renderer for MouseRenderer {
       }
    }
 
-   fn mouse_moved(&mut self, x: u32, y: u32) {
+   fn mouse_moved(&mut self, x: i32, y: i32) {
       self.mouse_x = x;
       self.mouse_y = y;
    }

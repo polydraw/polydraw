@@ -20,7 +20,7 @@ pub struct LinuxWindow {
 
 impl LinuxWindow {
    pub fn new(
-      display: &LinuxDisplay, title: &str, x: u32, y: u32, width: u32, height: u32
+      display: &LinuxDisplay, title: &str, x: i32, y: i32, width: u32, height: u32
    ) -> Result<Self, RuntimeError> {
 
       let window = try!(Self::init_window(
@@ -39,7 +39,7 @@ impl LinuxWindow {
    #[inline]
    pub fn init_window(
       connection: &Rc<xcb::Connection>, screen: &xcb::Screen,
-      title: &str, x: u32, y: u32, width: u32, height: u32
+      title: &str, x: i32, y: i32, width: u32, height: u32
    ) -> Result<xcb::Window, RuntimeError> {
 
       let window = try!(xcb::Window::create(

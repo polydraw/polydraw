@@ -107,7 +107,7 @@ impl Window {
    }
 
    #[inline]
-   pub fn position(&self, x: u32, y: u32) {
+   pub fn position(&self, x: i32, y: i32) {
       unsafe {
          ffi::SetWindowPos(
             self.hwnd,
