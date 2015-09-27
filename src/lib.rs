@@ -14,6 +14,7 @@ pub mod error;
 pub mod frame;
 pub mod event;
 pub mod event_loop;
+pub mod draw;
 
 pub use application::Application;
 pub use renderer::Renderer;

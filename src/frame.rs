@@ -1,5 +1,7 @@
 use std::iter::repeat;
 
+use super::draw::RGB;
+
 pub struct RenderFrame {
    pub width: u32,
    pub height: u32,
@@ -32,5 +34,12 @@ impl RenderFrame {
       for i in 0 as usize..(self.width * self.height * 3) as usize {
          self.data[i] = 0;
       }
+   }
+
+   pub fn put_pixel(&mut self, x: i32, y: i32, color: &RGB) {
+      let i = 3 * (x + y * self.width as i32) as usize;
+      self.data[i    ] = color.r;
+      self.data[i + 1] = color.g;
+      self.data[i + 2] = color.b;
    }
 }
