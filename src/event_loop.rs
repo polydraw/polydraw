@@ -1,5 +1,3 @@
-use sys::gl;
-
 use error::RuntimeError;
 use application::OsApplication;
 use frame::RenderFrame;
@@ -61,11 +59,7 @@ impl<'a> EventLoop<'a> {
 
          framebuffer.blit(render_frame.width, render_frame.height);
 
-         gl::flush();
-
-         //gl::finish();
-
-         //try!(self.os_application.swap_buffers());
+         try!(self.os_application.swap_buffers());
       }
 
       Ok(())

@@ -18,7 +18,7 @@ pub fn init_pixel_format(
    let mut pfd = ffi::PIXELFORMATDESCRIPTOR {
       nSize: mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::WORD,
       nVersion: 1,
-      dwFlags: ffi::PFD_DRAW_TO_WINDOW | ffi::PFD_SUPPORT_OPENGL,// | ffi::PFD_DOUBLEBUFFER,
+      dwFlags: ffi::PFD_DRAW_TO_WINDOW | ffi::PFD_SUPPORT_OPENGL | ffi::PFD_DOUBLEBUFFER,
       iPixelType: ffi::PFD_TYPE_RGBA,
       cColorBits: 24,
       cRedBits: 0, cRedShift: 0, cGreenBits: 0, cGreenShift: 0, cBlueBits: 0, cBlueShift: 0,
