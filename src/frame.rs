@@ -37,6 +37,10 @@ impl RenderFrame {
    }
 
    pub fn put_pixel(&mut self, x: i32, y: i32, color: &RGB) {
+      if x >= self.width as i32 || y >= self.height as i32 || x < 0 || y < 0 {
+         return;
+      }
+
       let i = 3 * (x + y * self.width as i32) as usize;
       self.data[i    ] = color.r;
       self.data[i + 1] = color.g;

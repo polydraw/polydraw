@@ -1,4 +1,5 @@
-use super::geom::line::Line;
+use std::cmp::{min, max};
+
 use super::frame::RenderFrame;
 
 pub struct RGB {
@@ -59,5 +60,23 @@ pub fn bresenham(frame: &mut RenderFrame, x1: i32, y1: i32, x2: i32, y2: i32, co
 
          frame.put_pixel(x, y, color);
       }
+   }
+}
+
+pub fn hline(frame: &mut RenderFrame, x1: i32, x2: i32, y: i32, color: &RGB) {
+   let min_x = min(x1, x2);
+   let max_x = max(x1, x2);
+
+   for x in min_x..max_x + 1 {
+      frame.put_pixel(x, y, color);
+   }
+}
+
+pub fn vline(frame: &mut RenderFrame, x: i32, y1: i32, y2: i32, color: &RGB) {
+   let min_y = min(y1, y2);
+   let max_y = max(y1, y2);
+
+   for y in min_y..max_y + 1 {
+      frame.put_pixel(x, y, color);
    }
 }
