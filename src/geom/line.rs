@@ -33,9 +33,24 @@ impl<T> Line<T> where T: Number {
 
    #[inline]
    fn calc_abc(x1: T, y1: T, x2: T, y2: T) -> (T, T, T) {
-      let a = y2 - y1;
-      let b = x1 - x2;
-      let c = -(x1 * y2 - x2 * y1);
+      let mut a = y2 - y1;
+      let mut b = x1 - x2;
+      let mut c = -(x1 * y2 - x2 * y1);
+
+      let mut norm = (T::one() / (a * a + b * b)).sqrt();
+      if a != T::zero() {
+         if a < T::zero() {
+            norm = -norm;
+         }
+      } else {
+         if b < T::zero() {
+            norm = -norm;
+         }
+      }
+
+      a = a * norm;
+      b = b * norm;
+      c = c * norm;
       (a, b, c)
    }
 

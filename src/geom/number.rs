@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div, Neg};
-use std::cmp::PartialEq;
-use std::num::Zero;
+use std::cmp::{PartialEq, PartialOrd};
+use std::num::{Zero, One};
 use std::intrinsics;
 
 pub trait NumberOps : Sized {
@@ -28,8 +28,10 @@ pub trait Number:
    Div<Self, Output=Self> +
    Neg<Output=Self> +
    PartialEq +
+   PartialOrd +
    NumberOps +
    Zero +
+   One +
    Default +
    Copy +
    Clone {}
