@@ -37,8 +37,10 @@ mod tests {
       let p1 = Point::new(5_f64, 7_f64);
       let p2 = Point::new(3_f64, 2_f64);
       b.iter(|| {
-         for _ in 0..black_box(1000) {
-            p1.distance(&p2);
+         for _ in 0..1000 {
+            black_box(
+               p1.distance(&p2)
+            );
          }
       });
    }
@@ -48,8 +50,10 @@ mod tests {
       let p1 = Point::new(5_f32, 7_f32);
       let p2 = Point::new(3_f32, 2_f32);
       b.iter(|| {
-         for _ in 0..black_box(1000) {
-            p1.distance(&p2);
+         for _ in 0..1000 {
+            black_box(
+               p1.distance(&p2)
+            );
          }
       });
    }
