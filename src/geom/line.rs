@@ -51,6 +51,7 @@ impl<T> Line<T> where T: Number {
       a = a * norm;
       b = b * norm;
       c = c * norm;
+
       (a, b, c)
    }
 
@@ -164,7 +165,12 @@ mod tests {
       b.iter(|| {
          for _ in 0..1000 {
             black_box(
-               Line::new(5_f64, 7_f64, 3_f64, 2_f64)
+               Line::new(
+                  black_box(5_f64),
+                  black_box(7_f64),
+                  black_box(3_f64),
+                  black_box(2_f64)
+               )
             );
          }
       });
