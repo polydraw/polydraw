@@ -39,7 +39,9 @@ mod tests {
       b.iter(|| {
          for _ in 0..1000 {
             black_box(
-               p1.distance(&p2)
+               p1.distance(
+                  black_box(&p2)
+               )
             );
          }
       });
@@ -52,7 +54,9 @@ mod tests {
       b.iter(|| {
          for _ in 0..1000 {
             black_box(
-               p1.distance(&p2)
+               p1.distance(
+                  black_box(&p2)
+               )
             );
          }
       });
