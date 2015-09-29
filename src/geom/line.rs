@@ -108,6 +108,12 @@ impl<T> LineSegment<T> where T: Number {
    }
 }
 
+impl<T> Default for LineSegment<T> where T: Number {
+   fn default() -> LineSegment<T> {
+      LineSegment::new(T::zero(), T::zero(), T::zero(), T::zero())
+   }
+}
+
 #[cfg(test)]
 mod tests {
    use test::{Bencher, black_box};

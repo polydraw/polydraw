@@ -12,14 +12,8 @@ struct IntersectionRenderer {
 impl IntersectionRenderer {
    fn new() -> Self {
       IntersectionRenderer {
-         l1: LineSegment::new(
-            0_f64, 0_f64,
-            0_f64, 0_f64
-         ),
-         l2: LineSegment::new(
-            0_f64, 0_f64,
-            0_f64, 0_f64
-         )
+         l1: LineSegment::default(),
+         l2: LineSegment::default()
       }
    }
 
