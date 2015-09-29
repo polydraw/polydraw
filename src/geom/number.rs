@@ -1,3 +1,6 @@
+use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::cmp::PartialEq;
+use std::num::Zero;
 use std::intrinsics;
 
 pub trait NumberOps : Sized {
@@ -17,3 +20,20 @@ impl NumberOps for f32 {
       unsafe { intrinsics::sqrtf32(self) }
    }
 }
+
+pub trait Number:
+   Add<Self, Output=Self> +
+   Sub<Self, Output=Self> +
+   Mul<Self, Output=Self> +
+   Div<Self, Output=Self> +
+   Neg<Output=Self> +
+   PartialEq +
+   NumberOps +
+   Zero +
+   Default +
+   Copy +
+   Clone {}
+
+impl Number for f64 {}
+
+impl Number for f32 {}

@@ -1,4 +1,4 @@
-use super::coordinate::Coordinate;
+use super::number::Number;
 use super::point::Point;
 
 pub enum LineIntersection<T> {
@@ -13,7 +13,7 @@ pub struct Line<T> {
    pub c: T
 }
 
-impl<T> Line<T> where T: Coordinate {
+impl<T> Line<T> where T: Number {
    pub fn new(p1: &Point<T>, p2: &Point<T>) -> Self {
       let a = p2.y - p1.y;
       let b = p1.x - p2.x;
@@ -45,7 +45,7 @@ pub struct LineSegment<T> {
    pub line: Line<T>
 }
 
-impl<T> LineSegment<T> where T: Coordinate {
+impl<T> LineSegment<T> where T: Number {
    pub fn new(p1: Point<T>, p2: Point<T>) -> Self {
       let line = Line::new(&p1, &p2);
 

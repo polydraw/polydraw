@@ -1,4 +1,4 @@
-use super::coordinate::Coordinate;
+use super::number::Number;
 use super::distance::Distance;
 
 pub struct Point<T> {
@@ -6,7 +6,7 @@ pub struct Point<T> {
    pub y: T
 }
 
-impl<T> Point<T> where T: Coordinate {
+impl<T> Point<T> where T: Number {
    pub fn new(x: T, y: T) -> Self {
       Point {
          x: x,
@@ -15,7 +15,7 @@ impl<T> Point<T> where T: Coordinate {
    }
 }
 
-impl<T> Distance<Point<T>, T> for Point<T> where T: Coordinate {
+impl<T> Distance<Point<T>, T> for Point<T> where T: Number {
    fn distance(&self, other: &Self) -> T {
       let x = other.x - self.x;
       let y = other.y - self.y;
