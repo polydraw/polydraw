@@ -14,12 +14,12 @@ impl IntersectionRenderer {
    fn new() -> Self {
       IntersectionRenderer {
          l1: LineSegment::new(
-            Point::new(100_f64, 100_f64),
-            Point::new(800_f64, 600_f64)
+            Point::new(0_f64, 0_f64),
+            Point::new(0_f64, 0_f64)
          ),
          l2: LineSegment::new(
-            Point::new(160_f64, 640_f64),
-            Point::new(860_f64, 140_f64)
+            Point::new(0_f64, 0_f64),
+            Point::new(0_f64, 0_f64)
          )
       }
    }
@@ -40,6 +40,20 @@ impl IntersectionRenderer {
 }
 
 impl Renderer for IntersectionRenderer {
+   fn init(&mut self, frame: &RenderFrame) {
+      self.l1.p1.x = 100_f64;
+      self.l1.p1.y = 120_f64;
+
+      self.l1.p2.x = frame.width as f64 - 100_f64;
+      self.l1.p2.y = frame.height as f64 - 100_f64;
+
+      self.l2.p1.x = 140_f64;
+      self.l2.p1.y = frame.height as f64 - 90_f64;
+
+      self.l2.p2.x = frame.width as f64 - 140_f64;
+      self.l2.p2.y = 100_f64;
+   }
+
    fn render(&mut self, frame: &mut RenderFrame) {
       frame.clear();
 

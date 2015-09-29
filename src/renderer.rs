@@ -1,6 +1,9 @@
 use super::frame::RenderFrame;
 
 pub trait Renderer {
+   #[allow(unused_variables)]
+   fn init(&mut self, &RenderFrame) {}
+
    fn render(&mut self, &mut RenderFrame);
 
    #[allow(unused_variables)]
