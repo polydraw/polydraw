@@ -14,6 +14,17 @@ impl<T> Point<T> where T: Number {
          y: y
       }
    }
+
+   pub fn update(&mut self, x: T, y: T) {
+      self.x = x;
+      self.y = y;
+   }
+}
+
+impl<T> Default for Point<T> where T: Number {
+   fn default() -> Point<T> {
+      Point::new(T::zero(), T::zero())
+   }
 }
 
 impl<T> Distance<Point<T>, T> for Point<T> where T: Number {
