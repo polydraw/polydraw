@@ -53,6 +53,7 @@ impl<'a> EventLoop<'a> {
 
          if current_width != render_frame.width || current_height != render_frame.height {
             texture.resize(render_frame.width, render_frame.height);
+            renderer.resized(render_frame.width, render_frame.height);
          }
 
          renderer.render(render_frame);
