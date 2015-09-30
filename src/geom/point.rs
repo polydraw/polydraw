@@ -18,9 +18,9 @@ impl<T> Point<T> where T: Number {
 
 impl<T> Distance<Point<T>, T> for Point<T> where T: Number {
    fn distance(&self, other: &Self) -> T {
-      let x = other.x - self.x;
-      let y = other.y - self.y;
-      return (x * x + y * y).sqrt()
+      let dx = (other.x - self.x).powi(2);
+      let dy = (other.y - self.y).powi(2);
+      return (dx + dy).sqrt()
    }
 }
 
