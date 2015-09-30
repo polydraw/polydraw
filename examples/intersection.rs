@@ -2,18 +2,39 @@ extern crate polydraw;
 
 use polydraw::{Application, Renderer, RenderFrame};
 use polydraw::geom::line::{LineSegment, LineIntersection};
+use polydraw::geom::point::Point;
 use polydraw::draw::{RGB, bresenham, hline, vline};
 
 struct IntersectionRenderer {
+   intersection: Option<Point<f64>>,
+
    l1: LineSegment<f64>,
-   l2: LineSegment<f64>
+   l2: LineSegment<f64>,
+
+   top_left: Point<f64>,
+   top_right: Point<f64>,
+   bottom_left: Point<f64>,
+   bottom_right: Point<f64>,
+
+   width: u32,
+   height: u32,
 }
 
 impl IntersectionRenderer {
    fn new() -> Self {
       IntersectionRenderer {
+         intersection: None,
+
          l1: LineSegment::default(),
-         l2: LineSegment::default()
+         l2: LineSegment::default(),
+
+         top_left: Point::default(),
+         top_right: Point::default(),
+         bottom_left: Point::default(),
+         bottom_right: Point::default(),
+
+         width: 0,
+         height: 0,
       }
    }
 
@@ -30,19 +51,49 @@ impl IntersectionRenderer {
       vline(frame, left_x, bottom_y, top_y, color);
       vline(frame, right_x, bottom_y, top_y, color);
    }
+
+   fn recalc(&mut self) {
+      self.l1.update(
+         self.bottom_left.x, self.bottom_left.y,
+         self.width as f64 - self.top_right.x, self.height as f64 - self.top_right.y
+      );
+
+      self.l2.update(
+         self.top_left.x, self.height as f64 - self.top_left.y,
+         self.width as f64 - self.bottom_right.x, self.bottom_right.y
+      );
+
+      let intersection = self.l1.line().intersect(self.l2.line());
+      match intersection {
+         LineIntersection::Point(p) => {
+            self.intersection = Some(p);
+         },
+         _ => {
+            self.intersection = None;
+         }
+      }
+   }
 }
 
 impl Renderer for IntersectionRenderer {
    fn init(&mut self, frame: &RenderFrame) {
-      self.l1.update(
-         100_f64, 120_f64,
-         frame.width as f64 - 100_f64, frame.height as f64 - 100_f64
-      );
+      self.bottom_left.update(100_f64, 120_f64);
+      self.top_right.update(100_f64, 100_f64);
 
-      self.l2.update(
-         140_f64, frame.height as f64 - 90_f64,
-         frame.width as f64 - 140_f64, 100_f64
-      );
+      self.top_left.update(140_f64, 90_f64);
+      self.bottom_right.update(140_f64, 100_f64);
+
+      self.width = frame.width;
+      self.height = frame.height;
+
+      self.recalc();
+   }
+
+   fn resized(&mut self, width: u32, height: u32) {
+      self.width = width;
+      self.height = height;
+
+      self.recalc();
    }
 
    fn render(&mut self, frame: &mut RenderFrame) {
@@ -72,9 +123,8 @@ impl Renderer for IntersectionRenderer {
       self.point_rect(frame, l2_p1_x, l2_p1_y, &l2_color);
       self.point_rect(frame, l2_p2_x, l2_p2_y, &l2_color);
 
-      let intersection = self.l1.line().intersect(self.l2.line());
-      match intersection {
-         LineIntersection::Point(p) => {
+      match self.intersection {
+         Some(ref p) => {
             self.point_rect(frame, p.x as i32, p.y as i32, &intersection_color);
          },
          _ => {}
