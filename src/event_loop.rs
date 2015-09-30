@@ -23,7 +23,7 @@ impl<'a> EventLoop<'a> {
 
       framebuffer.bind();
 
-      renderer.init(render_frame);
+      renderer.init(render_frame.width, render_frame.height);
 
       let mut quit = false;
 

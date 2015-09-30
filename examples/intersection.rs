@@ -76,15 +76,15 @@ impl IntersectionRenderer {
 }
 
 impl Renderer for IntersectionRenderer {
-   fn init(&mut self, frame: &RenderFrame) {
+   fn init(&mut self, width: u32, height: u32) {
       self.bottom_left.update(100_f64, 120_f64);
       self.top_right.update(100_f64, 100_f64);
 
       self.top_left.update(140_f64, 90_f64);
       self.bottom_right.update(140_f64, 100_f64);
 
-      self.width = frame.width;
-      self.height = frame.height;
+      self.width = width;
+      self.height = height;
 
       self.recalc();
    }
