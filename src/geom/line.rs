@@ -137,27 +137,181 @@ mod tests {
    use super::*;
 
    #[test]
-   fn test_new_f64() {
-      let line = LineSegment::new(
+   fn test_segment_new_f64() {
+      let ls = LineSegment::new(
          10_f64, 20_f64,
          -100_f64, 0_f64
       );
-      assert_eq!(line.p1.x, 10_f64);
-      assert_eq!(line.p1.y, 20_f64);
-      assert_eq!(line.p2.x, -100_f64);
-      assert_eq!(line.p2.y, 0_f64);
+      assert_eq!(ls.p1.x, 10_f64);
+      assert_eq!(ls.p1.y, 20_f64);
+      assert_eq!(ls.p2.x, -100_f64);
+      assert_eq!(ls.p2.y, 0_f64);
    }
 
    #[test]
-   fn test_new_f32() {
-      let line = LineSegment::new(
+   fn test_segment_new_f32() {
+      let ls = LineSegment::new(
          10_f32, 20_f32,
          -100_f32, 0_f32
       );
-      assert_eq!(line.p1.x, 10_f32);
-      assert_eq!(line.p1.y, 20_f32);
-      assert_eq!(line.p2.x, -100_f32);
-      assert_eq!(line.p2.y, 0_f32);
+      assert_eq!(ls.p1.x, 10_f32);
+      assert_eq!(ls.p1.y, 20_f32);
+      assert_eq!(ls.p2.x, -100_f32);
+      assert_eq!(ls.p2.y, 0_f32);
+   }
+
+   #[test]
+   fn test_line_new_f64() {
+      let ln = Line::new(
+         10_f64, 20_f64,
+         -100_f64, 0_f64
+      );
+      assert_eq!(ln.a, 0.1788854381999832_f64);
+      assert_eq!(ln.b, -0.9838699100999075_f64);
+      assert_eq!(ln.c, 17.88854381999832_f64);
+   }
+
+   #[test]
+   fn test_line_new_f32() {
+      let ln = Line::new(
+         10_f32, 20_f32,
+         -100_f32, 0_f32
+      );
+      assert_eq!(ln.a, 0.1788854381999832_f32);
+      assert_eq!(ln.b, -0.9838699100999075_f32);
+      assert_eq!(ln.c, 17.88854381999832_f32);
+   }
+
+   #[test]
+   fn test_vline_f64() {
+      let ln = Line::new(
+         50_f64, 100_f64,
+         50_f64, 200_f64
+      );
+      assert_eq!(ln.a, 1_f64);
+      assert_eq!(ln.b, 0_f64);
+      assert_eq!(ln.c, -50_f64);
+   }
+
+   #[test]
+   fn test_vline_f32() {
+      let ln = Line::new(
+         50_f32, 100_f32,
+         50_f32, 200_f32
+      );
+      assert_eq!(ln.a, 1_f32);
+      assert_eq!(ln.b, 0_f32);
+      assert_eq!(ln.c, -50_f32);
+   }
+
+   #[test]
+   fn test_vline_one_f64() {
+      let ln = Line::new(
+         50_f64, 100_f64,
+         50_f64, 101_f64
+      );
+      assert_eq!(ln.a, 1_f64);
+      assert_eq!(ln.b, 0_f64);
+      assert_eq!(ln.c, -50_f64);
+   }
+
+   #[test]
+   fn test_vline_one_f32() {
+      let ln = Line::new(
+         50_f32, 100_f32,
+         50_f32, 101_f32
+      );
+      assert_eq!(ln.a, 1_f32);
+      assert_eq!(ln.b, 0_f32);
+      assert_eq!(ln.c, -50_f32);
+   }
+
+   #[test]
+   fn test_vline_one_down_f64() {
+      let ln = Line::new(
+         50_f64, 101_f64,
+         50_f64, 100_f64
+      );
+      assert_eq!(ln.a, 1_f64);
+      assert_eq!(ln.b, 0_f64);
+      assert_eq!(ln.c, -50_f64);
+   }
+
+   #[test]
+   fn test_vline_one_down_f32() {
+      let ln = Line::new(
+         50_f32, 101_f32,
+         50_f32, 100_f32
+      );
+      assert_eq!(ln.a, 1_f32);
+      assert_eq!(ln.b, 0_f32);
+      assert_eq!(ln.c, -50_f32);
+   }
+
+   #[test]
+   fn test_hline_f64() {
+      let ln = Line::new(
+         100_f64, 50_f64,
+         200_f64, 50_f64
+      );
+      assert_eq!(ln.a, 0_f64);
+      assert_eq!(ln.b, 1_f64);
+      assert_eq!(ln.c, -50_f64);
+   }
+
+   #[test]
+   fn test_hline_f32() {
+      let ln = Line::new(
+         100_f32, 50_f32,
+         200_f32, 50_f32
+      );
+      assert_eq!(ln.a, 0_f32);
+      assert_eq!(ln.b, 1_f32);
+      assert_eq!(ln.c, -50_f32);
+   }
+
+   #[test]
+   fn test_hline_one_f64() {
+      let ln = Line::new(
+         100_f64, 50_f64,
+         101_f64, 50_f64
+      );
+      assert_eq!(ln.a, 0_f64);
+      assert_eq!(ln.b, 1_f64);
+      assert_eq!(ln.c, -50_f64);
+   }
+
+   #[test]
+   fn test_hline_one_f32() {
+      let ln = Line::new(
+         100_f32, 50_f32,
+         101_f32, 50_f32
+      );
+      assert_eq!(ln.a, 0_f32);
+      assert_eq!(ln.b, 1_f32);
+      assert_eq!(ln.c, -50_f32);
+   }
+
+   #[test]
+   fn test_hline_one_down_f64() {
+      let ln = Line::new(
+         101_f64, 50_f64,
+         100_f64, 50_f64
+      );
+      assert_eq!(ln.a, 0_f64);
+      assert_eq!(ln.b, 1_f64);
+      assert_eq!(ln.c, -50_f64);
+   }
+
+   #[test]
+   fn test_hline_one_down_f32() {
+      let ln = Line::new(
+         101_f32, 50_f32,
+         100_f32, 50_f32
+      );
+      assert_eq!(ln.a, 0_f32);
+      assert_eq!(ln.b, 1_f32);
+      assert_eq!(ln.c, -50_f32);
    }
 
    #[bench]
@@ -175,4 +329,21 @@ mod tests {
          }
       });
    }
+
+   #[bench]
+   fn bench_line_new_f32(b: &mut Bencher) {
+      b.iter(|| {
+         for _ in 0..1000 {
+            black_box(
+               Line::new(
+                  black_box(5_f32),
+                  black_box(7_f32),
+                  black_box(3_f32),
+                  black_box(2_f32)
+               )
+            );
+         }
+      });
+   }
 }
+
