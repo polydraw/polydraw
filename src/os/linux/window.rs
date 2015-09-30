@@ -100,7 +100,8 @@ impl<'a> PollEventsIterator<'a> {
             },
 
             xcb::EventType::ConfigureNotify => {
-               let (width, height) = xcb_event.resize_properties();
+               let resized: xcb::ResizedEvent = xcb_event.into();
+               let (width, height) = resized.size();
                return Some(Event::Resized(width, height));
             },
 

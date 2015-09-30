@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ptr;
 
 use error::{RuntimeError, ErrorKind};
 
@@ -104,14 +105,6 @@ impl Event {
       }
    }
 
-   pub fn resize_properties(&self) -> (u32, u32) {
-      unsafe {
-         let ptr = self.ptr as *mut ffi::xcb_configure_notify_event_t;
-
-         ((*ptr).width as u32, (*ptr).height as u32)
-      }
-   }
-
    pub fn mouse_move_properties(&self) -> (i32, i32) {
       unsafe {
          let ptr = self.ptr as *mut ffi::xcb_motion_notify_event_t;
@@ -122,6 +115,38 @@ impl Event {
 }
 
 impl Drop for Event {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::free(self.ptr as *mut _);
+      }
+   }
+}
+
+impl Into<ResizedEvent> for Event {
+   fn into(mut self) -> ResizedEvent {
+      let ptr = self.ptr as *mut ffi::xcb_configure_notify_event_t;
+
+      self.ptr = ptr::null_mut();
+
+      ResizedEvent {
+         ptr: ptr
+      }
+   }
+}
+
+pub struct ResizedEvent {
+   pub ptr: *mut ffi::xcb_configure_notify_event_t
+}
+
+impl ResizedEvent {
+   pub fn size(&self) -> (u32, u32) {
+      unsafe {
+         ((*self.ptr).width as u32, (*self.ptr).height as u32)
+      }
+   }
+}
+
+impl Drop for ResizedEvent {
    fn drop (&mut self) {
       unsafe {
          ffi::free(self.ptr as *mut _);

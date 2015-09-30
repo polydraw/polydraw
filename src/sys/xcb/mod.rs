@@ -11,7 +11,7 @@ pub use self::connection::Connection;
 pub use self::screen::Screen;
 pub use self::window::Window;
 pub use self::atom::Atom;
-pub use self::event::{Event, EventType, EventIterator};
+pub use self::event::{Event, EventType, EventIterator, ResizedEvent};
 
 #[derive(PartialEq)]
 pub struct XID {
