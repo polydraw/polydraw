@@ -104,14 +104,6 @@ impl Event {
          true
       }
    }
-
-   pub fn mouse_move_properties(&self) -> (i32, i32) {
-      unsafe {
-         let ptr = self.ptr as *mut ffi::xcb_motion_notify_event_t;
-
-         ((*ptr).event_x as i32, (*ptr).event_y as i32)
-      }
-   }
 }
 
 impl Drop for Event {
@@ -134,6 +126,18 @@ impl Into<ResizedEvent> for Event {
    }
 }
 
+impl Into<MouseMovedEvent> for Event {
+   fn into(mut self) -> MouseMovedEvent {
+      let ptr = self.ptr as *mut ffi::xcb_motion_notify_event_t;
+
+      self.ptr = ptr::null_mut();
+
+      MouseMovedEvent {
+         ptr: ptr
+      }
+   }
+}
+
 pub struct ResizedEvent {
    pub ptr: *mut ffi::xcb_configure_notify_event_t
 }
@@ -147,6 +151,26 @@ impl ResizedEvent {
 }
 
 impl Drop for ResizedEvent {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::free(self.ptr as *mut _);
+      }
+   }
+}
+
+pub struct MouseMovedEvent {
+   pub ptr: *mut ffi::xcb_motion_notify_event_t
+}
+
+impl MouseMovedEvent {
+   pub fn position(&self) -> (i32, i32) {
+      unsafe {
+         ((*self.ptr).event_x as i32, (*self.ptr).event_y as i32)
+      }
+   }
+}
+
+impl Drop for MouseMovedEvent {
    fn drop (&mut self) {
       unsafe {
          ffi::free(self.ptr as *mut _);

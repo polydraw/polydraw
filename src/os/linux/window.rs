@@ -106,7 +106,8 @@ impl<'a> PollEventsIterator<'a> {
             },
 
             xcb::EventType::MotionNotify => {
-               let (x, y) = xcb_event.mouse_move_properties();
+               let mouse_moved: xcb::MouseMovedEvent = xcb_event.into();
+               let (x, y) = mouse_moved.position();
                return Some(Event::MouseMoved(x, y));
             },
 
