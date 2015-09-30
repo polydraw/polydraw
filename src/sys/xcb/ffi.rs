@@ -14,6 +14,7 @@ pub type xcb_colormap_t = c_uint;
 pub type xcb_visualid_t = c_uint;
 pub type xcb_atom_t = c_uint;
 pub type xcb_timestamp_t = c_uint;
+pub type xcb_button_t = c_uchar;
 
 pub const XCB_EVENT_MASK_NO_EVENT:               c_uint = 0;
 pub const XCB_EVENT_MASK_KEY_PRESS:              c_uint = 1;
@@ -374,6 +375,33 @@ impl Clone for xcb_motion_notify_event_t {
 impl Default for xcb_motion_notify_event_t {
    fn default() -> Self { unsafe { mem::zeroed() } }
 }
+
+#[repr(C)]
+#[derive(Copy, Debug)]
+pub struct xcb_button_press_event_t {
+   pub response_type: c_uchar,
+   pub detail: xcb_button_t,
+   pub sequence: c_ushort,
+   pub time: xcb_timestamp_t,
+   pub root: xcb_window_t,
+   pub event: xcb_window_t,
+   pub child: xcb_window_t,
+   pub root_x: c_short,
+   pub root_y: c_short,
+   pub event_x: c_short,
+   pub event_y: c_short,
+   pub state: c_ushort,
+   pub same_screen: c_uchar,
+   pub pad0: c_uchar,
+}
+impl Clone for xcb_button_press_event_t {
+   fn clone(&self) -> Self { *self }
+}
+impl Default for xcb_button_press_event_t {
+   fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
+pub type xcb_button_release_event_t = xcb_button_press_event_t;
 
 #[repr(C)]
 #[derive(Copy)]

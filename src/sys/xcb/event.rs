@@ -138,6 +138,18 @@ impl Into<MouseMovedEvent> for Event {
    }
 }
 
+impl Into<ButtonPressedEvent> for Event {
+   fn into(mut self) -> ButtonPressedEvent {
+      let ptr = self.ptr as *mut ffi::xcb_button_press_event_t;
+
+      self.ptr = ptr::null_mut();
+
+      ButtonPressedEvent {
+         ptr: ptr
+      }
+   }
+}
+
 pub struct ResizedEvent {
    pub ptr: *mut ffi::xcb_configure_notify_event_t
 }
@@ -177,6 +189,39 @@ impl Drop for MouseMovedEvent {
       }
    }
 }
+
+pub enum MouseButton {
+   Left,
+   Right,
+   Middle,
+   Extra(u8),
+}
+
+pub struct ButtonPressedEvent {
+   pub ptr: *mut ffi::xcb_button_press_event_t
+}
+
+impl ButtonPressedEvent {
+   pub fn button(&self) -> Option<MouseButton> {
+      match unsafe { (*self.ptr).detail } {
+         1 => Some(MouseButton::Left),
+         2 => Some(MouseButton::Middle),
+         3 => Some(MouseButton::Right),
+         4...7 => None, // Vertical and horizontal mouse wheels
+         n => Some(MouseButton::Extra(n - 8))
+      }
+   }
+}
+
+impl Drop for ButtonPressedEvent {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::free(self.ptr as *mut _);
+      }
+   }
+}
+
+pub type ButtonReleasedEvent = ButtonPressedEvent;
 
 pub struct EventIterator {
    ptr: *mut ffi::xcb_connection_t,

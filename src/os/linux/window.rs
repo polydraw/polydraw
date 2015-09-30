@@ -111,6 +111,48 @@ impl<'a> PollEventsIterator<'a> {
                return Some(Event::MouseMoved(x, y));
             },
 
+            xcb::EventType::ButtonPress => {
+               let pressed: xcb::ButtonPressedEvent = xcb_event.into();
+               match pressed.button() {
+                  Some(button) => match button {
+                     xcb::MouseButton::Left => {
+                        return Some(Event::MouseLeftButtonPressed);
+                     },
+                     xcb::MouseButton::Middle => {
+                        return Some(Event::MouseMiddleButtonPressed);
+                     },
+                     xcb::MouseButton::Right => {
+                        return Some(Event::MouseRightButtonPressed);
+                     },
+                     xcb::MouseButton::Extra(n) => {
+                        return Some(Event::MouseExtraButtonPressed(n));
+                     },
+                  },
+                  None => {}
+               }
+            },
+
+            xcb::EventType::ButtonRelease => {
+               let released: xcb::ButtonReleasedEvent = xcb_event.into();
+               match released.button() {
+                  Some(button) => match button {
+                     xcb::MouseButton::Left => {
+                        return Some(Event::MouseLeftButtonReleased);
+                     },
+                     xcb::MouseButton::Middle => {
+                        return Some(Event::MouseMiddleButtonReleased);
+                     },
+                     xcb::MouseButton::Right => {
+                        return Some(Event::MouseRightButtonReleased);
+                     },
+                     xcb::MouseButton::Extra(n) => {
+                        return Some(Event::MouseExtraButtonReleased(n));
+                     },
+                  },
+                  None => {}
+               }
+            },
+
             _ => {}
          }
       }

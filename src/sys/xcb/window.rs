@@ -28,8 +28,12 @@ impl Window {
          Err(e) => return Err(e)
       };
 
-      let eventmask = ffi::XCB_EVENT_MASK_KEY_PRESS |
+      let eventmask =
          ffi::XCB_EVENT_MASK_STRUCTURE_NOTIFY |
+         ffi::XCB_EVENT_MASK_KEY_PRESS |
+         ffi::XCB_EVENT_MASK_BUTTON_PRESS |
+         ffi::XCB_EVENT_MASK_BUTTON_RELEASE |
+         ffi::XCB_EVENT_MASK_BUTTON_MOTION |
          ffi::XCB_EVENT_MASK_POINTER_MOTION;
       let valuelist = [eventmask, 0];
       let valuemask = ffi::XCB_CW_EVENT_MASK;

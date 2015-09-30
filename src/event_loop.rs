@@ -37,9 +37,43 @@ impl<'a> EventLoop<'a> {
                   render_frame.width = width;
                   render_frame.height = height;
                },
+
                Event::MouseMoved(x, y) => {
                   renderer.mouse_moved(x, render_frame.height as i32 - y - 1);
                },
+
+               Event::MouseLeftButtonPressed => {
+                  renderer.mouse_left_button_pressed();
+               },
+
+               Event::MouseLeftButtonReleased => {
+                  renderer.mouse_left_button_released();
+               },
+
+               Event::MouseMiddleButtonPressed => {
+                  renderer.mouse_middle_button_pressed();
+               },
+
+               Event::MouseMiddleButtonReleased => {
+                  renderer.mouse_middle_button_released();
+               },
+
+               Event::MouseRightButtonPressed => {
+                  renderer.mouse_right_button_pressed();
+               },
+
+               Event::MouseRightButtonReleased => {
+                  renderer.mouse_right_button_released();
+               },
+
+               Event::MouseExtraButtonPressed(n) => {
+                  renderer.mouse_extra_button_pressed(n);
+               },
+
+               Event::MouseExtraButtonReleased(n) => {
+                  renderer.mouse_extra_button_released(n);
+               },
+
                Event::Quit => {
                   quit = true;
                   break

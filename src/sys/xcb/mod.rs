@@ -12,7 +12,8 @@ pub use self::screen::Screen;
 pub use self::window::Window;
 pub use self::atom::Atom;
 pub use self::event::{
-   Event, EventType, EventIterator, ResizedEvent, MouseMovedEvent
+   Event, EventType, EventIterator, ResizedEvent, MouseMovedEvent,
+   ButtonPressedEvent, ButtonReleasedEvent, MouseButton,
 };
 
 #[derive(PartialEq)]
