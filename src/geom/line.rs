@@ -132,6 +132,7 @@ impl<T> Default for LineSegment<T> where T: Number {
 
 #[cfg(test)]
 mod tests {
+   use std::{f32, f64};
    use test::{Bencher, black_box};
 
    use super::*;
@@ -169,6 +170,8 @@ mod tests {
       assert_eq!(ln.a, 0.1788854381999832_f64);
       assert_eq!(ln.b, -0.9838699100999075_f64);
       assert_eq!(ln.c, 17.88854381999832_f64);
+
+      assert!(f64::abs(1_f64 - (ln.a*ln.a+ln.b*ln.b)) <= f64::EPSILON);
    }
 
    #[test]
@@ -180,6 +183,8 @@ mod tests {
       assert_eq!(ln.a, 0.1788854381999832_f32);
       assert_eq!(ln.b, -0.9838699100999075_f32);
       assert_eq!(ln.c, 17.88854381999832_f32);
+
+      assert!(f32::abs(1_f32 - (ln.a*ln.a+ln.b*ln.b)) <= f32::EPSILON);
    }
 
    #[test]
