@@ -19,7 +19,8 @@ enum ActivePoint {
 }
 
 struct IntersectionRenderer {
-   intersection: Option<Point<f64>>,
+   intersection_point: Option<Point<f64>>,
+   intersection_overlap: Option<(Point<f64>, Point<f64>)>,
 
    l1: LineSegment<f64>,
    l2: LineSegment<f64>,
@@ -34,6 +35,7 @@ struct IntersectionRenderer {
    default_color: RGB,
    hover_color: RGB,
    intersection_color: RGB,
+   overlap_color: RGB,
 
    dragged_point: Option<ActivePoint>,
 }
@@ -41,7 +43,8 @@ struct IntersectionRenderer {
 impl IntersectionRenderer {
    fn new() -> Self {
       IntersectionRenderer {
-         intersection: None,
+         intersection_point: None,
+         intersection_overlap: None,
 
          l1: LineSegment::default(),
          l2: LineSegment::default(),
@@ -56,6 +59,7 @@ impl IntersectionRenderer {
          default_color: RGB::new(127, 191, 63),
          hover_color: RGB::new(255, 255, 255),
          intersection_color: RGB::new(127, 127, 255),
+         overlap_color: RGB::new(255, 191, 63),
 
          dragged_point: None,
       }
@@ -127,10 +131,16 @@ impl IntersectionRenderer {
       let intersection = self.l1.intersect(&self.l2);
       match intersection {
          LineSegmentIntersection::Point(p) => {
-            self.intersection = Some(p);
+            self.intersection_point = Some(p);
+            self.intersection_overlap = None;
+         },
+         LineSegmentIntersection::Overlapping(p1, p2) => {
+            self.intersection_point = None;
+            self.intersection_overlap = Some((p1, p2));
          },
          _ => {
-            self.intersection = None;
+            self.intersection_point = None;
+            self.intersection_overlap = None;
          }
       }
    }
@@ -246,12 +256,19 @@ impl Renderer for IntersectionRenderer {
       bresenham(frame, l1_p1_x, l1_p1_y, l1_p2_x, l1_p2_y, &self.line_color);
       bresenham(frame, l2_p1_x, l2_p1_y, l2_p2_x, l2_p2_y, &self.line_color);
 
+      match self.intersection_overlap {
+         Some((ref p1, ref p2)) => {
+            bresenham(frame, p1.x as i32, p1.y as i32, p2.x as i32, p2.y as i32, &self.overlap_color);
+         },
+         _ => {}
+      }
+
       self.line_point_rect(frame, l1_p1_x, l1_p1_y);
       self.line_point_rect(frame, l1_p2_x, l1_p2_y);
       self.line_point_rect(frame, l2_p1_x, l2_p1_y);
       self.line_point_rect(frame, l2_p2_x, l2_p2_y);
 
-      match self.intersection {
+      match self.intersection_point {
          Some(ref p) => {
             self.point_rect(frame, p.x as i32, p.y as i32, &self.intersection_color);
          },
