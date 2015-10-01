@@ -7,7 +7,7 @@ pub enum LineIntersection<T> {
    Overlapping,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Line<T> {
    a: T,
    b: T,
@@ -69,7 +69,7 @@ impl<T> Line<T> where T: Number {
    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct LineSegment<T> {
    p1: Point<T>,
    p2: Point<T>,

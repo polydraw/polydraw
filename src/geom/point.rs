@@ -1,7 +1,7 @@
 use super::number::Number;
 use super::distance::Distance;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Point<T> {
    pub x: T,
    pub y: T
