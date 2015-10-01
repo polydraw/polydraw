@@ -3,7 +3,7 @@ extern crate polydraw;
 use std::cmp::max;
 
 use polydraw::{Application, Renderer, RenderFrame};
-use polydraw::geom::line::{LineSegment, LineIntersection};
+use polydraw::geom::line::{LineSegment, LineSegmentIntersection};
 use polydraw::geom::point::Point;
 use polydraw::draw::{RGB, bresenham, hline, vline};
 
@@ -124,9 +124,9 @@ impl IntersectionRenderer {
    }
 
    fn recalc_intersection(&mut self) {
-      let intersection = self.l1.line().intersect(self.l2.line());
+      let intersection = self.l1.intersect(&self.l2);
       match intersection {
-         LineIntersection::Point(p) => {
+         LineSegmentIntersection::Point(p) => {
             self.intersection = Some(p);
          },
          _ => {
