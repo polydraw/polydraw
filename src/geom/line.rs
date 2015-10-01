@@ -4,8 +4,8 @@ use super::point::Point;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LineIntersection<T> {
    Point(Point<T>),
-   Parallel,
    Overlapping,
+   None,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -63,7 +63,7 @@ impl<T> Line<T> where T: Number {
          if self == line {
             return LineIntersection::Overlapping;
          } else {
-            return LineIntersection::Parallel;
+            return LineIntersection::None;
          }
       }
 
@@ -72,6 +72,23 @@ impl<T> Line<T> where T: Number {
 
       LineIntersection::Point(Point::new(x, y))
    }
+
+   #[inline]
+   pub fn is_horizontal(&self) -> bool {
+      self.a == T::zero()
+   }
+
+   #[inline]
+   pub fn is_vertical(&self) -> bool {
+      self.b == T::zero()
+   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum LineSegmentIntersection<T> {
+   Point(Point<T>),
+   Overlapping(Point<T>, Point<T>),
+   None,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -104,6 +121,16 @@ impl<T> LineSegment<T> where T: Number {
    }
 
    #[inline]
+   pub fn p1(&self) -> Point<T> {
+      self.p1
+   }
+
+   #[inline]
+   pub fn p2(&self) -> Point<T> {
+      self.p2
+   }
+
+   #[inline]
    pub fn x1(&self) -> T {
       self.p1.x
    }
@@ -126,6 +153,111 @@ impl<T> LineSegment<T> where T: Number {
    #[inline]
    pub fn line(&self) -> &Line<T> {
       &self.line
+   }
+
+   #[inline]
+   fn is_inside(&self, p: &Point<T>) -> bool {
+      if self.line.is_vertical() {
+         let (ls1_min, ls1_max) = if self.y2() > self.y1() {
+            (self.p1(), self.p2())
+         } else {
+            (self.p2(), self.p1())
+         };
+
+         p.y >= ls1_min.y && p.y <= ls1_max.y
+      } else {
+         let (ls1_min, ls1_max) = if self.x2() > self.x1() {
+            (self.p1(), self.p2())
+         } else {
+            (self.p2(), self.p1())
+         };
+
+         p.x >= ls1_min.x && p.x <= ls1_max.x
+      }
+   }
+
+   pub fn intersect(&self, ls: &Self) -> LineSegmentIntersection<T> {
+      match self.line.intersect(ls.line()) {
+         LineIntersection::Point(p) => {
+            if self.is_inside(&p) && ls.is_inside(&p) {
+               LineSegmentIntersection::Point(p)
+            } else {
+               LineSegmentIntersection::None
+            }
+         },
+
+         LineIntersection::Overlapping => {
+            let (p1, p2) = if self.line.is_vertical() {
+               let (ls1_min, ls1_max) = if self.y2() > self.y1() {
+                  (self.p1(), self.p2())
+               } else {
+                  (self.p2(), self.p1())
+               };
+
+               let (ls2_min, ls2_max) = if ls.y2() > ls.y1() {
+                  (ls.p1(), ls.p2())
+               } else {
+                  (ls.p2(), ls.p1())
+               };
+
+               if ls1_min.y < ls2_min.y {
+                  if ls1_max.y < ls2_min.y {
+                     return LineSegmentIntersection::None;
+                  } else if ls1_max.y < ls2_max.y {
+                     (ls2_min, ls1_max)
+                  } else {
+                     (ls2_min, ls2_max)
+                  }
+               } else {
+                  if ls2_max.y < ls2_min.y {
+                     return LineSegmentIntersection::None;
+                  } else if ls2_max.y < ls1_max.y {
+                     (ls1_min, ls2_max)
+                  } else {
+                     (ls1_min, ls1_max)
+                  }
+               }
+            } else {
+               let (ls1_min, ls1_max) = if self.x2() > self.x1() {
+                  (self.p1(), self.p2())
+               } else {
+                  (self.p2(), self.p1())
+               };
+
+               let (ls2_min, ls2_max) = if ls.x2() > ls.x1() {
+                  (ls.p1(), ls.p2())
+               } else {
+                  (ls.p2(), ls.p1())
+               };
+
+               if ls1_min.x < ls2_min.x {
+                  if ls1_max.x < ls2_min.x {
+                     return LineSegmentIntersection::None;
+                  } else if ls1_max.x < ls2_max.x {
+                     (ls2_min, ls1_max)
+                  } else {
+                     (ls2_min, ls2_max)
+                  }
+               } else {
+                  if ls2_max.x < ls2_min.x {
+                     return LineSegmentIntersection::None;
+                  } else if ls2_max.x < ls1_max.x {
+                     (ls1_min, ls2_max)
+                  } else {
+                     (ls1_min, ls1_max)
+                  }
+               }
+            };
+
+            if p1 == p2 {
+               LineSegmentIntersection::Point(p1)
+            } else {
+               LineSegmentIntersection::Overlapping(p1, p2)
+            }
+         }
+
+         LineIntersection::None => LineSegmentIntersection::None,
+      }
    }
 }
 
@@ -351,7 +483,7 @@ mod tests {
          450_f32, 350_f32
       );
 
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::Parallel);
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::None);
    }
 
    #[test]
@@ -381,7 +513,7 @@ mod tests {
          250_f32, 150_f32
       );
 
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::Parallel);
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::None);
    }
 
    #[test]
@@ -411,7 +543,7 @@ mod tests {
          150_f32, 250_f32,
       );
 
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::Parallel);
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::None);
    }
 
    #[bench]
