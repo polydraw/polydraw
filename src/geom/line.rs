@@ -1,6 +1,7 @@
 use super::number::Number;
 use super::point::Point;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum LineIntersection<T> {
    Point(Point<T>),
    Parallel,
@@ -59,7 +60,11 @@ impl<T> Line<T> where T: Number {
       let denominator = self.a * line.b - line.a * self.b;
 
       if denominator == T::zero() {
-         return LineIntersection::Overlapping;
+         if self == line {
+            return LineIntersection::Overlapping;
+         } else {
+            return LineIntersection::Parallel;
+         }
       }
 
       let x = (line.c * self.b - self.c * line.b) / denominator;
@@ -317,6 +322,96 @@ mod tests {
       assert_eq!(ln.a, 0_f32);
       assert_eq!(ln.b, 1_f32);
       assert_eq!(ln.c, -50_f32);
+   }
+
+   #[test]
+   fn test_line_overlapping_f32() {
+      let ln1 = Line::new(
+         100_f32, 100_f32,
+         200_f32, 200_f32
+      );
+
+      let ln2 = Line::new(
+         150_f32, 150_f32,
+         250_f32, 250_f32
+      );
+
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::Overlapping);
+   }
+
+   #[test]
+   fn test_line_parallel_f32() {
+      let ln1 = Line::new(
+         100_f32, 100_f32,
+         200_f32, 200_f32
+      );
+
+      let ln2 = Line::new(
+         250_f32, 150_f32,
+         450_f32, 350_f32
+      );
+
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::Parallel);
+   }
+
+   #[test]
+   fn test_hline_overlapping_f32() {
+      let ln1 = Line::new(
+         100_f32, 50_f32,
+         200_f32, 50_f32
+      );
+
+      let ln2 = Line::new(
+         150_f32, 50_f32,
+         250_f32, 50_f32
+      );
+
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::Overlapping);
+   }
+
+   #[test]
+   fn test_hline_parallel_f32() {
+      let ln1 = Line::new(
+         100_f32, 50_f32,
+         200_f32, 50_f32
+      );
+
+      let ln2 = Line::new(
+         150_f32, 150_f32,
+         250_f32, 150_f32
+      );
+
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::Parallel);
+   }
+
+   #[test]
+   fn test_vline_overlapping_f32() {
+      let ln1 = Line::new(
+         50_f32, 100_f32,
+         50_f32, 200_f32,
+      );
+
+      let ln2 = Line::new(
+         50_f32, 150_f32,
+         50_f32, 250_f32,
+      );
+
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::Overlapping);
+   }
+
+   #[test]
+   fn test_vline_parallel_f32() {
+      let ln1 = Line::new(
+         50_f32, 100_f32,
+         50_f32, 200_f32,
+      );
+
+      let ln2 = Line::new(
+         150_f32, 150_f32,
+         150_f32, 250_f32,
+      );
+
+      assert_eq!(ln1.intersect(&ln2), LineIntersection::Parallel);
    }
 
    #[bench]
