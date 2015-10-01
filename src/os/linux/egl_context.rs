@@ -83,7 +83,7 @@ impl EglContext {
 
    #[inline]
    pub fn init_gl() {
-      gl::load(egl::Loader::new());
+      gl::load(&egl::Loader::new());
       gl::reset_pixelstore_alignment();
    }
 

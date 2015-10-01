@@ -15,6 +15,8 @@ pub use super::super::win32::ffi::{
    HDC
 };
 
+use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
+
 pub type HGLRC = HANDLE;
 
 pub const PFD_TYPE_RGBA:          BYTE = 0;
@@ -60,6 +62,18 @@ impl Clone for PIXELFORMATDESCRIPTOR {
 }
 impl Default for PIXELFORMATDESCRIPTOR {
    fn default() -> Self { unsafe { mem::zeroed() } }
+}
+
+static mut wglSwapIntervalEXTPtr: FnPtr = NULL_PTR;
+
+pub unsafe fn wglSwapIntervalEXT(interval: c_int) -> BOOL {
+   mem::transmute::<_, extern "system" fn(c_int) -> BOOL>(wglSwapIntervalEXTPtr)(interval)
+}
+
+pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+   wglSwapIntervalEXTPtr = loadfn!(loader, "wglSwapIntervalEXT");
+
+   true
 }
 
 #[link(name="gdi32")]

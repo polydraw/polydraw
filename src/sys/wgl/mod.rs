@@ -130,6 +130,21 @@ pub fn swap_buffers(device_context: &win32::DeviceContext) {
    };
 }
 
+pub fn swap_interval(interval: ffi::c_int) -> Result<(), RuntimeError> {
+   let result = unsafe {
+      ffi::wglSwapIntervalEXT(interval)
+   };
+
+   if result != ffi::TRUE {
+      return Err(RuntimeError::new(
+         ErrorKind::WGL,
+         "wglSwapIntervalEXT failed".to_string()
+      ));
+   }
+
+   Ok(())
+}
+
 pub struct Loader;
 
 impl Loader {
@@ -145,7 +160,15 @@ impl FnPtrLoader for Loader {
       let addr = unsafe {
          ffi::wglGetProcAddress(cname)
       };
+      println!("{}: {:?}", name, addr);
 
       addr
    }
+}
+
+#[inline]
+pub fn load<T: FnPtrLoader>(loader: &T) {
+   unsafe {
+      ffi::load_functions(loader)
+   };
 }

@@ -16,6 +16,8 @@ impl WglContext {
 
       Self::init_gl();
 
+      try!(wgl::swap_interval(0));
+
       Ok(WglContext {
          context: context,
       })
@@ -23,7 +25,10 @@ impl WglContext {
 
    #[inline]
    pub fn init_gl() {
-      gl::load(wgl::Loader::new());
+      let loader = wgl::Loader::new();
+      gl::load(&loader);
+      wgl::load(&loader);
+
       gl::reset_pixelstore_alignment();
    }
 }

@@ -2,7 +2,6 @@
 #![allow(non_snake_case)]
 
 use std::mem;
-use std::ptr;
 
 use libc::{
    c_int, c_uint, c_float, c_void
@@ -163,19 +162,7 @@ pub unsafe fn glBlitFramebuffer(srcX0: GLint, srcY0: GLint, srcX1: GLint, srcY1:
    mem::transmute::<_, extern "system" fn(GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum) -> ()>(glBlitFramebufferPtr)(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
 }
 
-macro_rules! loadfn {
-   ( $loader:ident, $name:expr ) => {
-      {
-         let fn_ptr = $loader.get_proc_addr($name);
-         if fn_ptr == ptr::null() {
-            return false;
-         }
-         fn_ptr
-      }
-   }
-}
-
-pub unsafe fn load_functions<T: FnPtrLoader>(loader: T) -> bool {
+pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGenFramebuffersPtr = loadfn!(loader, "glGenFramebuffers");
    glDeleteFramebuffersPtr = loadfn!(loader, "glDeleteFramebuffers");
    glBindFramebufferPtr = loadfn!(loader, "glBindFramebuffer");
