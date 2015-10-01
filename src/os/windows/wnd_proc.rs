@@ -51,6 +51,36 @@ pub unsafe extern "system" fn wnd_proc(
          0
       },
 
+      ffi::WM_LBUTTONDOWN => {
+         send(Event::MouseLeftButtonPressed);
+         0
+      },
+
+      ffi::WM_LBUTTONUP => {
+         send(Event::MouseLeftButtonReleased);
+         0
+      },
+
+      ffi::WM_MBUTTONDOWN => {
+         send(Event::MouseMiddleButtonPressed);
+         0
+      },
+
+      ffi::WM_MBUTTONUP => {
+         send(Event::MouseMiddleButtonReleased);
+         0
+      },
+
+      ffi::WM_RBUTTONDOWN => {
+         send(Event::MouseRightButtonPressed);
+         0
+      },
+
+      ffi::WM_RBUTTONUP => {
+         send(Event::MouseRightButtonReleased);
+         0
+      },
+
       ffi::WM_CLOSE => {
          ffi::PostQuitMessage(0);
          send(Event::Quit);

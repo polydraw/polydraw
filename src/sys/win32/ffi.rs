@@ -102,6 +102,15 @@ pub const WM_ERASEBKGND:               c_uint = 20;
 pub const WM_SETCURSOR:                c_uint = 32;
 pub const WM_NCCREATE:                 c_uint = 129;
 pub const WM_MOUSEMOVE:                c_uint = 512;
+pub const WM_LBUTTONDOWN:              c_uint = 513;
+pub const WM_LBUTTONUP:                c_uint = 514;
+pub const WM_LBUTTONDBLCLK:            c_uint = 515;
+pub const WM_RBUTTONDOWN:              c_uint = 516;
+pub const WM_RBUTTONUP:                c_uint = 517;
+pub const WM_RBUTTONDBLCLK:            c_uint = 518;
+pub const WM_MBUTTONDOWN:              c_uint = 519;
+pub const WM_MBUTTONUP:                c_uint = 520;
+pub const WM_MBUTTONDBLCLK:            c_uint = 521;
 
 pub const PM_NOREMOVE:                 c_uint = 0;
 pub const PM_REMOVE :                  c_uint = 1;
