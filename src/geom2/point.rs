@@ -1,28 +1,27 @@
-use super::number::Number;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Point<T> {
-   pub x: T,
-   pub y: T
+pub struct Point {
+   pub x: i64,
+   pub y: i64
 }
 
-impl<T> Point<T> where T: Number {
-   pub fn new(x: T, y: T) -> Self {
+impl Point {
+   pub fn new(x: i64, y: i64) -> Self {
       Point {
          x: x,
          y: y
       }
    }
 
-   pub fn update(&mut self, x: T, y: T) {
+   pub fn update(&mut self, x: i64, y: i64) {
       self.x = x;
       self.y = y;
    }
 }
 
-impl<T> Default for Point<T> where T: Number {
-   fn default() -> Point<T> {
-      Point::new(T::zero(), T::zero())
+impl Default for Point {
+   fn default() -> Point {
+      Point::new(0, 0)
    }
 }
 
@@ -33,27 +32,13 @@ mod tests {
    use super::*;
 
    #[bench]
-   fn bench_update_i32(b: &mut Bencher) {
-      let mut p = Point::new(5_i32, 7_i32);
+   fn bench_update(b: &mut Bencher) {
+      let mut p = Point::new(5, 7);
       b.iter(|| {
          for _ in 0..1000 {
             black_box(
                p.update(
-                  black_box(3_i32), 8_i32
-               )
-            );
-         }
-      });
-   }
-
-   #[bench]
-   fn bench_update_i64(b: &mut Bencher) {
-      let mut p = Point::new(5_i64, 7_i64);
-      b.iter(|| {
-         for _ in 0..1000 {
-            black_box(
-               p.update(
-                  black_box(3_i64), 8_i64
+                  black_box(3), 8
                )
             );
          }
