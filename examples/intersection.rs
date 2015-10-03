@@ -19,11 +19,11 @@ enum ActivePoint {
 }
 
 struct IntersectionRenderer {
-   intersection_point: Option<Point<f64>>,
-   intersection_overlap: Option<(Point<f64>, Point<f64>)>,
+   intersection_point: Option<Point>,
+   intersection_overlap: Option<(Point, Point)>,
 
-   l1: LineSegment<f64>,
-   l2: LineSegment<f64>,
+   l1: LineSegment,
+   l2: LineSegment,
 
    mouse_x: i32,
    mouse_y: i32,
@@ -149,13 +149,13 @@ impl IntersectionRenderer {
 impl Renderer for IntersectionRenderer {
    fn init(&mut self, width: u32, height: u32) {
       self.l1.update(
-         100_f64, 120_f64,
-         width as f64 - 100_f64, height as f64 - 100_f64
+         100, 120,
+         width as i64 - 100, height as i64 - 100
       );
 
       self.l2.update(
-         140_f64, height as f64 - 90_f64,
-         width as f64 - 140_f64, 100_f64
+         140, height as i64 - 90,
+         width as i64 - 140, 100
       );
 
       self.width = width;
@@ -165,8 +165,8 @@ impl Renderer for IntersectionRenderer {
    }
 
    fn resized(&mut self, width: u32, height: u32) {
-      let dx: f64 = width as f64 - self.width as f64;
-      let dy: f64 = height as f64 - self.height as f64;
+      let dx: i64 = width as i64 - self.width as i64;
+      let dy: i64 = height as i64 - self.height as i64;
 
       let l1_p1_x = self.l1.x1();
       let l1_p1_y = self.l1.y1();
@@ -194,32 +194,32 @@ impl Renderer for IntersectionRenderer {
       self.mouse_x = x;
       self.mouse_y = y;
 
-      let x_f64 = x as f64;
-      let y_f64 = y as f64;
+      let x_i64 = x as i64;
+      let y_i64 = y as i64;
 
       match self.dragged_point {
          Some(ActivePoint::Line1Point1) => {
             let x2 = self.l1.x2();
             let y2 = self.l1.y2();
-            self.l1.update(x_f64, y_f64, x2, y2);
+            self.l1.update(x_i64, y_i64, x2, y2);
          },
 
          Some(ActivePoint::Line1Point2) => {
             let x1 = self.l1.x1();
             let y1 = self.l1.y1();
-            self.l1.update(x1, y1, x_f64, y_f64);
+            self.l1.update(x1, y1, x_i64, y_i64);
          },
 
          Some(ActivePoint::Line2Point1) => {
             let x2 = self.l2.x2();
             let y2 = self.l2.y2();
-            self.l2.update(x_f64, y_f64, x2, y2);
+            self.l2.update(x_i64, y_i64, x2, y2);
          },
 
          Some(ActivePoint::Line2Point2) => {
             let x1 = self.l2.x1();
             let y1 = self.l2.y1();
-            self.l2.update(x1, y1, x_f64, y_f64);
+            self.l2.update(x1, y1, x_i64, y_i64);
          },
 
          _ => {
