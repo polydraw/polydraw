@@ -1,65 +1,42 @@
-use super::number::Number;
 use super::point::Point;
 
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum LineIntersection<T> {
-   Point(Point<T>),
+pub enum LineIntersection {
+   Point(Point),
    Overlapping,
    None,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Line<T> {
-   a: T,
-   b: T,
-   c: T
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Line {
+   pub a: f64,
+   pub b: f64,
+   pub c: f64
 }
 
-impl<T> Line<T> where T: Number {
-   pub fn new(x1: T, y1: T, x2: T, y2: T) -> Self {
-      let (a, b, c) = Self::calc_abc(x1, y1, x2, y2);
+impl Line {
+   pub fn new(x1: i64, y1: i64, x2: i64, y2: i64) -> Self {
+      let (x1, y1, x2, y2) = (x1 as f64, y1 as f64, x2 as f64, y2 as f64);
       Line {
-         a: a,
-         b: b,
-         c: c
+         a: y2 - y1,
+         b: x1 - x2,
+         c: x2 * y1 - x1 * y2
       }
    }
 
-   pub fn update(&mut self, x1: T, y1: T, x2: T, y2: T) {
-      let (a, b, c) = Self::calc_abc(x1, y1, x2, y2);
-      self.a = a;
-      self.b = b;
-      self.c = c;
+   pub fn update(&mut self, x1: i64, y1: i64, x2: i64, y2: i64) {
+      let (x1, y1, x2, y2) = (x1 as f64, y1 as f64, x2 as f64, y2 as f64);
+
+      self.a = y2 - y1;
+      self.b = x1 - x2;
+      self.c = x2 * y1 - x1 * y2;
    }
 
-   #[inline]
-   fn calc_abc(x1: T, y1: T, x2: T, y2: T) -> (T, T, T) {
-      let mut a = y2 - y1;
-      let mut b = x1 - x2;
-      let mut c = -(x1 * y2 - x2 * y1);
-
-      let mut norm = (T::one() / (a * a + b * b)).sqrt();
-      if a != T::zero() {
-         if a < T::zero() {
-            norm = -norm;
-         }
-      } else {
-         if b < T::zero() {
-            norm = -norm;
-         }
-      }
-
-      a = a * norm;
-      b = b * norm;
-      c = c * norm;
-
-      (a, b, c)
-   }
-
-   pub fn intersect(&self, line: &Self) -> LineIntersection<T> {
+   pub fn intersect(&self, line: &Self) -> LineIntersection {
       let denominator = self.a * line.b - line.a * self.b;
 
-      if denominator == T::zero() {
+      if denominator == 0. {
          if self == line {
             return LineIntersection::Overlapping;
          } else {
@@ -70,36 +47,36 @@ impl<T> Line<T> where T: Number {
       let x = (line.c * self.b - self.c * line.b) / denominator;
       let y = (line.a * self.c - self.a * line.c) / denominator;
 
-      LineIntersection::Point(Point::new(x, y))
+      LineIntersection::Point(Point::new(x.round() as i64, y.round() as i64))
    }
 
    #[inline]
    pub fn is_horizontal(&self) -> bool {
-      self.a == T::zero()
+      self.a == 0.
    }
 
    #[inline]
    pub fn is_vertical(&self) -> bool {
-      self.b == T::zero()
+      self.b == 0.
    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum LineSegmentIntersection<T> {
-   Point(Point<T>),
-   Overlapping(Point<T>, Point<T>),
+pub enum LineSegmentIntersection {
+   Point(Point),
+   Overlapping(Point, Point),
    None,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct LineSegment<T> {
-   p1: Point<T>,
-   p2: Point<T>,
-   line: Line<T>
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct LineSegment {
+   p1: Point,
+   p2: Point,
+   line: Line
 }
 
-impl<T> LineSegment<T> where T: Number {
-   pub fn new(x1: T, y1: T, x2: T, y2: T) -> Self {
+impl LineSegment {
+   pub fn new(x1: i64, y1: i64, x2: i64, y2: i64) -> Self {
       let p1 = Point::new(x1, y1);
       let p2 = Point::new(x2, y2);
       let line = Line::new(x1, y1, x2, y2);
@@ -111,7 +88,7 @@ impl<T> LineSegment<T> where T: Number {
       }
    }
 
-   pub fn update(&mut self, x1: T, y1: T, x2: T, y2: T) {
+   pub fn update(&mut self, x1: i64, y1: i64, x2: i64, y2: i64) {
       self.p1.x = x1;
       self.p1.y = y1;
       self.p2.x = x2;
@@ -121,42 +98,42 @@ impl<T> LineSegment<T> where T: Number {
    }
 
    #[inline]
-   pub fn p1(&self) -> Point<T> {
+   pub fn p1(&self) -> Point {
       self.p1
    }
 
    #[inline]
-   pub fn p2(&self) -> Point<T> {
+   pub fn p2(&self) -> Point {
       self.p2
    }
 
    #[inline]
-   pub fn x1(&self) -> T {
+   pub fn x1(&self) -> i64 {
       self.p1.x
    }
 
    #[inline]
-   pub fn y1(&self) -> T {
+   pub fn y1(&self) -> i64 {
       self.p1.y
    }
 
    #[inline]
-   pub fn x2(&self) -> T {
+   pub fn x2(&self) -> i64 {
       self.p2.x
    }
 
    #[inline]
-   pub fn y2(&self) -> T {
+   pub fn y2(&self) -> i64 {
       self.p2.y
    }
 
    #[inline]
-   pub fn line(&self) -> &Line<T> {
+   pub fn line(&self) -> &Line {
       &self.line
    }
 
    #[inline]
-   fn is_inside(&self, p: &Point<T>) -> bool {
+   fn is_inside(&self, p: &Point) -> bool {
       if self.line.is_vertical() {
          let (ls1_min, ls1_max) = if self.y2() > self.y1() {
             (self.p1(), self.p2())
@@ -176,7 +153,7 @@ impl<T> LineSegment<T> where T: Number {
       }
    }
 
-   pub fn intersect(&self, ls: &Self) -> LineSegmentIntersection<T> {
+   pub fn intersect(&self, ls: &Self) -> LineSegmentIntersection {
       match self.line.intersect(ls.line()) {
          LineIntersection::Point(p) => {
             if self.is_inside(&p) && ls.is_inside(&p) {
@@ -261,321 +238,61 @@ impl<T> LineSegment<T> where T: Number {
    }
 }
 
-impl<T> Default for LineSegment<T> where T: Number {
-   fn default() -> LineSegment<T> {
-      LineSegment::new(T::zero(), T::zero(), T::zero(), T::zero())
+impl Default for LineSegment {
+   fn default() -> LineSegment {
+      LineSegment::new(0, 0, 0, 0)
    }
 }
 
 #[cfg(test)]
 mod tests {
-   use std::{f32, f64};
-   use test::{Bencher, black_box};
+   use super::super::point::Point;
 
    use super::*;
 
    #[test]
-   fn test_segment_new_f64() {
-      let ls = LineSegment::new(
-         10_f64, 20_f64,
-         -100_f64, 0_f64
-      );
-      assert_eq!(ls.p1.x, 10_f64);
-      assert_eq!(ls.p1.y, 20_f64);
-      assert_eq!(ls.p2.x, -100_f64);
-      assert_eq!(ls.p2.y, 0_f64);
-   }
-
-   #[test]
-   fn test_segment_new_f32() {
-      let ls = LineSegment::new(
-         10_f32, 20_f32,
-         -100_f32, 0_f32
-      );
-      assert_eq!(ls.p1.x, 10_f32);
-      assert_eq!(ls.p1.y, 20_f32);
-      assert_eq!(ls.p2.x, -100_f32);
-      assert_eq!(ls.p2.y, 0_f32);
-   }
-
-   #[test]
-   fn test_line_new_f64() {
+   fn test_line_new() {
       let ln = Line::new(
-         10_f64, 20_f64,
-         -100_f64, 0_f64
+         10_000, 20_000,
+         -100_000, 0
       );
-      assert_eq!(ln.a, 0.1788854381999832_f64);
-      assert_eq!(ln.b, -0.9838699100999075_f64);
-      assert_eq!(ln.c, 17.88854381999832_f64);
 
-      assert!(f64::abs(1_f64 - (ln.a*ln.a+ln.b*ln.b)) <= f64::EPSILON);
+      assert_eq!(ln.a, -20_000.);
+      assert_eq!(ln.b, 110_000.);
+      assert_eq!(ln.c, -2_000_000_000.);
    }
 
    #[test]
-   fn test_line_new_f32() {
-      let ln = Line::new(
-         10_f32, 20_f32,
-         -100_f32, 0_f32
+   fn test_line_intersect() {
+      let l1 = Line::new(
+         1, 1,
+         7, 5
       );
-      assert_eq!(ln.a, 0.1788854381999832_f32);
-      assert_eq!(ln.b, -0.9838699100999075_f32);
-      assert_eq!(ln.c, 17.88854381999832_f32);
 
-      assert!(f32::abs(1_f32 - (ln.a*ln.a+ln.b*ln.b)) <= f32::EPSILON);
+      let l2 = Line::new(
+         4, 5,
+         7, 0
+      );
+
+      let intersection = l1.intersect(&l2);
+
+      assert_eq!(intersection, LineIntersection::Point(Point::new(5, 4)));
    }
 
    #[test]
-   fn test_vline_f64() {
-      let ln = Line::new(
-         50_f64, 100_f64,
-         50_f64, 200_f64
-      );
-      assert_eq!(ln.a, 1_f64);
-      assert_eq!(ln.b, 0_f64);
-      assert_eq!(ln.c, -50_f64);
-   }
-
-   #[test]
-   fn test_vline_f32() {
-      let ln = Line::new(
-         50_f32, 100_f32,
-         50_f32, 200_f32
-      );
-      assert_eq!(ln.a, 1_f32);
-      assert_eq!(ln.b, 0_f32);
-      assert_eq!(ln.c, -50_f32);
-   }
-
-   #[test]
-   fn test_vline_one_f64() {
-      let ln = Line::new(
-         50_f64, 100_f64,
-         50_f64, 101_f64
-      );
-      assert_eq!(ln.a, 1_f64);
-      assert_eq!(ln.b, 0_f64);
-      assert_eq!(ln.c, -50_f64);
-   }
-
-   #[test]
-   fn test_vline_one_f32() {
-      let ln = Line::new(
-         50_f32, 100_f32,
-         50_f32, 101_f32
-      );
-      assert_eq!(ln.a, 1_f32);
-      assert_eq!(ln.b, 0_f32);
-      assert_eq!(ln.c, -50_f32);
-   }
-
-   #[test]
-   fn test_vline_one_down_f64() {
-      let ln = Line::new(
-         50_f64, 101_f64,
-         50_f64, 100_f64
-      );
-      assert_eq!(ln.a, 1_f64);
-      assert_eq!(ln.b, 0_f64);
-      assert_eq!(ln.c, -50_f64);
-   }
-
-   #[test]
-   fn test_vline_one_down_f32() {
-      let ln = Line::new(
-         50_f32, 101_f32,
-         50_f32, 100_f32
-      );
-      assert_eq!(ln.a, 1_f32);
-      assert_eq!(ln.b, 0_f32);
-      assert_eq!(ln.c, -50_f32);
-   }
-
-   #[test]
-   fn test_hline_f64() {
-      let ln = Line::new(
-         100_f64, 50_f64,
-         200_f64, 50_f64
-      );
-      assert_eq!(ln.a, 0_f64);
-      assert_eq!(ln.b, 1_f64);
-      assert_eq!(ln.c, -50_f64);
-   }
-
-   #[test]
-   fn test_hline_f32() {
-      let ln = Line::new(
-         100_f32, 50_f32,
-         200_f32, 50_f32
-      );
-      assert_eq!(ln.a, 0_f32);
-      assert_eq!(ln.b, 1_f32);
-      assert_eq!(ln.c, -50_f32);
-   }
-
-   #[test]
-   fn test_hline_one_f64() {
-      let ln = Line::new(
-         100_f64, 50_f64,
-         101_f64, 50_f64
-      );
-      assert_eq!(ln.a, 0_f64);
-      assert_eq!(ln.b, 1_f64);
-      assert_eq!(ln.c, -50_f64);
-   }
-
-   #[test]
-   fn test_hline_one_f32() {
-      let ln = Line::new(
-         100_f32, 50_f32,
-         101_f32, 50_f32
-      );
-      assert_eq!(ln.a, 0_f32);
-      assert_eq!(ln.b, 1_f32);
-      assert_eq!(ln.c, -50_f32);
-   }
-
-   #[test]
-   fn test_hline_one_down_f64() {
-      let ln = Line::new(
-         101_f64, 50_f64,
-         100_f64, 50_f64
-      );
-      assert_eq!(ln.a, 0_f64);
-      assert_eq!(ln.b, 1_f64);
-      assert_eq!(ln.c, -50_f64);
-   }
-
-   #[test]
-   fn test_hline_one_down_f32() {
-      let ln = Line::new(
-         101_f32, 50_f32,
-         100_f32, 50_f32
-      );
-      assert_eq!(ln.a, 0_f32);
-      assert_eq!(ln.b, 1_f32);
-      assert_eq!(ln.c, -50_f32);
-   }
-
-   #[test]
-   fn test_line_overlapping_f32() {
-      let ln1 = Line::new(
-         100_f32, 100_f32,
-         200_f32, 200_f32
+   fn test_line_intersect_mirror() {
+      let l1 = Line::new(
+         1, -1,
+         7, -5
       );
 
-      let ln2 = Line::new(
-         150_f32, 150_f32,
-         250_f32, 250_f32
+      let l2 = Line::new(
+         4, -5,
+         7, 0
       );
 
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::Overlapping);
-   }
+      let intersection = l1.intersect(&l2);
 
-   #[test]
-   fn test_line_parallel_f32() {
-      let ln1 = Line::new(
-         100_f32, 100_f32,
-         200_f32, 200_f32
-      );
-
-      let ln2 = Line::new(
-         250_f32, 150_f32,
-         450_f32, 350_f32
-      );
-
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::None);
-   }
-
-   #[test]
-   fn test_hline_overlapping_f32() {
-      let ln1 = Line::new(
-         100_f32, 50_f32,
-         200_f32, 50_f32
-      );
-
-      let ln2 = Line::new(
-         150_f32, 50_f32,
-         250_f32, 50_f32
-      );
-
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::Overlapping);
-   }
-
-   #[test]
-   fn test_hline_parallel_f32() {
-      let ln1 = Line::new(
-         100_f32, 50_f32,
-         200_f32, 50_f32
-      );
-
-      let ln2 = Line::new(
-         150_f32, 150_f32,
-         250_f32, 150_f32
-      );
-
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::None);
-   }
-
-   #[test]
-   fn test_vline_overlapping_f32() {
-      let ln1 = Line::new(
-         50_f32, 100_f32,
-         50_f32, 200_f32,
-      );
-
-      let ln2 = Line::new(
-         50_f32, 150_f32,
-         50_f32, 250_f32,
-      );
-
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::Overlapping);
-   }
-
-   #[test]
-   fn test_vline_parallel_f32() {
-      let ln1 = Line::new(
-         50_f32, 100_f32,
-         50_f32, 200_f32,
-      );
-
-      let ln2 = Line::new(
-         150_f32, 150_f32,
-         150_f32, 250_f32,
-      );
-
-      assert_eq!(ln1.intersect(&ln2), LineIntersection::None);
-   }
-
-   #[bench]
-   fn bench_line_new_f64(b: &mut Bencher) {
-      b.iter(|| {
-         for _ in 0..1000 {
-            black_box(
-               Line::new(
-                  black_box(5_f64),
-                  black_box(7_f64),
-                  black_box(3_f64),
-                  black_box(2_f64)
-               )
-            );
-         }
-      });
-   }
-
-   #[bench]
-   fn bench_line_new_f32(b: &mut Bencher) {
-      b.iter(|| {
-         for _ in 0..1000 {
-            black_box(
-               Line::new(
-                  black_box(5_f32),
-                  black_box(7_f32),
-                  black_box(3_f32),
-                  black_box(2_f32)
-               )
-            );
-         }
-      });
+      assert_eq!(intersection, LineIntersection::Point(Point::new(5, -4)));
    }
 }
-

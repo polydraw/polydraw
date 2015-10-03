@@ -1,37 +1,27 @@
-use super::number::Number;
-use super::distance::Distance;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Point<T> {
-   pub x: T,
-   pub y: T
+pub struct Point {
+   pub x: i64,
+   pub y: i64
 }
 
-impl<T> Point<T> where T: Number {
-   pub fn new(x: T, y: T) -> Self {
+impl Point {
+   pub fn new(x: i64, y: i64) -> Self {
       Point {
          x: x,
          y: y
       }
    }
 
-   pub fn update(&mut self, x: T, y: T) {
+   pub fn update(&mut self, x: i64, y: i64) {
       self.x = x;
       self.y = y;
    }
 }
 
-impl<T> Default for Point<T> where T: Number {
-   fn default() -> Point<T> {
-      Point::new(T::zero(), T::zero())
-   }
-}
-
-impl<T> Distance<Point<T>, T> for Point<T> where T: Number {
-   fn distance(&self, other: &Self) -> T {
-      let dx = (other.x - self.x).powi(2);
-      let dy = (other.y - self.y).powi(2);
-      return (dx + dy).sqrt()
+impl Default for Point {
+   fn default() -> Point {
+      Point::new(0, 0)
    }
 }
 
@@ -39,34 +29,16 @@ impl<T> Distance<Point<T>, T> for Point<T> where T: Number {
 mod tests {
    use test::{Bencher, black_box};
 
-   use super::super::distance::Distance;
-
    use super::*;
 
    #[bench]
-   fn bench_distance_f64(b: &mut Bencher) {
-      let p1 = Point::new(5_f64, 7_f64);
-      let p2 = Point::new(3_f64, 2_f64);
+   fn bench_update(b: &mut Bencher) {
+      let mut p = Point::new(5, 7);
       b.iter(|| {
          for _ in 0..1000 {
             black_box(
-               p1.distance(
-                  black_box(&p2)
-               )
-            );
-         }
-      });
-   }
-
-   #[bench]
-   fn bench_distance_f32(b: &mut Bencher) {
-      let p1 = Point::new(5_f32, 7_f32);
-      let p2 = Point::new(3_f32, 2_f32);
-      b.iter(|| {
-         for _ in 0..1000 {
-            black_box(
-               p1.distance(
-                  black_box(&p2)
+               p.update(
+                  black_box(3), 8
                )
             );
          }

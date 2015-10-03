@@ -1,6 +1,4 @@
 #![feature(test)]
-#![feature(core_intrinsics)]
-#![feature(zero_one)]
 
 extern crate libc;
 extern crate test;
