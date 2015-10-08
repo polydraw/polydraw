@@ -118,6 +118,23 @@ pub const GL_TEXTURE_MIN_FILTER:       GLenum = 0x2801;
 pub const GL_RGB:                      GLenum = 0x1907;
 pub const GL_RGBA:                     GLenum = 0x1908;
 
+pub const GL_BGR:                      GLenum = 0x80E0;
+pub const GL_BGRA:                     GLenum = 0x80E1;
+
+pub const GL_RGB4:                     GLenum = 0x804F;
+pub const GL_RGB5:                     GLenum = 0x8050;
+pub const GL_RGB8:                     GLenum = 0x8051;
+pub const GL_RGB10:                    GLenum = 0x8052;
+pub const GL_RGB12:                    GLenum = 0x8053;
+pub const GL_RGB16:                    GLenum = 0x8054;
+pub const GL_RGBA2:                    GLenum = 0x8055;
+pub const GL_RGBA4:                    GLenum = 0x8056;
+pub const GL_RGB5_A1:                  GLenum = 0x8057;
+pub const GL_RGBA8:                    GLenum = 0x8058;
+pub const GL_RGB10_A2:                 GLenum = 0x8059;
+pub const GL_RGBA12:                   GLenum = 0x805A;
+pub const GL_RGBA16:                   GLenum = 0x805B;
+
 pub const GL_READ_FRAMEBUFFER:         GLenum = 0x8CA8;
 pub const GL_DRAW_FRAMEBUFFER:         GLenum = 0x8CA9;
 

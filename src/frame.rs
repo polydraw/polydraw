@@ -26,12 +26,12 @@ impl RenderFrame {
    #[inline]
    pub fn create_data(width: u32, height: u32) -> Vec<u8> {
       repeat(0u8)
-         .take((width * height * 3) as usize)
+         .take((width * height * 4) as usize)
          .collect::<Vec<_>>()
    }
 
    pub fn clear(&mut self) {
-      for i in 0 as usize..(self.width * self.height * 3) as usize {
+      for i in 0 as usize..(self.width * self.height * 4) as usize {
          self.data[i] = 0;
       }
    }
@@ -41,7 +41,7 @@ impl RenderFrame {
          return;
       }
 
-      let i = 3 * (x + y * self.width as i32) as usize;
+      let i = 4 * (x + y * self.width as i32) as usize;
       self.data[i    ] = color.r;
       self.data[i + 1] = color.g;
       self.data[i + 2] = color.b;

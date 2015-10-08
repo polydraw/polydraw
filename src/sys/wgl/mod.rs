@@ -20,7 +20,7 @@ pub fn init_pixel_format(
       nVersion: 1,
       dwFlags: ffi::PFD_DRAW_TO_WINDOW | ffi::PFD_SUPPORT_OPENGL | ffi::PFD_DOUBLEBUFFER,
       iPixelType: ffi::PFD_TYPE_RGBA,
-      cColorBits: 24,
+      cColorBits: 32,
       cRedBits: 0, cRedShift: 0, cGreenBits: 0, cGreenShift: 0, cBlueBits: 0, cBlueShift: 0,
       cAlphaBits: 0, cAlphaShift: 0, cAccumBits: 0,
       cAccumRedBits: 0, cAccumGreenBits: 0, cAccumBlueBits: 0, cAccumAlphaBits: 0,

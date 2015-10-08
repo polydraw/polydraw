@@ -101,11 +101,11 @@ impl Texture {
          ffi::glTexImage2D(
             ffi::GL_TEXTURE_2D,
             0,
-            ffi::GL_RGB as ffi::GLint,
+            ffi::GL_RGBA8 as ffi::GLint,
             width as ffi::GLsizei,
             height as ffi::GLsizei,
             0,
-            ffi::GL_RGB,
+            ffi::GL_RGBA,
             ffi::GL_UNSIGNED_BYTE,
             ptr::null()
          );
@@ -129,11 +129,11 @@ impl Texture {
          ffi::glTexImage2D(
             ffi::GL_TEXTURE_2D,
             0,
-            ffi::GL_RGB as ffi::GLint,
+            ffi::GL_RGBA8 as ffi::GLint,
             width as ffi::GLsizei,
             height as ffi::GLsizei,
             0,
-            ffi::GL_RGB,
+            ffi::GL_RGBA,
             ffi::GL_UNSIGNED_BYTE,
             ptr::null()
          );
@@ -147,7 +147,7 @@ impl Texture {
             ffi::GL_TEXTURE_2D,
             0,
             0, 0, width as ffi::GLsizei, height as ffi::GLsizei,
-            ffi::GL_RGB,
+            ffi::GL_RGBA,
             ffi::GL_UNSIGNED_BYTE,
             data.as_ptr() as *const ffi::GLvoid
          );
