@@ -21,6 +21,7 @@ impl<'a> EventLoop<'a> {
       let texture = &self.os_application.gl.texture;
       let framebuffer = &self.os_application.gl.framebuffer;
 
+      texture.bind();
       framebuffer.bind();
 
       renderer.init(render_frame.width, render_frame.height);

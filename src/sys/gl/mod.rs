@@ -116,10 +116,16 @@ impl Texture {
       }
    }
 
-   pub fn resize(&self, width: u32, height: u32) {
+   #[inline]
+   pub fn bind(&self) {
       unsafe {
          ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
+      }
+   }
 
+   #[inline]
+   pub fn resize(&self, width: u32, height: u32) {
+      unsafe {
          ffi::glTexImage2D(
             ffi::GL_TEXTURE_2D,
             0,
@@ -134,10 +140,9 @@ impl Texture {
       }
    }
 
+   #[inline]
    pub fn update(&self, width: u32, height: u32, data: &[u8]) {
       unsafe {
-         ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
-
          ffi::glTexSubImage2D(
             ffi::GL_TEXTURE_2D,
             0,
