@@ -66,6 +66,7 @@ impl Default for PIXELFORMATDESCRIPTOR {
 
 static mut wglSwapIntervalEXTPtr: FnPtr = NULL_PTR;
 
+#[inline]
 pub unsafe fn wglSwapIntervalEXT(interval: c_int) -> BOOL {
    mem::transmute::<_, extern "system" fn(c_int) -> BOOL>(wglSwapIntervalEXTPtr)(interval)
 }

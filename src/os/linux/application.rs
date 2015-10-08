@@ -1,13 +1,10 @@
 use error::RuntimeError;
 
-use super::super::common::GlContext;
-
 use super::display::LinuxDisplay;
 use super::window::{LinuxWindow, PollEventsIterator};
 use super::egl_context::EglContext;
 
 pub struct LinuxApplication {
-   pub gl: GlContext,
    display: LinuxDisplay,
    window: LinuxWindow,
    egl: EglContext,
@@ -27,13 +24,10 @@ impl LinuxApplication {
 
       let egl = try!(EglContext::new(&display.display, &window.window));
 
-      let gl = try!(GlContext::new(width, height));
-
       Ok(LinuxApplication {
          display: display,
          window: window,
          egl: egl,
-         gl: gl,
       })
    }
 

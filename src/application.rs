@@ -8,13 +8,15 @@ pub use os::windows::display::WindowsDisplay as OsDisplay;
 #[cfg(target_os = "linux")]
 pub use os::linux::display::LinuxDisplay as OsDisplay;
 
-use super::frame::RenderFrame;
 use super::renderer::Renderer;
 use super::event_loop::EventLoop;
 
 pub struct Application {
    pub os_application: OsApplication,
-   pub render_frame: RenderFrame,
+   pub width: u32,
+   pub height: u32,
+   pub screen_width: u32,
+   pub screen_height: u32,
 }
 
 use super::creator::ApplicationCreator;
@@ -39,8 +41,6 @@ impl Application {
    ) -> Self {
       let (screen_width, screen_height) = display.screen_size();
 
-      let render_frame = RenderFrame::new(width, height, screen_width, screen_height);
-
       let os_application = match OsApplication::new(
          display, title, x, y, width, height
       ) {
@@ -52,14 +52,17 @@ impl Application {
 
       Application {
          os_application: os_application,
-         render_frame: render_frame,
+         width: width,
+         height: height,
+         screen_width: screen_width,
+         screen_height: screen_height,
       }
    }
 
    pub fn run(&mut self, renderer: &mut Renderer) {
       let event_loop = EventLoop::new(&self.os_application);
 
-      match event_loop.run(renderer, &mut self.render_frame) {
+      match event_loop.run(renderer, self.width, self.height, self.screen_width, self.screen_height) {
          Ok(_) => {},
          Err(e) => {
             panic!(e.description);

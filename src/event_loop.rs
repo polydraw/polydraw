@@ -1,8 +1,8 @@
 use error::RuntimeError;
 use application::OsApplication;
-use frame::RenderFrame;
 use renderer::Renderer;
 use event::Event;
+use os::common::GlContext;
 
 pub struct EventLoop<'a> {
    pub os_application: &'a OsApplication,
@@ -16,31 +16,38 @@ impl<'a> EventLoop<'a> {
    }
 
    pub fn run(
-      &self, renderer: &mut Renderer, render_frame: &mut RenderFrame
+      &self, renderer: &mut Renderer, width: u32, height: u32, screen_width: u32, screen_height: u32
    ) -> Result<(), RuntimeError> {
-      let texture = &self.os_application.gl.texture;
-      let framebuffer = &self.os_application.gl.framebuffer;
+      let mut gl = try!(GlContext::new(width, height, screen_width, screen_height));
+
+      let texture = &gl.texture;
+      let framebuffer = &gl.framebuffer;
+      let buffer = &mut gl.buffer;
 
       texture.bind();
       framebuffer.bind();
 
-      renderer.init(render_frame.width, render_frame.height);
+      buffer.bind();
+      buffer.data();
+      buffer.unbind();
+
+      renderer.init(buffer.width, buffer.height);
 
       let mut quit = false;
 
       loop {
-         let current_width = render_frame.width;
-         let current_height = render_frame.height;
+         let mut new_width = buffer.width;
+         let mut new_height = buffer.height;
 
          for event in self.os_application.poll_events() {
             match event {
                Event::Resized(width, height) => {
-                  render_frame.width = width;
-                  render_frame.height = height;
+                  new_width = width;
+                  new_height = height;
                },
 
                Event::MouseMoved(x, y) => {
-                  renderer.mouse_moved(x, render_frame.height as i32 - y - 1);
+                  renderer.mouse_moved(x, new_height as i32 - y - 1);
                },
 
                Event::MouseLeftButtonPressed => {
@@ -86,16 +93,24 @@ impl<'a> EventLoop<'a> {
             break
          }
 
-         if current_width != render_frame.width || current_height != render_frame.height {
-            texture.resize(render_frame.width, render_frame.height);
-            renderer.resized(render_frame.width, render_frame.height);
+         if new_width != buffer.width || new_height != buffer.height {
+            buffer.resize(new_width, new_height);
+            texture.resize(new_width, new_height);
+            renderer.resized(new_width, new_height);
          }
 
-         renderer.render(render_frame);
+         buffer.bind();
+         buffer.map();
 
-         texture.update(render_frame.width, render_frame.height, &render_frame.data);
+         renderer.render(buffer);
 
-         framebuffer.blit(render_frame.width, render_frame.height);
+         buffer.unmap();
+
+         buffer.unbind();
+
+         texture.update(buffer.width, buffer.height, &buffer);
+
+         framebuffer.blit(buffer.width, buffer.height);
 
          try!(self.os_application.swap_buffers());
       }

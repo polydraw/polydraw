@@ -3,8 +3,8 @@
 
 use std::mem;
 
-use libc::{
-   c_int, c_uint, c_float, c_void
+pub use libc::{
+   c_uchar, c_int, c_uint, c_float, c_void, ptrdiff_t
 };
 
 use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
@@ -16,6 +16,8 @@ pub type GLsizei = c_int;
 pub type GLvoid = c_void;
 pub type GLbitfield = c_uint;
 pub type GLclampf = c_float;
+pub type GLsizeiptr = ptrdiff_t;
+pub type GLboolean = c_uchar;
 
 pub const GL_BYTE:                     GLenum = 0x1400;
 pub const GL_UNSIGNED_BYTE:            GLenum = 0x1401;
@@ -153,30 +155,81 @@ pub const GL_POLYGON_OFFSET_FILL:      GLenum = 0x8037;
 pub const GL_SAMPLE_ALPHA_TO_COVERAGE: GLenum = 0x809E;
 pub const GL_SAMPLE_COVERAGE:          GLenum = 0x80A0;
 
+pub const GL_STREAM_DRAW:              GLenum = 0x88E0;
+
+pub const GL_PIXEL_PACK_BUFFER:        GLenum = 0x88EB;
+pub const GL_PIXEL_UNPACK_BUFFER:      GLenum = 0x88EC;
+
+pub const GL_READ_ONLY:                GLenum = 0x88B8;
+pub const GL_WRITE_ONLY:               GLenum = 0x88B9;
+pub const GL_READ_WRITE:               GLenum = 0x88BA;
+
+
 static mut glGenFramebuffersPtr: FnPtr = NULL_PTR;
 static mut glDeleteFramebuffersPtr: FnPtr = NULL_PTR;
 static mut glBindFramebufferPtr: FnPtr = NULL_PTR;
 static mut glFramebufferTexture2DPtr: FnPtr = NULL_PTR;
 static mut glBlitFramebufferPtr: FnPtr = NULL_PTR;
+static mut glGenBuffersPtr: FnPtr = NULL_PTR;
+static mut glDeleteBuffersPtr: FnPtr = NULL_PTR;
+static mut glBindBufferPtr: FnPtr = NULL_PTR;
+static mut glBufferDataPtr: FnPtr = NULL_PTR;
+static mut glMapBufferPtr: FnPtr = NULL_PTR;
+static mut glUnmapBufferPtr: FnPtr = NULL_PTR;
 
+#[inline]
 pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
    mem::transmute::<_, extern "system" fn(GLsizei, *mut GLuint) -> ()>(glGenFramebuffersPtr)(n, framebuffers)
 }
 
+#[inline]
 pub unsafe fn glDeleteFramebuffers(n: GLsizei, framebuffers: *const GLuint) {
    mem::transmute::<_, extern "system" fn(GLsizei, *const GLuint) -> ()>(glDeleteFramebuffersPtr)(n, framebuffers)
 }
 
+#[inline]
 pub unsafe fn glBindFramebuffer(target: GLenum, framebuffer: GLuint) {
    mem::transmute::<_, extern "system" fn(GLenum, GLuint) -> ()>(glBindFramebufferPtr)(target, framebuffer)
 }
 
+#[inline]
 pub unsafe fn glFramebufferTexture2D(target: GLenum, attachment: GLenum, textarget: GLenum, texture: GLuint, level: GLint) {
    mem::transmute::<_, extern "system" fn(GLenum, GLenum, GLenum, GLuint, GLint) -> ()>(glFramebufferTexture2DPtr)(target, attachment, textarget, texture, level)
 }
 
+#[inline]
 pub unsafe fn glBlitFramebuffer(srcX0: GLint, srcY0: GLint, srcX1: GLint, srcY1: GLint, dstX0: GLint, dstY0: GLint, dstX1: GLint, dstY1: GLint, mask: GLbitfield, filter: GLenum) {
    mem::transmute::<_, extern "system" fn(GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum) -> ()>(glBlitFramebufferPtr)(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
+}
+
+#[inline]
+pub unsafe fn glGenBuffers(n: GLsizei, buffers: *mut GLuint) {
+   mem::transmute::<_, extern "system" fn(GLsizei, *mut GLuint) -> ()>(glGenBuffersPtr)(n, buffers)
+}
+
+#[inline]
+pub unsafe fn glDeleteBuffers(n: GLsizei, buffers: *const GLuint) {
+   mem::transmute::<_, extern "system" fn(GLsizei, *const GLuint) -> ()>(glDeleteBuffersPtr)(n, buffers)
+}
+
+#[inline]
+pub unsafe fn glBindBuffer(target: GLenum, buffer: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLuint) -> ()>(glBindBufferPtr)(target, buffer)
+}
+
+#[inline]
+pub unsafe fn glBufferData(target: GLenum, size: GLsizeiptr, data: *const c_void, usage: GLenum) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLsizeiptr, *const c_void, GLenum) -> ()>(glBufferDataPtr)(target, size, data, usage)
+}
+
+#[inline]
+pub unsafe fn glMapBuffer(target: GLenum, access: GLenum) -> *mut c_void {
+   mem::transmute::<_, extern "system" fn(GLenum, GLenum) -> *mut c_void>(glMapBufferPtr)(target, access)
+}
+
+#[inline]
+pub unsafe fn glUnmapBuffer(target: GLenum) -> GLboolean {
+   mem::transmute::<_, extern "system" fn(GLenum) -> GLboolean>(glUnmapBufferPtr)(target)
 }
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
@@ -185,6 +238,12 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glBindFramebufferPtr = loadfn!(loader, "glBindFramebuffer");
    glFramebufferTexture2DPtr = loadfn!(loader, "glFramebufferTexture2D");
    glBlitFramebufferPtr = loadfn!(loader, "glBlitFramebuffer");
+   glGenBuffersPtr = loadfn!(loader, "glGenBuffers");
+   glDeleteBuffersPtr = loadfn!(loader, "glDeleteBuffers");
+   glBindBufferPtr = loadfn!(loader, "glBindBuffer");
+   glBufferDataPtr = loadfn!(loader, "glBufferData");
+   glMapBufferPtr = loadfn!(loader, "glMapBuffer");
+   glUnmapBufferPtr = loadfn!(loader, "glUnmapBuffer");
 
    true
 }

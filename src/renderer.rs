@@ -1,8 +1,8 @@
-use super::frame::RenderFrame;
+use super::sys::gl::Buffer;
 
 #[allow(unused_variables)]
 pub trait Renderer {
-   fn render(&mut self, &mut RenderFrame);
+   fn render(&mut self, &mut Buffer);
 
    fn init(&mut self, width: u32, height: u32) {}
 
@@ -26,5 +26,7 @@ pub trait Renderer {
 pub struct NullRenderer;
 
 impl Renderer for NullRenderer {
-   fn render(&mut self, _: &mut RenderFrame) {}
+   fn render(&mut self, buffer: &mut Buffer) {
+      buffer.clear();
+   }
 }
