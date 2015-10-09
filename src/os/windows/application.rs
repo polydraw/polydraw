@@ -2,14 +2,11 @@ use error::RuntimeError;
 
 use sys::wgl;
 
-use super::super::common::GlContext;
-
 use super::display::WindowsDisplay;
 use super::window::{WindowsWindow, PollEventsIterator};
 use super::wgl_context::WglContext;
 
 pub struct WindowsApplication {
-   pub gl: GlContext,
    display: WindowsDisplay,
    window: WindowsWindow,
    #[allow(dead_code)] wgl: WglContext,
@@ -27,13 +24,10 @@ impl WindowsApplication {
 
       let wgl = try!(WglContext::new(&window.device_context));
 
-      let gl = try!(GlContext::new(width, height));
-
       Ok(WindowsApplication {
          display: display,
          window: window,
          wgl: wgl,
-         gl: gl,
       })
    }
 

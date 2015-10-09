@@ -1,6 +1,6 @@
 use std::cmp::{min, max};
 
-use super::frame::RenderFrame;
+use super::frame::Frame;
 
 pub struct RGB {
    pub r: u8,
@@ -18,7 +18,7 @@ impl RGB {
    }
 }
 
-pub fn bresenham(frame: &mut RenderFrame, x1: i32, y1: i32, x2: i32, y2: i32, color: &RGB) {
+pub fn bresenham(frame: &mut Frame, x1: i32, y1: i32, x2: i32, y2: i32, color: &RGB) {
    let dx = x2 - x1;
    let dy = y2 - y1;
 
@@ -63,7 +63,7 @@ pub fn bresenham(frame: &mut RenderFrame, x1: i32, y1: i32, x2: i32, y2: i32, co
    }
 }
 
-pub fn hline(frame: &mut RenderFrame, x1: i32, x2: i32, y: i32, color: &RGB) {
+pub fn hline(frame: &mut Frame, x1: i32, x2: i32, y: i32, color: &RGB) {
    let min_x = min(x1, x2);
    let max_x = max(x1, x2);
 
@@ -72,7 +72,7 @@ pub fn hline(frame: &mut RenderFrame, x1: i32, x2: i32, y: i32, color: &RGB) {
    }
 }
 
-pub fn vline(frame: &mut RenderFrame, x: i32, y1: i32, y2: i32, color: &RGB) {
+pub fn vline(frame: &mut Frame, x: i32, y1: i32, y2: i32, color: &RGB) {
    let min_y = min(y1, y2);
    let max_y = max(y1, y2);
 

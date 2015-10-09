@@ -16,6 +16,7 @@ pub type GLsizei = c_int;
 pub type GLvoid = c_void;
 pub type GLbitfield = c_uint;
 pub type GLclampf = c_float;
+pub type GLintptr = ptrdiff_t;
 pub type GLsizeiptr = ptrdiff_t;
 pub type GLboolean = c_uchar;
 
@@ -164,6 +165,17 @@ pub const GL_READ_ONLY:                GLenum = 0x88B8;
 pub const GL_WRITE_ONLY:               GLenum = 0x88B9;
 pub const GL_READ_WRITE:               GLenum = 0x88BA;
 
+pub const GL_MAP_READ_BIT: GLenum = 0x0001;
+pub const GL_MAP_WRITE_BIT: GLenum = 0x0002;
+pub const GL_MAP_INVALIDATE_RANGE_BIT: GLenum = 0x0004;
+pub const GL_MAP_INVALIDATE_BUFFER_BIT: GLenum = 0x0008;
+pub const GL_MAP_FLUSH_EXPLICIT_BIT: GLenum = 0x0010;
+pub const GL_MAP_UNSYNCHRONIZED_BIT: GLenum = 0x0020;
+pub const GL_MAP_PERSISTENT_BIT: GLenum = 0x0040;
+pub const GL_MAP_COHERENT_BIT: GLenum = 0x0080;
+pub const GL_DYNAMIC_STORAGE_BIT: GLenum = 0x0100;
+pub const GL_CLIENT_STORAGE_BIT: GLenum = 0x0200;
+
 
 static mut glGenFramebuffersPtr: FnPtr = NULL_PTR;
 static mut glDeleteFramebuffersPtr: FnPtr = NULL_PTR;
@@ -176,6 +188,7 @@ static mut glBindBufferPtr: FnPtr = NULL_PTR;
 static mut glBufferDataPtr: FnPtr = NULL_PTR;
 static mut glMapBufferPtr: FnPtr = NULL_PTR;
 static mut glUnmapBufferPtr: FnPtr = NULL_PTR;
+static mut glMapBufferRangePtr: FnPtr = NULL_PTR;
 
 #[inline]
 pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
@@ -232,6 +245,11 @@ pub unsafe fn glUnmapBuffer(target: GLenum) -> GLboolean {
    mem::transmute::<_, extern "system" fn(GLenum) -> GLboolean>(glUnmapBufferPtr)(target)
 }
 
+#[inline]
+pub unsafe fn glMapBufferRange(target: GLenum, offset: GLintptr, length: GLsizeiptr, access: GLbitfield) -> *mut c_void {
+   mem::transmute::<_, extern "system" fn(GLenum, GLintptr, GLsizeiptr, GLbitfield) -> *mut c_void>(glMapBufferRangePtr)(target, offset, length, access)
+}
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGenFramebuffersPtr = loadfn!(loader, "glGenFramebuffers");
    glDeleteFramebuffersPtr = loadfn!(loader, "glDeleteFramebuffers");
@@ -244,6 +262,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glBufferDataPtr = loadfn!(loader, "glBufferData");
    glMapBufferPtr = loadfn!(loader, "glMapBuffer");
    glUnmapBufferPtr = loadfn!(loader, "glUnmapBuffer");
+   glMapBufferRangePtr = loadfn!(loader, "glMapBufferRange");
 
    true
 }

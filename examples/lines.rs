@@ -1,6 +1,6 @@
 extern crate polydraw;
 
-use polydraw::{Application, Renderer, RenderFrame};
+use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::{RGB, bresenham, hline, vline};
 
 struct LinesRenderer;
@@ -12,7 +12,7 @@ impl LinesRenderer {
 }
 
 impl Renderer for LinesRenderer {
-   fn render(&mut self, frame: &mut RenderFrame) {
+   fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
       let color = RGB::new(127, 223, 255);

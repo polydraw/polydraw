@@ -2,11 +2,10 @@ extern crate polydraw;
 
 use std::cmp::{min, max};
 
-use polydraw::{Application, Renderer};
+use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
 use polydraw::geom::point::Point;
 use polydraw::geom::triangle::Triangle;
-use polydraw::sys::gl::Buffer;
 
 struct TriangleRenderer {
    tr: Triangle,
@@ -30,10 +29,15 @@ impl TriangleRenderer {
 }
 
 impl Renderer for TriangleRenderer {
-   fn render(&mut self, buffer: &mut Buffer) {
-      buffer.clear();
+   fn render(&mut self, frame: &mut Frame) {
+      frame.clear();
 
       let color = RGB::new(127, 223, 255);
+
+      self.tr.a.x += 1;
+      if self.tr.a.x >= frame.width as i64 {
+         self.tr.a.x = 0;
+      }
 
       let a = self.tr.a;
       let b = self.tr.b;
@@ -41,8 +45,8 @@ impl Renderer for TriangleRenderer {
 
       let min_x = max(min3(a.x, b.x, c.x), 0);
       let min_y = max(min3(a.y, b.y, c.y), 0);
-      let max_x = min(max3(a.x, b.x, c.x), buffer.width as i64 - 1);
-      let max_y = min(max3(a.y, b.y, c.y), buffer.height as i64 - 1);
+      let max_x = min(max3(a.x, b.x, c.x), frame.width as i64 - 1);
+      let max_y = min(max3(a.y, b.y, c.y), frame.height as i64 - 1);
 
       for y in min_y..max_y+1 {
          for x in min_x..max_x+1 {
@@ -52,11 +56,10 @@ impl Renderer for TriangleRenderer {
             let w2 = orientation(&a, &b, &p);
 
             if w0.signum() == w1.signum() && w0.signum() == w2.signum() {
-               buffer.put_pixel(x as i32, y as i32, &color);
+               frame.put_pixel(x as i32, y as i32, &color);
             }
          }
       }
-
    }
 }
 

@@ -2,7 +2,7 @@ extern crate polydraw;
 
 use std::cmp::{min, max};
 
-use polydraw::{Application, Renderer, RenderFrame};
+use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
 
 struct MouseRenderer {
@@ -20,7 +20,7 @@ impl MouseRenderer {
 }
 
 impl Renderer for MouseRenderer {
-   fn render(&mut self, frame: &mut RenderFrame) {
+   fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
       let color = RGB::new(33, 168, 222);

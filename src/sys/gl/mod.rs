@@ -4,7 +4,6 @@ use std::mem;
 use std::ptr;
 
 use super::utils::fn_ptr::FnPtrLoader;
-use super::super::draw::RGB;
 
 #[inline]
 pub fn load<T: FnPtrLoader>(loader: &T) {
@@ -142,7 +141,7 @@ impl Texture {
    }
 
    #[inline]
-   pub fn update(&self, width: u32, height: u32, buffer: &Buffer) {
+   pub fn update(&self, width: u32, height: u32) {
       unsafe {
          ffi::glTexSubImage2D(
             ffi::GL_TEXTURE_2D,
@@ -150,7 +149,7 @@ impl Texture {
             0, 0, width as ffi::GLsizei, height as ffi::GLsizei,
             ffi::GL_RGBA,
             ffi::GL_UNSIGNED_BYTE,
-            buffer.ptr as *const ffi::c_void
+            ptr::null()
          );
       }
    }
@@ -237,15 +236,12 @@ impl Drop for Framebuffer {
 
 pub struct Buffer {
    pub name: ffi::GLuint,
-   pub ptr: *mut u8,
-   pub width: u32,
-   pub height: u32,
-   pub max_width: u32,
-   pub max_height: u32,
+   pub ptr: *mut ffi::c_void,
+   pub size: ffi::GLsizeiptr,
 }
 
 impl Buffer {
-   pub fn new(width: u32, height: u32, screen_width: u32, screen_height: u32) -> Self {
+   pub fn new() -> Self {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
@@ -255,17 +251,8 @@ impl Buffer {
       Buffer {
          name: name,
          ptr: ptr::null_mut(),
-         width: width,
-         height: height,
-         max_width: screen_width,
-         max_height: screen_height,
+         size: 0,
       }
-   }
-
-   #[inline]
-   pub fn resize(&mut self, width: u32, height: u32) {
-      self.width = width;
-      self.height = height;
    }
 
    #[inline]
@@ -283,11 +270,12 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn data(&self) {
+   pub fn init_data(&mut self, size: usize) {
+      self.size = size as ffi::GLsizeiptr;
       unsafe {
          ffi::glBufferData(
             ffi::GL_PIXEL_UNPACK_BUFFER,
-            (self.max_width * self.max_height * 32) as ffi::GLsizeiptr,
+            self.size,
             ptr::null(),
             ffi::GL_STREAM_DRAW
          )
@@ -297,7 +285,17 @@ impl Buffer {
    #[inline]
    pub fn map(&mut self) {
       self.ptr = unsafe {
-         ffi::glMapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, ffi::GL_WRITE_ONLY) as *mut u8
+         ffi::glMapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, ffi::GL_WRITE_ONLY)
+      };
+   }
+
+   #[inline]
+   pub fn map_range(&mut self) {
+      self.ptr = unsafe {
+         ffi::glMapBufferRange(
+            ffi::GL_PIXEL_UNPACK_BUFFER, 0, self.size,
+            ffi::GL_MAP_WRITE_BIT// | ffi::GL_MAP_UNSYNCHRONIZED_BIT
+         )
       };
    }
 
@@ -306,26 +304,6 @@ impl Buffer {
       unsafe {
          ffi::glUnmapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER)
       };
-   }
-
-   #[inline]
-   pub fn clear(&mut self) {
-      unsafe {
-         ptr::write_bytes(self.ptr as *mut u8, 0, (self.max_width * self.max_height * 4) as usize)
-      };
-   }
-
-   pub fn put_pixel(&mut self, x: i32, y: i32, color: &RGB) {
-      if x >= self.width as i32 || y >= self.height as i32 || x < 0 || y < 0 {
-         return;
-      }
-
-      let i = 4 * (x + y * self.width as i32) as isize;
-      unsafe {
-         *self.ptr.offset(i) = color.r;
-         *self.ptr.offset(i+1) = color.g;
-         *self.ptr.offset(i+2) = color.b;
-      }
    }
 }
 

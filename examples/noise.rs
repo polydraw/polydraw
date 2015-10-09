@@ -1,6 +1,6 @@
 extern crate polydraw;
 
-use polydraw::{Application, Renderer, RenderFrame};
+use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
 
 pub fn rand_u8(seed: &mut u64) -> u8 {
@@ -23,7 +23,7 @@ impl NoiseRenderer {
 }
 
 impl Renderer for NoiseRenderer {
-   fn render(&mut self, frame: &mut RenderFrame) {
+   fn render(&mut self, frame: &mut Frame) {
       self.counter += 1;
       self.seed = self.counter;
 

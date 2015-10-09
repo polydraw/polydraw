@@ -13,10 +13,8 @@ use super::event_loop::EventLoop;
 
 pub struct Application {
    pub os_application: OsApplication,
-   pub width: u32,
-   pub height: u32,
-   pub screen_width: u32,
-   pub screen_height: u32,
+   pub initial_width: u32,
+   pub initial_height: u32,
 }
 
 use super::creator::ApplicationCreator;
@@ -39,8 +37,6 @@ impl Application {
       x: i32, y: i32,
       width: u32, height: u32
    ) -> Self {
-      let (screen_width, screen_height) = display.screen_size();
-
       let os_application = match OsApplication::new(
          display, title, x, y, width, height
       ) {
@@ -52,17 +48,15 @@ impl Application {
 
       Application {
          os_application: os_application,
-         width: width,
-         height: height,
-         screen_width: screen_width,
-         screen_height: screen_height,
+         initial_width: width,
+         initial_height: height,
       }
    }
 
    pub fn run(&mut self, renderer: &mut Renderer) {
       let event_loop = EventLoop::new(&self.os_application);
 
-      match event_loop.run(renderer, self.width, self.height, self.screen_width, self.screen_height) {
+      match event_loop.run(renderer, self.initial_width, self.initial_height) {
          Ok(_) => {},
          Err(e) => {
             panic!(e.description);

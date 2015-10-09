@@ -2,7 +2,7 @@ extern crate polydraw;
 
 use std::cmp::Ordering;
 
-use polydraw::{Application, Renderer, RenderFrame};
+use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::{RGB, bresenham};
 use polydraw::geom::point::Point;
 use polydraw::geom::polygon::Polygon;
@@ -41,7 +41,7 @@ impl PolygonRenderer {
 }
 
 impl Renderer for PolygonRenderer {
-   fn render(&mut self, frame: &mut RenderFrame) {
+   fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
       let color = RGB::new(127, 223, 255);

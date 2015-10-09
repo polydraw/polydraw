@@ -2,7 +2,7 @@ extern crate polydraw;
 
 use std::cmp::max;
 
-use polydraw::{Application, Renderer, RenderFrame};
+use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::line::{LineSegment, LineSegmentIntersection};
 use polydraw::geom::point::Point;
 use polydraw::draw::{RGB, bresenham, hline, vline};
@@ -65,11 +65,11 @@ impl IntersectionRenderer {
       }
    }
 
-   fn line_point_rect(&self, frame: &mut RenderFrame, x: i32, y: i32) {
+   fn line_point_rect(&self, frame: &mut Frame, x: i32, y: i32) {
       self.point_rect(frame, x, y, self.hit_test_color(x, y));
    }
 
-   fn point_rect(&self, frame: &mut RenderFrame, x: i32, y: i32, color: &RGB) {
+   fn point_rect(&self, frame: &mut Frame, x: i32, y: i32, color: &RGB) {
       let right_x = x + HALF_RECT;
       let left_x = x - HALF_RECT;
       let top_y = y + HALF_RECT;
@@ -238,7 +238,7 @@ impl Renderer for IntersectionRenderer {
       self.dragged_point = None;
    }
 
-   fn render(&mut self, frame: &mut RenderFrame) {
+   fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
       let l1_p1_x = self.l1.x1() as i32;

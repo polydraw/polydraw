@@ -17,4 +17,4 @@ pub mod draw;
 
 pub use application::Application;
 pub use renderer::Renderer;
-pub use frame::RenderFrame;
+pub use frame::Frame;
