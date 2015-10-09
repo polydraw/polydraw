@@ -99,6 +99,10 @@ impl<'a> EventLoop<'a> {
          Event::MouseExtraButtonReleased(n) => {
             renderer.mouse_extra_button_released(n);
          },
+
+         _ => {
+            panic!("Unhandled events");
+         }
       }
    }
 }
