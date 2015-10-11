@@ -14,7 +14,7 @@ struct PolygonRenderer {
 impl PolygonRenderer {
    fn new() -> Self {
       let mult = 50;
-      let mut polygon = Polygon::new(vec![
+      let polygon = Polygon::new(vec![
          Point::new(2 * mult, 9 * mult),
          Point::new(13 * mult, 12 * mult),
          Point::new(9 * mult, 3 * mult),
