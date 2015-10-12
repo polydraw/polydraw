@@ -144,8 +144,20 @@ mod tests {
       hv_clip(v_right_intersect, 70, &mut points, start);
 
       let start = end;
+      let end = points.len();
       hv_clip(v_left_intersect, 140, &mut points, start);
 
       assert_eq!(points.len(), 25);
+
+      let (_, result) = points.split_at(end);
+      assert_eq!(result, [
+         Point::new(140, 95),
+         Point::new(110, 80),
+         Point::new(70, 80),
+         Point::new(70, 110),
+         Point::new(83, 150),
+         Point::new(125, 150),
+         Point::new(140, 120),
+      ]);
    }
 }
