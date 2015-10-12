@@ -23,7 +23,7 @@ mod tests {
    fn bench_rounding_div(b: &mut Bencher) {
       b.iter(|| {
          for _ in 0..1000 {
-            black_box(1900000_i64.rounding_div(black_box(700000_i64)));
+            black_box(15023081_i64.rounding_div(black_box(108877_i64)));
          }
       });
    }
