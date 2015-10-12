@@ -2,98 +2,58 @@ use super::point::Point;
 use super::number::NumberOps;
 
 #[inline]
-pub fn h_down_intersect(y: i64, p1: Point, p2: Point) -> EdgeIntersection {
+pub fn h_down_intersect(y: i64, p1: Point, p2: Point, points: &mut Vec<Point>) {
    if p2.y > y {
       if p1.y < y {
-         EdgeIntersection::Single(
-            Point::new(h_intersect(y, p1, p2), y)
-         )
-      } else {
-         EdgeIntersection::None
+         points.push(Point::new(h_intersect(y, p1, p2), y));
       }
    } else {
       if p1.y > y && p2.y < y {
-         EdgeIntersection::Double(
-            Point::new(h_intersect(y, p1, p2), y),
-            Point::new(p2.x, p2.y)
-         )
-      } else {
-         EdgeIntersection::Single(
-            Point::new(p2.x, p2.y)
-         )
+         points.push(Point::new(h_intersect(y, p1, p2), y));
       }
+      points.push(Point::new(p2.x, p2.y));
    }
 }
 
 #[inline]
-pub fn h_up_intersect(y: i64, p1: Point, p2: Point) -> EdgeIntersection {
+pub fn h_up_intersect(y: i64, p1: Point, p2: Point, points: &mut Vec<Point>) {
    if p2.y < y {
       if p1.y > y {
-         EdgeIntersection::Single(
-            Point::new(h_intersect(y, p1, p2), y)
-         )
-      } else {
-         EdgeIntersection::None
+         points.push(Point::new(h_intersect(y, p1, p2), y));
       }
    } else {
       if p1.y < y && p2.y > y {
-         EdgeIntersection::Double(
-            Point::new(h_intersect(y, p1, p2), y),
-            Point::new(p2.x, p2.y)
-         )
-      } else {
-         EdgeIntersection::Single(
-            Point::new(p2.x, p2.y)
-         )
+         points.push(Point::new(h_intersect(y, p1, p2), y));
       }
+      points.push(Point::new(p2.x, p2.y));
    }
 }
 
 #[inline]
-pub fn v_left_intersect(x: i64, p1: Point, p2: Point) -> EdgeIntersection {
+pub fn v_left_intersect(x: i64, p1: Point, p2: Point, points: &mut Vec<Point>) {
    if p2.x > x {
       if p1.x < x {
-         EdgeIntersection::Single(
-            Point::new(x, v_intersect(x, p1, p2))
-         )
-      } else {
-         EdgeIntersection::None
+         points.push(Point::new(x, v_intersect(x, p1, p2)));
       }
    } else {
       if p1.x > x && p2.x < x {
-         EdgeIntersection::Double(
-            Point::new(x, v_intersect(x, p1, p2)),
-            Point::new(p2.x, p2.y)
-         )
-      } else {
-         EdgeIntersection::Single(
-            Point::new(p2.x, p2.y)
-         )
+         points.push(Point::new(x, v_intersect(x, p1, p2)));
       }
+      points.push(Point::new(p2.x, p2.y));
    }
 }
 
 #[inline]
-pub fn v_right_intersect(x: i64, p1: Point, p2: Point) -> EdgeIntersection {
+pub fn v_right_intersect(x: i64, p1: Point, p2: Point, points: &mut Vec<Point>) {
    if p2.x < x {
       if p1.x > x {
-         EdgeIntersection::Single(
-            Point::new(x, v_intersect(x, p1, p2))
-         )
-      } else {
-         EdgeIntersection::None
+         points.push(Point::new(x, v_intersect(x, p1, p2)));
       }
    } else {
       if p1.x < x && p2.x > x {
-         EdgeIntersection::Double(
-            Point::new(x, v_intersect(x, p1, p2)),
-            Point::new(p2.x, p2.y)
-         )
-      } else {
-         EdgeIntersection::Single(
-            Point::new(p2.x, p2.y)
-         )
+         points.push(Point::new(x, v_intersect(x, p1, p2)));
       }
+      points.push(Point::new(p2.x, p2.y));
    }
 }
 
@@ -107,15 +67,8 @@ pub fn v_intersect(x: i64, p1: Point, p2: Point) -> i64 {
    p1.y + ((p2.y - p1.y) * (x - p1.x)).rounding_div(p2.x - p1.x)
 }
 
-#[derive(Debug)]
-pub enum EdgeIntersection {
-   Double(Point, Point),
-   Single(Point),
-   None,
-}
-
 pub fn hv_clip<F>(intersect: F, y: i64, points: &mut Vec<Point>, start: usize) where
-   F: Fn(i64, Point, Point) -> EdgeIntersection,
+   F: Fn(i64, Point, Point, &mut Vec<Point>),
 {
    let end = points.len();
 
@@ -127,16 +80,7 @@ pub fn hv_clip<F>(intersect: F, y: i64, points: &mut Vec<Point>, start: usize) w
 
    for i in start..end {
       let p2 = points[i];
-      match intersect(y, p1, p2) {
-         EdgeIntersection::Double(r1, r2) => {
-            points.push(r1);
-            points.push(r2);
-         },
-         EdgeIntersection::Single(r) => {
-            points.push(r);
-         },
-         EdgeIntersection::None => {}
-      }
+      intersect(y, p1, p2, points);
 
       p1 = p2;
    }
