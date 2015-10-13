@@ -109,3 +109,8 @@ pub fn to_scanline_edges(points: &Vec<Point>) -> Vec<Edge> {
 
    edges
 }
+
+#[inline]
+pub fn orientation(a: &Point, b: &Point, c: &Point) -> i64 {
+   (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+}
