@@ -114,3 +114,17 @@ pub fn to_scanline_edges(points: &Vec<Point>) -> Vec<Edge> {
 pub fn orientation(a: &Point, b: &Point, c: &Point) -> i64 {
    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 }
+
+pub fn double_polygon_area(start: usize, points: &Vec<Point>) -> i64 {
+   let mut p1 = points.last().unwrap();
+
+   let mut area = 0;
+
+   for p2 in points[start..].iter() {
+      area += p1.x * p2.y - p1.y * p2.x;
+
+      p1 = p2;
+   }
+
+   area.abs()
+}
