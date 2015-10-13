@@ -2,6 +2,7 @@ use std::cmp::{min, max};
 
 use super::frame::Frame;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct RGB {
    pub r: u8,
    pub g: u8,
