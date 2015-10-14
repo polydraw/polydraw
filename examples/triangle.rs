@@ -14,8 +14,7 @@ use polydraw::draw::RGB;
 use polydraw::geom::point::Point;
 use polydraw::geom::triangle::Triangle;
 use polydraw::geom::number::NumberOps;
-use polydraw::geom::polygon::double_polygon_area;
-use polydraw::geom::clip::{h_split, v_split};
+use polydraw::geom::clip::{h_split_edge, v_split_edge, hv_split, Ring};
 
 
 const DIV_PER_PIXEL: i64 = 1000;
@@ -34,7 +33,10 @@ fn from_px(v: i64) -> i64 {
 
 struct TriangleRenderer {
    tr: Triangle,
-   colors: Vec<RGB>
+   colors: Vec<RGB>,
+   up: Ring<Point>,
+   right: Ring<Point>,
+   left: Ring<Point>,
 }
 
 impl TriangleRenderer {
@@ -57,6 +59,9 @@ impl TriangleRenderer {
       TriangleRenderer {
          tr: tr,
          colors: colors,
+         up: Ring::new(131072),
+         right: Ring::new(524288),
+         left: Ring::new(524288),
       }
    }
 }
@@ -77,50 +82,39 @@ impl Renderer for TriangleRenderer {
       let min_y = max(to_px(min3(a.y, b.y, c.y)), 0);
       let max_y = min(to_px(max3(a.y, b.y, c.y)), frame.height as i64 - 1);
 
-      let mut up = Vec::with_capacity(100);
-      up.push(a); up.push(b); up.push(c);
-
-      let mut left = Vec::with_capacity(100);
-      let mut right = Vec::with_capacity(100);
-
-      let mut up_start = 0;
-      let mut right_start;
+      self.up.push(a); self.up.push(b); self.up.push(c);
 
       for y in min_y..max_y+1 {
          let y_split = from_px(y) + HALF_DIV_PER_PIXEL;
 
-         right_start = right.len();
-         let up_end = up.len();
+         hv_split(h_split_edge, y_split, &mut self.right, &mut self.up);
 
-         h_split(y_split, up_start, &mut right, &mut up);
-
-         up_start = up_end;
-
-         let (min_x, max_x) = min_max_x(right_start, &right);
+         let (min_x, max_x) = min_max_x(&self.right);
 
          for x in min_x..max_x {
-            let left_start = left.len();
-            let right_end = right.len();
-
             let x_split = from_px(x) + HALF_DIV_PER_PIXEL;
 
-            v_split(x_split, right_start, &mut left, &mut right);
+            hv_split(v_split_edge, x_split, &mut self.left, &mut self.right);
 
-            right_start = right_end;
+            plot_poly_pixel(frame, x, y, &self.left, &self.colors);
 
-            plot_poly_pixel(frame, x, y, left_start, &left, &self.colors);
+            self.left.consume();
          }
 
-         plot_poly_pixel(frame, max_x, y, right_start, &right, &self.colors);
+         plot_poly_pixel(frame, max_x, y, &self.right, &self.colors);
+
+         self.right.consume();
       }
    }
 }
 
 #[inline]
-fn print_points(name: &str, start: usize, points: &Vec<Point>) {
+fn print_points(name: &str, points: &Ring<Point>) {
    print!("{}: ", name);
 
-   for p in points[start..].iter() {
+   print!("s {} e {} ", points.start(), points.end());
+
+   for p in points[..].iter() {
       print!("({:?}, {:?}) ", p.x, p.y);
    }
 
@@ -128,19 +122,17 @@ fn print_points(name: &str, start: usize, points: &Vec<Point>) {
 }
 
 #[inline]
-fn plot_poly_pixel(frame: &mut Frame, x: i64, y: i64, start: usize, points: &Vec<Point>, colors: &Vec<RGB>) {
-   let area = double_polygon_area(start, &points);
-
-   assert!(area <= DOUBLE_PIXEL_AREA);
+fn plot_poly_pixel(frame: &mut Frame, x: i64, y: i64, points: &Ring<Point>, colors: &Vec<RGB>) {
+   let area = double_polygon_area(points);
 
    frame.put_pixel(x as i32, y as i32, &colors[(255 * area / DOUBLE_PIXEL_AREA) as usize]);
 }
 
 #[inline]
-fn min_max_x(start: usize, points: &Vec<Point>) -> (i64, i64) {
+fn min_max_x(points: &Ring<Point>) -> (i64, i64) {
    let mut min_x = i64::MAX;
    let mut max_x = i64::MIN;
-   for p in points[start..].iter() {
+   for p in points[..].iter() {
       if p.x > max_x {
          max_x = p.x;
       }
@@ -163,6 +155,20 @@ pub fn max3<T: Ord>(v1: T, v2: T, v3: T) -> T {
    max(max(v1, v2), v3)
 }
 
+#[inline]
+pub fn double_polygon_area(points: &Ring<Point>) -> i64 {
+   let mut p1 = points.last().unwrap();
+
+   let mut area = 0;
+
+   for p2 in points[..].iter() {
+      area += p1.x * p2.y - p1.y * p2.x;
+
+      p1 = p2;
+   }
+
+   area.abs()
+}
 
 fn main() {
    let mut renderer = TriangleRenderer::new();
