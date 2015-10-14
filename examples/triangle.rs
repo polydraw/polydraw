@@ -96,7 +96,7 @@ impl Renderer for TriangleRenderer {
 
          up_start = up_end;
 
-         let (min_x, max_x) = min_max_x(0, &right);
+         let (min_x, max_x) = min_max_x(right_start, &right);
 
          for x in min_x..max_x {
             let left_start = left.len();
