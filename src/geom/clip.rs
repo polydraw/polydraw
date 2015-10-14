@@ -27,7 +27,13 @@ impl<T> Ring<T> where T: Default + Clone + Debug {
 
    #[inline]
    pub fn last(&self) -> Option<&T> {
-      self.v.last()
+      if self.start == self.end {
+         None
+      } else {
+         Some(unsafe {
+            self.v.get_unchecked(self.end - 1)
+         })
+      }
    }
 
    #[inline]
@@ -41,8 +47,13 @@ impl<T> Ring<T> where T: Default + Clone + Debug {
    }
 
    #[inline]
-   pub fn consume(&mut self, marker: usize) {
+   pub fn consume_at(&mut self, marker: usize) {
       self.start = marker;
+   }
+
+   #[inline]
+   pub fn consume(&mut self) {
+      self.start = self.end;
    }
 
    #[inline]
@@ -51,7 +62,7 @@ impl<T> Ring<T> where T: Default + Clone + Debug {
    }
 
    #[inline]
-   pub fn check_rewind(&mut self, extra: usize) {
+   pub fn rewind(&mut self, extra: usize) {
       if extra > (self.v.len() - self.end) {
          if self.start != self.end {
             for i in 0..(self.end - self.start) {
@@ -155,13 +166,13 @@ pub fn v_intersect(x: i64, p1: Point, p2: Point) -> i64 {
    p1.y + ((p2.y - p1.y) * (x - p1.x)).rounding_div(p2.x - p1.x)
 }
 
-pub fn hv_clip<F>(intersect: F, y: i64, points: &mut Ring<Point>) where
+pub fn hv_clip<F>(intersect: F, at: i64, points: &mut Ring<Point>) where
    F: Fn(i64, Point, Point, &mut Ring<Point>),
 {
    let start = points.start();
    let end = points.end();
 
-   points.check_rewind(2 * (end - start));
+   points.rewind(2 * (end - start));
 
    let rewinded_end = points.end();
 
@@ -170,48 +181,43 @@ pub fn hv_clip<F>(intersect: F, y: i64, points: &mut Ring<Point>) where
    for i in start..end {
       let p2 = points[i];
 
-      intersect(y, p1, p2, points);
+      intersect(at, p1, p2, points);
 
       p1 = p2;
    }
 
-   points.consume(rewinded_end);
+   points.consume_at(rewinded_end);
 }
 
-pub fn h_split(y: i64, start: usize, down: &mut Vec<Point>, up: &mut Vec<Point>) {
-   let end = up.len();
+pub fn hv_split<F>(split: F, at: i64, write: &mut Ring<Point>, read_write: &mut Ring<Point>) where
+   F: Fn(i64, Point, Point, &mut Ring<Point>, &mut Ring<Point>),
+{
+   let start = read_write.start();
+   let end = read_write.end();
+
+   let double = 2 * (end - start);
+   read_write.rewind(double);
+   write.rewind(double);
+
+   let rewinded_end = read_write.end();
 
    assert!(end - start > 2);
 
-   let mut p1 = up[end-1];
+   let mut p1 = read_write[end-1];
 
    for i in start..end {
-      let p2 = up[i];
+      let p2 = read_write[i];
 
-      h_split_edge(y, p1, p2, down, up);
+      split(at, p1, p2, write, read_write);
 
       p1 = p2;
    }
-}
 
-pub fn v_split(x: i64, start: usize, left: &mut Vec<Point>, right: &mut Vec<Point>) {
-   let end = right.len();
-
-   assert!(end - start > 2);
-
-   let mut p1 = right[end-1];
-
-   for i in start..end {
-      let p2 = right[i];
-
-      v_split_edge(x, p1, p2, left, right);
-
-      p1 = p2;
-   }
+   read_write.consume_at(rewinded_end);
 }
 
 #[inline]
-pub fn h_split_edge(y: i64, p1: Point, p2: Point, down: &mut Vec<Point>, up: &mut Vec<Point>) {
+pub fn h_split_edge(y: i64, p1: Point, p2: Point, down: &mut Ring<Point>, up: &mut Ring<Point>) {
    if p2.y > y {
       if p1.y < y {
          let intersection = Point::new(h_intersect(y, p1, p2), y);
@@ -233,7 +239,7 @@ pub fn h_split_edge(y: i64, p1: Point, p2: Point, down: &mut Vec<Point>, up: &mu
 }
 
 #[inline]
-pub fn v_split_edge(x: i64, p1: Point, p2: Point, left: &mut Vec<Point>, right: &mut Vec<Point>) {
+pub fn v_split_edge(x: i64, p1: Point, p2: Point, left: &mut Ring<Point>, right: &mut Ring<Point>) {
    if p2.x > x {
       if p1.x < x {
          let intersection = Point::new(x, v_intersect(x, p1, p2));
@@ -264,9 +270,11 @@ mod tests {
 
    #[bench]
    fn bench_clip(b: &mut Bencher) {
+      let mut points = Ring::new(1024 * 256);
+
       b.iter(|| {
          for _ in 0..1000 {
-            let mut points = Ring::new(30);
+            points.consume();
 
             points.push(Point::new(50, 50));
             points.push(Point::new(100, 200));
@@ -282,7 +290,7 @@ mod tests {
          }
       });
    }
-/*
+
    #[test]
    fn test_clip() {
       let mut points = Ring::new(30);
@@ -311,5 +319,4 @@ mod tests {
          Point::new(140, 120),
       ]);
    }
-*/
 }
