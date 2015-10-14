@@ -30,5 +30,6 @@ impl WglContext {
       wgl::load(&loader);
 
       gl::reset_pixelstore_alignment();
+      gl::enable_framebuffer_srgb();
    }
 }

@@ -47,6 +47,14 @@ pub fn reset_pixelstore_alignment() {
    }
 }
 
+#[inline]
+pub fn enable_framebuffer_srgb() {
+   unsafe {
+      ffi::glEnable(ffi::GL_FRAMEBUFFER_SRGB);
+   }
+}
+
+#[inline]
 pub fn disable_all() {
    unsafe {
       ffi::glDisable(ffi::GL_SCISSOR_TEST);
