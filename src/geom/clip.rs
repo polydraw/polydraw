@@ -96,7 +96,7 @@ impl<T> Ring<T> where T: Default + Clone + Debug {
       if index == self.start {
          self.end - 1
       } else {
-         self.start - 1
+         index - 1
       }
    }
 }
