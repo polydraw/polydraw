@@ -1,3 +1,5 @@
+use std::mem;
+
 use super::point::Point;
 
 #[derive(Debug)]
@@ -14,5 +16,15 @@ impl Triangle {
          b: b,
          c: c
       }
+   }
+
+   #[inline]
+   pub fn clockwise(&self) -> bool {
+      (self.b.x - self.a.x) * (self.c.y - self.a.y) < (self.c.x - self.a.x) * (self.b.y - self.a.y)
+   }
+
+   #[inline]
+   pub fn change_orientation(&mut self) {
+      mem::swap(&mut self.b, &mut self.c);
    }
 }
