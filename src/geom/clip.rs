@@ -214,13 +214,16 @@ pub fn hv_split<F>(split: F, at: i64, write: &mut Ring<Point>, read_write: &mut 
    let start = read_write.start();
    let end = read_write.end();
 
+   if end - start <= 2 {
+      read_write.consume();
+      return;
+   }
+
    let double = 2 * (end - start);
    read_write.rewind(double);
    write.rewind(double);
 
    let rewinded_end = read_write.end();
-
-   assert!(end - start > 2);
 
    let mut p1 = read_write[end-1];
 
