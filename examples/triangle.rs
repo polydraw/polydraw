@@ -13,7 +13,6 @@ use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
 use polydraw::geom::point::Point;
 use polydraw::geom::triangle::Triangle;
-use polydraw::geom::number::NumberOps;
 use polydraw::geom::clip::{h_split_edge, v_split_edge, hv_split, Ring};
 
 
@@ -23,7 +22,7 @@ const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
 
 #[inline]
 fn to_px(v: i64) -> i64 {
-   v.rounding_div(DIV_PER_PIXEL)
+   v / DIV_PER_PIXEL
 }
 
 #[inline]
@@ -75,6 +74,10 @@ impl Renderer for TriangleRenderer {
          self.tr.a.x = 0;
       }
 
+      if self.tr.clockwise() {
+         self.tr.change_orientation();
+      }
+
       let a = self.tr.a;
       let b = self.tr.b;
       let c = self.tr.c;
@@ -85,14 +88,16 @@ impl Renderer for TriangleRenderer {
       self.up.push(a); self.up.push(b); self.up.push(c);
 
       for y in min_y..max_y+1 {
-         let y_split = from_px(y) + HALF_DIV_PER_PIXEL;
+         let y_world = from_px(y);
+         let y_split = y_world + DIV_PER_PIXEL;
 
          hv_split(h_split_edge, y_split, &mut self.right, &mut self.up);
 
          let (min_x, max_x) = min_max_x(&self.right);
 
          for x in min_x..max_x {
-            let x_split = from_px(x) + HALF_DIV_PER_PIXEL;
+            let x_world = from_px(x);
+            let x_split = x_world + DIV_PER_PIXEL;
 
             hv_split(v_split_edge, x_split, &mut self.left, &mut self.right);
 
@@ -123,7 +128,9 @@ fn print_points(name: &str, points: &Ring<Point>) {
 
 #[inline]
 fn plot_poly_pixel(frame: &mut Frame, x: i64, y: i64, points: &Ring<Point>, colors: &Vec<RGB>) {
-   let area = double_polygon_area(points);
+   let area = double_area(points);
+
+   assert!(area >= 0);
 
    frame.put_pixel(x as i32, y as i32, &colors[(255 * area / DOUBLE_PIXEL_AREA) as usize]);
 }
@@ -156,7 +163,11 @@ pub fn max3<T: Ord>(v1: T, v2: T, v3: T) -> T {
 }
 
 #[inline]
-pub fn double_polygon_area(points: &Ring<Point>) -> i64 {
+pub fn double_area(points: &Ring<Point>) -> i64 {
+   if points.len() <= 2 {
+      return 0;
+   }
+
    let mut p1 = points.last().unwrap();
 
    let mut area = 0;
@@ -167,7 +178,7 @@ pub fn double_polygon_area(points: &Ring<Point>) -> i64 {
       p1 = p2;
    }
 
-   area.abs()
+   area
 }
 
 fn main() {
