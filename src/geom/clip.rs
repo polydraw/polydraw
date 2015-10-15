@@ -80,6 +80,25 @@ impl<T> Ring<T> where T: Default + Clone + Debug {
       self.v[self.end] = value;
       self.end += 1;
    }
+
+   #[inline]
+   pub fn next_index(&self, index: usize) -> usize {
+      let index = index + 1;
+      if index == self.end {
+         self.start
+      } else {
+         index
+      }
+   }
+
+   #[inline]
+   pub fn prev_index(&self, index: usize) -> usize {
+      if index == self.start {
+         self.end - 1
+      } else {
+         self.start - 1
+      }
+   }
 }
 
 impl<T> Index<usize> for Ring<T> {
