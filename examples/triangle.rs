@@ -63,6 +63,42 @@ impl TriangleRenderer {
          left: Ring::new(524288),
       }
    }
+
+   fn solid_follow(&mut self, x_split: i64, y_world: i64, y_split: i64) -> Option<i64> {
+      let right_start = self.right.start();
+      let right_end = self.right.end();
+
+      if right_end - right_start > 3 {
+         let top_left = Point::new(x_split, y_split);
+         for top_left_i in right_start..right_end {
+            if self.right[top_left_i] == top_left {
+
+               let bottom_left = Point::new(x_split, y_world);
+               let bottom_left_i = self.right.next_index(top_left_i);
+               if self.right[bottom_left_i] == bottom_left {
+
+                  let bottom_right_i = self.right.next_index(bottom_left_i);
+                  if self.right[bottom_right_i].y == y_world {
+
+                     let top_right_i = self.right.prev_index(top_left_i);
+                     if self.right[top_right_i].y == y_split {
+                        let delta_min = min(
+                           self.right[top_right_i].x,
+                           self.right[bottom_right_i].x
+                        ) - x_split;
+
+                        if delta_min >= DIV_PER_PIXEL {
+                           return Some(to_px(delta_min));
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+
+      None
+   }
 }
 
 impl Renderer for TriangleRenderer {
@@ -95,7 +131,9 @@ impl Renderer for TriangleRenderer {
 
          let (min_x, max_x) = min_max_x(&self.right);
 
-         for x in min_x..max_x {
+         let mut x = min_x;
+
+         while x < max_x {
             let x_world = from_px(x);
             let x_split = x_world + DIV_PER_PIXEL;
 
@@ -104,6 +142,25 @@ impl Renderer for TriangleRenderer {
             plot_poly_pixel(frame, x, y, &self.left, &self.colors);
 
             self.left.consume();
+
+            x += 1;
+
+            match self.solid_follow(x_split, y_world, y_split) {
+               Some(delta) => {
+                  let x_split_right = x_split + from_px(delta);
+
+                  hv_split(v_split_edge, x_split_right, &mut self.left, &mut self.right);
+
+                  for solid_x in x..x + delta {
+                     frame.put_pixel(solid_x as i32, y as i32, &self.colors[255]);
+                  }
+
+                  self.left.consume();
+
+                  x += delta;
+               },
+               None => {}
+            }
          }
 
          plot_poly_pixel(frame, max_x, y, &self.right, &self.colors);
