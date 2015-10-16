@@ -2,6 +2,8 @@ use std::mem;
 
 use super::point::Point;
 
+use super::number::NumberOps;
+
 #[derive(Debug)]
 pub struct Triangle {
    pub a: Point,
@@ -26,5 +28,13 @@ impl Triangle {
    #[inline]
    pub fn change_orientation(&mut self) {
       mem::swap(&mut self.b, &mut self.c);
+   }
+
+   #[inline]
+   pub fn centroid(&self) -> Point {
+      Point::new(
+         (self.a.x + self.b.x + self.c.x).rounding_div(3),
+         (self.a.y + self.b.y + self.c.y).rounding_div(3)
+      )
    }
 }
