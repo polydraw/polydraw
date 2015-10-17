@@ -13,7 +13,8 @@ use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
 use polydraw::geom::point::Point;
 use polydraw::geom::triangle::Triangle;
-use polydraw::geom::clip::{h_split_edge, v_split_edge, hv_split, Ring};
+use polydraw::geom::ring::Ring;
+use polydraw::geom::clip::{h_split_edge, v_split_edge, hv_split};
 
 
 const DIV_PER_PIXEL: i64 = 1000;
