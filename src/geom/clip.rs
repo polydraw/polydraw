@@ -170,6 +170,7 @@ mod tests {
    use test::Bencher;
 
    use super::super::point::Point;
+   use super::super::ring::Ring;
 
    use super::*;
 
