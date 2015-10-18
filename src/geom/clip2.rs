@@ -130,11 +130,24 @@ impl Default for Edge {
 }
 
 pub fn h_split(y: i64, lower: &mut Ring<Edge>, src_upper: &mut Ring<Edge>) {
-   let x1_intersect;
-
+   let start = src_upper.start();
    let end = src_upper.end();
 
-   let mut i = src_upper.start();
+   if end - start <= 2 {
+      src_upper.consume();
+      panic!("h_split end - start <= 2");
+      return;
+   }
+
+   let double = 2 * (end - start);
+   src_upper.rewind(double);
+   lower.rewind(double);
+
+   let rewinded_end = src_upper.end();
+
+   let x1_intersect;
+
+   let mut i = start;
 
    loop { // Edge's first point below y
       match src_upper[i] {
@@ -281,15 +294,28 @@ pub fn h_split(y: i64, lower: &mut Ring<Edge>, src_upper: &mut Ring<Edge>) {
       lower.push(edge);
    }
 
-   src_upper.consume_at(end);
+   src_upper.consume_at(rewinded_end);
 }
 
 pub fn v_split(x: i64, left: &mut Ring<Edge>, src_right: &mut Ring<Edge>) {
-   let y1_intersect;
-
+   let start = src_right.start();
    let end = src_right.end();
 
-   let mut i = src_right.start();
+   if end - start <= 2 {
+      src_right.consume();
+      panic!("v_split end - start <= 2");
+      return;
+   }
+
+   let double = 2 * (end - start);
+   src_right.rewind(double);
+   left.rewind(double);
+
+   let rewinded_end = src_right.end();
+
+   let y1_intersect;
+
+   let mut i = start;
 
    loop { // Edge's first point below y
       match src_right[i] {
@@ -436,7 +462,7 @@ pub fn v_split(x: i64, left: &mut Ring<Edge>, src_right: &mut Ring<Edge>) {
       left.push(edge);
    }
 
-   src_right.consume_at(end);
+   src_right.consume_at(rewinded_end);
 }
 
 #[inline]
