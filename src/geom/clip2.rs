@@ -284,6 +284,161 @@ pub fn h_split(y: i64, lower: &mut Ring<Edge>, src_upper: &mut Ring<Edge>) {
    src_upper.consume_at(end);
 }
 
+pub fn v_split(x: i64, left: &mut Ring<Edge>, src_right: &mut Ring<Edge>) {
+   let y1_intersect;
+
+   let end = src_right.end();
+
+   let mut i = src_right.start();
+
+   loop { // Edge's first point below y
+      match src_right[i] {
+         Edge::Inclined(inclined) => {
+            if inclined.x2 < x {
+               left.push(Edge::Inclined(inclined));
+            } else if inclined.x2 > x {
+               y1_intersect = inclined.v_intersect(x);
+
+               left.push(Edge::Inclined(
+                  inclined.segment(inclined.x1, inclined.y1, x, y1_intersect)
+               ));
+
+               src_right.push(Edge::Inclined(
+                  inclined.segment(x, y1_intersect, inclined.x2, inclined.y2)
+               ));
+
+               break;
+            } else {
+               y1_intersect = inclined.y2;
+
+               left.push(Edge::Inclined(inclined));
+
+               break;
+            }
+         },
+         Edge::Horizontal(horizontal) => {
+            if horizontal.x2 < x {
+               left.push(Edge::Horizontal(horizontal));
+            } else if horizontal.x2 > x {
+               y1_intersect = horizontal.y;
+
+               left.push(Edge::Horizontal(
+                  HorizontalEdge::new(horizontal.x1, x, y1_intersect)
+               ));
+
+               src_right.push(Edge::Horizontal(
+                  HorizontalEdge::new(x, horizontal.x2, y1_intersect)
+               ));
+
+               break;
+            } else {
+               y1_intersect = horizontal.y;
+
+               left.push(Edge::Horizontal(horizontal));
+
+               break;
+            }
+         },
+         Edge::Vertical(horizontal) => {
+            left.push(Edge::Vertical(horizontal));
+         }
+      }
+
+      i += 1;
+
+      if i == end {
+         return;
+      }
+   }
+
+   i += 1;
+
+   loop { // Edge's first point above y
+      match src_right[i] {
+         Edge::Inclined(inclined) => {
+            if inclined.x2 > x {
+               src_right.push(Edge::Inclined(inclined));
+            } else if inclined.x2 < x {
+               let y2_intersect = inclined.v_intersect(x);
+
+               src_right.push(Edge::Inclined(
+                  inclined.segment(inclined.x1, inclined.y1, x, y2_intersect)
+               ));
+
+               v_split_push_vertical(
+                  x, y1_intersect, y2_intersect, left, src_right
+               );
+
+               left.push(Edge::Inclined(
+                  inclined.segment(x, y2_intersect, inclined.x2, inclined.y2)
+               ));
+
+               break;
+            } else {
+               let y2_intersect = inclined.y2;
+
+               src_right.push(Edge::Inclined(inclined));
+
+               v_split_push_vertical(
+                  x, y1_intersect, y2_intersect, left, src_right
+               );
+
+               break;
+            }
+         },
+         Edge::Horizontal(horizontal) => {
+            if horizontal.x2 > x {
+               src_right.push(Edge::Horizontal(horizontal));
+            } else if horizontal.x2 < x {
+               let y2_intersect = horizontal.y;
+
+               src_right.push(Edge::Horizontal(
+                  HorizontalEdge::new(horizontal.x1, x, y2_intersect)
+               ));
+
+               v_split_push_vertical(
+                  x, y1_intersect, y2_intersect, left, src_right
+               );
+
+               left.push(Edge::Horizontal(
+                  HorizontalEdge::new(x, horizontal.x2, y2_intersect)
+               ));
+
+               break;
+            } else {
+               let y2_intersect = horizontal.y;
+
+               src_right.push(Edge::Horizontal(horizontal));
+
+               v_split_push_vertical(
+                  x, y1_intersect, y2_intersect, left, src_right
+               );
+
+               break;
+            }
+         },
+         Edge::Vertical(vertical) => {
+            src_right.push(Edge::Vertical(vertical));
+         }
+      }
+
+      i += 1;
+
+      if i == end {
+         return;
+      }
+   }
+
+   i += 1;
+
+   for j in i..end { // Edge's first point again below y
+      let edge = src_right[j];
+      left.push(edge);
+   }
+
+   src_right.consume_at(end);
+}
+
 #[inline]
 pub fn h_split_push_horizontal(x1: i64, x2: i64, y: i64, lower: &mut Ring<Edge>, src_upper: &mut Ring<Edge>) {
    src_upper.push(Edge::Horizontal(
@@ -292,5 +447,16 @@ pub fn h_split_push_horizontal(x1: i64, x2: i64, y: i64, lower: &mut Ring<Edge>,
 
    lower.push(Edge::Horizontal(
       HorizontalEdge::new(x1, x2, y)
+   ));
+}
+
+#[inline]
+pub fn v_split_push_vertical(x: i64, y1: i64, y2: i64, left: &mut Ring<Edge>, src_right: &mut Ring<Edge>) {
+   src_right.push(Edge::Vertical(
+      VerticalEdge::new(x, y2, y1)
+   ));
+
+   left.push(Edge::Vertical(
+      VerticalEdge::new(x, y1, y2)
    ));
 }
