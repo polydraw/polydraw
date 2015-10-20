@@ -129,13 +129,52 @@ impl Default for Edge {
    }
 }
 
+impl Edge {
+   #[inline]
+   pub fn x1(&self) -> i64 {
+      match *self {
+         Edge::Inclined(inclined) => inclined.x1,
+         Edge::Horizontal(horizontal) => horizontal.x1,
+         Edge::Vertical(vertical) => vertical.x,
+      }
+   }
+
+   #[inline]
+   pub fn y1(&self) -> i64 {
+      match *self {
+         Edge::Inclined(inclined) => inclined.y1,
+         Edge::Horizontal(horizontal) => horizontal.y,
+         Edge::Vertical(vertical) => vertical.y1,
+      }
+   }
+
+   #[inline]
+   pub fn x2(&self) -> i64 {
+      match *self {
+         Edge::Inclined(inclined) => inclined.x2,
+         Edge::Horizontal(horizontal) => horizontal.x2,
+         Edge::Vertical(vertical) => vertical.x,
+      }
+   }
+
+   #[inline]
+   pub fn y2(&self) -> i64 {
+      match *self {
+         Edge::Inclined(inclined) => inclined.y2,
+         Edge::Horizontal(horizontal) => horizontal.y,
+         Edge::Vertical(vertical) => vertical.y2,
+      }
+   }
+}
+
+#[inline]
 pub fn h_split(y: i64, lower: &mut Ring<Edge>, src_upper: &mut Ring<Edge>) {
    let start = src_upper.start();
    let end = src_upper.end();
 
    if end - start <= 2 {
       src_upper.consume();
-      panic!("h_split end - start <= 2");
+      //panic!("h_split end - start <= 2");
       return;
    }
 
@@ -297,6 +336,7 @@ pub fn h_split(y: i64, lower: &mut Ring<Edge>, src_upper: &mut Ring<Edge>) {
    src_upper.consume_at(rewinded_end);
 }
 
+#[inline]
 pub fn v_split(x: i64, left: &mut Ring<Edge>, src_right: &mut Ring<Edge>) {
    let start = src_right.start();
    let end = src_right.end();
