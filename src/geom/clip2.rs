@@ -11,8 +11,6 @@ pub struct InclinedEdge {
    pub oy1: i64,
    pub ox2: i64,
    pub oy2: i64,
-   pub dx: i64,
-   pub dy: i64,
 }
 
 impl InclinedEdge {
@@ -27,20 +25,17 @@ impl InclinedEdge {
          oy1: y1,
          ox2: x2,
          oy2: y2,
-         dx: x2 - x1,
-         dy: y2 - y1,
       }
    }
 
    #[inline]
    fn h_intersect(&self, y: i64) -> i64 {
-      self.ox1 + (self.dx * (y - self.oy1)).rounding_div(self.dy)
+      self.ox1 + ((self.ox2 - self.ox1) * (y - self.oy1)).rounding_div(self.oy2 - self.oy1)
    }
 
-   #[allow(dead_code)]
    #[inline]
    fn v_intersect(&self, x: i64) -> i64 {
-      self.oy1 + (self.dy * (x - self.ox1)).rounding_div(self.dx)
+      self.oy1 + ((self.oy2 - self.oy1) * (x - self.ox1)).rounding_div(self.ox2 - self.ox1)
    }
 
    #[inline]
@@ -54,8 +49,6 @@ impl InclinedEdge {
          oy1: self.oy1,
          ox2: self.ox2,
          oy2: self.oy2,
-         dx: self.dx,
-         dy: self.dy,
       }
    }
 }
