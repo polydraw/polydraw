@@ -1,7 +1,5 @@
 #![feature(test)]
 
-#![allow(dead_code)]
-
 extern crate test;
 
 extern crate polydraw;
@@ -18,7 +16,6 @@ use polydraw::geom::clip::{h_split_edge, v_split_edge, hv_split};
 
 
 const DIV_PER_PIXEL: i64 = 1000;
-const HALF_DIV_PER_PIXEL: i64 = DIV_PER_PIXEL / 2;
 const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
 
 #[inline]
@@ -171,6 +168,7 @@ impl Renderer for TriangleRenderer {
    }
 }
 
+#[allow(dead_code)]
 #[inline]
 fn print_points(name: &str, points: &Ring<Point>) {
    print!("{}: ", name);
