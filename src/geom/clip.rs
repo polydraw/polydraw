@@ -175,54 +175,74 @@ mod tests {
    use super::*;
 
    #[bench]
-   fn bench_clip(b: &mut Bencher) {
-      let mut points = Ring::new(1024 * 256);
+   fn bench_split1(b: &mut Bencher) {
+      let mut up = Ring::new(131072);
+      let mut right = Ring::new(524288);
+      let mut left = Ring::new(524288);
 
       b.iter(|| {
          for _ in 0..1000 {
-            points.consume();
+            up.push(
+               Point::new(100, 100)
+            );
+            up.push(
+               Point::new(300, 600)
+            );
+            up.push(
+               Point::new(800, 400)
+            );
 
-            points.push(Point::new(50, 50));
-            points.push(Point::new(100, 200));
-            points.push(Point::new(150, 100));
+            hv_split(h_split_edge, 200, &mut right, &mut up);
 
-            hv_clip(h_down_intersect, 150, &mut points);
+            hv_split(v_split_edge, 200, &mut left, &mut right);
+            left.consume();
 
-            hv_clip(h_up_intersect, 80, &mut points);
+            hv_split(v_split_edge, 300, &mut left, &mut right);
+            left.consume();
 
-            hv_clip(v_right_intersect, 70, &mut points);
+            right.consume();
 
-            hv_clip(v_left_intersect, 140, &mut points);
+
+            hv_split(h_split_edge, 300, &mut right, &mut up);
+
+            hv_split(v_split_edge, 200, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 300, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 400, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 500, &mut left, &mut right);
+            left.consume();
+
+            right.consume();
+
+            hv_split(h_split_edge, 400, &mut right, &mut up);
+
+            hv_split(v_split_edge, 200, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 300, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 400, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 500, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 600, &mut left, &mut right);
+            left.consume();
+
+            hv_split(v_split_edge, 700, &mut left, &mut right);
+            left.consume();
+
+            right.consume();
+
+            up.consume();
          }
       });
-   }
-
-   #[test]
-   fn test_clip() {
-      let mut points = Ring::new(30);
-
-      points.push(Point::new(50, 50));
-      points.push(Point::new(100, 200));
-      points.push(Point::new(150, 100));
-
-      hv_clip(h_down_intersect, 150, &mut points);
-
-      hv_clip(h_up_intersect, 80, &mut points);
-
-      hv_clip(v_right_intersect, 70, &mut points);
-
-      hv_clip(v_left_intersect, 140, &mut points);
-
-      assert_eq!(points[..].len(), 7);
-
-      assert_eq!(&points[..], [
-         Point::new(140, 95),
-         Point::new(110, 80),
-         Point::new(70, 80),
-         Point::new(70, 110),
-         Point::new(83, 150),
-         Point::new(125, 150),
-         Point::new(140, 120),
-      ]);
    }
 }

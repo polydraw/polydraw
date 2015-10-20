@@ -526,3 +526,83 @@ pub fn v_split_push_vertical(x: i64, y1: i64, y2: i64, left: &mut Ring<Edge>, sr
       VerticalEdge::new(x, y1, y2)
    ));
 }
+
+#[cfg(test)]
+mod tests {
+   use test::Bencher;
+
+   use super::super::ring::Ring;
+
+   use super::*;
+
+   #[bench]
+   fn bench_split2(b: &mut Bencher) {
+      let mut up = Ring::new(131072);
+      let mut right = Ring::new(524288);
+      let mut left = Ring::new(524288);
+
+      b.iter(|| {
+         for _ in 0..1000 {
+            up.push(Edge::Inclined(
+               InclinedEdge::new(100, 100, 300, 600)
+            ));
+            up.push(Edge::Inclined(
+               InclinedEdge::new(300, 600, 800, 400)
+            ));
+            up.push(Edge::Inclined(
+               InclinedEdge::new(800, 400, 100, 100)
+            ));
+
+            h_split(200, &mut right, &mut up);
+
+            v_split(200, &mut left, &mut right);
+            left.consume();
+
+            v_split(300, &mut left, &mut right);
+            left.consume();
+
+            right.consume();
+
+            h_split(300, &mut right, &mut up);
+
+            v_split(200, &mut left, &mut right);
+            left.consume();
+
+            v_split(300, &mut left, &mut right);
+            left.consume();
+
+            v_split(400, &mut left, &mut right);
+            left.consume();
+
+            v_split(500, &mut left, &mut right);
+            left.consume();
+
+            right.consume();
+
+            h_split(400, &mut right, &mut up);
+
+            v_split(200, &mut left, &mut right);
+            left.consume();
+
+            v_split(300, &mut left, &mut right);
+            left.consume();
+
+            v_split(400, &mut left, &mut right);
+            left.consume();
+
+            v_split(500, &mut left, &mut right);
+            left.consume();
+
+            v_split(600, &mut left, &mut right);
+            left.consume();
+
+            v_split(700, &mut left, &mut right);
+            left.consume();
+
+            right.consume();
+
+            up.consume();
+         }
+      });
+   }
+}
