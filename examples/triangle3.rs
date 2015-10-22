@@ -1,115 +1,197 @@
 #![allow(dead_code)]
 extern crate polydraw;
 
-use std::iter;
-
 use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::point::Point;
+use polydraw::geom::ring::Ring;
+use polydraw::draw::RGB;
 
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum EdgeType {
-   Inclined,
-   InclinedRev,
-   Horizontal,
-   HorizontalRev,
-   Vertical,
-   VerticalRev,
+struct Poly {
+   color: RGB,
+   start: usize,
+   end: usize,
+}
+
+impl Poly {
+   #[inline]
+   pub fn new(color: RGB, start: usize, end: usize) -> Self {
+      Poly {
+         color: color,
+         start: start,
+         end: end,
+      }
+   }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct Edge {
-   etype: EdgeType,
+enum Edge {
+   Inclined(usize),
+   InclinedRev(usize),
+   Horizontal(i64),
+   HorizontalRev(i64),
+   Vertical(i64),
+   VerticalRev(i64),
+}
+
+impl Default for Edge {
+   #[inline]
+   fn default() -> Edge {
+      Edge::Inclined(0)
+   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct InclinedEdge {
    p1: usize,
    p2: usize,
 }
 
-impl Edge {
+impl InclinedEdge {
    #[inline]
-   pub fn new(etype: EdgeType, p1: usize, p2: usize) -> Self {
-      Edge {
-         etype: etype,
+   pub fn new(p1: usize, p2: usize) -> Self {
+      InclinedEdge {
          p1: p1,
          p2: p2,
       }
    }
 }
 
-impl Default for Edge {
+impl Default for InclinedEdge {
    #[inline]
-   fn default() -> Edge {
-      Edge::new(EdgeType::Inclined, 0, 0)
+   fn default() -> InclinedEdge {
+      InclinedEdge::new(0, 0)
    }
 }
 
-pub fn fill_default<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
-   iter::repeat(T::default()).take(capacity).collect()
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct PolyRef {
+   src: usize,
+   start: usize,
+   end: usize,
 }
 
-struct TriangleRenderer {
-   triangles: Vec<Edge>,
-   original: Vec<Point>,
+impl PolyRef {
+   #[inline]
+   pub fn new(src: usize, start: usize, end: usize) -> Self {
+      PolyRef {
+         src: src,
+         start: start,
+         end: end,
+      }
+   }
+}
 
-   above: Vec<Edge>,
-   below: Vec<Edge>,
+impl Default for PolyRef {
+   #[inline]
+   fn default() -> PolyRef {
+      PolyRef::new(0, 0, 0)
+   }
+}
+
+
+struct PolySource {
+   polys: Vec<Poly>,
+   edges: Vec<Edge>,
+   inclined: Vec<InclinedEdge>,
    points: Vec<Point>,
 }
 
-impl TriangleRenderer {
+impl PolySource {
    fn new() -> Self {
-      let triangles = vec![
+      let polys = vec![
          // A
-         Edge::new(EdgeType::Vertical, 0, 1),
-         Edge::new(EdgeType::InclinedRev, 1, 2),
-         Edge::new(EdgeType::InclinedRev, 2, 0),
-
+         Poly::new(RGB::new(18, 78, 230), 0, 3),
          // B
-         Edge::new(EdgeType::Inclined, 0, 2),
-         Edge::new(EdgeType::InclinedRev, 2, 3),
-         Edge::new(EdgeType::InclinedRev, 3, 0),
-
+         Poly::new(RGB::new(47, 11, 206), 3, 6),
          // C
-         Edge::new(EdgeType::Inclined, 0, 3),
-         Edge::new(EdgeType::InclinedRev, 3, 4),
-         Edge::new(EdgeType::HorizontalRev, 4, 0),
-
+         Poly::new(RGB::new(170, 44, 206), 6, 9),
          // D
-         Edge::new(EdgeType::Inclined, 4, 3),
-         Edge::new(EdgeType::Inclined, 3, 5),
-         Edge::new(EdgeType::InclinedRev, 5, 4),
-
+         Poly::new(RGB::new(243, 0, 149), 9, 12),
          // E
-         Edge::new(EdgeType::Inclined, 4, 5),
-         Edge::new(EdgeType::Inclined, 5, 6),
-         Edge::new(EdgeType::VerticalRev, 6, 4),
-
+         Poly::new(RGB::new(170, 36, 14), 12, 15),
          // F
-         Edge::new(EdgeType::Inclined, 3, 2),
-         Edge::new(EdgeType::Inclined, 2, 7),
-         Edge::new(EdgeType::InclinedRev, 7, 3),
-
+         Poly::new(RGB::new(219, 65, 18), 15, 18),
          // G
-         Edge::new(EdgeType::Inclined, 3, 7),
-         Edge::new(EdgeType::InclinedRev, 7, 5),
-         Edge::new(EdgeType::InclinedRev, 5, 3),
-
+         Poly::new(RGB::new(254, 185, 21), 18, 21),
          // H
-         Edge::new(EdgeType::Inclined, 2, 1),
-         Edge::new(EdgeType::InclinedRev, 1, 7),
-         Edge::new(EdgeType::InclinedRev, 7, 2),
-
+         Poly::new(RGB::new(244, 239, 114), 21, 24),
          // I
-         Edge::new(EdgeType::Inclined, 5, 7),
-         Edge::new(EdgeType::Inclined, 7, 6),
-         Edge::new(EdgeType::InclinedRev, 6, 5),
-
+         Poly::new(RGB::new(109, 233, 158), 24, 27),
          // J
-         Edge::new(EdgeType::Inclined, 7, 1),
-         Edge::new(EdgeType::Horizontal, 1, 6),
-         Edge::new(EdgeType::InclinedRev, 6, 7),
+         Poly::new(RGB::new(66, 222, 241), 27, 30),
       ];
 
-      let original = vec![
+      let edges = vec![
+         // 0: A
+         Edge::Vertical(0),
+         Edge::InclinedRev(0),
+         Edge::InclinedRev(1),
+
+         // 1: B
+         Edge::Inclined(1),
+         Edge::InclinedRev(2),
+         Edge::InclinedRev(3),
+
+         // 2: C
+         Edge::Inclined(3),
+         Edge::InclinedRev(4),
+         Edge::HorizontalRev(0),
+
+         // 3: D
+         Edge::Inclined(4),
+         Edge::Inclined(5),
+         Edge::InclinedRev(6),
+
+         // 4: E
+         Edge::Inclined(6),
+         Edge::Inclined(7),
+         Edge::VerticalRev(10),
+
+         // 5: F
+         Edge::Inclined(2),
+         Edge::Inclined(8),
+         Edge::InclinedRev(9),
+
+         // 6: G
+         Edge::Inclined(9),
+         Edge::InclinedRev(10),
+         Edge::InclinedRev(5),
+
+         // 7: H
+         Edge::Inclined(0),
+         Edge::InclinedRev(11),
+         Edge::InclinedRev(8),
+
+         // 8: I
+         Edge::Inclined(10),
+         Edge::Inclined(12),
+         Edge::InclinedRev(7),
+
+         // 9: J
+         Edge::Inclined(11),
+         Edge::Horizontal(10),
+         Edge::InclinedRev(12),
+      ];
+
+      let inclined = vec![
+         InclinedEdge::new(2, 1),  // 0
+         InclinedEdge::new(0, 2),  // 1
+         InclinedEdge::new(3, 2),  // 2
+         InclinedEdge::new(0, 3),  // 3
+         InclinedEdge::new(4, 3),  // 4
+         InclinedEdge::new(3, 5),  // 5
+         InclinedEdge::new(4, 5),  // 6
+         InclinedEdge::new(5, 6),  // 7
+         InclinedEdge::new(2, 7),  // 8
+         InclinedEdge::new(3, 7),  // 9
+         InclinedEdge::new(5, 7),  // 10
+         InclinedEdge::new(7, 1),  // 11
+         InclinedEdge::new(7, 6),  // 12
+      ];
+
+      let points = vec![
          Point::new(0, 0),   // 0
          Point::new(0, 10),  // 1
          Point::new(2, 5),   // 2
@@ -120,13 +202,40 @@ impl TriangleRenderer {
          Point::new(7, 9),   // 7
       ];
 
-      TriangleRenderer {
-         triangles: triangles,
-         original: original,
+      PolySource {
+         polys: polys,
+         edges: edges,
+         inclined: inclined,
+         points: points,
+      }
+   }
+}
 
-         above: fill_default(262144),
-         below: fill_default(262144),
-         points: fill_default(262144),
+
+struct TriangleRenderer {
+   src: PolySource,
+
+   upper: Ring<Edge>,
+   upper_ref: Ring<PolyRef>,
+
+   lower: Ring<Edge>,
+   lower_ref: Ring<PolyRef>,
+
+   points: Ring<Point>,
+}
+
+impl TriangleRenderer {
+   fn new() -> Self {
+      TriangleRenderer {
+         src: PolySource::new(),
+
+         upper: Ring::new(262144),
+         upper_ref: Ring::new(65536),
+
+         lower: Ring::new(262144),
+         lower_ref: Ring::new(65536),
+
+         points: Ring::new(262144),
       }
    }
 }
