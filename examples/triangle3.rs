@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 extern crate polydraw;
 
+use std::i64;
+use std::cmp::min;
+
 use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::point::Point;
 use polydraw::geom::ring::Ring;
@@ -90,6 +93,38 @@ impl Default for PolyRef {
    }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct InclinedEdgeRef {
+   p1: usize,
+   p2: usize,
+   src_p1: usize,
+   src_p2: usize,
+}
+
+impl InclinedEdgeRef {
+   #[inline]
+   pub fn new(p1: usize, p2: usize, src_p1: usize, src_p2: usize) -> Self {
+      InclinedEdgeRef {
+         p1: p1,
+         p2: p2,
+         src_p1: src_p1,
+         src_p2: src_p2,
+      }
+   }
+}
+
+impl Default for InclinedEdgeRef {
+   #[inline]
+   fn default() -> InclinedEdgeRef {
+      InclinedEdgeRef::new(0, 0, 0, 0)
+   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct PolyMinYRef {
+   poly: usize,
+   min_y: i64,
+}
 
 struct PolySource {
    polys: Vec<Poly>,
@@ -209,34 +244,99 @@ impl PolySource {
          points: points,
       }
    }
-}
 
+   pub fn polys_min_y(&self) -> Vec<PolyMinYRef> {
+      let mut v = Vec::new();
+
+      for (poly_index, poly) in self.polys.iter().enumerate() {
+         let mut min_y = i64::MAX;
+
+         for edge_index in poly.start..poly.end {
+            let y = match self.edges[edge_index] {
+               Edge::Inclined(i) => {
+                  self.inclined_min_y(i)
+               },
+               Edge::InclinedRev(i) => {
+                  self.inclined_min_y(i)
+               },
+               Edge::Horizontal(y) => {
+                  y
+               },
+               Edge::HorizontalRev(y) => {
+                  y
+               },
+               _ => {
+                  continue;
+               }
+            };
+
+            if y < min_y {
+               min_y = y;
+            }
+         }
+
+         v.push(PolyMinYRef {
+            poly: poly_index,
+            min_y: min_y,
+         });
+      }
+
+      v
+   }
+
+   #[inline]
+   fn inclined_min_y(&self, i: usize) -> i64 {
+      let inclined = self.inclined[i];
+      min(
+         self.points[inclined.p1].y,
+         self.points[inclined.p2].y
+      )
+   }
+}
 
 struct TriangleRenderer {
    src: PolySource,
+   src_min_y: Vec<PolyMinYRef>,
 
-   upper: Ring<Edge>,
-   upper_ref: Ring<PolyRef>,
+   upper_polys: Ring<PolyRef>,
+   upper_edges: Ring<Edge>,
 
-   lower: Ring<Edge>,
-   lower_ref: Ring<PolyRef>,
+   lower_polys: Ring<PolyRef>,
+   lower_edges: Ring<Edge>,
 
    points: Ring<Point>,
+   inclined: Ring<InclinedEdgeRef>,
 }
 
 impl TriangleRenderer {
    fn new() -> Self {
+      let src = PolySource::new();
+      let src_min_y = src.polys_min_y();
+
       TriangleRenderer {
-         src: PolySource::new(),
+         src: src,
+         src_min_y: src_min_y,
 
-         upper: Ring::new(262144),
-         upper_ref: Ring::new(65536),
+         upper_polys: Ring::new(65536),
+         upper_edges: Ring::new(262144),
 
-         lower: Ring::new(262144),
-         lower_ref: Ring::new(65536),
+         lower_polys: Ring::new(65536),
+         lower_edges: Ring::new(262144),
 
          points: Ring::new(262144),
+         inclined: Ring::new(262144),
       }
+   }
+
+   pub fn clear(&mut self) {
+      self.upper_polys.clear();
+      self.upper_edges.clear();
+
+      self.lower_polys.clear();
+      self.lower_edges.clear();
+
+      self.points.clear();
+      self.inclined.clear();
    }
 }
 
@@ -244,9 +344,10 @@ impl TriangleRenderer {
 impl Renderer for TriangleRenderer {
    fn render(&mut self, frame: &mut Frame) {
       frame.clear();
+
+      self.clear();
    }
 }
-
 
 fn main() {
    let mut renderer = TriangleRenderer::new();
