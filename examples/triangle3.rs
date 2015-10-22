@@ -10,25 +10,27 @@ use polydraw::geom::point::Point;
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum EdgeType {
    Inclined,
-   InclinedReversed,
+   InclinedRev,
    Horizontal,
-   HorizontalReversed,
+   HorizontalRev,
    Vertical,
-   VerticalReversed,
+   VerticalRev,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Edge {
    etype: EdgeType,
-   index: usize,
+   p1: usize,
+   p2: usize,
 }
 
 impl Edge {
    #[inline]
-   pub fn new(etype: EdgeType, index: usize) -> Self {
+   pub fn new(etype: EdgeType, p1: usize, p2: usize) -> Self {
       Edge {
          etype: etype,
-         index: index,
+         p1: p1,
+         p2: p2,
       }
    }
 }
@@ -36,30 +38,7 @@ impl Edge {
 impl Default for Edge {
    #[inline]
    fn default() -> Edge {
-      Edge::new(EdgeType::Inclined, 0)
-   }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct InclinedEdge {
-   p1: usize,
-   p2: usize,
-}
-
-impl InclinedEdge {
-   #[inline]
-   pub fn new(p1: usize, p2: usize) -> Self {
-      InclinedEdge {
-         p1: p1,
-         p2: p2,
-      }
-   }
-}
-
-impl Default for InclinedEdge {
-   #[inline]
-   fn default() -> InclinedEdge {
-      InclinedEdge::new(0, 0)
+      Edge::new(EdgeType::Inclined, 0, 0)
    }
 }
 
@@ -69,34 +48,85 @@ pub fn fill_default<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
 
 struct TriangleRenderer {
    triangles: Vec<Edge>,
-   incl: Vec<InclinedEdge>,
-   horz: Vec<i64>,
-   vert: Vec<i64>,
-   points: Vec<Point>,
+   original: Vec<Point>,
 
    above: Vec<Edge>,
    below: Vec<Edge>,
-   a_incl: Vec<InclinedEdge>,
-   a_horz: Vec<i64>,
-   a_vert: Vec<i64>,
-   a_points: Vec<Point>,
+   points: Vec<Point>,
 }
 
 impl TriangleRenderer {
    fn new() -> Self {
+      let triangles = vec![
+         // A
+         Edge::new(EdgeType::Vertical, 0, 1),
+         Edge::new(EdgeType::InclinedRev, 1, 2),
+         Edge::new(EdgeType::InclinedRev, 2, 0),
+
+         // B
+         Edge::new(EdgeType::Inclined, 0, 2),
+         Edge::new(EdgeType::InclinedRev, 2, 3),
+         Edge::new(EdgeType::InclinedRev, 3, 0),
+
+         // C
+         Edge::new(EdgeType::Inclined, 0, 3),
+         Edge::new(EdgeType::InclinedRev, 3, 4),
+         Edge::new(EdgeType::HorizontalRev, 4, 0),
+
+         // D
+         Edge::new(EdgeType::Inclined, 4, 3),
+         Edge::new(EdgeType::Inclined, 3, 5),
+         Edge::new(EdgeType::InclinedRev, 5, 4),
+
+         // E
+         Edge::new(EdgeType::Inclined, 4, 5),
+         Edge::new(EdgeType::Inclined, 5, 6),
+         Edge::new(EdgeType::VerticalRev, 6, 4),
+
+         // F
+         Edge::new(EdgeType::Inclined, 3, 2),
+         Edge::new(EdgeType::Inclined, 2, 7),
+         Edge::new(EdgeType::InclinedRev, 7, 3),
+
+         // G
+         Edge::new(EdgeType::Inclined, 3, 7),
+         Edge::new(EdgeType::InclinedRev, 7, 5),
+         Edge::new(EdgeType::InclinedRev, 5, 3),
+
+         // H
+         Edge::new(EdgeType::Inclined, 2, 1),
+         Edge::new(EdgeType::InclinedRev, 1, 7),
+         Edge::new(EdgeType::InclinedRev, 7, 2),
+
+         // I
+         Edge::new(EdgeType::Inclined, 5, 7),
+         Edge::new(EdgeType::Inclined, 7, 6),
+         Edge::new(EdgeType::InclinedRev, 6, 5),
+
+         // J
+         Edge::new(EdgeType::Inclined, 7, 1),
+         Edge::new(EdgeType::Horizontal, 1, 6),
+         Edge::new(EdgeType::InclinedRev, 6, 7),
+      ];
+
+      let original = vec![
+         Point::new(0, 0),   // 0
+         Point::new(0, 10),  // 1
+         Point::new(2, 5),   // 2
+         Point::new(3, 1),   // 3
+         Point::new(10, 0),  // 4
+         Point::new(8, 5),   // 5
+         Point::new(10, 10), // 6
+         Point::new(7, 9),   // 7
+      ];
+
       TriangleRenderer {
-         triangles: vec![],
-         incl: vec![],
-         horz: vec![],
-         vert: vec![],
-         points: vec![],
+         triangles: triangles,
+         original: original,
 
          above: fill_default(262144),
          below: fill_default(262144),
-         a_incl: fill_default(262144),
-         a_horz: fill_default(262144),
-         a_vert: fill_default(262144),
-         a_points: fill_default(262144),
+         points: fill_default(262144),
       }
    }
 }
