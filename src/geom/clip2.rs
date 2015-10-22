@@ -337,7 +337,7 @@ pub fn v_split(x: i64, left: &mut Ring<Edge>, src_right: &mut Ring<Edge>) {
    if end - start <= 2 {
       src_right.consume();
       panic!("v_split end - start <= 2");
-      return;
+      //return;
    }
 
    let double = 2 * (end - start);
