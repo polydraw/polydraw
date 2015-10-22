@@ -281,6 +281,8 @@ impl PolySource {
          });
       }
 
+      v.sort_by(|a, b| a.min_y.cmp(&b.min_y));
+
       v
    }
 
