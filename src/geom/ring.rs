@@ -13,7 +13,7 @@ pub struct Ring<T> {
 impl<T> Ring<T> where T: Default + Clone + Debug {
    #[inline]
    pub fn new(capacity: usize) -> Self {
-      let v = repeat(T::default()).take(capacity).collect();
+      let v = fill_default::<T>(capacity);
 
       Ring { v: v, start: 0, end: 0 }
    }
@@ -97,6 +97,12 @@ impl<T> Ring<T> where T: Default + Clone + Debug {
          index - 1
       }
    }
+
+   #[inline]
+   pub fn clear(&mut self) {
+      self.start = 0;
+      self.end = 0;
+   }
 }
 
 impl<T> Index<usize> for Ring<T> {
@@ -115,4 +121,8 @@ impl<T> Index<RangeFull> for Ring<T> {
    fn index(&self, _index: RangeFull) -> &[T] {
       &self.v[self.start..self.end]
    }
+}
+
+pub fn fill_default<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
+   repeat(T::default()).take(capacity).collect()
 }
