@@ -294,6 +294,35 @@ impl PolySource {
          self.points[inclined.p2].y
       )
    }
+
+   #[inline]
+   fn min_max_x_y(&self) -> (i64, i64, i64, i64) {
+      let mut min_x = i64::MAX;
+      let mut max_x = i64::MIN;
+
+      let mut min_y = i64::MAX;
+      let mut max_y = i64::MIN;
+
+      for p in &self.points {
+         if p.x < min_x {
+            min_x = p.x;
+         }
+
+         if p.x > max_x {
+            max_x = p.x;
+         }
+
+         if p.y < min_y {
+            min_y = p.y;
+         }
+
+         if p.y > max_y {
+            max_y = p.y;
+         }
+      }
+
+      (min_x, max_x, min_y, max_y)
+   }
 }
 
 struct TriangleRenderer {
