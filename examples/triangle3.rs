@@ -29,42 +29,115 @@ impl Poly {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum Edge {
-   Inclined(usize),
-   InclinedRev(usize),
-   Horizontal(i64),
-   HorizontalRev(i64),
-   Vertical(i64),
-   VerticalRev(i64),
+enum EdgeType {
+   Inclined,
+   InclinedRev,
+   Horizontal,
+   HorizontalRev,
+   Vertical,
+   VerticalRev,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct Edge {
+   etype: EdgeType,
+   points: usize,
+}
+
+impl Edge {
+   #[inline]
+   pub fn new(etype: EdgeType, points: usize) -> Self {
+      Edge {
+         etype: etype,
+         points: points,
+      }
+   }
+
+   #[inline]
+   pub fn inclined(points: usize) -> Self {
+      Edge::new(EdgeType::Inclined, points)
+   }
+
+   #[inline]
+   pub fn inclined_rev(points: usize) -> Self {
+      Edge::new(EdgeType::InclinedRev, points)
+   }
+
+   #[inline]
+   pub fn horizontal(points: usize) -> Self {
+      Edge::new(EdgeType::Horizontal, points)
+   }
+
+   #[inline]
+   pub fn horizontal_rev(points: usize) -> Self {
+      Edge::new(EdgeType::HorizontalRev, points)
+   }
+
+   #[inline]
+   pub fn vertical(points: usize) -> Self {
+      Edge::new(EdgeType::Vertical, points)
+   }
+
+   #[inline]
+   pub fn vertical_rev(points: usize) -> Self {
+      Edge::new(EdgeType::VerticalRev, points)
+   }
 }
 
 impl Default for Edge {
    #[inline]
    fn default() -> Edge {
-      Edge::Inclined(0)
+      Edge::inclined(0)
    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct InclinedEdge {
+struct EdgePoints {
    p1: usize,
    p2: usize,
 }
 
-impl InclinedEdge {
+impl EdgePoints {
    #[inline]
    pub fn new(p1: usize, p2: usize) -> Self {
-      InclinedEdge {
+      EdgePoints {
          p1: p1,
          p2: p2,
       }
    }
 }
 
-impl Default for InclinedEdge {
+impl Default for EdgePoints {
    #[inline]
-   fn default() -> InclinedEdge {
-      InclinedEdge::new(0, 0)
+   fn default() -> EdgePoints {
+      EdgePoints::new(0, 0)
+   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct EdgePointsRef {
+   p1: usize,
+   p2: usize,
+   src_p1: usize,
+   src_p2: usize,
+}
+
+impl EdgePointsRef {
+   #[inline]
+   pub fn new(p1: usize, p2: usize, src_p1: usize, src_p2: usize) -> Self {
+      EdgePointsRef {
+         p1: p1,
+         p2: p2,
+         src_p1: src_p1,
+         src_p2: src_p2,
+      }
+   }
+}
+
+impl Default for EdgePointsRef {
+   #[inline]
+   fn default() -> EdgePointsRef {
+      EdgePointsRef::new(0, 0, 0, 0)
    }
 }
 
@@ -94,33 +167,6 @@ impl Default for PolyRef {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct InclinedEdgeRef {
-   p1: usize,
-   p2: usize,
-   src_p1: usize,
-   src_p2: usize,
-}
-
-impl InclinedEdgeRef {
-   #[inline]
-   pub fn new(p1: usize, p2: usize, src_p1: usize, src_p2: usize) -> Self {
-      InclinedEdgeRef {
-         p1: p1,
-         p2: p2,
-         src_p1: src_p1,
-         src_p2: src_p2,
-      }
-   }
-}
-
-impl Default for InclinedEdgeRef {
-   #[inline]
-   fn default() -> InclinedEdgeRef {
-      InclinedEdgeRef::new(0, 0, 0, 0)
-   }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct PolyMinYRef {
    poly: usize,
    min_y: i64,
@@ -129,7 +175,7 @@ struct PolyMinYRef {
 struct PolySource {
    polys: Vec<Poly>,
    edges: Vec<Edge>,
-   inclined: Vec<InclinedEdge>,
+   edge_points: Vec<EdgePoints>,
    points: Vec<Point>,
 }
 
@@ -160,70 +206,74 @@ impl PolySource {
 
       let edges = vec![
          // 0: A
-         Edge::Vertical(0),
-         Edge::InclinedRev(0),
-         Edge::InclinedRev(1),
+         Edge::vertical(13),
+         Edge::inclined_rev(0),
+         Edge::inclined_rev(1),
 
          // 1: B
-         Edge::Inclined(1),
-         Edge::InclinedRev(2),
-         Edge::InclinedRev(3),
+         Edge::inclined(1),
+         Edge::inclined_rev(2),
+         Edge::inclined_rev(3),
 
          // 2: C
-         Edge::Inclined(3),
-         Edge::InclinedRev(4),
-         Edge::HorizontalRev(0),
+         Edge::inclined(3),
+         Edge::inclined_rev(4),
+         Edge::horizontal_rev(14),
 
          // 3: D
-         Edge::Inclined(4),
-         Edge::Inclined(5),
-         Edge::InclinedRev(6),
+         Edge::inclined(4),
+         Edge::inclined(5),
+         Edge::inclined_rev(6),
 
          // 4: E
-         Edge::Inclined(6),
-         Edge::Inclined(7),
-         Edge::VerticalRev(10),
+         Edge::inclined(6),
+         Edge::inclined(7),
+         Edge::vertical_rev(15),
 
          // 5: F
-         Edge::Inclined(2),
-         Edge::Inclined(8),
-         Edge::InclinedRev(9),
+         Edge::inclined(2),
+         Edge::inclined(8),
+         Edge::inclined_rev(9),
 
          // 6: G
-         Edge::Inclined(9),
-         Edge::InclinedRev(10),
-         Edge::InclinedRev(5),
+         Edge::inclined(9),
+         Edge::inclined_rev(10),
+         Edge::inclined_rev(5),
 
          // 7: H
-         Edge::Inclined(0),
-         Edge::InclinedRev(11),
-         Edge::InclinedRev(8),
+         Edge::inclined(0),
+         Edge::inclined_rev(11),
+         Edge::inclined_rev(8),
 
          // 8: I
-         Edge::Inclined(10),
-         Edge::Inclined(12),
-         Edge::InclinedRev(7),
+         Edge::inclined(10),
+         Edge::inclined(12),
+         Edge::inclined_rev(7),
 
          // 9: J
-         Edge::Inclined(11),
-         Edge::Horizontal(10),
-         Edge::InclinedRev(12),
+         Edge::inclined(11),
+         Edge::horizontal(16),
+         Edge::inclined_rev(12),
       ];
 
-      let inclined = vec![
-         InclinedEdge::new(2, 1),  // 0
-         InclinedEdge::new(0, 2),  // 1
-         InclinedEdge::new(3, 2),  // 2
-         InclinedEdge::new(0, 3),  // 3
-         InclinedEdge::new(4, 3),  // 4
-         InclinedEdge::new(3, 5),  // 5
-         InclinedEdge::new(4, 5),  // 6
-         InclinedEdge::new(5, 6),  // 7
-         InclinedEdge::new(2, 7),  // 8
-         InclinedEdge::new(3, 7),  // 9
-         InclinedEdge::new(5, 7),  // 10
-         InclinedEdge::new(7, 1),  // 11
-         InclinedEdge::new(7, 6),  // 12
+      let edge_points = vec![
+         EdgePoints::new(2, 1),  // 0
+         EdgePoints::new(0, 2),  // 1
+         EdgePoints::new(3, 2),  // 2
+         EdgePoints::new(0, 3),  // 3
+         EdgePoints::new(4, 3),  // 4
+         EdgePoints::new(3, 5),  // 5
+         EdgePoints::new(4, 5),  // 6
+         EdgePoints::new(5, 6),  // 7
+         EdgePoints::new(2, 7),  // 8
+         EdgePoints::new(3, 7),  // 9
+         EdgePoints::new(5, 7),  // 10
+         EdgePoints::new(7, 1),  // 11
+         EdgePoints::new(7, 6),  // 12
+         EdgePoints::new(0, 1),  // 13
+         EdgePoints::new(0, 4),  // 14
+         EdgePoints::new(4, 6),  // 15
+         EdgePoints::new(1, 6),  // 16
       ];
 
       let points = vec![
@@ -240,7 +290,7 @@ impl PolySource {
       PolySource {
          polys: polys,
          edges: edges,
-         inclined: inclined,
+         edge_points: edge_points,
          points: points,
       }
    }
@@ -252,23 +302,11 @@ impl PolySource {
          let mut min_y = i64::MAX;
 
          for edge_index in poly.start..poly.end {
-            let y = match self.edges[edge_index] {
-               Edge::Inclined(i) => {
-                  self.inclined_min_y(i)
-               },
-               Edge::InclinedRev(i) => {
-                  self.inclined_min_y(i)
-               },
-               Edge::Horizontal(y) => {
-                  y
-               },
-               Edge::HorizontalRev(y) => {
-                  y
-               },
-               _ => {
-                  continue;
-               }
-            };
+            let edge_points = self.edge_points[self.edges[edge_index].points];
+            let y = min(
+               self.points[edge_points.p1].y,
+               self.points[edge_points.p2].y
+            );
 
             if y < min_y {
                min_y = y;
@@ -284,15 +322,6 @@ impl PolySource {
       v.sort_by(|a, b| a.min_y.cmp(&b.min_y));
 
       v
-   }
-
-   #[inline]
-   fn inclined_min_y(&self, i: usize) -> i64 {
-      let inclined = self.inclined[i];
-      min(
-         self.points[inclined.p1].y,
-         self.points[inclined.p2].y
-      )
    }
 
    #[inline]
@@ -335,8 +364,8 @@ struct TriangleRenderer {
    lower_polys: Ring<PolyRef>,
    lower_edges: Ring<Edge>,
 
+   edge_points: Ring<EdgePointsRef>,
    points: Ring<Point>,
-   inclined: Ring<InclinedEdgeRef>,
 }
 
 impl TriangleRenderer {
@@ -354,8 +383,8 @@ impl TriangleRenderer {
          lower_polys: Ring::new(65536),
          lower_edges: Ring::new(262144),
 
+         edge_points: Ring::new(262144),
          points: Ring::new(262144),
-         inclined: Ring::new(262144),
       }
    }
 
@@ -366,8 +395,8 @@ impl TriangleRenderer {
       self.lower_polys.clear();
       self.lower_edges.clear();
 
+      self.edge_points.clear();
       self.points.clear();
-      self.inclined.clear();
    }
 }
 
