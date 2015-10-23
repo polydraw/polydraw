@@ -1,13 +1,29 @@
+#![feature(augmented_assignments)]
+
 #![allow(dead_code)]
 extern crate polydraw;
 
 use std::i64;
-use std::cmp::min;
+use std::cmp::{min, max};
 
 use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::point::Point;
 use polydraw::geom::ring::Ring;
 use polydraw::draw::RGB;
+
+
+const DIV_PER_PIXEL: i64 = 1000;
+const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
+
+#[inline]
+fn to_px(v: i64) -> i64 {
+   v / DIV_PER_PIXEL
+}
+
+#[inline]
+fn from_px(v: i64) -> i64 {
+   v as i64 * DIV_PER_PIXEL
+}
 
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -118,18 +134,18 @@ impl Default for EdgePoints {
 struct EdgePointsRef {
    p1: usize,
    p2: usize,
-   src_p1: usize,
-   src_p2: usize,
+   s1: usize,
+   s2: usize,
 }
 
 impl EdgePointsRef {
    #[inline]
-   pub fn new(p1: usize, p2: usize, src_p1: usize, src_p2: usize) -> Self {
+   pub fn new(p1: usize, p2: usize, s1: usize, s2: usize) -> Self {
       EdgePointsRef {
          p1: p1,
          p2: p2,
-         src_p1: src_p1,
-         src_p2: src_p2,
+         s1: s1,
+         s2: s2,
       }
    }
 }
@@ -276,7 +292,7 @@ impl PolySource {
          EdgePoints::new(1, 6),  // 16
       ];
 
-      let points = vec![
+      let mut points = vec![
          Point::new(0, 0),   // 0
          Point::new(0, 10),  // 1
          Point::new(2, 5),   // 2
@@ -286,6 +302,10 @@ impl PolySource {
          Point::new(10, 10), // 6
          Point::new(7, 9),   // 7
       ];
+
+      for point in &mut points {
+         *point *= 50 * DIV_PER_PIXEL;
+      }
 
       PolySource {
          polys: polys,
@@ -327,9 +347,9 @@ impl PolySource {
    #[inline]
    fn min_max_x_y(&self) -> (i64, i64, i64, i64) {
       let mut min_x = i64::MAX;
-      let mut max_x = i64::MIN;
-
       let mut min_y = i64::MAX;
+
+      let mut max_x = i64::MIN;
       let mut max_y = i64::MIN;
 
       for p in &self.points {
@@ -337,12 +357,12 @@ impl PolySource {
             min_x = p.x;
          }
 
-         if p.x > max_x {
-            max_x = p.x;
-         }
-
          if p.y < min_y {
             min_y = p.y;
+         }
+
+         if p.x > max_x {
+            max_x = p.x;
          }
 
          if p.y > max_y {
@@ -350,7 +370,7 @@ impl PolySource {
          }
       }
 
-      (min_x, max_x, min_y, max_y)
+      (min_x, min_y, max_x, max_y)
    }
 }
 
@@ -406,6 +426,21 @@ impl Renderer for TriangleRenderer {
       frame.clear();
 
       self.clear();
+
+      let (min_x, min_y, max_x, max_y) = self.src.min_max_x_y();
+
+      let min_x = max(to_px(min_x), 0);
+      let min_y = max(to_px(min_y), 0);
+      let max_x = min(to_px(max_x), frame.width as i64 - 1);
+      let max_y = min(to_px(max_y), frame.height as i64 - 1);
+
+      let back = RGB::new(1, 1, 1);
+
+      for y in min_y..max_y + 1 {
+         for x in min_x..max_x + 1 {
+            frame.put_pixel(x as i32, y as i32, &back);
+         }
+      }
    }
 }
 
