@@ -4,7 +4,10 @@
 extern crate polydraw;
 
 use std::i64;
+use std::usize;
 use std::cmp::{min, max};
+use std::iter::repeat;
+use std::fmt::Debug;
 
 use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::point::Point;
@@ -56,15 +59,15 @@ enum EdgeType {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Edge {
-   etype: EdgeType,
+   edge_type: EdgeType,
    points: usize,
 }
 
 impl Edge {
    #[inline]
-   pub fn new(etype: EdgeType, points: usize) -> Self {
+   pub fn new(edge_type: EdgeType, points: usize) -> Self {
       Edge {
-         etype: etype,
+         edge_type: edge_type,
          points: points,
       }
    }
@@ -377,6 +380,10 @@ impl PolySource {
 struct TriangleRenderer {
    src: PolySource,
    src_min_y: Vec<PolyMinYRef>,
+   src_poly_marker: usize,
+
+   edge_points_map: Vec<usize>,
+   points_map: Vec<usize>,
 
    upper_polys: Ring<PolyRef>,
    upper_edges: Ring<Edge>,
@@ -393,9 +400,16 @@ impl TriangleRenderer {
       let src = PolySource::new();
       let src_min_y = src.polys_min_y();
 
+      let edge_points_map = repeat(usize::MAX).take(src.edge_points.len()).collect();
+      let points_map = repeat(usize::MAX).take(src.points.len()).collect();
+
       TriangleRenderer {
          src: src,
          src_min_y: src_min_y,
+         src_poly_marker: 0,
+
+         edge_points_map: edge_points_map,
+         points_map: points_map,
 
          upper_polys: Ring::new(65536),
          upper_edges: Ring::new(262144),
@@ -408,7 +422,7 @@ impl TriangleRenderer {
       }
    }
 
-   pub fn clear(&mut self) {
+   fn clear(&mut self) {
       self.upper_polys.clear();
       self.upper_edges.clear();
 
@@ -418,8 +432,91 @@ impl TriangleRenderer {
       self.edge_points.clear();
       self.points.clear();
    }
+
+   fn transfer(&mut self, min_y: i64) {
+      let end = self.src_min_y.len();
+
+      for min_y_i in self.src_poly_marker..end {
+         let poly_min_y = self.src_min_y[min_y_i];
+
+         if poly_min_y.min_y != min_y {
+            break;
+         }
+
+         self.transfer_poly(poly_min_y.poly);
+      }
+   }
+
+   fn transfer_poly(&mut self, src_i: usize) {
+      let poly = self.src.polys[src_i];
+
+      let edge_start = self.upper_edges.end();
+
+      for src_edge_i in poly.start..poly.end {
+         self.transfer_edge(src_edge_i);
+      }
+
+      let edge_end = self.upper_edges.end();
+
+      self.upper_polys.push(
+         PolyRef::new(src_i, edge_start, edge_end)
+      );
+   }
+
+   fn transfer_edge(&mut self, src_i: usize) {
+      let edge = self.src.edges[src_i];
+
+      let src_edge_points_i = edge.points;
+      let mut edge_points_i = self.edge_points_map[src_edge_points_i];
+
+      if edge_points_i == usize::MAX {
+         let edge_points = self.src.edge_points[src_edge_points_i];
+
+         let s1 = edge_points.p1;
+         let s2 = edge_points.p2;
+
+         let p1 = self.transfer_point(s1);
+         let p2 = self.transfer_point(s2);
+
+         edge_points_i = self.edge_points.end();
+
+         self.edge_points.push(
+            EdgePointsRef::new(p1, p2, s1, s2)
+         );
+
+         self.edge_points_map[src_edge_points_i] = edge_points_i;
+      }
+
+      self.upper_edges.push(
+         Edge::new(edge.edge_type, edge_points_i)
+      );
+   }
+
+   fn transfer_point(&mut self, src_i: usize) -> usize {
+      let mut i = self.points_map[src_i];
+
+      if i == usize::MAX {
+         i = self.points.end();
+
+         self.points_map[src_i] = i;
+
+         self.points.push(
+            self.src.points[src_i]
+         );
+      }
+
+      i
+   }
 }
 
+#[inline]
+fn print_ring<T>(name: &str, ring: &Ring<T>) where T: Default + Clone + Debug {
+   println!("{}: s {} e {} :", name, ring.start(), ring.end());
+
+   for item in ring[..].iter() {
+      println!("{:?}", item);
+   }
+}
 
 impl Renderer for TriangleRenderer {
    fn render(&mut self, frame: &mut Frame) {
@@ -437,7 +534,10 @@ impl Renderer for TriangleRenderer {
       let back = RGB::new(1, 1, 1);
 
       for y in min_y..max_y + 1 {
+         self.transfer(y);
+
          for x in min_x..max_x + 1 {
+
             frame.put_pixel(x as i32, y as i32, &back);
          }
       }
