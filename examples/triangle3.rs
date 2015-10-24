@@ -433,17 +433,19 @@ impl TriangleRenderer {
       self.points.clear();
    }
 
-   fn transfer(&mut self, min_y: i64) {
+   fn transfer(&mut self, y: i64) {
       let end = self.src_min_y.len();
 
-      for min_y_i in self.src_poly_marker..end {
-         let poly_min_y = self.src_min_y[min_y_i];
+      while self.src_poly_marker < end {
+         let poly_min_y = self.src_min_y[self.src_poly_marker];
 
-         if poly_min_y.min_y != min_y {
+         if poly_min_y.min_y > y {
             break;
          }
 
          self.transfer_poly(poly_min_y.poly);
+
+         self.src_poly_marker += 1;
       }
    }
 
@@ -534,7 +536,10 @@ impl Renderer for TriangleRenderer {
       let back = RGB::new(1, 1, 1);
 
       for y in min_y..max_y + 1 {
-         self.transfer(y);
+         let y_world = from_px(y);
+         let y_split = y_world + DIV_PER_PIXEL;
+
+         self.transfer(y_world);
 
          for x in min_x..max_x + 1 {
 
