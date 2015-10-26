@@ -6,3 +6,4 @@ pub mod polygon;
 pub mod clip;
 pub mod clip2;
 pub mod ring;
+pub mod lineinter;
