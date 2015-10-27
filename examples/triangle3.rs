@@ -509,6 +509,24 @@ impl TriangleRenderer {
 
       i
    }
+
+   fn h_split(&mut self, y: i64) {
+      for edge in self.upper_edges[..].iter() {
+         match edge.edge_type {
+            EdgeType::Inclined => {
+               let edge_points = self.edge_points[edge.points];
+               let s1 = self.points[edge_points.s1];
+               let s2 = self.points[edge_points.s2];
+            },
+            EdgeType::InclinedRev => {
+               let edge_points = self.edge_points[edge.points];
+               let s1 = self.points[edge_points.s1];
+               let s2 = self.points[edge_points.s2];
+            },
+            _ => {}
+         }
+      }
+   }
 }
 
 #[inline]
@@ -540,6 +558,8 @@ impl Renderer for TriangleRenderer {
          let y_split = y_world + DIV_PER_PIXEL;
 
          self.transfer(y_world);
+
+         self.h_split(y_split);
 
          for x in min_x..max_x + 1 {
 
