@@ -3,7 +3,7 @@ use super::point::Point;
 use super::ring::Ring;
 
 #[inline]
-pub fn h_multi_intersect(p1: Point, p2: Point, step: i64, inters: &mut Ring<i64>)  {
+pub fn h_multi_intersect(p1: Point, p2: Point, step: i64, inters: &mut Ring<i64>) {
    let start = 1 + p1.y / step;
    let end = 1 + (p2.y - 1) / step;
 
@@ -14,7 +14,7 @@ pub fn h_multi_intersect(p1: Point, p2: Point, step: i64, inters: &mut Ring<i64>
 }
 
 #[inline]
-pub fn h_multi_intersect_fast(p1: Point, p2: Point, step: i64, inters: &mut Ring<i64>)  {
+pub fn h_multi_intersect_fast(p1: Point, p2: Point, step: i64, inters: &mut Ring<i64>) {
    let start = 1 + p1.y / step;
    let end = 1 + (p2.y - 1) / step;
 
@@ -49,30 +49,28 @@ mod tests {
 
    #[bench]
    fn bench_lineinter_1(b: &mut Bencher) {
-      let mut inters = Ring::new(10_000);
+      let mut inters = Ring::new(100_000);
       let p1 = Point::new(2135, 2476);
-      let p2 = Point::new(16753, 72398);
+      let p2 = Point::new(16753, 1_534_398);
 
       b.iter(|| {
          for _ in 0..1000 {
-            inters.rewind(100);
+            inters.clear();
             h_multi_intersect(p1, p2, 1000, &mut inters);
-            inters.consume();
          }
       });
    }
 
    #[bench]
    fn bench_lineinter_2(b: &mut Bencher) {
-      let mut inters = Ring::new(10_000);
+      let mut inters = Ring::new(100_000);
       let p1 = Point::new(2135, 2476);
-      let p2 = Point::new(16753, 72398);
+      let p2 = Point::new(16753, 1_534_398);
 
       b.iter(|| {
          for _ in 0..1000 {
-            inters.rewind(100);
+            inters.clear();
             h_multi_intersect_fast(p1, p2, 1000, &mut inters);
-            inters.consume();
          }
       });
    }
