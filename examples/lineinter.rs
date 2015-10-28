@@ -5,25 +5,20 @@ use polydraw::geom::ring::Ring;
 use polydraw::geom::lineinter::{h_multi_intersect, h_multi_intersect_fast};
 
 fn main() {
-   let mut inters = Ring::new(10_000);
-   let p1 = Point::new(2135, 2476);
-   let p2 = Point::new(16753, 72398);
+   let mut inters = Ring::new(1_000);
+   let mut inters_fast = Ring::new(1_000);
 
-   println!("SLOW");
+   let p1 = Point::new(0, 0);
+   let p2 = Point::new(10, 11);
 
-   h_multi_intersect(p1, p2, 1000, &mut inters);
+   h_multi_intersect(p1, p2, 2, &mut inters);
+   h_multi_intersect_fast(p1, p2, 2, &mut inters_fast);
 
-   for x in inters[..].iter() {
-      println!("X : {}", x);
+   for (correct, fast) in inters[..].iter().zip(inters_fast[..].iter()) {
+      assert_eq!(correct, fast);
    }
 
-   inters.consume();
-
-   println!("FAST");
-
-   h_multi_intersect_fast(p1, p2, 1000, &mut inters);
-
-   for x in inters[..].iter() {
-      println!("X : {}", x);
-   }
+   // for x in inters[..].iter() {
+   //    println!("X : {}", x);
+   // }
 }
