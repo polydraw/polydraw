@@ -37,6 +37,16 @@ pub fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, inters: &mut Ri
 
    let mut x = p1.x + fdx;
 
+   if err_step == 0 {
+      for _ in start..end {
+         inters.push(x);
+
+         x += step_x;
+      }
+
+      return;
+   }
+
    let mut err = max_div_dy * (fdy * dx.abs() - fdx * dy) - HALF_MAX_ERR;
 
    for _ in start..end {
@@ -69,11 +79,11 @@ mod tests {
    use super::*;
 
    #[test]
-   fn bench_correct() {
+   fn test_correct() {
       let mut inters = Ring::new(100_000);
       let mut inters_fast = Ring::new(100_000);
-      let p1 = Point::new(2_135, 2_476);
-      let p2 = Point::new(16_753, 1_534_398);
+      let p1 = Point::new(0, 0);
+      let p2 = Point::new(500_000, 2_000_000);
 
       h_multi_intersect(p1, p2, 1000, &mut inters);
       h_multi_intersect_fast(p1, p2, 1000, &mut inters_fast);
@@ -84,10 +94,10 @@ mod tests {
    }
 
    #[bench]
-   fn bench_lineinter_1(b: &mut Bencher) {
+   fn bench_lineinter(b: &mut Bencher) {
       let mut inters = Ring::new(100_000);
-      let p1 = Point::new(2_135, 2_476);
-      let p2 = Point::new(16_753, 1_534_398);
+      let p1 = Point::new(0, 0);
+      let p2 = Point::new(500_000, 2_000_000);
 
       b.iter(|| {
          for _ in 0..1000 {
@@ -98,10 +108,10 @@ mod tests {
    }
 
    #[bench]
-   fn bench_lineinter_2(b: &mut Bencher) {
+   fn bench_lineinter_fast(b: &mut Bencher) {
       let mut inters = Ring::new(100_000);
-      let p1 = Point::new(2_135, 2_476);
-      let p2 = Point::new(16_753, 1_534_398);
+      let p1 = Point::new(0, 0);
+      let p2 = Point::new(500_000, 2_000_000);
 
       b.iter(|| {
          for _ in 0..1000 {
