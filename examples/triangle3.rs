@@ -12,6 +12,7 @@ use std::fmt::Debug;
 use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::point::Point;
 use polydraw::geom::ring::Ring;
+use polydraw::geom::lineinter::{h_multi_intersect_fast, v_multi_intersect_fast};
 use polydraw::draw::RGB;
 
 
@@ -189,6 +190,24 @@ impl Default for PolyRef {
 struct PolyMinYRef {
    poly: usize,
    min_y: i64,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct IntersectRef {
+   start_coord: i64,
+   start: usize,
+   end: usize,
+}
+
+impl Default for IntersectRef {
+   #[inline]
+   fn default() -> IntersectRef {
+      IntersectRef {
+         start_coord: i64::MAX,
+         start: usize::MAX,
+         end: usize::MAX,
+      }
+   }
 }
 
 struct PolySource {
@@ -385,6 +404,11 @@ struct TriangleRenderer {
    edge_points_map: Vec<usize>,
    points_map: Vec<usize>,
 
+   h_intersect_ref: Vec<IntersectRef>,
+   v_intersect_ref: Vec<IntersectRef>,
+   h_intersections: Ring<i64>,
+   v_intersections: Ring<i64>,
+
    upper_polys: Ring<PolyRef>,
    upper_edges: Ring<Edge>,
 
@@ -400,8 +424,14 @@ impl TriangleRenderer {
       let src = PolySource::new();
       let src_min_y = src.polys_min_y();
 
-      let edge_points_map = repeat(usize::MAX).take(src.edge_points.len()).collect();
-      let points_map = repeat(usize::MAX).take(src.points.len()).collect();
+      let edge_points_len = src.edge_points.len();
+      let points_len = src.points.len();
+
+      let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
+      let points_map = repeat(usize::MAX).take(points_len).collect();
+
+      let h_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
+      let v_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
 
       TriangleRenderer {
          src: src,
@@ -410,6 +440,11 @@ impl TriangleRenderer {
 
          edge_points_map: edge_points_map,
          points_map: points_map,
+
+         h_intersect_ref: h_intersect_ref,
+         v_intersect_ref: v_intersect_ref,
+         h_intersections: Ring::new(65536),
+         v_intersections: Ring::new(65536),
 
          upper_polys: Ring::new(65536),
          upper_edges: Ring::new(262144),
@@ -431,6 +466,13 @@ impl TriangleRenderer {
 
       self.edge_points.clear();
       self.points.clear();
+
+      self.h_intersections.clear();
+      self.v_intersections.clear();
+
+      for intersect_ref in &mut self.h_intersect_ref {
+         intersect_ref.start = usize::MAX;
+      }
    }
 
    fn transfer(&mut self, y: i64) {
@@ -527,6 +569,38 @@ impl TriangleRenderer {
          }
       }
    }
+
+   fn intersect_edges(&mut self) {
+      for edge in &self.src.edges {
+         if edge.edge_type == EdgeType::Inclined || edge.edge_type == EdgeType::InclinedRev {
+            let mut h_ref = self.h_intersect_ref[edge.points];
+
+            if h_ref.start != usize::MAX {
+               continue;
+            }
+
+            let mut v_ref = self.v_intersect_ref[edge.points];
+
+            let edge_points = self.src.edge_points[edge.points];
+
+            let p1 = self.src.points[edge_points.p1];
+            let p2 = self.src.points[edge_points.p2];
+
+            h_ref.start = self.h_intersections.start();
+            v_ref.start = self.v_intersections.start();
+
+            h_ref.start_coord = h_multi_intersect_fast(
+               p1, p2, DIV_PER_PIXEL, &mut self.h_intersections
+            );
+            v_ref.start_coord = v_multi_intersect_fast(
+               p1, p2, DIV_PER_PIXEL, &mut self.v_intersections
+            );
+
+            h_ref.start = self.h_intersections.end();
+            v_ref.start = self.v_intersections.end();
+         }
+      }
+   }
 }
 
 #[inline]
@@ -543,6 +617,8 @@ impl Renderer for TriangleRenderer {
       frame.clear();
 
       self.clear();
+
+      self.intersect_edges();
 
       let (min_x, min_y, max_x, max_y) = self.src.min_max_x_y();
 
