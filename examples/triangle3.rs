@@ -112,6 +112,36 @@ impl Default for Edge {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct EdgeRef {
+   edge_type: EdgeType,
+   src_points: usize,
+   points: usize,
+}
+
+impl EdgeRef {
+   #[inline]
+   pub fn new(edge_type: EdgeType, src_points: usize, points: usize) -> Self {
+      EdgeRef {
+         edge_type: edge_type,
+         src_points: src_points,
+         points: points,
+      }
+   }
+
+   #[inline]
+   pub fn new_ref(&self, i: usize) -> Self {
+      EdgeRef::new(self.edge_type, self.src_points, i)
+   }
+}
+
+impl Default for EdgeRef {
+   #[inline]
+   fn default() -> EdgeRef {
+      EdgeRef::new(EdgeType::Inclined, 0, 0)
+   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct EdgePoints {
    p1: usize,
    p2: usize,
@@ -131,33 +161,6 @@ impl Default for EdgePoints {
    #[inline]
    fn default() -> EdgePoints {
       EdgePoints::new(0, 0)
-   }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct EdgePointsRef {
-   p1: usize,
-   p2: usize,
-   s1: usize,
-   s2: usize,
-}
-
-impl EdgePointsRef {
-   #[inline]
-   pub fn new(p1: usize, p2: usize, s1: usize, s2: usize) -> Self {
-      EdgePointsRef {
-         p1: p1,
-         p2: p2,
-         s1: s1,
-         s2: s2,
-      }
-   }
-}
-
-impl Default for EdgePointsRef {
-   #[inline]
-   fn default() -> EdgePointsRef {
-      EdgePointsRef::new(0, 0, 0, 0)
    }
 }
 
@@ -194,7 +197,7 @@ struct PolyMinYRef {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct IntersectRef {
-   start_coord: i64,
+   start_px: i64,
    start: usize,
    end: usize,
 }
@@ -203,7 +206,7 @@ impl Default for IntersectRef {
    #[inline]
    fn default() -> IntersectRef {
       IntersectRef {
-         start_coord: i64::MAX,
+         start_px: i64::MAX,
          start: usize::MAX,
          end: usize::MAX,
       }
@@ -326,7 +329,7 @@ impl PolySource {
       ];
 
       for point in &mut points {
-         *point *= 50 * DIV_PER_PIXEL;
+         *point *= 100 * DIV_PER_PIXEL;
       }
 
       PolySource {
@@ -410,12 +413,12 @@ struct TriangleRenderer {
    v_intersections: Ring<i64>,
 
    upper_polys: Ring<PolyRef>,
-   upper_edges: Ring<Edge>,
+   upper_edges: Ring<EdgeRef>,
 
    lower_polys: Ring<PolyRef>,
-   lower_edges: Ring<Edge>,
+   lower_edges: Ring<EdgeRef>,
 
-   edge_points: Ring<EdgePointsRef>,
+   edge_points: Ring<EdgePoints>,
    points: Ring<Point>,
 }
 
@@ -525,14 +528,14 @@ impl TriangleRenderer {
          edge_points_i = self.edge_points.end();
 
          self.edge_points.push(
-            EdgePointsRef::new(p1, p2, s1, s2)
+            EdgePoints::new(p1, p2)
          );
 
          self.edge_points_map[src_edge_points_i] = edge_points_i;
       }
 
       self.upper_edges.push(
-         Edge::new(edge.edge_type, edge_points_i)
+         EdgeRef::new(edge.edge_type, src_edge_points_i, edge_points_i)
       );
    }
 
@@ -552,6 +555,7 @@ impl TriangleRenderer {
       i
    }
 
+/*
    fn h_split(&mut self, y: i64) {
       for edge in self.upper_edges[..].iter() {
          match edge.edge_type {
@@ -569,36 +573,212 @@ impl TriangleRenderer {
          }
       }
    }
+*/
+
+   #[inline]
+   fn h_split(&mut self, y: i64, y_px: i64) {
+      let start = self.upper_polys.start();
+      let end = self.upper_polys.end();
+      for i in start..end {
+         self.h_split_poly(i, y, y_px);
+      }
+
+      for poly in self.lower_polys[..].iter() {
+         self.print_poly_ref(&poly, &self.lower_edges);
+      }
+
+      panic!("EXIT");
+   }
+
+   #[inline]
+   fn h_split_poly(&mut self, poly_i: usize, y: i64, y_px: i64) {
+      let upper_start = self.upper_edges.end();
+      let lower_start = self.lower_edges.end();
+
+      let poly = self.upper_polys[poly_i];
+      println!("POLY : {:?}", poly);
+
+      let x1_intersect;
+
+      let end = poly.end;
+      let mut i = poly.start;
+
+      loop {
+         let edge = self.upper_edges[i];
+         let edge_points = self.edge_points[edge.points];
+
+         self.print_edge_ref(&edge);
+
+         match edge.edge_type {
+            EdgeType::Inclined => {
+               let y2 = self.points[edge_points.p2].y;
+               if y2 < y {
+                  self.lower_edges.push(edge);
+               } else if y2 > y {
+                  x1_intersect = self.h_intersection(&edge, y_px);
+
+                  let edge_points_i = self.divide_edge_at(&edge_points, x1_intersect, y);
+
+                  self.lower_edges.push(edge.new_ref(edge_points_i));
+
+                  self.upper_edges.push(edge.new_ref(edge_points_i + 1));
+
+                  break;
+               } else {
+                  x1_intersect = self.points[edge_points.p2].x;
+
+                  self.lower_edges.push(edge);
+
+                  break;
+               }
+            },
+            EdgeType::InclinedRev => {
+            },
+            EdgeType::Horizontal => {
+            },
+            EdgeType::HorizontalRev => {
+            },
+            EdgeType::Vertical => {
+            },
+            EdgeType::VerticalRev => {
+            },
+         }
+
+         i += 1;
+
+         if i == end {
+            return;
+         }
+      }
+
+      let upper_end = self.upper_edges.end();
+      let lower_end = self.lower_edges.end();
+
+      if upper_end > upper_start {
+         self.upper_polys.push(
+            PolyRef::new(poly.src, upper_start, upper_end)
+         )
+      }
+
+      if lower_end > lower_start {
+         self.lower_polys.push(
+            PolyRef::new(poly.src, lower_start, lower_end)
+         )
+      }
+
+      /*
+      for i in poly.start..poly.end {
+         let edge = self.upper_edges[i];
+
+         println!("{:?}", edge);
+
+         if edge.edge_type == EdgeType::Inclined || edge.edge_type == EdgeType::InclinedRev {
+            let edge_points = self.src.edge_points[edge.src_points];
+            println!("{:?} {:?}", self.src.points[edge_points.p1], self.src.points[edge_points.p2]);
+
+            let h_ref = self.h_intersect_ref[edge.src_points];
+
+            println!("{:?}", h_ref);
+
+            let end_px = h_ref.start_px + (h_ref.end - h_ref.start) as i64;
+
+            if y_px >= h_ref.start_px && y_px < end_px {
+               let x_i = h_ref.start + (y_px - h_ref.start_px) as usize;
+               let x = self.h_intersections[x_i];
+               println!("X INT : {:?}", x);
+            }
+         }
+      }
+      */
+   }
+
+
+   #[inline]
+   fn divide_edge_at(&mut self, edge_points: &EdgePoints, x: i64, y: i64) -> usize {
+      let pos = self.points.end();
+
+      self.points.push(
+         Point::new(x, y)
+      );
+
+      let edge_points_index = self.edge_points.end();
+
+      self.edge_points.push(
+         EdgePoints::new(edge_points.p1, pos)
+      );
+
+      self.edge_points.push(
+         EdgePoints::new(pos, edge_points.p2)
+      );
+
+      edge_points_index
+   }
+
+   #[inline]
+   fn h_intersection(&self, edge: &EdgeRef, y_px: i64) -> i64 {
+      let h_ref = self.h_intersect_ref[edge.src_points];
+
+      self.h_intersections[
+         h_ref.start + (y_px - h_ref.start_px) as usize
+      ]
+   }
 
    fn intersect_edges(&mut self) {
       for edge in &self.src.edges {
          if edge.edge_type == EdgeType::Inclined || edge.edge_type == EdgeType::InclinedRev {
-            let mut h_ref = self.h_intersect_ref[edge.points];
+            let mut h_ref = &mut self.h_intersect_ref[edge.points];
 
             if h_ref.start != usize::MAX {
                continue;
             }
 
-            let mut v_ref = self.v_intersect_ref[edge.points];
+            let mut v_ref = &mut self.v_intersect_ref[edge.points];
 
-            let edge_points = self.src.edge_points[edge.points];
+            let edge_points = &self.src.edge_points[edge.points];
 
             let p1 = self.src.points[edge_points.p1];
             let p2 = self.src.points[edge_points.p2];
 
-            h_ref.start = self.h_intersections.start();
-            v_ref.start = self.v_intersections.start();
-
-            h_ref.start_coord = h_multi_intersect_fast(
-               p1, p2, DIV_PER_PIXEL, &mut self.h_intersections
-            );
-            v_ref.start_coord = v_multi_intersect_fast(
-               p1, p2, DIV_PER_PIXEL, &mut self.v_intersections
-            );
-
             h_ref.start = self.h_intersections.end();
             v_ref.start = self.v_intersections.end();
+
+            h_ref.start_px = h_multi_intersect_fast(
+               p1, p2, DIV_PER_PIXEL, &mut self.h_intersections
+            ) / DIV_PER_PIXEL;
+
+            v_ref.start_px = v_multi_intersect_fast(
+               p1, p2, DIV_PER_PIXEL, &mut self.v_intersections
+            ) / DIV_PER_PIXEL;
+
+            h_ref.end = self.h_intersections.end();
+            v_ref.end = self.v_intersections.end();
          }
+      }
+   }
+
+   fn print_edge_ref(&self, edge: &EdgeRef) {
+      let edge_points = self.edge_points[edge.points];
+      let p1;
+      let p2;
+      if edge.edge_type == EdgeType::Inclined ||
+         edge.edge_type == EdgeType::Horizontal ||
+         edge.edge_type == EdgeType::Vertical
+      {
+         p1 = self.points[edge_points.p1];
+         p2 = self.points[edge_points.p2];
+      } else {
+         p1 = self.points[edge_points.p2];
+         p2 = self.points[edge_points.p1];
+      }
+
+      println!("E {:?} : ({}, {}) -> ({}, {})", edge.edge_type, p1.x, p1.y, p2.x, p2.y)
+   }
+
+   fn print_poly_ref(&self, poly: &PolyRef, edges: &Ring<EdgeRef>) {
+      println!("P src: {} size: {}", poly.src, poly.end - poly.start);
+
+      for i in poly.start..poly.end {
+         self.print_edge_ref(&edges[i]);
       }
    }
 }
@@ -635,7 +815,7 @@ impl Renderer for TriangleRenderer {
 
          self.transfer(y_world);
 
-         self.h_split(y_split);
+         self.h_split(y_split, y + 1);
 
          for x in min_x..max_x + 1 {
 
