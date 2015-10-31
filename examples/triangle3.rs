@@ -555,26 +555,6 @@ impl TriangleRenderer {
       i
    }
 
-/*
-   fn h_split(&mut self, y: i64) {
-      for edge in self.upper_edges[..].iter() {
-         match edge.edge_type {
-            EdgeType::Inclined => {
-               let edge_points = self.edge_points[edge.points];
-               let s1 = self.points[edge_points.s1];
-               let s2 = self.points[edge_points.s2];
-            },
-            EdgeType::InclinedRev => {
-               let edge_points = self.edge_points[edge.points];
-               let s1 = self.points[edge_points.s1];
-               let s2 = self.points[edge_points.s2];
-            },
-            _ => {}
-         }
-      }
-   }
-*/
-
    #[inline]
    fn h_split(&mut self, y: i64, y_px: i64) {
       let start = self.upper_polys.start();
@@ -592,64 +572,12 @@ impl TriangleRenderer {
 
    #[inline]
    fn h_split_poly(&mut self, poly_i: usize, y: i64, y_px: i64) {
+      let poly = self.upper_polys[poly_i];
+
       let upper_start = self.upper_edges.end();
       let lower_start = self.lower_edges.end();
 
-      let poly = self.upper_polys[poly_i];
-      println!("POLY : {:?}", poly);
-
-      let x1_intersect;
-
-      let end = poly.end;
-      let mut i = poly.start;
-
-      loop {
-         let edge = self.upper_edges[i];
-         let edge_points = self.edge_points[edge.points];
-
-         self.print_edge_ref(&edge);
-
-         match edge.edge_type {
-            EdgeType::Inclined => {
-               let y2 = self.points[edge_points.p2].y;
-               if y2 < y {
-                  self.lower_edges.push(edge);
-               } else if y2 > y {
-                  x1_intersect = self.h_intersection(&edge, y_px);
-
-                  let edge_points_i = self.divide_edge_at(&edge_points, x1_intersect, y);
-
-                  self.lower_edges.push(edge.new_ref(edge_points_i));
-
-                  self.upper_edges.push(edge.new_ref(edge_points_i + 1));
-
-                  break;
-               } else {
-                  x1_intersect = self.points[edge_points.p2].x;
-
-                  self.lower_edges.push(edge);
-
-                  break;
-               }
-            },
-            EdgeType::InclinedRev => {
-            },
-            EdgeType::Horizontal => {
-            },
-            EdgeType::HorizontalRev => {
-            },
-            EdgeType::Vertical => {
-            },
-            EdgeType::VerticalRev => {
-            },
-         }
-
-         i += 1;
-
-         if i == end {
-            return;
-         }
-      }
+      self.h_split_poly_edges(&poly, y, y_px);
 
       let upper_end = self.upper_edges.end();
       let lower_end = self.lower_edges.end();
@@ -665,37 +593,173 @@ impl TriangleRenderer {
             PolyRef::new(poly.src, lower_start, lower_end)
          )
       }
-
-      /*
-      for i in poly.start..poly.end {
-         let edge = self.upper_edges[i];
-
-         println!("{:?}", edge);
-
-         if edge.edge_type == EdgeType::Inclined || edge.edge_type == EdgeType::InclinedRev {
-            let edge_points = self.src.edge_points[edge.src_points];
-            println!("{:?} {:?}", self.src.points[edge_points.p1], self.src.points[edge_points.p2]);
-
-            let h_ref = self.h_intersect_ref[edge.src_points];
-
-            println!("{:?}", h_ref);
-
-            let end_px = h_ref.start_px + (h_ref.end - h_ref.start) as i64;
-
-            if y_px >= h_ref.start_px && y_px < end_px {
-               let x_i = h_ref.start + (y_px - h_ref.start_px) as usize;
-               let x = self.h_intersections[x_i];
-               println!("X INT : {:?}", x);
-            }
-         }
-      }
-      */
    }
 
+   #[inline]
+   fn h_split_poly_edges(&mut self, poly: &PolyRef, y: i64, y_px: i64) {
+      println!("POLY : {:?}", poly);
+
+      let x1_intersect;
+      let p1_index;
+
+      let end = poly.end;
+      let mut i = poly.start;
+
+      loop { // Edge's first point below y
+         let edge = self.upper_edges[i];
+         let edge_points = self.edge_points[edge.points];
+
+         self.print_edge_ref(&edge);
+
+         match edge.edge_type {
+            EdgeType::Inclined => {
+               let y2 = self.points[edge_points.p2].y;
+               if y2 < y {
+                  self.lower_edges.push(edge);
+               } else if y2 > y {
+                  x1_intersect = self.h_intersection(&edge, y_px);
+
+                  let (edge_points_i, point_index) = self.divide_edge_at(&edge_points, x1_intersect, y);
+                  p1_index = point_index;
+
+                  self.lower_edges.push(edge.new_ref(edge_points_i));
+
+                  self.upper_edges.push(edge.new_ref(edge_points_i + 1));
+
+                  break;
+               } else {
+                  x1_intersect = self.points[edge_points.p2].x;
+                  p1_index = edge_points.p2;
+
+                  self.lower_edges.push(edge);
+
+                  break;
+               }
+            },
+            EdgeType::Vertical => {
+               let y2 = self.points[edge_points.p2].y;
+               if y2 < y {
+                  self.lower_edges.push(edge);
+               } else if y2 > y {
+                  x1_intersect = self.points[edge_points.p2].x;
+
+                  let (edge_points_i, point_index) = self.divide_edge_at(&edge_points, x1_intersect, y);
+                  p1_index = point_index;
+
+                  self.lower_edges.push(edge.new_ref(edge_points_i));
+
+                  self.upper_edges.push(edge.new_ref(edge_points_i + 1));
+
+                  break;
+               } else {
+                  x1_intersect = self.points[edge_points.p2].x;
+                  p1_index = edge_points.p2;
+
+                  self.lower_edges.push(edge);
+
+                  break;
+               }
+            },
+            _ => {
+               self.lower_edges.push(edge);
+            },
+         }
+
+         i += 1;
+
+         if i == end {
+            return;
+         }
+      }
+
+      i += 1;
+
+      loop { // Edge's first point above y
+         let edge = self.upper_edges[i];
+         let edge_points = self.edge_points[edge.points];
+
+         self.print_edge_ref(&edge);
+
+         match edge.edge_type {
+            EdgeType::InclinedRev => {
+               let y2 = self.points[edge_points.p1].y;
+               if y2 > y {
+                  self.upper_edges.push(edge);
+               } else if y2 < y {
+                  let x2_intersect = self.h_intersection(&edge, y_px);
+
+                  let (edge_points_i, p2_index) = self.divide_edge_at(&edge_points, x2_intersect, y);
+
+                  self.edge_points.push(
+                     EdgePoints::new(p1_index, p2_index)
+                  );
+
+                  self.upper_edges.push(edge.new_ref(edge_points_i + 1));
+
+                  self.upper_edges.push(EdgeRef::new(
+                     EdgeType::HorizontalRev,
+                     usize::MAX,
+                     edge_points_i + 2
+                  ));
+
+                  self.lower_edges.push(EdgeRef::new(
+                     EdgeType::Horizontal,
+                     usize::MAX,
+                     edge_points_i + 2
+                  ));
+
+                  self.lower_edges.push(edge.new_ref(edge_points_i));
+
+                  break;
+               } else {
+                  let x2_intersect = self.points[edge_points.p1].x;
+                  let p2_index = edge_points.p1;
+
+                  self.upper_edges.push(edge);
+
+                  let edge_points_i = self.edge_points.end();
+
+                  self.edge_points.push(
+                     EdgePoints::new(p1_index, p2_index)
+                  );
+
+                  self.upper_edges.push(EdgeRef::new(
+                     EdgeType::HorizontalRev,
+                     usize::MAX,
+                     edge_points_i
+                  ));
+
+                  self.lower_edges.push(EdgeRef::new(
+                     EdgeType::Horizontal,
+                     usize::MAX,
+                     edge_points_i
+                  ));
+
+                  break;
+               }
+            },
+            _ => {
+            }
+         }
+
+         i += 1;
+
+         if i == end {
+            return;
+         }
+      }
+
+      i += 1;
+
+      for j in i..end { // Edge's first point again below y
+         let edge = self.upper_edges[j];
+         self.lower_edges.push(edge);
+      }
+   }
 
    #[inline]
-   fn divide_edge_at(&mut self, edge_points: &EdgePoints, x: i64, y: i64) -> usize {
-      let pos = self.points.end();
+   fn divide_edge_at(&mut self, edge_points: &EdgePoints, x: i64, y: i64) -> (usize, usize) {
+      let point_index = self.points.end();
 
       self.points.push(
          Point::new(x, y)
@@ -704,14 +768,14 @@ impl TriangleRenderer {
       let edge_points_index = self.edge_points.end();
 
       self.edge_points.push(
-         EdgePoints::new(edge_points.p1, pos)
+         EdgePoints::new(edge_points.p1, point_index)
       );
 
       self.edge_points.push(
-         EdgePoints::new(pos, edge_points.p2)
+         EdgePoints::new(point_index, edge_points.p2)
       );
 
-      edge_points_index
+      (point_index, edge_points_index)
    }
 
    #[inline]
