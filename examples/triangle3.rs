@@ -213,6 +213,34 @@ impl Default for IntersectRef {
    }
 }
 
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct MinMaxXY {
+   min_x: i64,
+   min_y: i64,
+   max_x: i64,
+   max_y: i64,
+}
+
+impl MinMaxXY {
+   #[inline]
+   pub fn new(min_x: i64, min_y: i64, max_x: i64, max_y: i64) -> Self {
+      MinMaxXY {
+         min_x: min_x,
+         min_y: min_y,
+         max_x: max_x,
+         max_y: max_y,
+      }
+   }
+}
+
+impl Default for MinMaxXY {
+   #[inline]
+   fn default() -> MinMaxXY {
+      MinMaxXY::new(i64::MAX, i64::MIN, i64::MAX, i64::MAX)
+   }
+}
+
 struct PolySource {
    polys: Vec<Poly>,
    edges: Vec<Edge>,
@@ -397,12 +425,21 @@ impl PolySource {
 
       (min_x, min_y, max_x, max_y)
    }
+
+   pub fn polys_min_max(&self) -> Vec<MinMaxXY> {
+      let mut v = Vec::new();
+      v
+   }
 }
 
 struct TriangleRenderer {
    src: PolySource,
    src_min_y: Vec<PolyMinYRef>,
    src_poly_marker: usize,
+   src_min_max: Vec<MinMaxXY>,
+
+   h_sorted: Vec<usize>,
+   v_sorted: Vec<usize>,
 
    edge_points_map: Vec<usize>,
    points_map: Vec<usize>,
@@ -430,8 +467,14 @@ impl TriangleRenderer {
       let src = PolySource::new();
       let src_min_y = src.polys_min_y();
 
+      let src_min_max = src.polys_min_max();
+
+      let polys_len = src.polys.len();
       let edge_points_len = src.edge_points.len();
       let points_len = src.points.len();
+
+      let h_sorted = (1..polys_len).collect();
+      let v_sorted = (1..polys_len).collect();
 
       let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
       let points_map = repeat(usize::MAX).take(points_len).collect();
@@ -443,6 +486,10 @@ impl TriangleRenderer {
          src: src,
          src_min_y: src_min_y,
          src_poly_marker: 0,
+         src_min_max: src_min_max,
+
+         h_sorted: h_sorted,
+         v_sorted: v_sorted,
 
          edge_points_map: edge_points_map,
          points_map: points_map,
@@ -484,6 +531,17 @@ impl TriangleRenderer {
 
       for intersect_ref in &mut self.h_intersect_ref {
          intersect_ref.start = usize::MAX;
+      }
+   }
+
+   fn vertical_sort(&self) {
+      for poly in self.src.polys[..].iter() {
+         for edge_i in poly.start..poly.end {
+            let edge = self.src.edges[edge_i];
+            let edge_points = self.src.edge_points[edge.points];
+            let p1 = self.src.points[edge_points.p1];
+            let p2 = self.src.points[edge_points.p1];
+         }
       }
    }
 
