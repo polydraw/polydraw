@@ -418,6 +418,9 @@ struct TriangleRenderer {
    lower_polys: Ring<PolyRef>,
    lower_edges: Ring<EdgeRef>,
 
+   active_polys: Ring<PolyRef>,
+   active_edges: Ring<EdgeRef>,
+
    edge_points: Ring<EdgePoints>,
    points: Ring<Point>,
 }
@@ -455,6 +458,9 @@ impl TriangleRenderer {
          lower_polys: Ring::new(65536),
          lower_edges: Ring::new(262144),
 
+         active_polys: Ring::new(16384),
+         active_edges: Ring::new(65536),
+
          edge_points: Ring::new(262144),
          points: Ring::new(262144),
       }
@@ -466,6 +472,9 @@ impl TriangleRenderer {
 
       self.lower_polys.clear();
       self.lower_edges.clear();
+
+      self.active_polys.clear();
+      self.active_edges.clear();
 
       self.edge_points.clear();
       self.points.clear();
@@ -553,6 +562,10 @@ impl TriangleRenderer {
       }
 
       i
+   }
+
+   #[inline]
+   fn v_split(&mut self, x: i64, x_px: i64) {
    }
 
    #[inline]
@@ -904,6 +917,10 @@ impl Renderer for TriangleRenderer {
          self.h_split(y_split, y + 1);
 
          for x in min_x..max_x + 1 {
+            let x_world = from_px(x);
+            let x_split = x_world + DIV_PER_PIXEL;
+
+            self.v_split(x_split, x + 1);
 
             frame.put_pixel(x as i32, y as i32, &back);
          }
