@@ -860,6 +860,7 @@ impl TriangleRenderer {
                }
             },
             _ => {
+               self.upper_edges.push(edge);
             }
          }
 
@@ -896,13 +897,13 @@ impl TriangleRenderer {
    #[inline]
    fn add_v_split_v_edge_ref(&mut self, edge_points_i: usize) {
       self.lower_edges.push(EdgeRef::new(
-         EdgeType::VerticalRev,
+         EdgeType::Vertical,
          usize::MAX,
          edge_points_i
       ));
 
       self.active_edges.push(EdgeRef::new(
-         EdgeType::Vertical,
+         EdgeType::VerticalRev,
          usize::MAX,
          edge_points_i
       ));
@@ -1002,6 +1003,16 @@ impl TriangleRenderer {
 
    #[inline]
    fn v_split(&mut self, x: i64, x_px: i64) {
+      println!("");
+      println!("== LOWER ==");
+
+      for poly in self.lower_polys[..].iter() {
+         self.print_poly_ref(&poly, &self.lower_edges);
+      }
+
+      println!("");
+      println!("== SPLITTING ==");
+
       let start = self.lower_polys.start();
       let end = self.lower_polys.end();
       for i in start..end {
@@ -1025,7 +1036,7 @@ impl TriangleRenderer {
 
    #[inline]
    fn v_split_poly(&mut self, poly_i: usize, x: i64, x_px: i64) {
-      let poly = self.upper_polys[poly_i];
+      let poly = self.lower_polys[poly_i];
 
       let lower_start = self.lower_edges.end();
       let active_start = self.active_edges.end();
@@ -1050,6 +1061,8 @@ impl TriangleRenderer {
 
    #[inline]
    fn v_split_poly_edges(&mut self, poly: &PolyRef, x: i64, x_px: i64) {
+      self.print_poly_ref(&poly, &self.lower_edges);
+
       let p1_index;
 
       let end = poly.end;
@@ -1196,6 +1209,7 @@ impl TriangleRenderer {
                }
             },
             _ => {
+               self.lower_edges.push(edge);
             }
          }
 
