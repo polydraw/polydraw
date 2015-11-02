@@ -237,7 +237,7 @@ impl MinMaxXY {
 impl Default for MinMaxXY {
    #[inline]
    fn default() -> MinMaxXY {
-      MinMaxXY::new(i64::MAX, i64::MIN, i64::MAX, i64::MAX)
+      MinMaxXY::new(i64::MAX, i64::MAX, i64::MIN, i64::MIN)
    }
 }
 
@@ -397,6 +397,60 @@ impl PolySource {
       v
    }
 
+   pub fn polys_min_max(&self) -> Vec<MinMaxXY> {
+      let mut v: Vec<MinMaxXY> = repeat(MinMaxXY::default()).take(self.polys.len()).collect();
+
+      for (poly_index, poly) in self.polys.iter().enumerate() {
+         let poly_min_max = &mut v[poly_index];
+
+         for edge_index in poly.start..poly.end {
+            let edge_points = self.edge_points[self.edges[edge_index].points];
+
+            let p1 = self.points[edge_points.p1];
+            let p2 = self.points[edge_points.p2];
+
+            let min_x;
+            let min_y;
+            let max_x;
+            let max_y;
+
+            if p1.x > p2.x {
+               min_x = p2.x;
+               max_x = p1.x;
+            } else {
+               min_x = p1.x;
+               max_x = p2.x;
+            }
+
+            if p1.y > p2.y {
+               min_y = p2.y;
+               max_y = p1.y;
+            } else {
+               min_y = p1.y;
+               max_y = p2.y;
+            }
+
+            if min_x < poly_min_max.min_x {
+               poly_min_max.min_x = min_x;
+            }
+
+            if min_y < poly_min_max.min_y {
+               poly_min_max.min_y = min_y;
+            }
+
+            if max_x > poly_min_max.max_x {
+               poly_min_max.max_x = max_x;
+            }
+
+            if max_y > poly_min_max.max_y {
+               poly_min_max.max_y = max_y;
+            }
+         }
+      }
+
+      v
+   }
+
    #[inline]
    fn min_max_x_y(&self) -> (i64, i64, i64, i64) {
       let mut min_x = i64::MAX;
@@ -424,11 +478,6 @@ impl PolySource {
       }
 
       (min_x, min_y, max_x, max_y)
-   }
-
-   pub fn polys_min_max(&self) -> Vec<MinMaxXY> {
-      let mut v = Vec::new();
-      v
    }
 }
 
