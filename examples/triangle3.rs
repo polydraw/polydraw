@@ -680,11 +680,15 @@ impl TriangleRenderer {
 
    #[inline]
    fn h_split(&mut self, y: i64, y_px: i64) {
+      self.lower_polys.consume();
+
       let start = self.upper_polys.start();
       let end = self.upper_polys.end();
       for i in start..end {
          self.h_split_poly(i, y, y_px);
       }
+
+      self.upper_polys.consume_at(end);
    }
 
    #[inline]
@@ -1003,6 +1007,8 @@ impl TriangleRenderer {
 
    #[inline]
    fn v_split(&mut self, x: i64, x_px: i64) {
+      self.active_polys.consume();
+
       println!("");
       println!("== LOWER ==");
 
@@ -1031,7 +1037,7 @@ impl TriangleRenderer {
          self.print_poly_ref(&poly, &self.active_edges);
       }
 
-      panic!("EXIT");
+      self.lower_polys.consume_at(end);
    }
 
    #[inline]
@@ -1147,9 +1153,7 @@ impl TriangleRenderer {
 
                   let (edge_points_i, p2_index) = self.divide_edge_at(&edge_points, x, y2_intersect);
 
-                  self.edge_points.push(
-                     EdgePoints::new(p1_index, p2_index)
-                  );
+                  self.push_edge_points(p1_index, p2_index);
 
                   self.lower_edges.push(edge.new_ref(edge_points_i + 1));
 
@@ -1165,9 +1169,7 @@ impl TriangleRenderer {
 
                   let edge_points_i = self.edge_points.end();
 
-                  self.edge_points.push(
-                     EdgePoints::new(p1_index, p2_index)
-                  );
+                  self.push_edge_points(p1_index, p2_index);
 
                   self.add_v_split_v_edge_ref(edge_points_i);
 
@@ -1183,9 +1185,7 @@ impl TriangleRenderer {
 
                   let (edge_points_i, p2_index) = self.divide_edge_at(&edge_points, x, y2_intersect);
 
-                  self.edge_points.push(
-                     EdgePoints::new(p1_index, p2_index)
-                  );
+                  self.push_edge_points(p1_index, p2_index);
 
                   self.lower_edges.push(edge.new_ref(edge_points_i + 1));
 
@@ -1199,9 +1199,7 @@ impl TriangleRenderer {
 
                   let edge_points_i = self.edge_points.end();
 
-                  self.edge_points.push(
-                     EdgePoints::new(p1_index, p2_index)
-                  );
+                  self.push_edge_points(p1_index, p2_index);
 
                   self.add_v_split_v_edge_ref(edge_points_i);
 
@@ -1226,6 +1224,20 @@ impl TriangleRenderer {
          let edge = self.lower_edges[j];
          self.active_edges.push(edge);
       }
+   }
+
+   #[inline]
+   fn push_edge_points(&mut self, p1_index: usize, p2_index: usize) {
+      let p1 = self.points[p1_index];
+      let p2 = self.points[p2_index];
+
+      self.edge_points.push(
+         if p2.y > p1.y || (p2.y == p1.y && p2.x > p1.x) {
+            EdgePoints::new(p1_index, p2_index)
+         } else {
+            EdgePoints::new(p2_index, p1_index)
+         }
+      );
    }
 
    fn print_edge_ref(&self, edge: &EdgeRef) {
@@ -1299,6 +1311,8 @@ impl Renderer for TriangleRenderer {
 
             frame.put_pixel(x as i32, y as i32, &back);
          }
+
+         panic!("COMPLETE");
       }
    }
 }
