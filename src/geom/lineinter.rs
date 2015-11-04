@@ -8,6 +8,12 @@ pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
 #[inline]
 pub fn h_multi_intersect(p1: Point, p2: Point, step_y: i64, inters: &mut Ring<i64>) {
+   let (p1, p2) = if p1.y > p2.y {
+      (p2, p1)
+   } else {
+      (p1, p2)
+   };
+
    let start = 1 + p1.y / step_y;
    let end = 1 + (p2.y - 1) / step_y;
 
@@ -19,6 +25,12 @@ pub fn h_multi_intersect(p1: Point, p2: Point, step_y: i64, inters: &mut Ring<i6
 
 #[inline]
 pub fn v_multi_intersect(p1: Point, p2: Point, step_x: i64, inters: &mut Ring<i64>) {
+   let (p1, p2) = if p1.x > p2.x {
+      (p2, p1)
+   } else {
+      (p1, p2)
+   };
+
    let start = 1 + p1.x / step_x;
    let end = 1 + (p2.x - 1) / step_x;
 
@@ -30,6 +42,12 @@ pub fn v_multi_intersect(p1: Point, p2: Point, step_x: i64, inters: &mut Ring<i6
 
 #[inline]
 pub fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, inters: &mut Ring<i64>) -> i64 {
+   let (p1, p2) = if p1.y > p2.y {
+      (p2, p1)
+   } else {
+      (p1, p2)
+   };
+
    let start = 1 + p1.y / step_y;
    let end = 1 + (p2.y - 1) / step_y;
 
@@ -41,7 +59,7 @@ pub fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, inters: &mut Ri
 
    let max_div_dy = i64::MAX / dy;
 
-   let err_step = max_div_dy * (step_y * dx * dx_signum - step_x * dy);
+   let err_step = max_div_dy * (step_y * dx * dx_signum - step_x * dx_signum * dy);
 
    let first_y = start * step_y;
 
@@ -60,7 +78,7 @@ pub fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, inters: &mut Ri
       return first_y;
    }
 
-   let mut err = max_div_dy * (fdy * dx * dx_signum - fdx * dy) - HALF_MAX_ERR;
+   let mut err = max_div_dy * (fdy * dx * dx_signum - fdx * dx_signum * dy) - HALF_MAX_ERR;
 
    for _ in start..end {
       if err > 0 {
@@ -80,6 +98,12 @@ pub fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, inters: &mut Ri
 
 #[inline]
 pub fn v_multi_intersect_fast(p1: Point, p2: Point, step_x: i64, inters: &mut Ring<i64>) -> i64 {
+   let (p1, p2) = if p1.x > p2.x {
+      (p2, p1)
+   } else {
+      (p1, p2)
+   };
+
    let start = 1 + p1.x / step_x;
    let end = 1 + (p2.x - 1) / step_x;
 
@@ -91,7 +115,7 @@ pub fn v_multi_intersect_fast(p1: Point, p2: Point, step_x: i64, inters: &mut Ri
 
    let max_div_dx = i64::MAX / dx;
 
-   let err_step = max_div_dx * (step_x * dy * dy_signum - step_y * dx);
+   let err_step = max_div_dx * (step_x * dy * dy_signum - step_y * dy_signum * dx);
 
    let first_x = start * step_x;
 
@@ -110,7 +134,7 @@ pub fn v_multi_intersect_fast(p1: Point, p2: Point, step_x: i64, inters: &mut Ri
       return first_x;
    }
 
-   let mut err = max_div_dx * (fdx * dy * dy_signum - fdy * dx) - HALF_MAX_ERR;
+   let mut err = max_div_dx * (fdx * dy * dy_signum - fdy * dy_signum * dx) - HALF_MAX_ERR;
 
    for _ in start..end {
       if err > 0 {
@@ -164,11 +188,41 @@ mod tests {
    }
 
    #[test]
+   fn test_correct_h_rev() {
+      let mut inters = Ring::new(100_000);
+      let mut inters_fast = Ring::new(100_000);
+      let p1 = Point::new(500_000, 0);
+      let p2 = Point::new(0, 2_000_000);
+
+      h_multi_intersect(p1, p2, 1000, &mut inters);
+      h_multi_intersect_fast(p1, p2, 1000, &mut inters_fast);
+
+      for (correct, fast) in inters[..].iter().zip(inters_fast[..].iter()) {
+         assert_eq!(correct, fast);
+      }
+   }
+
+   #[test]
    fn test_correct_v() {
       let mut inters = Ring::new(100_000);
       let mut inters_fast = Ring::new(100_000);
       let p1 = Point::new(0, 0);
       let p2 = Point::new(500_000, 2_000_000);
+
+      v_multi_intersect(p1, p2, 1000, &mut inters);
+      v_multi_intersect_fast(p1, p2, 1000, &mut inters_fast);
+
+      for (correct, fast) in inters[..].iter().zip(inters_fast[..].iter()) {
+         assert_eq!(correct, fast);
+      }
+   }
+
+   #[test]
+   fn test_correct_v_rev() {
+      let mut inters = Ring::new(100_000);
+      let mut inters_fast = Ring::new(100_000);
+      let p1 = Point::new(500_000, 0);
+      let p2 = Point::new(0, 2_000_000);
 
       v_multi_intersect(p1, p2, 1000, &mut inters);
       v_multi_intersect_fast(p1, p2, 1000, &mut inters_fast);
