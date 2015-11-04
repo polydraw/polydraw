@@ -986,7 +986,7 @@ impl TriangleRenderer {
    }
 
    fn recalc_lower_min_x(&mut self) {
-      for (poly_index, poly) in self.lower_polys[..].iter().enumerate() {
+      for poly in self.lower_polys[..].iter() {
          let mut min_x = i64::MAX;
 
          for edge_index in poly.start..poly.end {
@@ -1001,7 +1001,7 @@ impl TriangleRenderer {
             }
          }
 
-         self.lower_min_x[poly_index] = min_x;
+         self.lower_min_x[poly.src] = min_x;
       }
    }
 
@@ -1022,11 +1022,11 @@ impl TriangleRenderer {
       let start = self.lower_polys.start();
       let end = self.lower_polys.end();
       for i in start..end {
-         if self.lower_min_x[i-start] < x {
+         let poly = self.lower_polys[i];
+         if self.lower_min_x[poly.src] < x {
             self.v_split_poly(i, x, x_px);
          } else {
-            let poly_copy = self.lower_polys[i];
-            self.lower_polys.push(poly_copy);
+            self.lower_polys.push(poly);
          }
       }
 
@@ -1055,13 +1055,14 @@ impl TriangleRenderer {
       if lower_end > lower_start {
          self.lower_polys.push(
             PolyRef::new(poly.src, lower_start, lower_end)
-         )
+         );
+         self.lower_min_x[poly.src] = x;
       }
 
       if active_end > active_start {
          self.active_polys.push(
             PolyRef::new(poly.src, active_start, active_end)
-         )
+         );
       }
    }
 
