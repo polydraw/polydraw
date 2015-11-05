@@ -713,6 +713,44 @@ impl TriangleRenderer {
       }
 
       if lower_end > lower_start {
+         let mut min_x = i64::MAX;
+         let mut min_i = 0;
+
+         for i in lower_start..lower_end {
+            let edge = self.lower_edges[i];
+            let edge_points = self.edge_points[edge.points];
+            let x1 = self.edge_x1(&edge, &edge_points);
+            if x1 < min_x {
+               min_x = x1;
+               min_i = i;
+            }
+         }
+
+         if (min_i + 1) < lower_end {
+            let edge = self.lower_edges[min_i + 1];
+            let edge_points = self.edge_points[edge.points];
+            let x1 = self.edge_x1(&edge, &edge_points);
+            if x1 == min_x {
+               min_i += 1;
+            }
+         }
+
+         let (lower_start, lower_end) = if min_i != lower_start {
+            for i in min_i..lower_end {
+               let edge = self.lower_edges[i];
+               self.lower_edges.push(edge);
+            }
+
+            for i in lower_start..min_i {
+               let edge = self.lower_edges[i];
+               self.lower_edges.push(edge);
+            }
+
+            (lower_end, 2 * lower_end - lower_start)
+         } else {
+            (lower_start, lower_end)
+         };
+
          self.lower_polys.push(
             PolyRef::new(poly.src, lower_start, lower_end)
          )
@@ -1024,6 +1062,7 @@ impl TriangleRenderer {
       self.active_polys.consume();
 
       println!("");
+      println!("X {}, X_PX {}", x, x_px);
       println!("== LOWER ==");
 
       for poly in self.lower_polys[..].iter() {
@@ -1111,7 +1150,7 @@ impl TriangleRenderer {
 
          match edge.edge_type {
             EdgeType::Inclined | EdgeType::InclinedRev => {
-               let x2 = self.points[edge_points.p2].x;
+               let x2 = self.edge_x2(&edge, &edge_points);
                if x2 < x {
                   self.active_edges.push(edge);
                } else if x2 > x {
@@ -1130,7 +1169,11 @@ impl TriangleRenderer {
 
                   break;
                } else {
-                  p1_index = edge_points.p2;
+                  p1_index = if edge.edge_type == EdgeType::Inclined {
+                     edge_points.p2
+                  } else {
+                     edge_points.p1
+                  };
 
                   self.active_edges.push(edge);
 
@@ -1138,7 +1181,7 @@ impl TriangleRenderer {
                }
             },
             EdgeType::Horizontal | EdgeType::HorizontalRev => {
-               let x2 = self.points[edge_points.p2].x;
+               let x2 = self.edge_x2(&edge, &edge_points);
                if x2 < x {
                   self.active_edges.push(edge);
                } else if x2 > x {
@@ -1157,7 +1200,11 @@ impl TriangleRenderer {
 
                   break;
                } else {
-                  p1_index = edge_points.p2;
+                  p1_index = if edge.edge_type == EdgeType::Horizontal {
+                     edge_points.p2
+                  } else {
+                     edge_points.p1
+                  };
 
                   self.active_edges.push(edge);
 
@@ -1184,7 +1231,7 @@ impl TriangleRenderer {
 
          match edge.edge_type {
             EdgeType::Inclined | EdgeType::InclinedRev => {
-               let x2 = self.points[edge_points.p1].x;
+               let x2 = self.edge_x2(&edge, &edge_points);
                if x2 > x {
                   self.lower_edges.push(edge);
                } else if x2 < x {
@@ -1208,7 +1255,11 @@ impl TriangleRenderer {
 
                   break;
                } else {
-                  let p2_index = edge_points.p1;
+                  let p2_index = if edge.edge_type == EdgeType::Inclined {
+                     edge_points.p2
+                  } else {
+                     edge_points.p1
+                  };
 
                   self.lower_edges.push(edge);
 
@@ -1224,7 +1275,7 @@ impl TriangleRenderer {
                }
             },
             EdgeType::Horizontal | EdgeType::HorizontalRev => {
-               let x2 = self.points[edge_points.p1].x;
+               let x2 = self.edge_x2(&edge, &edge_points);
                if x2 > x {
                   self.lower_edges.push(edge);
                } else if x2 < x {
@@ -1248,7 +1299,11 @@ impl TriangleRenderer {
 
                   break;
                } else {
-                  let p2_index = edge_points.p1;
+                  let p2_index = if edge.edge_type == EdgeType::Horizontal {
+                     edge_points.p2
+                  } else {
+                     edge_points.p1
+                  };
 
                   let edge_points_i = self.edge_points.end();
 
@@ -1278,6 +1333,30 @@ impl TriangleRenderer {
       for j in i..end { // Edge's first point again below y
          let edge = self.lower_edges[j];
          self.active_edges.push(edge);
+      }
+   }
+
+   #[inline]
+   fn edge_x1(&self, edge: &EdgeRef, edge_points: &EdgePoints) -> i64 {
+      match edge.edge_type {
+         EdgeType::Inclined | EdgeType::Horizontal | EdgeType::Vertical => {
+            self.points[edge_points.p1].x
+         },
+         _ => {
+            self.points[edge_points.p2].x
+         }
+      }
+   }
+
+   #[inline]
+   fn edge_x2(&self, edge: &EdgeRef, edge_points: &EdgePoints) -> i64 {
+      match edge.edge_type {
+         EdgeType::Inclined | EdgeType::Horizontal | EdgeType::Vertical => {
+            self.points[edge_points.p2].x
+         },
+         _ => {
+            self.points[edge_points.p1].x
+         }
       }
    }
 
@@ -1359,7 +1438,7 @@ impl Renderer for TriangleRenderer {
 
       let back = RGB::new(1, 1, 1);
 
-      for y in min_y..max_y + 1 {
+      for y in min_y..max_y {
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
 
@@ -1369,7 +1448,7 @@ impl Renderer for TriangleRenderer {
 
          self.recalc_lower_min_max_x();
 
-         for x in min_x..max_x + 1 {
+         for x in min_x..max_x {
             let x_world = from_px(x);
             let x_split = x_world + DIV_PER_PIXEL;
 
