@@ -129,8 +129,8 @@ impl EdgeRef {
    }
 
    #[inline]
-   pub fn new_ref(&self, i: usize) -> Self {
-      EdgeRef::new(self.edge_type, self.src_points, i)
+   pub fn new_ref(&self, points: usize) -> Self {
+      EdgeRef::new(self.edge_type, self.src_points, points)
    }
 }
 
@@ -518,6 +518,7 @@ struct TriangleRenderer {
    lower_polys: Ring<PolyRef>,
    lower_edges: Ring<EdgeRef>,
    lower_min_x: Vec<i64>,
+   lower_max_x: Vec<i64>,
 
    active_polys: Ring<PolyRef>,
    active_edges: Ring<EdgeRef>,
@@ -547,6 +548,7 @@ impl TriangleRenderer {
       let v_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
 
       let lower_min_x = repeat(i64::MAX).take(polys_len).collect();
+      let lower_max_x = repeat(i64::MIN).take(polys_len).collect();
 
       TriangleRenderer {
          src: src,
@@ -571,6 +573,7 @@ impl TriangleRenderer {
          lower_polys: Ring::new(65536),
          lower_edges: Ring::new(262144),
          lower_min_x: lower_min_x,
+         lower_max_x: lower_max_x,
 
          active_polys: Ring::new(16384),
          active_edges: Ring::new(65536),
@@ -985,23 +988,34 @@ impl TriangleRenderer {
       }
    }
 
-   fn recalc_lower_min_x(&mut self) {
+   fn recalc_lower_min_max_x(&mut self) {
       for poly in self.lower_polys[..].iter() {
          let mut min_x = i64::MAX;
+         let mut max_x = i64::MIN;
 
          for edge_index in poly.start..poly.end {
             let edge_points = self.edge_points[self.lower_edges[edge_index].points];
-            let x = min(
-               self.points[edge_points.p1].x,
-               self.points[edge_points.p2].x
-            );
 
-            if x < min_x {
-               min_x = x;
+            let x1 = self.points[edge_points.p1].x;
+            let x2 = self.points[edge_points.p2].x;
+
+            let (left, right) = if x1 < x2 {
+               (x1, x2)
+            } else {
+               (x2, x1)
+            };
+
+            if left < min_x {
+               min_x = left;
+            }
+
+            if right > max_x {
+               max_x = right;
             }
          }
 
          self.lower_min_x[poly.src] = min_x;
+         self.lower_max_x[poly.src] = max_x;
       }
    }
 
@@ -1023,10 +1037,26 @@ impl TriangleRenderer {
       let end = self.lower_polys.end();
       for i in start..end {
          let poly = self.lower_polys[i];
-         if self.lower_min_x[poly.src] < x {
-            self.v_split_poly(i, x, x_px);
-         } else {
+         if self.lower_max_x[poly.src] <= x {
+
+            let active_start = self.active_edges.end();
+
+            for edge_i in poly.start..poly.end {
+               self.active_edges.push(
+                  self.lower_edges[edge_i].clone()
+               );
+            }
+
+            let active_end = self.active_edges.end();
+
+            self.active_polys.push(
+               PolyRef::new(poly.src, active_start, active_end)
+            );
+
+         } else if self.lower_min_x[poly.src] >= x {
             self.lower_polys.push(poly);
+         } else {
+            self.v_split_poly(i, x, x_px);
          }
       }
 
@@ -1092,7 +1122,11 @@ impl TriangleRenderer {
 
                   self.active_edges.push(edge.new_ref(edge_points_i));
 
+                  self.check_equal_points("I1x2>x-", edge_points_i, poly, x, x_px);
+
                   self.lower_edges.push(edge.new_ref(edge_points_i + 1));
+
+                  self.check_equal_points("I2x2>x-", edge_points_i + 1, poly, x, x_px);
 
                   break;
                } else {
@@ -1115,7 +1149,11 @@ impl TriangleRenderer {
 
                   self.active_edges.push(edge.new_ref(edge_points_i));
 
+                  self.check_equal_points("H1x2>x-", edge_points_i, poly, x, x_px);
+
                   self.lower_edges.push(edge.new_ref(edge_points_i + 1));
+
+                  self.check_equal_points("H2x2>x-", edge_points_i + 1, poly, x, x_px);
 
                   break;
                } else {
@@ -1158,9 +1196,15 @@ impl TriangleRenderer {
 
                   self.lower_edges.push(edge.new_ref(edge_points_i + 1));
 
+                  self.check_equal_points("I1x2<x+", edge_points_i + 1, poly, x, x_px);
+
                   self.add_v_split_v_edge_ref(edge_points_i + 2);
 
+                  self.check_equal_points("I2x2<x+", edge_points_i + 2, poly, x, x_px);
+
                   self.active_edges.push(edge.new_ref(edge_points_i));
+
+                  self.check_equal_points("I3x2<x+", edge_points_i, poly, x, x_px);
 
                   break;
                } else {
@@ -1173,6 +1217,8 @@ impl TriangleRenderer {
                   self.push_edge_points(p1_index, p2_index);
 
                   self.add_v_split_v_edge_ref(edge_points_i);
+
+                  self.check_equal_points("I1x2=x+", edge_points_i, poly, x, x_px);
 
                   break;
                }
@@ -1190,9 +1236,15 @@ impl TriangleRenderer {
 
                   self.lower_edges.push(edge.new_ref(edge_points_i + 1));
 
+                  self.check_equal_points("H1x2<x+", edge_points_i + 1, poly, x, x_px);
+
                   self.add_v_split_v_edge_ref(edge_points_i + 2);
 
+                  self.check_equal_points("H2x2<x+", edge_points_i + 2, poly, x, x_px);
+
                   self.active_edges.push(edge.new_ref(edge_points_i));
+
+                  self.check_equal_points("H3x2<x+", edge_points_i, poly, x, x_px);
 
                   break;
                } else {
@@ -1203,6 +1255,8 @@ impl TriangleRenderer {
                   self.push_edge_points(p1_index, p2_index);
 
                   self.add_v_split_v_edge_ref(edge_points_i);
+
+                  self.check_equal_points("H1x2=x+", edge_points_i, poly, x, x_px);
 
                   break;
                }
@@ -1224,6 +1278,17 @@ impl TriangleRenderer {
       for j in i..end { // Edge's first point again below y
          let edge = self.lower_edges[j];
          self.active_edges.push(edge);
+      }
+   }
+
+   #[inline]
+   fn check_equal_points(&self, name: &str, edge_points_i: usize, poly: &PolyRef, x: i64, x_px: i64) {
+      let edge_points = self.edge_points[edge_points_i];
+      if self.points[edge_points.p1] == self.points[edge_points.p2] {
+         println!("");
+         println!("{} EQUAL POINTS {:?} {} {}", name, self.points[edge_points.p1], x, x_px);
+         self.print_poly_ref(poly, &self.lower_edges);
+         panic!("EXIT");
       }
    }
 
@@ -1302,7 +1367,7 @@ impl Renderer for TriangleRenderer {
 
          self.h_split(y_split, y + 1);
 
-         self.recalc_lower_min_x();
+         self.recalc_lower_min_max_x();
 
          for x in min_x..max_x + 1 {
             let x_world = from_px(x);
