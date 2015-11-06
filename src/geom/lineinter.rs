@@ -153,12 +153,12 @@ pub fn v_multi_intersect_fast(p1: Point, p2: Point, step_x: i64, inters: &mut Ri
 }
 
 #[inline]
-fn h_intersect(p1: Point, p2: Point, y: i64) -> i64 {
+pub fn h_intersect(p1: Point, p2: Point, y: i64) -> i64 {
    p1.x + ((p2.x - p1.x) * (y - p1.y)).rounding_div(p2.y - p1.y)
 }
 
 #[inline]
-fn v_intersect(p1: Point, p2: Point, x: i64) -> i64 {
+pub fn v_intersect(p1: Point, p2: Point, x: i64) -> i64 {
    p1.y + ((p2.y - p1.y) * (x - p1.x)).rounding_div(p2.x - p1.x)
 }
 
