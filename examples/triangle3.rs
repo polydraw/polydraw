@@ -596,6 +596,8 @@ impl TriangleRenderer {
    }
 
    fn clear(&mut self) {
+      self.src_poly_marker = 0;
+
       self.upper_polys.clear();
       self.upper_edges.clear();
 
@@ -613,6 +615,18 @@ impl TriangleRenderer {
 
       for intersect_ref in &mut self.h_intersect_ref {
          intersect_ref.start = usize::MAX;
+      }
+
+      for intersect_ref in &mut self.v_intersect_ref {
+         intersect_ref.start = usize::MAX;
+      }
+
+      for map in self.edge_points_map.iter_mut() {
+         *map = usize::MAX;
+      }
+
+      for map in self.points_map.iter_mut() {
+         *map = usize::MAX;
       }
    }
 
