@@ -590,7 +590,7 @@ impl TriangleRenderer {
          active_polys: Ring::new(262144),
          active_edges: Ring::new(262144),
 
-         edge_points: Ring::new(1048576),
+         edge_points: Ring::new(4194304),
          points: Ring::new(1048576),
       }
    }
@@ -703,7 +703,24 @@ impl TriangleRenderer {
       let start = self.upper_polys.start();
       let end = self.upper_polys.end();
       for i in start..end {
-         self.h_split_poly(i, y, y_px);
+         let poly = self.upper_polys[i];
+         if self.src_min_max[poly.src].max_y <= y {
+            let lower_start = self.lower_edges.end();
+
+            for edge_i in poly.start..poly.end {
+               self.lower_edges.push(
+                  self.upper_edges[edge_i].clone()
+               );
+            }
+
+            let lower_end = self.lower_edges.end();
+
+            self.lower_polys.push(
+               PolyRef::new(poly.src, lower_start, lower_end)
+            );
+         } else {
+            self.h_split_poly(i, y, y_px);
+         }
       }
 
       self.upper_polys.consume_at(end);
@@ -849,7 +866,18 @@ impl TriangleRenderer {
 
                   let upper_edge = edge.new_ref(edge_points_i);
 
-                  self.check_edge_bounds(&upper_edge);
+                  if !self.check_edge_bounds(&upper_edge) {
+                     println!("");
+                     println!("start {}, end {}, current {}", poly.start, poly.end, i);
+                     self.print_poly_ref(&poly, &self.upper_edges);
+                     println!("");
+                     self.print_edge_ref(&edge);
+                     println!("");
+                     println!("y2 {}", y2);
+                     println!("x intersect {}", x2_intersect);
+                     println!("y {}, y px {}", y, y_px);
+                     panic!("BOUNDS ERROR");
+                  }
 
                   self.upper_edges.push(upper_edge);
 
@@ -957,6 +985,20 @@ impl TriangleRenderer {
 
    #[inline]
    fn h_intersection(&self, edge: &EdgeRef, edge_points: &EdgePoints, y_px: i64) -> i64 {
+      let y = y_px * DIV_PER_PIXEL;
+
+      let p1 = self.points[edge_points.p1];
+      let p2 = self.points[edge_points.p2];
+
+      let min_y = min(p1.y, p2.y);
+      let max_y = max(p1.y, p2.y);
+
+      if y <= min_y || y >= max_y {
+         println!("");
+         println!("BAD INTERSECTION");
+         self.print_edge_ref(edge);
+      }
+
       match edge.edge_type {
          EdgeType::VT | EdgeType::VB => {
             self.points[edge_points.p1].x
@@ -973,6 +1015,20 @@ impl TriangleRenderer {
 
    #[inline]
    fn v_intersection(&self, edge: &EdgeRef, edge_points: &EdgePoints, x_px: i64) -> i64 {
+      let x = x_px * DIV_PER_PIXEL;
+
+      let p1 = self.points[edge_points.p1];
+      let p2 = self.points[edge_points.p2];
+
+      let min_x = min(p1.x, p2.x);
+      let max_x = max(p1.x, p2.x);
+
+      if x <= min_x || x >= max_x {
+         println!("");
+         println!("BAD INTERSECTION");
+         self.print_edge_ref(edge);
+      }
+
       match edge.edge_type {
          EdgeType::HR | EdgeType::HL => {
             self.points[edge_points.p1].y
@@ -1059,17 +1115,6 @@ impl TriangleRenderer {
       self.active_polys.clear();
       self.active_edges.clear();
 
-      // println!("");
-      // println!("X {}, X_PX {}", x, x_px);
-      // println!("== LOWER ==");
-
-      // for poly in self.lower_polys[..].iter() {
-      //    self.print_poly_ref(&poly, &self.lower_edges);
-      // }
-
-      // println!("");
-      // println!("== SPLITTING ==");
-
       let start = self.lower_polys.start();
       let end = self.lower_polys.end();
       for i in start..end {
@@ -1096,13 +1141,6 @@ impl TriangleRenderer {
             self.v_split_poly(i, x, x_px);
          }
       }
-
-      // println!("");
-      // println!("== ACTIVE ==");
-
-      // for poly in self.active_polys[..].iter() {
-      //    self.print_poly_ref(&poly, &self.active_edges);
-      // }
 
       self.lower_polys.consume_at(end);
    }
@@ -1139,7 +1177,7 @@ impl TriangleRenderer {
    }
 
    #[inline]
-   fn check_edge_bounds(&self, edge: &EdgeRef) {
+   fn check_edge_bounds(&self, edge: &EdgeRef) -> bool {
       if edge.src_points != usize::MAX {
          let edge_points = self.edge_points[edge.points];
          let src_points = self.src.edge_points[edge.src_points];
@@ -1154,9 +1192,11 @@ impl TriangleRenderer {
 
          if p1.x < min_x || p2.x < min_x || p1.x > max_x || p2.x > max_x ||
                p1.y < min_y || p2.y < min_y || p1.y > max_y || p2.y > max_y {
-            panic!("WRONG EDGE BOUNDS");
+            return false;
          }
       }
+
+      true
    }
 
    #[inline]
@@ -1480,7 +1520,6 @@ fn print_ring<T>(name: &str, ring: &Ring<T>) where T: Default + Clone + Debug {
 
 impl Renderer for TriangleRenderer {
    fn render(&mut self, frame: &mut Frame) {
-      println!("RENDER");
       frame.clear();
 
       self.clear();
@@ -1498,8 +1537,6 @@ impl Renderer for TriangleRenderer {
       let front = RGB::new(100, 100, 100);
 
       for y in min_y..max_y {
-         println!("Y {}", y);
-
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
 
