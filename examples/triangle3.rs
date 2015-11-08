@@ -1370,7 +1370,20 @@ impl TriangleRenderer {
       }
 
       let first = self.lower_polys.start();
-      let poly = self.lower_polys[first];
+      let end = self.lower_polys.end();
+      let mut min_x = i64::MAX;
+      let mut min_i = 0;
+
+      for i in first..end {
+         let poly = self.lower_polys[i];
+         let i_x = self.lower_min_x[poly.src];
+         if min_x > i_x {
+            min_x = i_x;
+            min_i = i;
+         }
+      }
+
+      let poly = self.lower_polys[min_i];
 
       // println!("");
       // println!("=== ADVANCE {}, {}", x, y);
