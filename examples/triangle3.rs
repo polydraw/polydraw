@@ -688,8 +688,6 @@ impl TriangleRenderer {
 
       let edge = EdgeRef::new(edge.edge_type, src_edge_points_i, edge_points_i);
 
-      self.check_edge_bounds(&edge);
-
       self.upper_edges.push(edge);
    }
 
@@ -827,13 +825,9 @@ impl TriangleRenderer {
 
                   let lower_edge = edge.new_ref(edge_points_i);
 
-                  self.check_edge_bounds(&lower_edge);
-
                   self.lower_edges.push(lower_edge);
 
                   let upper_edge = edge.new_ref(edge_points_i + 1);
-
-                  self.check_edge_bounds(&upper_edge);
 
                   self.upper_edges.push(upper_edge);
 
@@ -880,26 +874,11 @@ impl TriangleRenderer {
 
                   let upper_edge = edge.new_ref(edge_points_i);
 
-                  if !self.check_edge_bounds(&upper_edge) {
-                     println!("");
-                     println!("start {}, end {}, current {}", poly.start, poly.end, i);
-                     self.print_poly_ref(&poly, &self.upper_edges);
-                     println!("");
-                     self.print_edge_ref(&edge);
-                     println!("");
-                     println!("y2 {}", y2);
-                     println!("x intersect {}", x2_intersect);
-                     println!("y {}, y px {}", y, y_px);
-                     panic!("BOUNDS ERROR");
-                  }
-
                   self.upper_edges.push(upper_edge);
 
                   self.add_h_split_h_edge_ref(edge_points_i + 2);
 
                   let lower_edge = edge.new_ref(edge_points_i + 1);
-
-                  self.check_edge_bounds(&lower_edge);
 
                   self.lower_edges.push(lower_edge);
 
@@ -1172,11 +1151,6 @@ impl TriangleRenderer {
       let active_end = self.active_edges.end();
 
       if lower_end > lower_start {
-         for i in lower_start..lower_end {
-            let edge = self.lower_edges[i];
-            self.check_edge_bounds(&edge);
-         }
-
          self.lower_polys.push(
             PolyRef::new(poly.src, lower_start, lower_end)
          );
@@ -1239,19 +1213,11 @@ impl TriangleRenderer {
 
                   let active_edge = edge.new_ref(edge_points_i);
 
-                  self.check_edge_bounds(&active_edge);
-
                   self.active_edges.push(active_edge);
-
-                  self.check_equal_points("I1x2>x-", edge_points_i, poly, x, x_px);
 
                   let lower_edge = edge.new_ref(edge_points_i + 1);
 
-                  self.check_edge_bounds(&lower_edge);
-
                   self.lower_edges.push(lower_edge);
-
-                  self.check_equal_points("I2x2>x-", edge_points_i + 1, poly, x, x_px);
 
                   break;
                } else {
@@ -1294,23 +1260,13 @@ impl TriangleRenderer {
 
                   let lower_edge = edge.new_ref(edge_points_i);
 
-                  self.check_edge_bounds(&lower_edge);
-
                   self.lower_edges.push(lower_edge);
-
-                  self.check_equal_points("I1x2<x+", edge_points_i, poly, x, x_px);
 
                   self.add_v_split_v_edge_ref(edge_points_i + 2);
 
-                  self.check_equal_points("I2x2<x+", edge_points_i + 2, poly, x, x_px);
-
                   let active_edge = edge.new_ref(edge_points_i + 1);
 
-                  self.check_edge_bounds(&active_edge);
-
                   self.active_edges.push(active_edge);
-
-                  self.check_equal_points("I3x2<x+", edge_points_i + 1, poly, x, x_px);
 
                   break;
                } else {
@@ -1323,8 +1279,6 @@ impl TriangleRenderer {
                   self.push_edge_points(p1_index, p2_index);
 
                   self.add_v_split_v_edge_ref(edge_points_i);
-
-                  self.check_equal_points("I1x2=x+", edge_points_i, poly, x, x_px);
 
                   break;
                }
