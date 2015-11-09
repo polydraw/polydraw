@@ -1429,6 +1429,79 @@ impl TriangleRenderer {
       Some((dx, poly.src))
    }
 
+   #[inline]
+   pub fn active_color(&self) -> RGB {
+      let mut r: i64 = 0;
+      let mut g: i64 = 0;
+      let mut b: i64 = 0;
+
+      let mut total_area: i64 = 0;
+
+      let start = self.active_polys.start();
+      let end = self.active_polys.end();
+
+      for i in start..(end-1) {
+         let poly = self.src.polys[self.active_polys[i].src];
+         let area = self.double_area(i);
+         r += (poly.color.r as i64) * area;
+         g += (poly.color.g as i64) * area;
+         b += (poly.color.b as i64) * area;
+         total_area += area;
+      }
+
+      let poly = self.src.polys[self.active_polys[end-1].src];
+      let area = DOUBLE_PIXEL_AREA - total_area;
+      r += (poly.color.r as i64) * area;
+      g += (poly.color.g as i64) * area;
+      b += (poly.color.b as i64) * area;
+
+      r /= DOUBLE_PIXEL_AREA;
+      g /= DOUBLE_PIXEL_AREA;
+      b /= DOUBLE_PIXEL_AREA;
+
+      RGB::new(r as u8, g as u8, b as u8)
+   }
+
+   #[inline]
+   pub fn double_area(&self, poly_i: usize) -> i64 {
+      let mut area = 0;
+
+      let poly = self.active_polys[poly_i];
+
+      for i in poly.start..poly.end {
+         let edge = self.active_edges[i];
+         let edge_points = self.edge_points[edge.points];
+
+         let p1 = self.points[edge_points.p1];
+         let p2 = self.points[edge_points.p2];
+
+         match edge.edge_type {
+            EdgeType::TR | EdgeType::TL => {
+               area += p2.x * p1.y - p1.x * p2.y;
+            },
+            EdgeType::BR | EdgeType::BL => {
+               area += p1.x * p2.y - p2.x * p1.y;
+            },
+            EdgeType::HR => {
+               area += (p2.x - p1.x) * p1.y;
+            },
+            EdgeType::HL => {
+               area += (p1.x - p2.x) * p1.y;
+            },
+            EdgeType::VT => {
+               area += (p1.y - p2.y) * p1.x;
+            },
+            EdgeType::VB => {
+               area += (p2.y - p1.y) * p1.x;
+            },
+         }
+      }
+
+      assert!(area >= 0);
+
+      area
+   }
+
    fn print_edge_ref(&self, edge: &EdgeRef) {
       let edge_points = self.edge_points[edge.points];
       if edge.src_points == usize::MAX {
@@ -1514,9 +1587,6 @@ impl Renderer for TriangleRenderer {
       let max_x = min(to_px(max_x), frame.width as i64 - 1);
       let max_y = min(to_px(max_y), frame.height as i64 - 1);
 
-      let back = RGB::new(1, 1, 1);
-      let front = RGB::new(100, 100, 100);
-
       for y in min_y..max_y {
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
@@ -1552,7 +1622,11 @@ impl Renderer for TriangleRenderer {
 
             self.v_split(x_split, x + 1);
 
-            frame.put_pixel(x as i32, y as i32, &back);
+            if self.active_polys.len() > 0 {
+               let color = self.active_color();
+
+               frame.put_pixel(x as i32, y as i32, &color);
+            }
 
             x += 1;
          }
