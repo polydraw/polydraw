@@ -1363,7 +1363,7 @@ impl TriangleRenderer {
    }
 
    #[inline]
-   fn advance(&mut self, x: i64, y: i64) -> Option<i64> {
+   fn advance(&mut self, x: i64, y: i64) -> Option<(i64, usize)> {
       if self.lower_polys.len() == 0 {
          // println!("NO POLYS");
          return None;
@@ -1426,7 +1426,7 @@ impl TriangleRenderer {
 
       // println!("ADVANCED - {}", dx);
 
-      Some(dx)
+      Some((dx, poly.src))
    }
 
    fn print_edge_ref(&self, edge: &EdgeRef) {
@@ -1534,9 +1534,11 @@ impl Renderer for TriangleRenderer {
             let mut x_split = x_world + DIV_PER_PIXEL;
 
             match self.advance(x_world, y_world) {
-               Some(dx) => {
+               Some((dx, poly_i)) => {
+                  let src_poly = self.src.polys[poly_i];
+
                   for ix in x..x+dx {
-                     frame.put_pixel(ix as i32, y as i32, &front);
+                     frame.put_pixel(ix as i32, y as i32, &src_poly.color);
                   }
 
                   x += dx;
