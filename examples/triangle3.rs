@@ -29,7 +29,6 @@ fn from_px(v: i64) -> i64 {
    v as i64 * DIV_PER_PIXEL
 }
 
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Poly {
    color: RGB,
@@ -426,6 +425,8 @@ struct TriangleRenderer {
 
    edge_points: Ring<EdgePoints>,
    points: Ring<Point>,
+
+   seed: u64,
 }
 
 impl TriangleRenderer {
@@ -485,7 +486,14 @@ impl TriangleRenderer {
 
          edge_points: Ring::new(4194304),
          points: Ring::new(1048576),
+
+         seed: 0,
       }
+   }
+
+   pub fn rand_u8(&mut self) -> u8 {
+       self.seed = self.seed.wrapping_mul(58321).wrapping_add(11113);
+       (self.seed.wrapping_shr(16) % 256) as u8
    }
 
    pub fn calc_polys_min_y(&mut self) {
@@ -1504,9 +1512,16 @@ impl TriangleRenderer {
       let scale_y = DIV_PER_PIXEL * frame.height as i64 / 10;
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
+         let rx = self.rand_u8();
+         let ry = self.rand_u8();
          let dest = &mut self.scaled_points[i];
-         dest.x = point.x * scale_x;
-         dest.y = point.y * scale_y;
+         if point.x != 0 && point.x != 10 {
+            dest.x = point.x * scale_x + (128 - rx as i64) * scale_x / 300;
+            dest.y = point.y * scale_y + (128 - ry as i64) * scale_y / 300;
+         } else {
+            dest.x = point.x * scale_x;
+            dest.y = point.y * scale_y;
+         }
       }
    }
 
