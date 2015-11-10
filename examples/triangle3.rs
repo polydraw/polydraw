@@ -1510,7 +1510,7 @@ impl TriangleRenderer {
 
    #[inline]
    pub fn scale_src_points(&mut self, frame: &Frame) {
-      self.counter = self.counter.wrapping_add(10000000000000000);
+      self.counter = self.counter.wrapping_add(8000000000000000);
 
       let scale_x = DIV_PER_PIXEL * frame.width as i64 / 10;
       let scale_y = DIV_PER_PIXEL * frame.height as i64 / 10;
@@ -1521,7 +1521,16 @@ impl TriangleRenderer {
          let ry = self.rand_u8();
          let dest = &mut self.scaled_points[i];
 
-         let base = 300 + ((i64::MAX - self.counter.abs()) as f64 * 5000. / i64::MAX as f64) as i64;
+         let min_base = 250;
+         let mut base = min_base + ((i64::MAX - self.counter.abs()) as f64 * 5000. / i64::MAX as f64) as i64;
+         if base < 3000 {
+            let div = if base < 1500 {
+               6
+            } else {
+               2
+            };
+            base = min_base + (base - min_base) / div;
+         }
 
          if point.x != 0 && point.x != 10 {
             dest.x = point.x * scale_x + (128 - rx as i64) * scale_x / base;
