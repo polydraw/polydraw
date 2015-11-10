@@ -374,7 +374,7 @@ impl PolySource {
          EdgePoints::new(1, 6),  // 16
       ];
 
-      let mut points = vec![
+      let points = vec![
          Point::new(0, 0),   // 0
          Point::new(0, 10),  // 1
          Point::new(2, 5),   // 2
@@ -385,10 +385,6 @@ impl PolySource {
          Point::new(7, 9),   // 7
       ];
 
-      for point in &mut points {
-         *point *= 100 * DIV_PER_PIXEL;
-      }
-
       PolySource {
          polys: polys,
          edges: edges,
@@ -396,18 +392,111 @@ impl PolySource {
          points: points,
       }
    }
+}
 
-   pub fn polys_min_y(&self) -> Vec<PolyMinRef> {
-      let mut v = Vec::new();
+struct TriangleRenderer {
+   src: PolySource,
+   src_min_y: Vec<PolyMinRef>,
+   src_poly_marker: usize,
+   src_min_max: Vec<MinMaxXY>,
 
-      for (poly_index, poly) in self.polys.iter().enumerate() {
+   scaled_points: Vec<Point>,
+
+   h_sorted: Vec<usize>,
+   v_sorted: Vec<usize>,
+
+   edge_points_map: Vec<usize>,
+   points_map: Vec<usize>,
+
+   h_intersect_ref: Vec<IntersectRef>,
+   v_intersect_ref: Vec<IntersectRef>,
+   h_intersections: Ring<i64>,
+   v_intersections: Ring<i64>,
+
+   upper_polys: Ring<PolyRef>,
+   upper_edges: Ring<EdgeRef>,
+
+   lower_polys: Ring<PolyRef>,
+   lower_edges: Ring<EdgeRef>,
+   lower_min_x: Vec<i64>,
+   lower_max_x: Vec<i64>,
+
+   active_polys: Ring<PolyRef>,
+   active_edges: Ring<EdgeRef>,
+
+   edge_points: Ring<EdgePoints>,
+   points: Ring<Point>,
+}
+
+impl TriangleRenderer {
+   fn new() -> Self {
+      let src = PolySource::new();
+
+      let polys_len = src.polys.len();
+      let edge_points_len = src.edge_points.len();
+      let points_len = src.points.len();
+
+      let src_min_y = repeat(PolyMinRef::default()).take(polys_len).collect();
+      let src_min_max = repeat(MinMaxXY::default()).take(polys_len).collect();
+
+      let scaled_points = repeat(Point::default()).take(points_len).collect();
+
+      let h_sorted = (1..polys_len).collect();
+      let v_sorted = (1..polys_len).collect();
+
+      let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
+      let points_map = repeat(usize::MAX).take(points_len).collect();
+
+      let h_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
+      let v_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
+
+      let lower_min_x = repeat(i64::MAX).take(polys_len).collect();
+      let lower_max_x = repeat(i64::MIN).take(polys_len).collect();
+
+      TriangleRenderer {
+         src: src,
+         src_min_y: src_min_y,
+         src_poly_marker: 0,
+         src_min_max: src_min_max,
+
+         scaled_points: scaled_points,
+
+         h_sorted: h_sorted,
+         v_sorted: v_sorted,
+
+         edge_points_map: edge_points_map,
+         points_map: points_map,
+
+         h_intersect_ref: h_intersect_ref,
+         v_intersect_ref: v_intersect_ref,
+         h_intersections: Ring::new(65536),
+         v_intersections: Ring::new(65536),
+
+         upper_polys: Ring::new(65536),
+         upper_edges: Ring::new(262144),
+
+         lower_polys: Ring::new(262144),
+         lower_edges: Ring::new(262144),
+         lower_min_x: lower_min_x,
+         lower_max_x: lower_max_x,
+
+         active_polys: Ring::new(262144),
+         active_edges: Ring::new(262144),
+
+         edge_points: Ring::new(4194304),
+         points: Ring::new(1048576),
+      }
+   }
+
+   pub fn calc_polys_min_y(&mut self) {
+      for (poly_index, poly) in self.src.polys.iter().enumerate() {
          let mut min_y = i64::MAX;
 
          for edge_index in poly.start..poly.end {
-            let edge_points = self.edge_points[self.edges[edge_index].points];
+            let edge_points = self.src.edge_points[self.src.edges[edge_index].points];
             let y = min(
-               self.points[edge_points.p1].y,
-               self.points[edge_points.p2].y
+               self.scaled_points[edge_points.p1].y,
+               self.scaled_points[edge_points.p2].y
             );
 
             if y < min_y {
@@ -415,25 +504,23 @@ impl PolySource {
             }
          }
 
-         v.push(PolyMinRef::new(poly_index, min_y));
+         self.src_min_y[poly_index] = PolyMinRef::new(poly_index, min_y);
       }
 
-      v.sort_by(|a, b| a.min.cmp(&b.min));
-
-      v
+      self.src_min_y.sort_by(|a, b| a.min.cmp(&b.min));
    }
 
-   pub fn polys_min_max(&self) -> Vec<MinMaxXY> {
-      let mut v: Vec<MinMaxXY> = repeat(MinMaxXY::default()).take(self.polys.len()).collect();
 
-      for (poly_index, poly) in self.polys.iter().enumerate() {
-         let poly_min_max = &mut v[poly_index];
+   pub fn calc_polys_min_max(&mut self) {
+      for (poly_index, poly) in self.src.polys.iter().enumerate() {
+         self.src_min_max[poly_index] = MinMaxXY::default();
+         let poly_min_max = &mut self.src_min_max[poly_index];
 
          for edge_index in poly.start..poly.end {
-            let edge_points = self.edge_points[self.edges[edge_index].points];
+            let edge_points = self.src.edge_points[self.src.edges[edge_index].points];
 
-            let p1 = self.points[edge_points.p1];
-            let p2 = self.points[edge_points.p2];
+            let p1 = self.scaled_points[edge_points.p1];
+            let p2 = self.scaled_points[edge_points.p2];
 
             let min_x;
             let min_y;
@@ -473,8 +560,6 @@ impl PolySource {
             }
          }
       }
-
-      v
    }
 
    #[inline]
@@ -485,7 +570,7 @@ impl PolySource {
       let mut max_x = i64::MIN;
       let mut max_y = i64::MIN;
 
-      for p in &self.points {
+      for p in &self.scaled_points {
          if p.x < min_x {
             min_x = p.x;
          }
@@ -504,95 +589,6 @@ impl PolySource {
       }
 
       (min_x, min_y, max_x, max_y)
-   }
-}
-
-struct TriangleRenderer {
-   src: PolySource,
-   src_min_y: Vec<PolyMinRef>,
-   src_poly_marker: usize,
-   src_min_max: Vec<MinMaxXY>,
-
-   h_sorted: Vec<usize>,
-   v_sorted: Vec<usize>,
-
-   edge_points_map: Vec<usize>,
-   points_map: Vec<usize>,
-
-   h_intersect_ref: Vec<IntersectRef>,
-   v_intersect_ref: Vec<IntersectRef>,
-   h_intersections: Ring<i64>,
-   v_intersections: Ring<i64>,
-
-   upper_polys: Ring<PolyRef>,
-   upper_edges: Ring<EdgeRef>,
-
-   lower_polys: Ring<PolyRef>,
-   lower_edges: Ring<EdgeRef>,
-   lower_min_x: Vec<i64>,
-   lower_max_x: Vec<i64>,
-
-   active_polys: Ring<PolyRef>,
-   active_edges: Ring<EdgeRef>,
-
-   edge_points: Ring<EdgePoints>,
-   points: Ring<Point>,
-}
-
-impl TriangleRenderer {
-   fn new() -> Self {
-      let src = PolySource::new();
-      let src_min_y = src.polys_min_y();
-
-      let src_min_max = src.polys_min_max();
-
-      let polys_len = src.polys.len();
-      let edge_points_len = src.edge_points.len();
-      let points_len = src.points.len();
-
-      let h_sorted = (1..polys_len).collect();
-      let v_sorted = (1..polys_len).collect();
-
-      let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
-      let points_map = repeat(usize::MAX).take(points_len).collect();
-
-      let h_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
-      let v_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
-
-      let lower_min_x = repeat(i64::MAX).take(polys_len).collect();
-      let lower_max_x = repeat(i64::MIN).take(polys_len).collect();
-
-      TriangleRenderer {
-         src: src,
-         src_min_y: src_min_y,
-         src_poly_marker: 0,
-         src_min_max: src_min_max,
-
-         h_sorted: h_sorted,
-         v_sorted: v_sorted,
-
-         edge_points_map: edge_points_map,
-         points_map: points_map,
-
-         h_intersect_ref: h_intersect_ref,
-         v_intersect_ref: v_intersect_ref,
-         h_intersections: Ring::new(65536),
-         v_intersections: Ring::new(65536),
-
-         upper_polys: Ring::new(65536),
-         upper_edges: Ring::new(262144),
-
-         lower_polys: Ring::new(262144),
-         lower_edges: Ring::new(262144),
-         lower_min_x: lower_min_x,
-         lower_max_x: lower_max_x,
-
-         active_polys: Ring::new(262144),
-         active_edges: Ring::new(262144),
-
-         edge_points: Ring::new(4194304),
-         points: Ring::new(1048576),
-      }
    }
 
    fn clear(&mut self) {
@@ -700,7 +696,7 @@ impl TriangleRenderer {
          self.points_map[src_i] = i;
 
          self.points.push(
-            self.src.points[src_i]
+            self.scaled_points[src_i]
          );
       }
 
@@ -1050,8 +1046,8 @@ impl TriangleRenderer {
 
                let edge_points = &self.src.edge_points[edge.points];
 
-               let p1 = self.src.points[edge_points.p1];
-               let p2 = self.src.points[edge_points.p2];
+               let p1 = self.scaled_points[edge_points.p1];
+               let p2 = self.scaled_points[edge_points.p2];
 
                h_ref.start = self.h_intersections.end();
                v_ref.start = self.v_intersections.end();
@@ -1171,8 +1167,8 @@ impl TriangleRenderer {
          let src_points = self.src.edge_points[edge.src_points];
          let p1 = self.points[edge_points.p1];
          let p2 = self.points[edge_points.p2];
-         let sp1 = self.src.points[src_points.p1];
-         let sp2 = self.src.points[src_points.p2];
+         let sp1 = self.scaled_points[src_points.p1];
+         let sp2 = self.scaled_points[src_points.p2];
          let min_x = min(sp1.x, sp2.x);
          let max_x = max(sp1.x, sp2.x);
          let min_y = min(sp1.y, sp2.y);
@@ -1502,6 +1498,18 @@ impl TriangleRenderer {
       area
    }
 
+   #[inline]
+   pub fn scale_src_points(&mut self, frame: &Frame) {
+      let scale_x = DIV_PER_PIXEL * frame.width as i64 / 10;
+      let scale_y = DIV_PER_PIXEL * frame.height as i64 / 10;
+      for i in 0..self.scaled_points.len() {
+         let point = self.src.points[i];
+         let dest = &mut self.scaled_points[i];
+         dest.x = point.x * scale_x;
+         dest.y = point.y * scale_y;
+      }
+   }
+
    fn print_edge_ref(&self, edge: &EdgeRef) {
       let edge_points = self.edge_points[edge.points];
       if edge.src_points == usize::MAX {
@@ -1539,13 +1547,13 @@ impl TriangleRenderer {
          {
             p1 = self.points[edge_points.p1];
             p2 = self.points[edge_points.p2];
-            sp1 = self.src.points[src_points.p1];
-            sp2 = self.src.points[src_points.p2];
+            sp1 = self.scaled_points[src_points.p1];
+            sp2 = self.scaled_points[src_points.p2];
          } else {
             p1 = self.points[edge_points.p2];
             p2 = self.points[edge_points.p1];
-            sp1 = self.src.points[src_points.p2];
-            sp2 = self.src.points[src_points.p1];
+            sp1 = self.scaled_points[src_points.p2];
+            sp2 = self.scaled_points[src_points.p1];
          }
 
          println!("E {:?} : ({}, {}) -> ({}, {}); ({}, {}) -> ({}, {})", edge.edge_type,
@@ -1578,9 +1586,14 @@ impl Renderer for TriangleRenderer {
 
       self.clear();
 
+      self.scale_src_points(frame);
+
+      self.calc_polys_min_y();
+      self.calc_polys_min_max();
+
       self.intersect_edges();
 
-      let (min_x, min_y, max_x, max_y) = self.src.min_max_x_y();
+      let (min_x, min_y, max_x, max_y) = self.min_max_x_y();
 
       let min_x = max(to_px(min_x), 0);
       let min_y = max(to_px(min_y), 0);
