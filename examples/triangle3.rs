@@ -427,6 +427,7 @@ struct TriangleRenderer {
    points: Ring<Point>,
 
    seed: u64,
+   counter: i64,
 }
 
 impl TriangleRenderer {
@@ -488,6 +489,7 @@ impl TriangleRenderer {
          points: Ring::new(1048576),
 
          seed: 0,
+         counter: 0,
       }
    }
 
@@ -1508,16 +1510,22 @@ impl TriangleRenderer {
 
    #[inline]
    pub fn scale_src_points(&mut self, frame: &Frame) {
+      self.counter = self.counter.wrapping_add(10000000000000000);
+
       let scale_x = DIV_PER_PIXEL * frame.width as i64 / 10;
       let scale_y = DIV_PER_PIXEL * frame.height as i64 / 10;
+
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
          let rx = self.rand_u8();
          let ry = self.rand_u8();
          let dest = &mut self.scaled_points[i];
+
+         let base = 300 + ((i64::MAX - self.counter.abs()) as f64 * 5000. / i64::MAX as f64) as i64;
+
          if point.x != 0 && point.x != 10 {
-            dest.x = point.x * scale_x + (128 - rx as i64) * scale_x / 300;
-            dest.y = point.y * scale_y + (128 - ry as i64) * scale_y / 300;
+            dest.x = point.x * scale_x + (128 - rx as i64) * scale_x / base;
+            dest.y = point.y * scale_y + (128 - ry as i64) * scale_y / base;
          } else {
             dest.x = point.x * scale_x;
             dest.y = point.y * scale_y;
