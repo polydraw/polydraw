@@ -1665,9 +1665,11 @@ impl Renderer for TriangleRenderer {
                None => {}
             }
 
-            self.v_split(x_split, x + 1);
+            if x < max_x {
+               self.v_split(x_split, x + 1);
 
-            if self.active_polys.len() > 0 {
+               assert!(self.active_polys.len() > 0);
+
                let color = self.active_color();
 
                frame.put_pixel(x as i32, y as i32, &color);
