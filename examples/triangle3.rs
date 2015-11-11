@@ -401,9 +401,6 @@ struct TriangleRenderer {
 
    scaled_points: Vec<Point>,
 
-   h_sorted: Vec<usize>,
-   v_sorted: Vec<usize>,
-
    edge_points_map: Vec<usize>,
    points_map: Vec<usize>,
 
@@ -443,9 +440,6 @@ impl TriangleRenderer {
 
       let scaled_points = repeat(Point::default()).take(points_len).collect();
 
-      let h_sorted = (1..polys_len).collect();
-      let v_sorted = (1..polys_len).collect();
-
       let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
       let points_map = repeat(usize::MAX).take(points_len).collect();
 
@@ -462,9 +456,6 @@ impl TriangleRenderer {
          src_min_max: src_min_max,
 
          scaled_points: scaled_points,
-
-         h_sorted: h_sorted,
-         v_sorted: v_sorted,
 
          edge_points_map: edge_points_map,
          points_map: points_map,
