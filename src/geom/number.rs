@@ -1,5 +1,7 @@
 pub trait NumberOps : Sized {
    fn rounding_div(self, other: Self) -> Self;
+
+   fn sqrt(self) -> Self;
 }
 
 impl NumberOps for i64 {
@@ -10,6 +12,11 @@ impl NumberOps for i64 {
       } else {
          (self + (other / 2)) / other
       }
+   }
+
+   #[inline]
+   fn sqrt(self) -> i64 {
+      (self as f64).sqrt() as i64
    }
 }
 
