@@ -2,9 +2,9 @@ extern crate polydraw;
 
 use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
+use polydraw::geom::number::NumberOps;
 
 const DIV_PER_PIXEL: i64 = 1000;
-const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
 
 #[inline]
 fn to_px(v: i64) -> i64 {
@@ -39,8 +39,36 @@ impl Renderer for CircleRenderer {
 
       let color = RGB::new(127, 223, 255);
 
-      frame.put_pixel(to_px(self.center_x) as i32, to_px(self.center_y) as i32, &color);
+      let center_x = to_px(self.center_x);
+      let center_y = to_px(self.center_y);
+
+      for y in 0..to_px(self.radius) + 1 {
+         let y_world = from_px(y);
+         let x_world = on_circle(self.radius, y_world);
+         let x = to_px(x_world);
+
+         let real_y = center_y + y;
+         let bottom_y = center_y - y;
+
+         for i in -x..x+1 {
+            let real_x = center_x + i;
+            frame.put_pixel(
+               real_x as i32,
+               real_y as i32,
+               &color
+            );
+            frame.put_pixel(
+               real_x as i32,
+               bottom_y as i32,
+               &color
+            );
+         }
+      }
    }
+}
+
+fn on_circle(radius: i64, coord: i64) -> i64 {
+   (radius.pow(2) - coord.pow(2)).sqrt()
 }
 
 fn main() {
