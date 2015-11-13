@@ -68,7 +68,7 @@ impl Renderer for CircleRenderer {
 }
 
 fn on_circle(radius: i64, coord: i64) -> i64 {
-   (radius.pow(2) - coord.pow(2)).sqrt()
+   (radius.pow(2) - coord.pow(2)).isqrt()
 }
 
 fn main() {
