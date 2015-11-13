@@ -44,6 +44,7 @@ impl NumberOps for i64 {
 #[cfg(test)]
 mod tests {
    use test::{Bencher, black_box};
+   use std::i64;
 
    use super::*;
 
@@ -52,6 +53,26 @@ mod tests {
       b.iter(|| {
          for _ in 0..1000 {
             black_box(15023081_i64.rounding_div(black_box(108877_i64)));
+         }
+      });
+   }
+
+   #[bench]
+   fn bench_sqrt(b: &mut Bencher) {
+      b.iter(|| {
+         let mut x = i64::MAX;
+         for _ in 0..1000 {
+            x = black_box(x.sqrt());
+         }
+      });
+   }
+
+   #[bench]
+   fn bench_isqrt(b: &mut Bencher) {
+      b.iter(|| {
+         let mut x = i64::MAX;
+         for _ in 0..1000 {
+            x = black_box(x.isqrt());
          }
       });
    }
