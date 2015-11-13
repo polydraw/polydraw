@@ -16,7 +16,7 @@ impl NumberOps for i64 {
 
    #[inline]
    fn sqrt(self) -> i64 {
-      (self as f64).sqrt() as i64
+      (self as f64).sqrt().round() as i64
    }
 }
 
