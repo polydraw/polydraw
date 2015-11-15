@@ -291,14 +291,14 @@ impl PolySource {
          Poly::new(RGB::new(170, 36, 14), 18, 27),
          // F
          Poly::new(RGB::new(170, 44, 206), 27, 31),
-         // G
-         Poly::new(RGB::new(47, 11, 206), 31, 36),
-         // H
-         Poly::new(RGB::new(109, 233, 158), 36, 40),
-         // I
-         Poly::new(RGB::new(170, 44, 206), 40, 45),
          // J
          Poly::new(RGB::new(47, 11, 206), 45, 49),
+         // G
+         Poly::new(RGB::new(47, 11, 206), 31, 36),
+         // I
+         Poly::new(RGB::new(170, 44, 206), 40, 45),
+         // H
+         Poly::new(RGB::new(109, 233, 158), 36, 40),
       ];
 
       let edges = vec![
@@ -1552,7 +1552,7 @@ impl TriangleRenderer {
 
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
-         //let point = Point::new(point.x + 22, point.y + 14);
+         let point = Point::new(point.x + 22, point.y + 14);
          let dest = &mut self.scaled_points[i];
          dest.x = point.x * scale_x;
          dest.y = point.y * scale_y;
@@ -1619,10 +1619,6 @@ impl TriangleRenderer {
       }
    }
 
-   fn check_prerequisites(&self) {
-      self.check_src_polys_connected();
-   }
-
    fn check_src_polys_connected(&self) {
       for poly in &self.src.polys {
          self.check_src_single_poly_connected(poly);
@@ -1660,6 +1656,17 @@ impl TriangleRenderer {
    }
 
    #[inline]
+   fn is_src_edge_ref_not_rev(&self, edge: &EdgeRef) -> bool {
+      let etype = edge.edge_type;
+      (
+         etype == EdgeType::TR ||
+         etype == EdgeType::TL ||
+         etype == EdgeType::VT ||
+         etype == EdgeType::HR
+      )
+   }
+
+   #[inline]
    fn src_first(&self, edge: &Edge) -> Point {
       let edge_points = self.src.edge_points[edge.points];
       self.scaled_points[
@@ -1676,6 +1683,108 @@ impl TriangleRenderer {
       let edge_points = self.src.edge_points[edge.points];
       self.scaled_points[
          if self.is_src_edge_not_rev(edge) {
+            edge_points.p1
+         } else {
+            edge_points.p2
+         }
+      ]
+   }
+
+   fn check_post_h_split_polys_connected(&self) {
+      for poly in self.upper_polys[..].iter() {
+         self.check_poly_len(poly, &self.upper_edges);
+         self.check_poly_connected(poly, &self.upper_edges);
+         self.check_poly_area(poly, &self.upper_edges);
+      }
+
+      for poly in self.lower_polys[..].iter() {
+         self.check_poly_len(poly, &self.lower_edges);
+         self.check_poly_connected(poly, &self.lower_edges);
+         self.check_poly_area(poly, &self.lower_edges);
+      }
+   }
+
+   fn check_poly_area(&self, poly: &PolyRef, edges: &Ring<EdgeRef>) {
+      let mut area = 0;
+
+      for i in poly.start..poly.end {
+         let edge = edges[i];
+         let edge_points = self.edge_points[edge.points];
+
+         let p1 = self.points[edge_points.p1];
+         let p2 = self.points[edge_points.p2];
+
+         match edge.edge_type {
+            EdgeType::TR | EdgeType::TL => {
+               area += p2.x * p1.y - p1.x * p2.y;
+            },
+            EdgeType::BR | EdgeType::BL => {
+               area += p1.x * p2.y - p2.x * p1.y;
+            },
+            EdgeType::HR => {
+               area += (p2.x - p1.x) * p1.y;
+            },
+            EdgeType::HL => {
+               area += (p1.x - p2.x) * p1.y;
+            },
+            EdgeType::VT => {
+               area += (p1.y - p2.y) * p1.x;
+            },
+            EdgeType::VB => {
+               area += (p2.y - p1.y) * p1.x;
+            },
+         }
+      }
+
+      if area <= 0 {
+         println!("AREA NOT POSITIVE: {}", area);
+         self.print_poly_ref(poly, edges);
+         panic!("");
+      }
+   }
+
+   fn check_poly_len(&self, poly: &PolyRef, edges: &Ring<EdgeRef>) {
+      if poly.end - poly.start < 3 {
+         println!("NOT ENOUGH POINTS:");
+         self.print_poly_ref(poly, edges);
+         panic!("");
+      }
+   }
+
+   fn check_poly_connected(&self, poly: &PolyRef, edges: &Ring<EdgeRef>) {
+      let mut prev = self.first(&edges[poly.end - 1]);
+
+      for i in poly.start..poly.end {
+         let edge = edges[i];
+         let current = self.second(&edge);
+         if current != prev {
+            println!("UNCLOSED POLY:");
+            self.print_poly_ref(poly, edges);
+            println!("i {} edge {:?}", i, edge);
+            println!("current {:?} prev {:?}", current, prev);
+            panic!("");
+         }
+         prev = self.first(&edge);
+      }
+   }
+
+   #[inline]
+   fn first(&self, edge: &EdgeRef) -> Point {
+      let edge_points = self.edge_points[edge.points];
+      self.points[
+         if self.is_src_edge_ref_not_rev(edge) {
+            edge_points.p2
+         } else {
+            edge_points.p1
+         }
+      ]
+   }
+
+   #[inline]
+   fn second(&self, edge: &EdgeRef) -> Point {
+      let edge_points = self.edge_points[edge.points];
+      self.points[
+         if self.is_src_edge_ref_not_rev(edge) {
             edge_points.p1
          } else {
             edge_points.p2
@@ -1701,7 +1810,7 @@ impl Renderer for TriangleRenderer {
 
       self.scale_src_points(frame);
 
-      self.check_prerequisites();
+      self.check_src_polys_connected();
 
       self.calc_polys_min_y();
       self.calc_polys_min_max();
@@ -1722,6 +1831,8 @@ impl Renderer for TriangleRenderer {
          self.transfer(y_world);
 
          self.h_split(y_split, y + 1);
+
+         self.check_post_h_split_polys_connected();
 
          self.recalc_lower_min_max_x();
 
