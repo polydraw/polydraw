@@ -314,7 +314,7 @@ impl PolySource {
          Edge::hori_left(0),
 
          // 1: B
-         Edge::top_right(3),
+         Edge::top_right(5),
          Edge::bottom_right(9),
          Edge::vert_bottom(6),
          Edge::hori_left(1),
@@ -374,14 +374,13 @@ impl PolySource {
          Edge::top_right(18),
          Edge::hori_right(20),
          Edge::vert_bottom(16),
-         Edge::top_left(15),
       ];
 
       let edge_points = vec![
          EdgePoints::new(0, 1),    // 0
          EdgePoints::new(1, 2),    // 1
          EdgePoints::new(2, 3),    // 2
-         EdgePoints::new(4, 4),    // 3
+         EdgePoints::new(3, 4),    // 3
          EdgePoints::new(0, 8),    // 4
          EdgePoints::new(1, 5),    // 5
          EdgePoints::new(2, 6),    // 6
@@ -417,7 +416,7 @@ impl PolySource {
          Point::new(0, -14),   // 2
          Point::new(6, -14),   // 3
          Point::new(22, -14),  // 4
-         Point::new(-3, -11),   // 5
+         Point::new(-3, -11),  // 5
          Point::new(0, 12),    // 6
          Point::new(3, -11),   // 7
          Point::new(-22, 2),   // 8
@@ -1105,6 +1104,10 @@ impl TriangleRenderer {
                h_ref.start = self.h_intersections.end();
                v_ref.start = self.v_intersections.end();
 
+               if p1.y == p2.y || p1.x == p2.x {
+                  panic!("{:?} - {:?}, {:?}", edge, p1, p2);
+               }
+
                h_ref.start_px = h_multi_intersect_fast(
                   p1, p2, DIV_PER_PIXEL, &mut self.h_intersections
                ) / DIV_PER_PIXEL;
@@ -1553,11 +1556,12 @@ impl TriangleRenderer {
 
    #[inline]
    pub fn scale_src_points(&mut self, frame: &Frame) {
-      let scale_x = DIV_PER_PIXEL * frame.width as i64 / 10;
-      let scale_y = DIV_PER_PIXEL * frame.height as i64 / 10;
+      let scale_x = DIV_PER_PIXEL * 10;//frame.width as i64 / 44;
+      let scale_y = DIV_PER_PIXEL * 10;//frame.height as i64 / 28;
 
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
+         let point = Point::new(point.x + 22, point.y + 14);
          let dest = &mut self.scaled_points[i];
          dest.x = point.x * scale_x;
          dest.y = point.y * scale_y;
