@@ -469,9 +469,6 @@ struct TriangleRenderer {
 
    edge_points: Ring<EdgePoints>,
    points: Ring<Point>,
-
-   seed: u64,
-   counter: i64,
 }
 
 impl TriangleRenderer {
@@ -525,15 +522,7 @@ impl TriangleRenderer {
 
          edge_points: Ring::new(4194304),
          points: Ring::new(1048576),
-
-         seed: 0,
-         counter: 0,
       }
-   }
-
-   pub fn rand_u8(&mut self) -> u8 {
-       self.seed = self.seed.wrapping_mul(58321).wrapping_add(11113);
-       (self.seed.wrapping_shr(16) % 256) as u8
    }
 
    pub fn calc_polys_min_y(&mut self) {
@@ -1628,6 +1617,10 @@ impl TriangleRenderer {
       for i in poly.start..poly.end {
          self.print_edge_ref(&edges[i]);
       }
+   }
+
+   fn check_src_poly_connected(&self, poly: &Poly) {
+
    }
 }
 
