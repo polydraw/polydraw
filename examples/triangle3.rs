@@ -280,59 +280,55 @@ impl PolySource {
    fn new() -> Self {
       let polys = vec![
          // A
-         Poly::new(RGB::new(18, 78, 230), 0, 3),
+         Poly::new(RGB::new(18, 78, 230), 0, 5),
          // B
-         Poly::new(RGB::new(47, 11, 206), 3, 6),
+         Poly::new(RGB::new(47, 11, 206), 5, 9),
          // C
-         Poly::new(RGB::new(170, 44, 206), 6, 9),
+         Poly::new(RGB::new(170, 44, 206), 9, 13),
          // D
-         Poly::new(RGB::new(18, 78, 230), 0, 3),
+         Poly::new(RGB::new(18, 78, 230), 13, 18),
          // E
-         Poly::new(RGB::new(170, 36, 14), 12, 15),
+         Poly::new(RGB::new(170, 36, 14), 18, 27),
          // F
-         Poly::new(RGB::new(170, 44, 206), 6, 9),
+         Poly::new(RGB::new(170, 44, 206), 27, 31),
          // G
-         Poly::new(RGB::new(47, 11, 206), 3, 6),
+         Poly::new(RGB::new(47, 11, 206), 31, 36),
          // H
-         Poly::new(RGB::new(170, 44, 206), 6, 9),
+         Poly::new(RGB::new(109, 233, 158), 36, 40),
          // I
-         Poly::new(RGB::new(109, 233, 158), 24, 27),
+         Poly::new(RGB::new(170, 44, 206), 40, 45),
          // J
-         Poly::new(RGB::new(47, 11, 206), 3, 6),
-         // K
-         Poly::new(RGB::new(170, 44, 206), 6, 9),
-         // L
-         Poly::new(RGB::new(47, 11, 206), 3, 6),
+         Poly::new(RGB::new(47, 11, 206), 45, 49),
       ];
 
       let edges = vec![
-         // 0: A
+         // 0: A / 0 - 5
          Edge::vert_top(4),
          Edge::top_right(14),
          Edge::bottom_right(11),
          Edge::bottom_left(5),
          Edge::hori_left(0),
 
-         // 1: B
+         // 1: B / 5 - 9
          Edge::top_right(5),
          Edge::bottom_right(9),
          Edge::vert_bottom(6),
          Edge::hori_left(1),
 
-         // 2: C
+         // 2: C / 9 - 13
          Edge::vert_top(6),
          Edge::top_right(10),
          Edge::bottom_right(7),
          Edge::hori_left(2),
 
-         // 3: D
+         // 3: D / 13 - 18
          Edge::top_left(7),
          Edge::top_right(12),
          Edge::bottom_right(15),
          Edge::vert_bottom(8),
          Edge::hori_left(3),
 
-         // 4: E
+         // 4: E / 18 - 27
          Edge::top_left(9),
          Edge::top_left(11),
          Edge::top_left(17),
@@ -343,33 +339,33 @@ impl PolySource {
          Edge::bottom_left(12),
          Edge::bottom_left(10),
 
-         // 5: F
+         // 5: F / 27 - 31
          Edge::vert_top(13),
          Edge::hori_right(19),
          Edge::bottom_right(17),
          Edge::bottom_left(14),
 
-         // 6: G
+         // 6: G / 31 - 36
          Edge::vert_top(21),
          Edge::hori_right(25),
          Edge::vert_bottom(26),
          Edge::bottom_left(22),
          Edge::hori_left(19),
 
-         // 7: H
+         // 7: H / 36 - 40
          Edge::vert_top(26),
          Edge::hori_right(30),
          Edge::vert_bottom(27),
          Edge::hori_left(29),
 
-         // 8: I
+         // 8: I / 40 - 45
          Edge::vert_top(27),
          Edge::hori_right(28),
          Edge::vert_bottom(24),
          Edge::hori_left(20),
          Edge::top_left(23),
 
-         // 9: J
+         // 9: J / 45 - 49
          Edge::top_left(15),
          Edge::top_right(18),
          Edge::hori_right(20),
@@ -1034,12 +1030,15 @@ impl TriangleRenderer {
       let min_y = min(p1.y, p2.y);
       let max_y = max(p1.y, p2.y);
 
-      if y <= min_y || y >= max_y {
+/*      if y <= min_y || y >= max_y {
          println!("");
          println!("BAD INTERSECTION");
+         println!("Y {:?}, Y_PX {:?}", y, y_px);
+         println!("EDGE {:?}", edge);
+         println!("EDGE POINTS {:?}", edge_points);
          self.print_edge_ref(edge);
       }
-
+*/
       match edge.edge_type {
          EdgeType::VT | EdgeType::VB => {
             self.points[edge_points.p1].x
@@ -1064,12 +1063,15 @@ impl TriangleRenderer {
       let min_x = min(p1.x, p2.x);
       let max_x = max(p1.x, p2.x);
 
-      if x <= min_x || x >= max_x {
+/*      if x <= min_x || x >= max_x {
          println!("");
          println!("BAD INTERSECTION");
+         println!("X {:?}, X_PX {:?}", x, x_px);
+         println!("EDGE {:?}", edge);
+         println!("EDGE POINTS {:?}", edge_points);
          self.print_edge_ref(edge);
       }
-
+*/
       match edge.edge_type {
          EdgeType::HR | EdgeType::HL => {
             self.points[edge_points.p1].y
@@ -1241,7 +1243,7 @@ impl TriangleRenderer {
 
    #[inline]
    fn v_split_poly_edges(&mut self, poly: &PolyRef, x: i64, x_px: i64) {
-      // self.print_poly_ref(&poly, &self.lower_edges);
+      //self.print_poly_ref(&poly, &self.lower_edges);
 
       let p1_index;
 
@@ -1694,11 +1696,12 @@ impl Renderer for TriangleRenderer {
             if x < max_x {
                self.v_split(x_split, x + 1);
 
-               assert!(self.active_polys.len() > 0);
+               if self.active_polys.len() > 0 {
 
-               let color = self.active_color();
+                  let color = self.active_color();
 
-               frame.put_pixel(x as i32, y as i32, &color);
+                  frame.put_pixel(x as i32, y as i32, &color);
+               }
             }
 
             x += 1;
