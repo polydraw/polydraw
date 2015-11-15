@@ -1552,7 +1552,7 @@ impl TriangleRenderer {
 
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
-         let point = Point::new(point.x + 22, point.y + 14);
+         //let point = Point::new(point.x + 22, point.y + 14);
          let dest = &mut self.scaled_points[i];
          dest.x = point.x * scale_x;
          dest.y = point.y * scale_y;
@@ -1619,8 +1619,68 @@ impl TriangleRenderer {
       }
    }
 
-   fn check_src_poly_connected(&self, poly: &Poly) {
+   fn check_prerequisites(&self) {
+      self.check_src_polys_connected();
+   }
 
+   fn check_src_polys_connected(&self) {
+      for poly in &self.src.polys {
+         self.check_src_single_poly_connected(poly);
+      }
+   }
+
+   fn check_src_single_poly_connected(&self, poly: &Poly) {
+      println!("CHECKING {:?}", poly);
+
+      let mut prev = self.src_first(&self.src.edges[poly.end - 1]);
+
+      for i in poly.start..poly.end {
+         let edge = self.src.edges[i];
+         let current = self.src_second(&edge);
+         if current != prev {
+            println!("UNCLOSED POLY:");
+            println!("poly {:?}", poly);
+            println!("i {} edge {:?}", i, edge);
+            println!("current {:?} prev {:?}", current, prev);
+            panic!("");
+         }
+         prev = self.src_first(&edge);
+      }
+   }
+
+   #[inline]
+   fn is_src_edge_not_rev(&self, edge: &Edge) -> bool {
+      let etype = edge.edge_type;
+      (
+         etype == EdgeType::TR ||
+         etype == EdgeType::TL ||
+         etype == EdgeType::VT ||
+         etype == EdgeType::HR
+      )
+   }
+
+   #[inline]
+   fn src_first(&self, edge: &Edge) -> Point {
+      let edge_points = self.src.edge_points[edge.points];
+      self.scaled_points[
+         if self.is_src_edge_not_rev(edge) {
+            edge_points.p2
+         } else {
+            edge_points.p1
+         }
+      ]
+   }
+
+   #[inline]
+   fn src_second(&self, edge: &Edge) -> Point {
+      let edge_points = self.src.edge_points[edge.points];
+      self.scaled_points[
+         if self.is_src_edge_not_rev(edge) {
+            edge_points.p1
+         } else {
+            edge_points.p2
+         }
+      ]
    }
 }
 
@@ -1640,6 +1700,8 @@ impl Renderer for TriangleRenderer {
       self.clear();
 
       self.scale_src_points(frame);
+
+      self.check_prerequisites();
 
       self.calc_polys_min_y();
       self.calc_polys_min_max();
