@@ -286,102 +286,154 @@ impl PolySource {
          // C
          Poly::new(RGB::new(170, 44, 206), 6, 9),
          // D
-         Poly::new(RGB::new(243, 0, 149), 9, 12),
+         Poly::new(RGB::new(18, 78, 230), 0, 3),
          // E
          Poly::new(RGB::new(170, 36, 14), 12, 15),
          // F
-         Poly::new(RGB::new(219, 65, 18), 15, 18),
+         Poly::new(RGB::new(170, 44, 206), 6, 9),
          // G
-         Poly::new(RGB::new(254, 185, 21), 18, 21),
+         Poly::new(RGB::new(47, 11, 206), 3, 6),
          // H
-         Poly::new(RGB::new(244, 239, 114), 21, 24),
+         Poly::new(RGB::new(170, 44, 206), 6, 9),
          // I
          Poly::new(RGB::new(109, 233, 158), 24, 27),
          // J
-         Poly::new(RGB::new(66, 222, 241), 27, 30),
+         Poly::new(RGB::new(47, 11, 206), 3, 6),
+         // K
+         Poly::new(RGB::new(170, 44, 206), 6, 9),
+         // L
+         Poly::new(RGB::new(47, 11, 206), 3, 6),
       ];
 
       let edges = vec![
          // 0: A
-         Edge::vert_top(13),
-         Edge::bottom_right(0),
-         Edge::bottom_left(1),
+         Edge::vert_top(4),
+         Edge::top_right(14),
+         Edge::bottom_right(11),
+         Edge::bottom_left(5),
+         Edge::hori_left(0),
 
          // 1: B
-         Edge::top_right(1),
-         Edge::bottom_right(2),
-         Edge::bottom_left(3),
+         Edge::top_right(3),
+         Edge::bottom_right(9),
+         Edge::vert_bottom(6),
+         Edge::hori_left(1),
 
          // 2: C
-         Edge::top_right(3),
-         Edge::bottom_right(4),
-         Edge::hori_left(14),
+         Edge::vert_top(6),
+         Edge::top_right(10),
+         Edge::bottom_right(7),
+         Edge::hori_left(2),
 
          // 3: D
-         Edge::top_left(4),
-         Edge::top_right(5),
-         Edge::bottom_right(6),
+         Edge::top_left(7),
+         Edge::top_right(12),
+         Edge::bottom_right(15),
+         Edge::vert_bottom(8),
+         Edge::hori_left(3),
 
          // 4: E
-         Edge::top_left(6),
-         Edge::top_right(7),
-         Edge::vert_bottom(15),
+         Edge::top_left(9),
+         Edge::top_left(11),
+         Edge::top_left(17),
+         Edge::top_right(22),
+         Edge::hori_right(29),
+         Edge::bottom_right(23),
+         Edge::bottom_left(18),
+         Edge::bottom_left(12),
+         Edge::bottom_left(10),
 
          // 5: F
-         Edge::top_left(2),
-         Edge::top_right(8),
-         Edge::bottom_left(9),
+         Edge::vert_top(13),
+         Edge::hori_right(19),
+         Edge::bottom_right(17),
+         Edge::bottom_left(14),
 
          // 6: G
-         Edge::top_right(9),
-         Edge::bottom_right(10),
-         Edge::bottom_left(5),
+         Edge::vert_top(21),
+         Edge::hori_right(25),
+         Edge::vert_bottom(26),
+         Edge::bottom_left(22),
+         Edge::hori_left(19),
 
          // 7: H
-         Edge::top_left(0),
-         Edge::bottom_right(11),
-         Edge::bottom_left(8),
+         Edge::vert_top(26),
+         Edge::hori_right(30),
+         Edge::vert_bottom(27),
+         Edge::hori_left(29),
 
          // 8: I
-         Edge::top_left(10),
-         Edge::top_right(12),
-         Edge::bottom_left(7),
+         Edge::vert_top(27),
+         Edge::hori_right(28),
+         Edge::vert_bottom(24),
+         Edge::hori_left(20),
+         Edge::top_left(23),
 
          // 9: J
-         Edge::top_left(11),
-         Edge::hori_right(16),
-         Edge::bottom_left(12),
+         Edge::top_left(15),
+         Edge::top_right(18),
+         Edge::hori_right(20),
+         Edge::vert_bottom(16),
+         Edge::top_left(15),
       ];
 
       let edge_points = vec![
-         EdgePoints::new(2, 1),  // 0
-         EdgePoints::new(0, 2),  // 1
-         EdgePoints::new(3, 2),  // 2
-         EdgePoints::new(0, 3),  // 3
-         EdgePoints::new(4, 3),  // 4
-         EdgePoints::new(3, 5),  // 5
-         EdgePoints::new(4, 5),  // 6
-         EdgePoints::new(5, 6),  // 7
-         EdgePoints::new(2, 7),  // 8
-         EdgePoints::new(3, 7),  // 9
-         EdgePoints::new(5, 7),  // 10
-         EdgePoints::new(7, 1),  // 11
-         EdgePoints::new(7, 6),  // 12
-         EdgePoints::new(0, 1),  // 13
-         EdgePoints::new(0, 4),  // 14
-         EdgePoints::new(4, 6),  // 15
-         EdgePoints::new(1, 6),  // 16
+         EdgePoints::new(0, 1),    // 0
+         EdgePoints::new(1, 2),    // 1
+         EdgePoints::new(2, 3),    // 2
+         EdgePoints::new(4, 4),    // 3
+         EdgePoints::new(0, 8),    // 4
+         EdgePoints::new(1, 5),    // 5
+         EdgePoints::new(2, 6),    // 6
+         EdgePoints::new(3, 7),    // 7
+         EdgePoints::new(4, 9),    // 8
+         EdgePoints::new(6, 5),    // 9
+         EdgePoints::new(6, 7),    // 10
+         EdgePoints::new(5, 10),   // 11
+         EdgePoints::new(7, 11),   // 12
+         EdgePoints::new(8, 12),   // 13
+         EdgePoints::new(8, 10),   // 14
+         EdgePoints::new(9, 11),   // 15
+         EdgePoints::new(9, 15),   // 16
+         EdgePoints::new(10, 13),  // 17
+         EdgePoints::new(11, 14),  // 18
+         EdgePoints::new(12, 13),  // 19
+         EdgePoints::new(14, 15),  // 20
+         EdgePoints::new(12, 18),  // 21
+         EdgePoints::new(13, 16),  // 22
+         EdgePoints::new(14, 17),  // 23
+         EdgePoints::new(15, 21),  // 24
+         EdgePoints::new(18, 19),  // 25
+         EdgePoints::new(16, 19),  // 26
+         EdgePoints::new(17, 20),  // 27
+         EdgePoints::new(20, 21),  // 28
+         EdgePoints::new(16, 17),  // 29
+         EdgePoints::new(19, 20),  // 30
       ];
 
       let points = vec![
-         Point::new(0, 0),   // 0
-         Point::new(0, 10),  // 1
-         Point::new(2, 5),   // 2
-         Point::new(3, 1),   // 3
-         Point::new(10, 0),  // 4
-         Point::new(8, 5),   // 5
-         Point::new(10, 10), // 6
-         Point::new(7, 9),   // 7
+         Point::new(-22, -14), // 0
+         Point::new(-6, -14),  // 1
+         Point::new(0, -14),   // 2
+         Point::new(6, -14),   // 3
+         Point::new(22, -14),  // 4
+         Point::new(-3, -11),   // 5
+         Point::new(0, 12),    // 6
+         Point::new(3, -11),   // 7
+         Point::new(-22, 2),   // 8
+         Point::new(22, 2),    // 9
+         Point::new(-19, 5),   // 10
+         Point::new(19, 5),    // 11
+         Point::new(-22, 8),   // 12
+         Point::new(-20, 8),   // 13
+         Point::new(20, 8),    // 14
+         Point::new(22, 8),    // 15
+         Point::new(-16, 12),  // 16
+         Point::new(16, 12),   // 17
+         Point::new(-22, 14),  // 18
+         Point::new(-16, 14),  // 19
+         Point::new(16, 14),   // 20
+         Point::new(22, 14),   // 21
       ];
 
       PolySource {
@@ -1501,35 +1553,14 @@ impl TriangleRenderer {
 
    #[inline]
    pub fn scale_src_points(&mut self, frame: &Frame) {
-      self.counter = self.counter.wrapping_add(8000000000000000);
-
       let scale_x = DIV_PER_PIXEL * frame.width as i64 / 10;
       let scale_y = DIV_PER_PIXEL * frame.height as i64 / 10;
 
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
-         let rx = self.rand_u8();
-         let ry = self.rand_u8();
          let dest = &mut self.scaled_points[i];
-
-         let min_base = 250;
-         let mut base = min_base + ((i64::MAX - self.counter.abs()) as f64 * 5000. / i64::MAX as f64) as i64;
-         if base < 3000 {
-            let div = if base < 1500 {
-               6
-            } else {
-               2
-            };
-            base = min_base + (base - min_base) / div;
-         }
-
-         if point.x != 0 && point.x != 10 {
-            dest.x = point.x * scale_x + (128 - rx as i64) * scale_x / base;
-            dest.y = point.y * scale_y + (128 - ry as i64) * scale_y / base;
-         } else {
-            dest.x = point.x * scale_x;
-            dest.y = point.y * scale_y;
-         }
+         dest.x = point.x * scale_x;
+         dest.y = point.y * scale_y;
       }
    }
 
