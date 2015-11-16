@@ -1682,7 +1682,7 @@ impl TriangleRenderer {
          },
       };
       if !correct {
-         println!("EDGE PONTS ЕRR:");
+         println!("EDGE POINTS ЕRR:");
          println!("{:?}", edge);
          println!("{:?} -> {:?}", start, head);
          panic!("");
@@ -1740,12 +1740,14 @@ impl TriangleRenderer {
          self.check_poly_len(poly, &self.upper_edges);
          self.check_poly_connected(poly, &self.upper_edges);
          self.check_poly_area(poly, &self.upper_edges);
+         self.check_poly_edges(poly, &self.upper_edges);
       }
 
       for poly in self.lower_polys[..].iter() {
          self.check_poly_len(poly, &self.lower_edges);
          self.check_poly_connected(poly, &self.lower_edges);
          self.check_poly_area(poly, &self.lower_edges);
+         self.check_poly_edges(poly, &self.lower_edges);
       }
    }
 
@@ -1810,6 +1812,50 @@ impl TriangleRenderer {
             panic!("");
          }
          prev = self.head(&edge);
+      }
+   }
+
+   fn check_poly_edges(&self, poly: &PolyRef, edges: &Ring<EdgeRef>) {
+      for i in poly.start..poly.end {
+         let edge = edges[i];
+         self.check_edge(&edge)
+      }
+   }
+
+   fn check_edge(&self, edge: &EdgeRef) {
+      let start = self.start(edge);
+      let head = self.head(edge);
+      let correct = match edge.edge_type {
+         EdgeType::TR => {
+            start.x < head.x && start.y < head.y
+         },
+         EdgeType::TL => {
+            start.x > head.x && start.y < head.y
+         },
+         EdgeType::BR => {
+            start.x < head.x && start.y > head.y
+         },
+         EdgeType::BL => {
+            start.x > head.x && start.y > head.y
+         },
+         EdgeType::VT => {
+            start.x == head.x && start.y < head.y
+         },
+         EdgeType::VB => {
+            start.x == head.x && start.y > head.y
+         },
+         EdgeType::HR => {
+            start.x < head.x && start.y == head.y
+         },
+         EdgeType::HL => {
+            start.x > head.x && start.y == head.y
+         },
+      };
+      if !correct {
+         println!("EDGE POINTS ЕRR:");
+         println!("{:?}", edge);
+         println!("{:?} -> {:?}", start, head);
+         panic!("");
       }
    }
 
