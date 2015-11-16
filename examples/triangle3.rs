@@ -359,11 +359,11 @@ impl PolySource {
          Edge::hori_left(29),
 
          // 8: I / 40 - 45
+         Edge::top_left(23),
          Edge::vert_top(27),
          Edge::hori_right(28),
          Edge::vert_bottom(24),
          Edge::hori_left(20),
-         Edge::top_left(23),
 
          // 9: J / 45 - 49
          Edge::top_left(15),
@@ -1547,15 +1547,17 @@ impl TriangleRenderer {
 
    #[inline]
    pub fn scale_src_points(&mut self, frame: &Frame) {
-      let scale_x = DIV_PER_PIXEL * 10;//frame.width as i64 / 44;
-      let scale_y = DIV_PER_PIXEL * 10;//frame.height as i64 / 28;
+      let scale = min(
+         DIV_PER_PIXEL * frame.width as i64 / 44,
+         DIV_PER_PIXEL * frame.height as i64 / 28
+      );
 
       for i in 0..self.scaled_points.len() {
          let point = self.src.points[i];
          let point = Point::new(point.x + 22, point.y + 14);
          let dest = &mut self.scaled_points[i];
-         dest.x = point.x * scale_x;
-         dest.y = point.y * scale_y;
+         dest.x = point.x * scale;
+         dest.y = point.y * scale;
       }
    }
 
@@ -1751,6 +1753,22 @@ impl TriangleRenderer {
       }
    }
 
+   fn check_post_v_split_polys_connected(&self) {
+      for poly in self.lower_polys[..].iter() {
+         self.check_poly_len(poly, &self.lower_edges);
+         self.check_poly_connected(poly, &self.lower_edges);
+         self.check_poly_area(poly, &self.lower_edges);
+         self.check_poly_edges(poly, &self.lower_edges);
+      }
+
+      for poly in self.active_polys[..].iter() {
+         self.check_poly_len(poly, &self.active_edges);
+         self.check_poly_connected(poly, &self.active_edges);
+         self.check_poly_area(poly, &self.active_edges);
+         self.check_poly_edges(poly, &self.active_edges);
+      }
+   }
+
    fn check_poly_area(&self, poly: &PolyRef, edges: &Ring<EdgeRef>) {
       let mut area = 0;
 
@@ -1901,7 +1919,7 @@ impl Renderer for TriangleRenderer {
 
       self.scale_src_points(frame);
 
-      self.check_src_polys();
+//      self.check_src_polys();
 
       self.calc_polys_min_y();
       self.calc_polys_min_max();
@@ -1923,7 +1941,7 @@ impl Renderer for TriangleRenderer {
 
          self.h_split(y_split, y + 1);
 
-         self.check_post_h_split_polys_connected();
+//         self.check_post_h_split_polys_connected();
 
          self.recalc_lower_min_max_x();
 
@@ -1946,12 +1964,16 @@ impl Renderer for TriangleRenderer {
                   x_split = x_world + DIV_PER_PIXEL;
 
                   self.v_split(x_world, x);
+
+//                  self.check_post_v_split_polys_connected();
                },
                None => {}
             }
 
             if x < max_x {
                self.v_split(x_split, x + 1);
+
+//               self.check_post_v_split_polys_connected();
 
                if self.active_polys.len() > 0 {
 
