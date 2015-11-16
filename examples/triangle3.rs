@@ -13,6 +13,7 @@ use polydraw::{Application, Renderer, Frame};
 use polydraw::geom::point::Point;
 use polydraw::geom::ring::Ring;
 use polydraw::geom::lineinter::{h_multi_intersect_fast, v_multi_intersect_fast};
+use polydraw::geom::number::NumberOps;
 use polydraw::draw::RGB;
 
 
@@ -27,6 +28,69 @@ fn to_px(v: i64) -> i64 {
 #[inline]
 fn from_px(v: i64) -> i64 {
    v as i64 * DIV_PER_PIXEL
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+struct Circle {
+   center: usize,
+   radius: i64,
+}
+
+impl Circle {
+   #[inline]
+   pub fn new(center: usize, radius: i64) -> Self {
+      Circle {
+         center: center,
+         radius: radius,
+      }
+   }
+}
+
+#[inline]
+fn circle_y_tr(circle: &Circle, center: &Point, x: i64) -> i64 { // top-right
+   center.y + other_delta(circle, x - center.x)
+}
+
+#[inline]
+fn circle_x_tr(circle: &Circle, center: &Point, y: i64) -> i64 { // top-right
+   center.x + other_delta(circle, y - center.y)
+}
+
+#[inline]
+fn circle_y_br(circle: &Circle, center: &Point, x: i64) -> i64 { // bottom-right
+   center.y - other_delta(circle, x - center.x)
+}
+
+#[inline]
+fn circle_x_br(circle: &Circle, center: &Point, y: i64) -> i64 { // bottom-right
+   center.x + other_delta(circle, center.y - y)
+}
+
+#[inline]
+fn circle_y_tl(circle: &Circle, center: &Point, x: i64) -> i64 { // top-left
+   center.y + other_delta(circle, center.x - x)
+}
+
+#[inline]
+fn circle_x_tl(circle: &Circle, center: &Point, y: i64) -> i64 { // top-left
+   center.x - other_delta(circle, y - center.y)
+}
+
+#[inline]
+fn circle_y_bl(circle: &Circle, center: &Point, x: i64) -> i64 { // bottom-left
+   center.y - other_delta(circle, center.x - x)
+}
+
+#[inline]
+fn circle_x_bl(circle: &Circle, center: &Point, y: i64) -> i64 { // bottom-left
+   center.x - other_delta(circle, center.y - y)
+}
+
+#[inline]
+fn other_delta(circle: &Circle, delta: i64) -> i64 {
+   assert!(delta > 0);
+   assert!(delta < circle.radius);
+   (circle.radius.pow(2) - delta.pow(2)).sqrt()
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -273,6 +337,7 @@ struct PolySource {
    polys: Vec<Poly>,
    edges: Vec<Edge>,
    edge_points: Vec<EdgePoints>,
+   circles: Vec<Circle>,
    points: Vec<Point>,
 }
 
@@ -406,6 +471,12 @@ impl PolySource {
          EdgePoints::new(19, 20),  // 30
       ];
 
+      let circles = vec![
+         Circle::new(22, 4),   // 0
+         Circle::new(23, 4),   // 1
+         Circle::new(24, 4),   // 2
+      ];
+
       let points = vec![
          Point::new(-22, -14), // 0
          Point::new(-6, -14),  // 1
@@ -429,12 +500,16 @@ impl PolySource {
          Point::new(-16, 14),  // 19
          Point::new(16, 14),   // 20
          Point::new(22, 14),   // 21
+         Point::new(0, -8),    // 22
+         Point::new(-16, 8),   // 23
+         Point::new(16, 8),    // 24
       ];
 
       PolySource {
          polys: polys,
          edges: edges,
          edge_points: edge_points,
+         circles: circles,
          points: points,
       }
    }
