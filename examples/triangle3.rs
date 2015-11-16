@@ -1019,15 +1019,16 @@ impl TriangleRenderer {
       let min_y = min(p1.y, p2.y);
       let max_y = max(p1.y, p2.y);
 
-/*      if y <= min_y || y >= max_y {
+      if y <= min_y || y >= max_y {
          println!("");
          println!("BAD INTERSECTION");
          println!("Y {:?}, Y_PX {:?}", y, y_px);
          println!("EDGE {:?}", edge);
          println!("EDGE POINTS {:?}", edge_points);
          self.print_edge_ref(edge);
+         panic!("");
       }
-*/
+
       match edge.edge_type {
          EdgeType::VT | EdgeType::VB => {
             self.points[edge_points.p1].x
@@ -1052,15 +1053,16 @@ impl TriangleRenderer {
       let min_x = min(p1.x, p2.x);
       let max_x = max(p1.x, p2.x);
 
-/*      if x <= min_x || x >= max_x {
+      if x <= min_x || x >= max_x {
          println!("");
          println!("BAD INTERSECTION");
          println!("X {:?}, X_PX {:?}", x, x_px);
          println!("EDGE {:?}", edge);
          println!("EDGE POINTS {:?}", edge_points);
          self.print_edge_ref(edge);
+         panic!("");
       }
-*/
+
       match edge.edge_type {
          EdgeType::HR | EdgeType::HL => {
             self.points[edge_points.p1].y
