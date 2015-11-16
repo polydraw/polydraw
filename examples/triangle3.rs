@@ -121,6 +121,10 @@ enum EdgeType {
    HL,  // horizontal left
    VT,  // vertical top
    VB,  // vertical bottom
+   CTR,  // circle top right
+   CTL,  // circle top left
+   CBR,  // circle bottom right
+   CBL,  // circle bottom left
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -176,6 +180,26 @@ impl Edge {
    #[inline]
    pub fn vert_bottom(points: usize) -> Self {
       Edge::new(EdgeType::VB, points)
+   }
+
+   #[inline]
+   pub fn circle_top_right(points: usize) -> Self {
+      Edge::new(EdgeType::CTR, points)
+   }
+
+   #[inline]
+   pub fn circle_top_left(points: usize) -> Self {
+      Edge::new(EdgeType::CTL, points)
+   }
+
+   #[inline]
+   pub fn circle_bottom_right(points: usize) -> Self {
+      Edge::new(EdgeType::CBR, points)
+   }
+
+   #[inline]
+   pub fn circle_bottom_left(points: usize) -> Self {
+      Edge::new(EdgeType::CBL, points)
    }
 }
 
@@ -376,13 +400,13 @@ impl PolySource {
 
          // 1: B / 5 - 9
          Edge::top_right(5),
-         Edge::bottom_right(9),
+         Edge::circle_bottom_right(9),
          Edge::vert_bottom(6),
          Edge::hori_left(1),
 
          // 2: C / 9 - 13
          Edge::vert_top(6),
-         Edge::top_right(10),
+         Edge::circle_top_right(10),
          Edge::bottom_right(7),
          Edge::hori_left(2),
 
@@ -394,27 +418,27 @@ impl PolySource {
          Edge::hori_left(3),
 
          // 4: E / 18 - 27
-         Edge::top_left(9),
+         Edge::circle_top_left(9),
          Edge::top_left(11),
-         Edge::top_left(17),
-         Edge::top_right(22),
+         Edge::circle_top_left(17),
+         Edge::circle_top_right(22),
          Edge::hori_right(29),
-         Edge::bottom_right(23),
-         Edge::bottom_left(18),
+         Edge::circle_bottom_right(23),
+         Edge::circle_bottom_left(18),
          Edge::bottom_left(12),
-         Edge::bottom_left(10),
+         Edge::circle_bottom_left(10),
 
          // 5: F / 27 - 31
          Edge::vert_top(13),
          Edge::hori_right(19),
-         Edge::bottom_right(17),
+         Edge::circle_bottom_right(17),
          Edge::bottom_left(14),
 
          // 6: G / 31 - 36
          Edge::vert_top(21),
          Edge::hori_right(25),
          Edge::vert_bottom(26),
-         Edge::bottom_left(22),
+         Edge::circle_bottom_left(22),
          Edge::hori_left(19),
 
          // 7: H / 36 - 40
@@ -424,7 +448,7 @@ impl PolySource {
          Edge::hori_left(29),
 
          // 8: I / 40 - 45
-         Edge::top_left(23),
+         Edge::circle_top_left(23),
          Edge::vert_top(27),
          Edge::hori_right(28),
          Edge::vert_bottom(24),
@@ -432,7 +456,7 @@ impl PolySource {
 
          // 9: J / 45 - 49
          Edge::top_left(15),
-         Edge::top_right(18),
+         Edge::circle_top_right(18),
          Edge::hori_right(20),
          Edge::vert_bottom(16),
       ];
@@ -921,7 +945,7 @@ impl TriangleRenderer {
          let edge_points = self.edge_points[edge.points];
 
          match edge.edge_type {
-            EdgeType::TL | EdgeType::TR | EdgeType::VT => {
+            EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::CTL | EdgeType::CTR => {
                let y2 = self.points[edge_points.p2].y;
                if y2 < y {
                   self.lower_edges.push(edge);
@@ -967,7 +991,7 @@ impl TriangleRenderer {
          let edge_points = self.edge_points[edge.points];
 
          match edge.edge_type {
-            EdgeType::BL | EdgeType::BR | EdgeType::VB => {
+            EdgeType::BL | EdgeType::BR | EdgeType::VB | EdgeType::CBL | EdgeType::CBR => {
                let y2 = self.points[edge_points.p1].y;
                if y2 > y {
                   self.upper_edges.push(edge);
@@ -1071,7 +1095,7 @@ impl TriangleRenderer {
       let second = EdgePoints::new(point_index, edge_points.p2);
 
       match edge.edge_type {
-         EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::HR => {
+         EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::HR | EdgeType::CTL | EdgeType::CTR => {
             self.edge_points.push(first);
             self.edge_points.push(second);
          },
@@ -1155,7 +1179,7 @@ impl TriangleRenderer {
    fn intersect_edges(&mut self) {
       for edge in &self.src.edges {
          match edge.edge_type {
-            EdgeType::TR | EdgeType::TL | EdgeType::BR | EdgeType::BL => {
+            EdgeType::TR | EdgeType::TL | EdgeType::BR | EdgeType::BL | EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL => {
                let mut h_ref = &mut self.h_intersect_ref[edge.points];
 
                if h_ref.start != usize::MAX {
@@ -1321,7 +1345,7 @@ impl TriangleRenderer {
          let edge_points = self.edge_points[edge.points];
 
          match edge.edge_type {
-            EdgeType::TR | EdgeType::BR | EdgeType::HR => {
+            EdgeType::TR | EdgeType::BR | EdgeType::HR | EdgeType::CTR | EdgeType::CBR => {
                let x2 = self.edge_x2(&edge, &edge_points);
                if x2 < x {
                   self.active_edges.push(edge);
@@ -1367,7 +1391,7 @@ impl TriangleRenderer {
          let edge_points = self.edge_points[edge.points];
 
          match edge.edge_type {
-            EdgeType::BL | EdgeType::TL | EdgeType::HL => {
+            EdgeType::BL | EdgeType::TL | EdgeType::HL | EdgeType::CBL | EdgeType::CTL => {
                let x2 = self.edge_x2(&edge, &edge_points);
                if x2 > x {
                   self.lower_edges.push(edge);
@@ -1436,7 +1460,7 @@ impl TriangleRenderer {
    #[inline]
    fn edge_p1(&self, edge: &EdgeRef, edge_points: &EdgePoints) -> usize {
       match edge.edge_type {
-         EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::HR => {
+         EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::HR | EdgeType::CTL | EdgeType::CTR => {
             edge_points.p1
          },
          _ => {
@@ -1448,7 +1472,7 @@ impl TriangleRenderer {
    #[inline]
    fn edge_p2(&self, edge: &EdgeRef, edge_points: &EdgePoints) -> usize {
       match edge.edge_type {
-         EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::HR => {
+         EdgeType::TL | EdgeType::TR | EdgeType::VT | EdgeType::HR | EdgeType::CTL | EdgeType::CTR => {
             edge_points.p2
          },
          _ => {
@@ -1596,10 +1620,10 @@ impl TriangleRenderer {
          let p2 = self.points[edge_points.p2];
 
          match edge.edge_type {
-            EdgeType::TR | EdgeType::TL => {
+            EdgeType::TR | EdgeType::TL | EdgeType::CTR | EdgeType::CTL => {
                area += p2.x * p1.y - p1.x * p2.y;
             },
-            EdgeType::BR | EdgeType::BL => {
+            EdgeType::BR | EdgeType::BL | EdgeType::CBR | EdgeType::CBL => {
                area += p1.x * p2.y - p2.x * p1.y;
             },
             EdgeType::HR => {
@@ -1646,6 +1670,8 @@ impl TriangleRenderer {
 
          if edge.edge_type == EdgeType::TL ||
             edge.edge_type == EdgeType::TR ||
+            edge.edge_type == EdgeType::CTL ||
+            edge.edge_type == EdgeType::CTR ||
             edge.edge_type == EdgeType::VT ||
             edge.edge_type == EdgeType::HR
          {
@@ -1670,6 +1696,8 @@ impl TriangleRenderer {
 
          if edge.edge_type == EdgeType::TL ||
             edge.edge_type == EdgeType::TR ||
+            edge.edge_type == EdgeType::CTL ||
+            edge.edge_type == EdgeType::CTR ||
             edge.edge_type == EdgeType::VT ||
             edge.edge_type == EdgeType::HR
          {
@@ -1735,16 +1763,16 @@ impl TriangleRenderer {
       let start = self.src_start(edge);
       let head = self.src_head(edge);
       let correct = match edge.edge_type {
-         EdgeType::TR => {
+         EdgeType::TR | EdgeType::CTR => {
             start.x < head.x && start.y < head.y
          },
-         EdgeType::TL => {
+         EdgeType::TL | EdgeType::CTL => {
             start.x > head.x && start.y < head.y
          },
-         EdgeType::BR => {
+         EdgeType::BR | EdgeType::CBR => {
             start.x < head.x && start.y > head.y
          },
-         EdgeType::BL => {
+         EdgeType::BL | EdgeType::CBL => {
             start.x > head.x && start.y > head.y
          },
          EdgeType::VT => {
@@ -1774,6 +1802,8 @@ impl TriangleRenderer {
       (
          etype == EdgeType::TR ||
          etype == EdgeType::TL ||
+         etype == EdgeType::CTR ||
+         etype == EdgeType::CTL ||
          etype == EdgeType::VT ||
          etype == EdgeType::HR
       )
@@ -1785,6 +1815,8 @@ impl TriangleRenderer {
       (
          etype == EdgeType::TR ||
          etype == EdgeType::TL ||
+         etype == EdgeType::CTR ||
+         etype == EdgeType::CTL ||
          etype == EdgeType::VT ||
          etype == EdgeType::HR
       )
@@ -1857,10 +1889,10 @@ impl TriangleRenderer {
          let p2 = self.points[edge_points.p2];
 
          match edge.edge_type {
-            EdgeType::TR | EdgeType::TL => {
+            EdgeType::TR | EdgeType::TL | EdgeType::CTR | EdgeType::CTL => {
                area += p2.x * p1.y - p1.x * p2.y;
             },
-            EdgeType::BR | EdgeType::BL => {
+            EdgeType::BR | EdgeType::BL | EdgeType::CBR | EdgeType::CBL => {
                area += p1.x * p2.y - p2.x * p1.y;
             },
             EdgeType::HR => {
@@ -1921,16 +1953,16 @@ impl TriangleRenderer {
       let start = self.start(edge);
       let head = self.head(edge);
       let correct = match edge.edge_type {
-         EdgeType::TR => {
+         EdgeType::TR | EdgeType::CTR => {
             start.x < head.x && start.y < head.y
          },
-         EdgeType::TL => {
+         EdgeType::TL | EdgeType::CTL => {
             start.x > head.x && start.y < head.y
          },
-         EdgeType::BR => {
+         EdgeType::BR | EdgeType::CBR => {
             start.x < head.x && start.y > head.y
          },
-         EdgeType::BL => {
+         EdgeType::BL | EdgeType::CBL => {
             start.x > head.x && start.y > head.y
          },
          EdgeType::VT => {
