@@ -1,6 +1,7 @@
 pub mod number;
 pub mod point;
 pub mod line;
+pub mod circle;
 pub mod triangle;
 pub mod polygon;
 pub mod clip;
