@@ -264,6 +264,31 @@ impl Default for EdgePoints {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct ArcPoints {
+   p1: usize,
+   p2: usize,
+   circle: usize,
+}
+
+impl ArcPoints {
+   #[inline]
+   pub fn new(p1: usize, p2: usize, circle: usize) -> Self {
+      ArcPoints {
+         p1: p1,
+         p2: p2,
+         circle: circle,
+      }
+   }
+}
+
+impl Default for ArcPoints {
+   #[inline]
+   fn default() -> ArcPoints {
+      ArcPoints::new(0, 0, 0)
+   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct PolyRef {
    src: usize,
    start: usize,
@@ -361,6 +386,7 @@ struct PolySource {
    polys: Vec<Poly>,
    edges: Vec<Edge>,
    edge_points: Vec<EdgePoints>,
+   arc_points: Vec<ArcPoints>,
    circles: Vec<Circle>,
    points: Vec<Point>,
 }
@@ -400,13 +426,13 @@ impl PolySource {
 
          // 1: B / 5 - 9
          Edge::top_right(5),
-         Edge::circle_bottom_right(9),
+         Edge::circle_bottom_right(0),
          Edge::vert_bottom(6),
          Edge::hori_left(1),
 
          // 2: C / 9 - 13
          Edge::vert_top(6),
-         Edge::circle_top_right(10),
+         Edge::circle_top_right(1),
          Edge::bottom_right(7),
          Edge::hori_left(2),
 
@@ -418,27 +444,27 @@ impl PolySource {
          Edge::hori_left(3),
 
          // 4: E / 18 - 27
-         Edge::circle_top_left(9),
+         Edge::circle_top_left(0),
          Edge::top_left(11),
-         Edge::circle_top_left(17),
-         Edge::circle_top_right(22),
+         Edge::circle_top_left(2),
+         Edge::circle_top_right(4),
          Edge::hori_right(29),
-         Edge::circle_bottom_right(23),
-         Edge::circle_bottom_left(18),
+         Edge::circle_bottom_right(5),
+         Edge::circle_bottom_left(3),
          Edge::bottom_left(12),
-         Edge::circle_bottom_left(10),
+         Edge::circle_bottom_left(1),
 
          // 5: F / 27 - 31
          Edge::vert_top(13),
          Edge::hori_right(19),
-         Edge::circle_bottom_right(17),
+         Edge::circle_bottom_right(2),
          Edge::bottom_left(14),
 
          // 6: G / 31 - 36
          Edge::vert_top(21),
          Edge::hori_right(25),
          Edge::vert_bottom(26),
-         Edge::circle_bottom_left(22),
+         Edge::circle_bottom_left(4),
          Edge::hori_left(19),
 
          // 7: H / 36 - 40
@@ -448,7 +474,7 @@ impl PolySource {
          Edge::hori_left(29),
 
          // 8: I / 40 - 45
-         Edge::circle_top_left(23),
+         Edge::circle_top_left(5),
          Edge::vert_top(27),
          Edge::hori_right(28),
          Edge::vert_bottom(24),
@@ -456,7 +482,7 @@ impl PolySource {
 
          // 9: J / 45 - 49
          Edge::top_left(15),
-         Edge::circle_top_right(18),
+         Edge::circle_top_right(3),
          Edge::hori_right(20),
          Edge::vert_bottom(16),
       ];
@@ -493,6 +519,15 @@ impl PolySource {
          EdgePoints::new(20, 21),  // 28
          EdgePoints::new(16, 17),  // 29
          EdgePoints::new(19, 20),  // 30
+      ];
+
+      let arc_points = vec![
+         ArcPoints::new(6, 5, 0),    // 0 - 9
+         ArcPoints::new(6, 7, 0),    // 1 - 10
+         ArcPoints::new(10, 13, 1),  // 2 - 17
+         ArcPoints::new(11, 14, 2),  // 3 - 18
+         ArcPoints::new(13, 16, 1),  // 4 - 22
+         ArcPoints::new(14, 17, 2),  // 5 - 23
       ];
 
       let circles = vec![
@@ -533,6 +568,7 @@ impl PolySource {
          polys: polys,
          edges: edges,
          edge_points: edge_points,
+         arc_points: arc_points,
          circles: circles,
          points: points,
       }
