@@ -127,6 +127,20 @@ enum EdgeType {
    CBL,  // circle bottom left
 }
 
+impl EdgeType {
+   #[inline]
+   pub fn straight(&self) -> bool {
+      match *self {
+         EdgeType::CBR | EdgeType::CBL | EdgeType::CTR | EdgeType::CTL => {
+            false
+         },
+         _ => {
+            true
+         }
+      }
+   }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Edge {
    edge_type: EdgeType,
@@ -584,6 +598,7 @@ struct TriangleRenderer {
    scaled_points: Vec<Point>,
 
    edge_points_map: Vec<usize>,
+   arc_points_map: Vec<usize>,
    points_map: Vec<usize>,
 
    h_intersect_ref: Vec<IntersectRef>,
@@ -603,6 +618,7 @@ struct TriangleRenderer {
    active_edges: Ring<EdgeRef>,
 
    edge_points: Ring<EdgePoints>,
+   arc_points: Ring<EdgePoints>,
    points: Ring<Point>,
 }
 
@@ -612,6 +628,7 @@ impl TriangleRenderer {
 
       let polys_len = src.polys.len();
       let edge_points_len = src.edge_points.len();
+      let arc_points_len = src.arc_points.len();
       let points_len = src.points.len();
 
       let src_min_y = repeat(PolyMinRef::default()).take(polys_len).collect();
@@ -620,6 +637,7 @@ impl TriangleRenderer {
       let scaled_points = repeat(Point::default()).take(points_len).collect();
 
       let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
+      let arc_points_map = repeat(usize::MAX).take(arc_points_len).collect();
       let points_map = repeat(usize::MAX).take(points_len).collect();
 
       let h_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
@@ -637,6 +655,7 @@ impl TriangleRenderer {
          scaled_points: scaled_points,
 
          edge_points_map: edge_points_map,
+         arc_points_map: arc_points_map,
          points_map: points_map,
 
          h_intersect_ref: h_intersect_ref,
@@ -656,6 +675,7 @@ impl TriangleRenderer {
          active_edges: Ring::new(262144),
 
          edge_points: Ring::new(4194304),
+         arc_points: Ring::new(1048576),
          points: Ring::new(1048576),
       }
    }
@@ -665,10 +685,11 @@ impl TriangleRenderer {
          let mut min_y = i64::MAX;
 
          for edge_index in poly.start..poly.end {
-            let edge_points = self.src.edge_points[self.src.edges[edge_index].points];
+            let edge  = self.src.edges[edge_index];
+            let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.points);
             let y = min(
-               self.scaled_points[edge_points.p1].y,
-               self.scaled_points[edge_points.p2].y
+               self.scaled_points[p1_i].y,
+               self.scaled_points[p2_i].y
             );
 
             if y < min_y {
@@ -682,17 +703,26 @@ impl TriangleRenderer {
       self.src_min_y.sort_by(|a, b| a.min.cmp(&b.min));
    }
 
+   pub fn src_edge_p1_p2(&self, edge_type: EdgeType, points: usize) -> (usize, usize) {
+      if edge_type.straight() {
+         let edge_points = self.src.edge_points[points];
+         (edge_points.p1, edge_points.p2)
+      } else {
+         let arc_points = self.src.arc_points[points];
+         (arc_points.p1, arc_points.p2)
+      }
+   }
 
    pub fn calc_polys_min_max(&mut self) {
       for (poly_index, poly) in self.src.polys.iter().enumerate() {
-         self.src_min_max[poly_index] = MinMaxXY::default();
-         let poly_min_max = &mut self.src_min_max[poly_index];
+         let mut poly_min_max = MinMaxXY::default();
 
          for edge_index in poly.start..poly.end {
-            let edge_points = self.src.edge_points[self.src.edges[edge_index].points];
+            let edge = self.src.edges[edge_index];
+            let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.points);
 
-            let p1 = self.scaled_points[edge_points.p1];
-            let p2 = self.scaled_points[edge_points.p2];
+            let p1 = self.scaled_points[p1_i];
+            let p2 = self.scaled_points[p2_i];
 
             let min_x;
             let min_y;
@@ -731,6 +761,8 @@ impl TriangleRenderer {
                poly_min_max.max_y = max_y;
             }
          }
+
+         self.src_min_max[poly_index] = poly_min_max;
       }
    }
 
@@ -776,6 +808,7 @@ impl TriangleRenderer {
       self.active_edges.clear();
 
       self.edge_points.clear();
+      self.arc_points.clear();
       self.points.clear();
 
       self.h_intersections.clear();
@@ -790,6 +823,10 @@ impl TriangleRenderer {
       }
 
       for map in self.edge_points_map.iter_mut() {
+         *map = usize::MAX;
+      }
+
+      for map in self.arc_points_map.iter_mut() {
          *map = usize::MAX;
       }
 
@@ -833,30 +870,57 @@ impl TriangleRenderer {
    fn transfer_edge(&mut self, src_i: usize) {
       let edge = self.src.edges[src_i];
 
-      let src_edge_points_i = edge.points;
-      let mut edge_points_i = self.edge_points_map[src_edge_points_i];
+      let src_points_i = edge.points;
 
-      if edge_points_i == usize::MAX {
-         let edge_points = self.src.edge_points[src_edge_points_i];
+      let points_i = if edge.edge_type.straight() {
+         self.transfer_edge_points(edge.edge_type, src_points_i)
+      } else {
+         self.transfer_arc_points(edge.edge_type, src_points_i)
+      };
 
-         let s1 = edge_points.p1;
-         let s2 = edge_points.p2;
+      let edge_type = match edge.edge_type {
+         EdgeType::TR => EdgeType::TR,
+         EdgeType::TL => EdgeType::TL,
+         EdgeType::BR => EdgeType::BR,
+         EdgeType::BL => EdgeType::BL,
+         EdgeType::VT => EdgeType::VT,
+         EdgeType::VB => EdgeType::VB,
+         EdgeType::HR => EdgeType::HR,
+         EdgeType::HL => EdgeType::HL,
+         EdgeType::CTR => EdgeType::TR,
+         EdgeType::CTL => EdgeType::TL,
+         EdgeType::CBR => EdgeType::BR,
+         EdgeType::CBL => EdgeType::BL,
+      };
 
-         let p1 = self.transfer_point(s1);
-         let p2 = self.transfer_point(s2);
+      let edge = EdgeRef::new(edge_type, src_points_i, points_i);
 
-         edge_points_i = self.edge_points.end();
+      self.upper_edges.push(edge);
+   }
+
+   fn transfer_edge_points(&mut self, edge_type: EdgeType, src_points_i: usize) -> usize {
+      let mut points_i = self.edge_points_map[src_points_i];
+
+      if points_i == usize::MAX {
+         let (p1_i, p2_i) = self.src_edge_p1_p2(edge_type, src_points_i);
+
+         let p1 = self.transfer_point(p1_i);
+         let p2 = self.transfer_point(p2_i);
+
+         points_i = self.edge_points.end();
 
          self.edge_points.push(
             EdgePoints::new(p1, p2)
          );
 
-         self.edge_points_map[src_edge_points_i] = edge_points_i;
+         self.edge_points_map[src_points_i] = points_i;
       }
 
-      let edge = EdgeRef::new(edge.edge_type, src_edge_points_i, edge_points_i);
+      points_i
+   }
 
-      self.upper_edges.push(edge);
+   fn transfer_arc_points(&mut self, edge_type: EdgeType, src_points_i: usize) -> usize {
+      self.transfer_edge_points(edge_type, src_points_i)
    }
 
    fn transfer_point(&mut self, src_i: usize) -> usize {
@@ -1216,6 +1280,8 @@ impl TriangleRenderer {
       for edge in &self.src.edges {
          match edge.edge_type {
             EdgeType::TR | EdgeType::TL | EdgeType::BR | EdgeType::BL | EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL => {
+               let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.points);
+
                let mut h_ref = &mut self.h_intersect_ref[edge.points];
 
                if h_ref.start != usize::MAX {
@@ -1224,10 +1290,8 @@ impl TriangleRenderer {
 
                let mut v_ref = &mut self.v_intersect_ref[edge.points];
 
-               let edge_points = &self.src.edge_points[edge.points];
-
-               let p1 = self.scaled_points[edge_points.p1];
-               let p2 = self.scaled_points[edge_points.p2];
+               let p1 = self.scaled_points[p1_i];
+               let p2 = self.scaled_points[p2_i];
 
                h_ref.start = self.h_intersections.end();
                v_ref.start = self.v_intersections.end();
@@ -1722,7 +1786,7 @@ impl TriangleRenderer {
             p1.x, p1.y, p2.x, p2.y);
 
       } else {
-         let src_points = self.src.edge_points[edge.src_points];
+         let (sp1_i, sp2_i) = self.src_edge_p1_p2(edge.edge_type, edge.src_points);
 
          let p1;
          let p2;
@@ -1739,13 +1803,13 @@ impl TriangleRenderer {
          {
             p1 = self.points[edge_points.p1];
             p2 = self.points[edge_points.p2];
-            sp1 = self.scaled_points[src_points.p1];
-            sp2 = self.scaled_points[src_points.p2];
+            sp1 = self.scaled_points[sp1_i];
+            sp2 = self.scaled_points[sp2_i];
          } else {
             p1 = self.points[edge_points.p2];
             p2 = self.points[edge_points.p1];
-            sp1 = self.scaled_points[src_points.p2];
-            sp2 = self.scaled_points[src_points.p1];
+            sp1 = self.scaled_points[sp2_i];
+            sp2 = self.scaled_points[sp1_i];
          }
 
          println!("E {:?} : ({}, {}) -> ({}, {}); ({}, {}) -> ({}, {})", edge.edge_type,
@@ -1860,24 +1924,24 @@ impl TriangleRenderer {
 
    #[inline]
    fn src_head(&self, edge: &Edge) -> Point {
-      let edge_points = self.src.edge_points[edge.points];
+      let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.points);
       self.scaled_points[
          if self.is_src_edge_not_rev(edge) {
-            edge_points.p2
+            p2_i
          } else {
-            edge_points.p1
+            p1_i
          }
       ]
    }
 
    #[inline]
    fn src_start(&self, edge: &Edge) -> Point {
-      let edge_points = self.src.edge_points[edge.points];
+      let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.points);
       self.scaled_points[
          if self.is_src_edge_not_rev(edge) {
-            edge_points.p1
+            p1_i
          } else {
-            edge_points.p2
+            p2_i
          }
       ]
    }
