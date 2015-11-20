@@ -1309,19 +1309,28 @@ impl TriangleRenderer {
       }
    }
 
+   #[inline]
+   fn get_h_intersect(&self, edge: &Edge) -> IntersectRef {
+      if edge.edge_type.straight() {
+         self.h_intersect_ref[edge.points]
+      } else {
+         self.h_arc_intersect_ref[edge.points]
+      }
+   }
+
    fn intersect_edges(&mut self) {
       for edge in &self.src.edges {
          match edge.edge_type {
             EdgeType::TR | EdgeType::TL | EdgeType::BR | EdgeType::BL | EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL => {
                let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.points);
 
-               let mut h_ref = &mut self.h_intersect_ref[edge.points];
+               let mut h_ref = self.get_h_intersect(edge);
 
                if h_ref.start != usize::MAX {
                   continue;
                }
 
-               let mut v_ref = &mut self.v_intersect_ref[edge.points];
+               let mut v_ref = IntersectRef::default();//&mut self.v_intersect_ref[edge.points];
 
                let p1 = self.scaled_points[p1_i];
                let p2 = self.scaled_points[p2_i];
@@ -1343,6 +1352,18 @@ impl TriangleRenderer {
 
                h_ref.end = self.h_intersections.end();
                v_ref.end = self.v_intersections.end();
+
+               if edge.edge_type.straight() {
+                  self.h_intersect_ref[edge.points] = h_ref;
+               } else {
+                  self.h_arc_intersect_ref[edge.points] = h_ref;
+               }
+
+               if edge.edge_type.straight() {
+                  self.v_intersect_ref[edge.points] = v_ref;
+               } else {
+                  self.v_arc_intersect_ref[edge.points] = v_ref;
+               }
             },
             _ => {}
          }
