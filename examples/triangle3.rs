@@ -603,6 +603,8 @@ struct TriangleRenderer {
 
    h_intersect_ref: Vec<IntersectRef>,
    v_intersect_ref: Vec<IntersectRef>,
+   h_arc_intersect_ref: Vec<IntersectRef>,
+   v_arc_intersect_ref: Vec<IntersectRef>,
    h_intersections: Ring<i64>,
    v_intersections: Ring<i64>,
 
@@ -643,6 +645,9 @@ impl TriangleRenderer {
       let h_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
       let v_intersect_ref = repeat(IntersectRef::default()).take(edge_points_len).collect();
 
+      let h_arc_intersect_ref = repeat(IntersectRef::default()).take(arc_points_len).collect();
+      let v_arc_intersect_ref = repeat(IntersectRef::default()).take(arc_points_len).collect();
+
       let lower_min_x = repeat(i64::MAX).take(polys_len).collect();
       let lower_max_x = repeat(i64::MIN).take(polys_len).collect();
 
@@ -660,6 +665,8 @@ impl TriangleRenderer {
 
          h_intersect_ref: h_intersect_ref,
          v_intersect_ref: v_intersect_ref,
+         h_arc_intersect_ref: h_arc_intersect_ref,
+         v_arc_intersect_ref: v_arc_intersect_ref,
          h_intersections: Ring::new(65536),
          v_intersections: Ring::new(65536),
 
@@ -819,6 +826,14 @@ impl TriangleRenderer {
       }
 
       for intersect_ref in &mut self.v_intersect_ref {
+         intersect_ref.start = usize::MAX;
+      }
+
+      for intersect_ref in &mut self.h_arc_intersect_ref {
+         intersect_ref.start = usize::MAX;
+      }
+
+      for intersect_ref in &mut self.v_arc_intersect_ref {
          intersect_ref.start = usize::MAX;
       }
 
@@ -1233,7 +1248,7 @@ impl TriangleRenderer {
             self.points[edge_points.p1].x
          },
          _ => {
-            let h_ref = self.h_intersect_ref[edge.src_points];
+            let h_ref = self.get_h_intersect_ref(edge);
 
             self.h_intersections[
                h_ref.start + (y_px - h_ref.start_px) as usize
@@ -1267,12 +1282,30 @@ impl TriangleRenderer {
             self.points[edge_points.p1].y
          },
          _ => {
-            let v_ref = self.v_intersect_ref[edge.src_points];
+            let v_ref = self.get_v_intersect_ref(edge);
 
             self.v_intersections[
                v_ref.start + (x_px - v_ref.start_px) as usize
             ]
          }
+      }
+   }
+
+   #[inline]
+   fn get_h_intersect_ref(&self, edge: &EdgeRef) -> &IntersectRef {
+      if edge.edge_type.straight() {
+         &self.h_intersect_ref[edge.src_points]
+      } else {
+         &self.h_arc_intersect_ref[edge.src_points]
+      }
+   }
+
+   #[inline]
+   fn get_v_intersect_ref(&self, edge: &EdgeRef) -> &IntersectRef {
+      if edge.edge_type.straight() {
+         &self.v_intersect_ref[edge.src_points]
+      } else {
+         &self.v_arc_intersect_ref[edge.src_points]
       }
    }
 
