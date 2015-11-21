@@ -95,18 +95,18 @@ fn other_delta(circle: &Circle, delta: i64) -> i64 {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Poly {
-   color: RGB,
    start: usize,
    end: usize,
+   color: RGB,
 }
 
 impl Poly {
    #[inline]
-   pub fn new(color: RGB, start: usize, end: usize) -> Self {
+   pub fn new(start: usize, end: usize, color: RGB) -> Self {
       Poly {
-         color: color,
          start: start,
          end: end,
+         color: color,
       }
    }
 }
@@ -279,16 +279,16 @@ impl Default for EdgePoints {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct Arc {
-   points: usize,
    circle: usize,
+   points: usize,
 }
 
 impl Arc {
    #[inline]
-   pub fn new(points: usize, circle: usize) -> Self {
+   pub fn new(circle: usize, points: usize) -> Self {
       Arc {
-         points: points,
          circle: circle,
+         points: points,
       }
    }
 }
@@ -397,9 +397,9 @@ impl Default for MinMaxXY {
 struct PolySource {
    polys: Vec<Poly>,
    edges: Vec<Edge>,
-   edge_points: Vec<EdgePoints>,
    arcs: Vec<Arc>,
    circles: Vec<Circle>,
+   edge_points: Vec<EdgePoints>,
    points: Vec<Point>,
 }
 
@@ -407,25 +407,25 @@ impl PolySource {
    fn new() -> Self {
       let polys = vec![
          // A
-         Poly::new(RGB::new(18, 78, 230), 0, 5),
+         Poly::new(0, 5, RGB::new(18, 78, 230)),
          // B
-         Poly::new(RGB::new(47, 11, 206), 5, 9),
+         Poly::new(5, 9, RGB::new(47, 11, 206)),
          // C
-         Poly::new(RGB::new(170, 44, 206), 9, 13),
+         Poly::new(9, 13, RGB::new(170, 44, 206)),
          // D
-         Poly::new(RGB::new(18, 78, 230), 13, 18),
+         Poly::new(13, 18, RGB::new(18, 78, 230)),
          // E
-         Poly::new(RGB::new(170, 36, 14), 18, 27),
+         Poly::new(18, 27, RGB::new(170, 36, 14)),
          // F
-         Poly::new(RGB::new(170, 44, 206), 27, 31),
+         Poly::new(27, 31, RGB::new(170, 44, 206)),
          // J
-         Poly::new(RGB::new(47, 11, 206), 45, 49),
+         Poly::new(45, 49, RGB::new(47, 11, 206)),
          // G
-         Poly::new(RGB::new(47, 11, 206), 31, 36),
+         Poly::new(31, 36, RGB::new(47, 11, 206)),
          // I
-         Poly::new(RGB::new(170, 44, 206), 40, 45),
+         Poly::new(40, 45, RGB::new(170, 44, 206)),
          // H
-         Poly::new(RGB::new(109, 233, 158), 36, 40),
+         Poly::new(36, 40, RGB::new(109, 233, 158)),
       ];
 
       let edges = vec![
@@ -499,6 +499,21 @@ impl PolySource {
          Edge::vert_bottom(16),
       ];
 
+      let arcs = vec![
+         Arc::new(0, 9),   // 0
+         Arc::new(0, 10),  // 1
+         Arc::new(1, 17),  // 2
+         Arc::new(2, 18),  // 3
+         Arc::new(1, 22),  // 4
+         Arc::new(2, 23),  // 5
+      ];
+
+      let circles = vec![
+         Circle::new(22, 4),   // 0
+         Circle::new(23, 4),   // 1
+         Circle::new(24, 4),   // 2
+      ];
+
       let edge_points = vec![
          EdgePoints::new(0, 1),    // 0
          EdgePoints::new(1, 2),    // 1
@@ -533,21 +548,6 @@ impl PolySource {
          EdgePoints::new(19, 20),  // 30
       ];
 
-      let arcs = vec![
-         Arc::new(9, 0),   // 0
-         Arc::new(10, 0),  // 1 - 10
-         Arc::new(17, 1),  // 2 - 17
-         Arc::new(18, 2),  // 3 - 18
-         Arc::new(22, 1),  // 4 - 22
-         Arc::new(23, 2),  // 5 - 23
-      ];
-
-      let circles = vec![
-         Circle::new(22, 4),   // 0
-         Circle::new(23, 4),   // 1
-         Circle::new(24, 4),   // 2
-      ];
-
       let points = vec![
          Point::new(-22, -14), // 0
          Point::new(-6, -14),  // 1
@@ -579,9 +579,9 @@ impl PolySource {
       PolySource {
          polys: polys,
          edges: edges,
-         edge_points: edge_points,
          arcs: arcs,
          circles: circles,
+         edge_points: edge_points,
          points: points,
       }
    }
