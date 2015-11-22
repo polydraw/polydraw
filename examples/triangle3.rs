@@ -234,23 +234,23 @@ impl Default for Edge {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 struct EdgeRef {
    edge_type: EdgeType,
-   src_points: usize,
+   src: usize,
    index: usize,
 }
 
 impl EdgeRef {
    #[inline]
-   pub fn new(edge_type: EdgeType, src_points: usize, index: usize) -> Self {
+   pub fn new(edge_type: EdgeType, src: usize, index: usize) -> Self {
       EdgeRef {
          edge_type: edge_type,
-         src_points: src_points,
+         src: src,
          index: index,
       }
    }
 
    #[inline]
    pub fn new_ref(&self, index: usize) -> Self {
-      EdgeRef::new(self.edge_type, self.src_points, index)
+      EdgeRef::new(self.edge_type, self.src, index)
    }
 }
 
@@ -1251,12 +1251,12 @@ impl TriangleRenderer {
 
    #[inline]
    fn get_h_intersect_ref(&self, edge: &EdgeRef) -> &IntersectRef {
-      &self.h_intersect_ref[edge.src_points]
+      &self.h_intersect_ref[edge.src]
    }
 
    #[inline]
    fn get_v_intersect_ref(&self, edge: &EdgeRef) -> &IntersectRef {
-      &self.v_intersect_ref[edge.src_points]
+      &self.v_intersect_ref[edge.src]
    }
 
    #[inline]
@@ -1402,13 +1402,13 @@ impl TriangleRenderer {
 
    #[inline]
    fn check_edge_bounds(&self, edge: &EdgeRef) -> bool {
-      if edge.src_points != usize::MAX {
+      if edge.src != usize::MAX {
          let edge_points = self.edge_points[edge.index];
-         let src_points = self.src.edge_points[edge.src_points];
+         let src = self.src.edge_points[edge.src];
          let p1 = self.points[edge_points.p1];
          let p2 = self.points[edge_points.p2];
-         let sp1 = self.scaled_points[src_points.p1];
-         let sp2 = self.scaled_points[src_points.p2];
+         let sp1 = self.scaled_points[src.p1];
+         let sp2 = self.scaled_points[src.p2];
          let min_x = min(sp1.x, sp2.x);
          let max_x = max(sp1.x, sp2.x);
          let min_y = min(sp1.y, sp2.y);
@@ -1761,7 +1761,7 @@ impl TriangleRenderer {
 
    fn print_edge_ref(&self, edge: &EdgeRef) {
       let edge_points = self.edge_points[edge.index];
-      if edge.src_points == usize::MAX {
+      if edge.src == usize::MAX {
          let p1;
          let p2;
 
@@ -1783,7 +1783,7 @@ impl TriangleRenderer {
             p1.x, p1.y, p2.x, p2.y);
 
       } else {
-         let (sp1_i, sp2_i) = self.src_edge_p1_p2(edge.edge_type, edge.src_points);
+         let (sp1_i, sp2_i) = self.src_edge_p1_p2(edge.edge_type, edge.src);
 
          let p1;
          let p2;
