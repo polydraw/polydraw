@@ -46,6 +46,13 @@ impl Circle {
    }
 }
 
+impl Default for Circle {
+   #[inline]
+   fn default() -> Circle {
+      Circle::new(0, 0)
+   }
+}
+
 #[inline]
 fn circle_y_tr(circle: &Circle, center: &Point, x: i64) -> i64 { // top-right
    center.y + other_delta(circle, x - center.x)
@@ -594,6 +601,7 @@ struct TriangleRenderer {
    src_min_max: Vec<MinMaxXY>,
 
    scaled_points: Vec<Point>,
+   scaled_circles: Vec<Circle>,
 
    edge_points_map: Vec<usize>,
    points_map: Vec<usize>,
@@ -626,11 +634,13 @@ impl TriangleRenderer {
       let polys_len = src.polys.len();
       let edge_points_len = src.edge_points.len();
       let points_len = src.points.len();
+      let circles_len = src.circles.len();
 
       let src_min_y = repeat(PolyMinRef::default()).take(polys_len).collect();
       let src_min_max = repeat(MinMaxXY::default()).take(polys_len).collect();
 
       let scaled_points = repeat(Point::default()).take(points_len).collect();
+      let scaled_circles = repeat(Circle::default()).take(circles_len).collect();
 
       let edge_points_map = repeat(usize::MAX).take(edge_points_len).collect();
       let points_map = repeat(usize::MAX).take(points_len).collect();
@@ -648,6 +658,7 @@ impl TriangleRenderer {
          src_min_max: src_min_max,
 
          scaled_points: scaled_points,
+         scaled_circles: scaled_circles,
 
          edge_points_map: edge_points_map,
          points_map: points_map,
@@ -1740,6 +1751,11 @@ impl TriangleRenderer {
          let dest = &mut self.scaled_points[i];
          dest.x = point.x * scale;
          dest.y = point.y * scale;
+      }
+
+      for i in 0..self.scaled_circles.len() {
+         self.scaled_circles[i].center = self.src.circles[i].center;
+         self.scaled_circles[i].radius = self.src.circles[i].radius;
       }
    }
 
