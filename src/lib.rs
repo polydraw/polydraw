@@ -15,6 +15,7 @@ pub mod frame;
 pub mod event;
 pub mod event_loop;
 pub mod draw;
+pub mod raster;
 
 pub use application::Application;
 pub use renderer::Renderer;
