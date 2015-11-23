@@ -445,7 +445,7 @@ impl PolySource {
 
          // 1: B / 5 - 9
          Edge::top_right(5),
-         Edge::arc_bottom_right(0), //Edge::bottom_right(9),
+         Edge::bottom_right(9),
          Edge::vert_bottom(6),
          Edge::hori_left(1),
 
