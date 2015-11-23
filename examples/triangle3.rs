@@ -691,7 +691,7 @@ impl TriangleRenderer {
 
          for edge_index in poly.start..poly.end {
             let edge  = self.src.edges[edge_index];
-            let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.index);
+            let (p1_i, p2_i) = self.src_edge_p1_p2(edge.index);
             let y = min(
                self.scaled_points[p1_i].y,
                self.scaled_points[p2_i].y
@@ -708,7 +708,7 @@ impl TriangleRenderer {
       self.src_min_y.sort_by(|a, b| a.min.cmp(&b.min));
    }
 
-   pub fn src_edge_p1_p2(&self, edge_type: EdgeType, index: usize) -> (usize, usize) {
+   pub fn src_edge_p1_p2(&self, index: usize) -> (usize, usize) {
       let edge_points = self.src.edge_points[index];
       (edge_points.p1, edge_points.p2)
    }
@@ -719,7 +719,7 @@ impl TriangleRenderer {
 
          for edge_index in poly.start..poly.end {
             let edge = self.src.edges[edge_index];
-            let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.index);
+            let (p1_i, p2_i) = self.src_edge_p1_p2(edge.index);
 
             let p1 = self.scaled_points[p1_i];
             let p2 = self.scaled_points[p2_i];
@@ -868,18 +868,18 @@ impl TriangleRenderer {
 
       let src_points_i = edge.index;
 
-      let points_i = self.transfer_edge_points(edge.edge_type, src_points_i);
+      let points_i = self.transfer_edge_points(src_points_i);
 
       let edge = EdgeRef::new(edge.edge_type, src_points_i, points_i);
 
       self.upper_edges.push(edge);
    }
 
-   fn transfer_edge_points(&mut self, edge_type: EdgeType, src_points_i: usize) -> usize {
+   fn transfer_edge_points(&mut self, src_points_i: usize) -> usize {
       let mut points_i = self.edge_points_map[src_points_i];
 
       if points_i == usize::MAX {
-         let (p1_i, p2_i) = self.src_edge_p1_p2(edge_type, src_points_i);
+         let (p1_i, p2_i) = self.src_edge_p1_p2(src_points_i);
 
          let p1 = self.transfer_point(p1_i);
          let p2 = self.transfer_point(p2_i);
@@ -1268,7 +1268,7 @@ impl TriangleRenderer {
       for edge in &self.src.edges {
          match edge.edge_type {
             EdgeType::TR | EdgeType::TL | EdgeType::BR | EdgeType::BL | EdgeType::ATR | EdgeType::ATL | EdgeType::ABR | EdgeType::ABL => {
-               let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.index);
+               let (p1_i, p2_i) = self.src_edge_p1_p2(edge.index);
 
                let mut h_ref = self.get_h_intersect(edge);
 
@@ -1783,7 +1783,7 @@ impl TriangleRenderer {
             p1.x, p1.y, p2.x, p2.y);
 
       } else {
-         let (sp1_i, sp2_i) = self.src_edge_p1_p2(edge.edge_type, edge.src);
+         let (sp1_i, sp2_i) = self.src_edge_p1_p2(edge.src);
 
          let p1;
          let p2;
@@ -1921,7 +1921,7 @@ impl TriangleRenderer {
 
    #[inline]
    fn src_head(&self, edge: &Edge) -> Point {
-      let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.index);
+      let (p1_i, p2_i) = self.src_edge_p1_p2(edge.index);
       self.scaled_points[
          if self.is_src_edge_not_rev(edge) {
             p2_i
@@ -1933,7 +1933,7 @@ impl TriangleRenderer {
 
    #[inline]
    fn src_start(&self, edge: &Edge) -> Point {
-      let (p1_i, p2_i) = self.src_edge_p1_p2(edge.edge_type, edge.index);
+      let (p1_i, p2_i) = self.src_edge_p1_p2(edge.index);
       self.scaled_points[
          if self.is_src_edge_not_rev(edge) {
             p1_i
