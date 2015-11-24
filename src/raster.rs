@@ -222,6 +222,7 @@ impl Scene {
       self.check_edge_index_coverage();
       self.check_circle_index_coverage();
       self.check_segment_index_coverage();
+      self.check_point_index_coverage();
    }
 
    fn check_edge_index_coverage(&self) {
@@ -260,6 +261,24 @@ impl Scene {
 
       for edge in &self.edges {
          coverage[edge.segment] = true;
+      }
+
+      if coverage.contains(&false) {
+         panic!("Unreferenced segment found");
+      }
+   }
+
+   fn check_point_index_coverage(&self) {
+      let len = self.points.len();
+      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
+
+      for circle in &self.circles {
+         coverage[circle.center] = true;
+      }
+
+      for segment in &self.segments {
+         coverage[segment.p1] = true;
+         coverage[segment.p2] = true;
       }
 
       if coverage.contains(&false) {
