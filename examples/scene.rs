@@ -5,29 +5,12 @@ use std::usize;
 use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
 use polydraw::raster::{Scene, Point, Segment, Circle, EdgeType, Edge, Poly};
-use polydraw::geom::number::NumberOps;
 
-const DIV_PER_PIXEL: i64 = 1000;
-
-#[inline]
-fn to_px(v: i64) -> i64 {
-   v / DIV_PER_PIXEL
-}
-
-#[inline]
-fn from_px(v: i64) -> i64 {
-   v as i64 * DIV_PER_PIXEL
-}
-
-struct SceneRenderer {
-   index: usize,
-}
+struct SceneRenderer;
 
 impl SceneRenderer {
    fn new() -> Self {
-      SceneRenderer {
-         index: 0
-      }
+      SceneRenderer
    }
 
    fn create_scene(&self) -> Scene {
