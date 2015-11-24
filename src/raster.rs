@@ -1,5 +1,6 @@
 use std::cmp::{PartialOrd, Ordering};
 use std::iter::repeat;
+use std::usize;
 
 use draw::RGB;
 
@@ -219,20 +220,36 @@ impl Scene {
 
    fn check_index_coverage(&self) {
       self.check_edge_index_coverage();
+      self.check_circle_index_coverage();
    }
 
    fn check_edge_index_coverage(&self) {
       let len = self.edges.len();
-      let mut edge_coverage: Vec<bool> = repeat(false).take(len).collect();
+      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
 
       for poly in &self.polys {
          for edge_index in poly.start..poly.end {
-            edge_coverage[edge_index] = true;
+            coverage[edge_index] = true;
          }
       }
 
-      if edge_coverage.contains(&false) {
+      if coverage.contains(&false) {
          panic!("Unreferenced edge found");
+      }
+   }
+
+   fn check_circle_index_coverage(&self) {
+      let len = self.circles.len();
+      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
+
+      for edge in &self.edges {
+         if edge.circle != usize::MAX {
+            coverage[edge.circle] = true;
+         }
+      }
+
+      if coverage.contains(&false) {
+         panic!("Unreferenced circle found");
       }
    }
 
