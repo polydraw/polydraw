@@ -166,6 +166,7 @@ impl Scene {
       for poly in &self.polys {
          self.check_poly_connected(poly);
          self.check_segments_orientation(poly);
+         self.check_edges_orientation(poly);
       }
    }
 
@@ -193,10 +194,27 @@ impl Scene {
          let ref greater = self.points[segment.p2];
 
          if greater <= less {
-            panic!("Wrong segment orientation : {:?}", edge);
+            panic!("Wrong segment orientation : {:?} / {:?}", edge, segment);
          }
       }
    }
+
+   fn check_edges_orientation(&self, poly: &Poly) {
+      for edge_index in poly.start..poly.end {
+         let ref edge = self.edges[edge_index];
+
+         let tail = self.edge_tail(edge);
+         let head = self.edge_head(edge);
+
+         let reversed = edge.reversed();
+
+         if (reversed && tail <= head) || (!reversed && head <= tail) {
+            panic!("Wrong edge orientation : {:?}", edge);
+         }
+      }
+   }
+
+   // TODO: Combine into edge_head_tail method?
 
    fn edge_head(&self, edge: &Edge) -> &Point {
       let ref segment = self.segments[edge.segment];
