@@ -1,4 +1,5 @@
 use std::cmp::{PartialOrd, Ordering};
+use std::iter::repeat;
 
 use draw::RGB;
 
@@ -168,6 +169,8 @@ impl Scene {
          self.check_segments_orientation(poly);
          self.check_edges_orientation(poly);
       }
+
+      self.check_index_coverage();
    }
 
    fn check_poly_connected(&self, poly: &Poly) {
@@ -211,6 +214,25 @@ impl Scene {
          if (reversed && tail <= head) || (!reversed && head <= tail) {
             panic!("Wrong edge orientation : {:?}", edge);
          }
+      }
+   }
+
+   fn check_index_coverage(&self) {
+      self.check_edge_index_coverage();
+   }
+
+   fn check_edge_index_coverage(&self) {
+      let len = self.edges.len();
+      let mut edge_coverage: Vec<bool> = repeat(false).take(len).collect();
+
+      for poly in &self.polys {
+         for edge_index in poly.start..poly.end {
+            edge_coverage[edge_index] = true;
+         }
+      }
+
+      if edge_coverage.contains(&false) {
+         panic!("Unreferenced edge found");
       }
    }
 
