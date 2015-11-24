@@ -1,5 +1,6 @@
 use draw::RGB;
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Point {
    pub x: i64,
    pub y: i64,
@@ -15,6 +16,7 @@ impl Point {
    }
 }
 
+#[derive(Debug)]
 pub struct Segment {
    pub p1: usize,
    pub p2: usize,
@@ -30,6 +32,7 @@ impl Segment {
    }
 }
 
+#[derive(Debug)]
 pub struct Circle {
    pub center: usize,
    pub radius: i64,
@@ -45,6 +48,7 @@ impl Circle {
    }
 }
 
+#[derive(Debug)]
 pub enum EdgeType {
    LTR,  // line top-right
    LTL,  // line top-left
@@ -67,6 +71,22 @@ pub enum EdgeType {
    ABL, // anti-clockwise arc bottom-left
 }
 
+impl EdgeType {
+   #[inline]
+   pub fn reversed(&self) -> bool {
+      match *self {
+         EdgeType::LBR | EdgeType::LBL | EdgeType::LHL | EdgeType::LVB |
+         EdgeType::CBR | EdgeType::CBL | EdgeType::ATR | EdgeType::ATL => {
+            true
+         },
+         _ => {
+            false
+         }
+      }
+   }
+}
+
+#[derive(Debug)]
 pub struct Edge {
    pub edge_type: EdgeType,
    pub segment: usize,
@@ -82,8 +102,14 @@ impl Edge {
          circle: circle,
       }
    }
+
+   #[inline]
+   pub fn reversed(&self) -> bool {
+      self.edge_type.reversed()
+   }
 }
 
+#[derive(Debug)]
 pub struct Poly {
    pub start: usize,
    pub end: usize,
@@ -108,4 +134,49 @@ pub struct Scene {
    pub edges: Vec<Edge>,
    pub polys: Vec<Poly>,
    pub colors: Vec<RGB>,
+}
+
+impl Scene {
+   pub fn check_correctness(&self) {
+      self.check_all_polys_connected();
+   }
+
+   fn check_all_polys_connected(&self) {
+      for poly in &self.polys {
+         self.check_poly_connected(poly);
+      }
+   }
+
+   fn check_poly_connected(&self, poly: &Poly) {
+      let mut prev = self.edge_head(&self.edges[poly.end - 1]);
+
+      for edge_index in poly.start..poly.end {
+         let ref edge = self.edges[edge_index];
+
+         let current = self.edge_tail(edge);
+         if current != prev {
+            panic!("Unclosed poly : {:?}", poly);
+         }
+
+         prev = self.edge_head(edge);
+      }
+   }
+
+   fn edge_head(&self, edge: &Edge) -> &Point {
+      let ref segment = self.segments[edge.segment];
+      if edge.reversed() {
+         &self.points[segment.p1]
+      } else {
+         &self.points[segment.p2]
+      }
+   }
+
+   fn edge_tail(&self, edge: &Edge) -> &Point {
+      let ref segment = self.segments[edge.segment];
+      if edge.reversed() {
+         &self.points[segment.p2]
+      } else {
+         &self.points[segment.p1]
+      }
+   }
 }

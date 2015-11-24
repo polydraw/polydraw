@@ -105,6 +105,8 @@ impl Renderer for SceneRenderer {
       frame.clear();
 
       let scene = self.create_scene();
+
+      scene.check_correctness();
    }
 }
 
