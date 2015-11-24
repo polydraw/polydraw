@@ -1,4 +1,7 @@
+use std::cmp::{PartialOrd, Ordering};
+
 use draw::RGB;
+
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Point {
@@ -12,6 +15,28 @@ impl Point {
       Point {
          x: x,
          y: y,
+      }
+   }
+}
+
+impl PartialOrd for Point {
+   fn partial_cmp(&self, other: &Point) -> Option<Ordering> {
+      Some(self.cmp(other))
+   }
+}
+
+impl Ord for Point {
+   fn cmp(&self, other: &Point) -> Ordering {
+      if self.y < other.y {
+         Ordering::Less
+      } else if self.y > other.y {
+         Ordering::Greater
+      } else if self.x < other.x {
+         Ordering::Less
+      } else if self.x > other.x {
+         Ordering::Greater
+      } else {
+         Ordering::Equal
       }
    }
 }
@@ -138,12 +163,9 @@ pub struct Scene {
 
 impl Scene {
    pub fn check_correctness(&self) {
-      self.check_all_polys_connected();
-   }
-
-   fn check_all_polys_connected(&self) {
       for poly in &self.polys {
          self.check_poly_connected(poly);
+         self.check_segments_orientation(poly);
       }
    }
 
@@ -159,6 +181,20 @@ impl Scene {
          }
 
          prev = self.edge_head(edge);
+      }
+   }
+
+   fn check_segments_orientation(&self, poly: &Poly) {
+      for edge_index in poly.start..poly.end {
+         let ref edge = self.edges[edge_index];
+         let ref segment = self.segments[edge.segment];
+
+         let ref less = self.points[segment.p1];
+         let ref greater = self.points[segment.p2];
+
+         if greater <= less {
+            panic!("Wrong segment orientation : {:?}", edge);
+         }
       }
    }
 
