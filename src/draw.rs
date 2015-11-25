@@ -19,6 +19,12 @@ impl RGB {
    }
 }
 
+impl Default for RGB {
+   fn default() -> RGB {
+      RGB::new(0, 0, 0)
+   }
+}
+
 pub fn bresenham(frame: &mut Frame, x1: i32, y1: i32, x2: i32, y2: i32, color: &RGB) {
    let dx = x2 - x1;
    let dy = y2 - y1;
