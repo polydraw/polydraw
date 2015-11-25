@@ -2,10 +2,11 @@ use std::cmp::{PartialOrd, Ordering};
 use std::iter::repeat;
 use std::usize;
 
+use frame::Frame;
 use draw::RGB;
 
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Point {
    pub x: i64,
    pub y: i64,
@@ -18,6 +19,12 @@ impl Point {
          x: x,
          y: y,
       }
+   }
+}
+
+impl Default for Point {
+   fn default() -> Point {
+      Point::new(0, 0)
    }
 }
 
@@ -43,7 +50,7 @@ impl Ord for Point {
    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Segment {
    pub p1: usize,
    pub p2: usize,
@@ -59,7 +66,13 @@ impl Segment {
    }
 }
 
-#[derive(Debug)]
+impl Default for Segment {
+   fn default() -> Segment {
+      Segment::new(0, 0)
+   }
+}
+
+#[derive(Debug, Clone)]
 pub struct Circle {
    pub center: usize,
    pub radius: i64,
@@ -75,7 +88,13 @@ impl Circle {
    }
 }
 
-#[derive(Debug)]
+impl Default for Circle {
+   fn default() -> Circle {
+      Circle::new(0, 0)
+   }
+}
+
+#[derive(Debug, Clone)]
 pub enum EdgeType {
    LTR,  // line top-right
    LTL,  // line top-left
@@ -113,7 +132,7 @@ impl EdgeType {
    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edge {
    pub edge_type: EdgeType,
    pub segment: usize,
@@ -136,7 +155,13 @@ impl Edge {
    }
 }
 
-#[derive(Debug)]
+impl Default for Edge {
+   fn default() -> Edge {
+      Edge::new(EdgeType::LTR, 0, 0)
+   }
+}
+
+#[derive(Debug, Clone)]
 pub struct Poly {
    pub start: usize,
    pub end: usize,
@@ -151,6 +176,12 @@ impl Poly {
          end: end,
          color: color,
       }
+   }
+}
+
+impl Default for Poly {
+   fn default() -> Poly {
+      Poly::new(0, 0, 0)
    }
 }
 
@@ -306,3 +337,42 @@ impl Scene {
       }
    }
 }
+
+pub struct Rasterizer {
+   pub points: Vec<Point>,
+   pub segments: Vec<Segment>,
+   pub circles: Vec<Circle>,
+   pub edges: Vec<Edge>,
+   pub polys: Vec<Poly>,
+   pub colors: Vec<RGB>,
+}
+
+impl Rasterizer {
+   pub fn new() -> Self {
+      let points = create_default_vec(65536);
+      let segments = create_default_vec(65536);
+      let circles = create_default_vec(65536);
+      let edges = create_default_vec(65536);
+      let polys = create_default_vec(65536);
+      let colors = create_default_vec(65536);
+
+      Rasterizer {
+         points: points,
+         segments: segments,
+         circles: circles,
+         edges: edges,
+         polys: polys,
+         colors: colors,
+      }
+   }
+
+   #[allow(unused_variables)]
+   pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
+
+   }
+}
+
+pub fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
+   repeat(T::default()).take(capacity).collect()
+}
+

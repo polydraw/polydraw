@@ -4,13 +4,17 @@ use std::usize;
 
 use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
-use polydraw::raster::{Scene, Point, Segment, Circle, EdgeType, Edge, Poly};
+use polydraw::raster::{Scene, Point, Segment, Circle, EdgeType, Edge, Poly, Rasterizer};
 
-struct SceneRenderer;
+struct SceneRenderer {
+   rasterizer: Rasterizer,
+}
 
 impl SceneRenderer {
    fn new() -> Self {
-      SceneRenderer
+      SceneRenderer {
+         rasterizer: Rasterizer::new(),
+      }
    }
 
    fn create_scene(&self) -> Scene {
@@ -90,6 +94,8 @@ impl Renderer for SceneRenderer {
       let scene = self.create_scene();
 
       scene.check_correctness();
+
+      self.rasterizer.render(&scene, frame);
    }
 }
 
