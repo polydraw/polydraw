@@ -6,7 +6,7 @@ use frame::Frame;
 use draw::RGB;
 
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Point {
    pub x: i64,
    pub y: i64,
@@ -50,7 +50,7 @@ impl Ord for Point {
    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Segment {
    pub p1: usize,
    pub p2: usize,
@@ -72,7 +72,7 @@ impl Default for Segment {
    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Circle {
    pub center: usize,
    pub radius: i64,
@@ -94,7 +94,7 @@ impl Default for Circle {
    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum EdgeType {
    LTR,  // line top-right
    LTL,  // line top-left
@@ -132,7 +132,7 @@ impl EdgeType {
    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Edge {
    pub edge_type: EdgeType,
    pub segment: usize,
@@ -338,37 +338,75 @@ impl Scene {
    }
 }
 
+#[derive(Debug, Clone)]
+pub struct PolyRef {
+   pub start: usize,
+   pub end: usize,
+   pub src: usize,
+}
+
+impl PolyRef {
+   #[inline]
+   pub fn new(start: usize, end: usize, src: usize) -> Self {
+      PolyRef {
+         start: start,
+         end: end,
+         src: src,
+      }
+   }
+}
+
+impl Default for PolyRef {
+   fn default() -> PolyRef {
+      PolyRef::new(0, 0, 0)
+   }
+}
+
 pub struct Rasterizer {
    pub points: Vec<Point>,
    pub segments: Vec<Segment>,
-   pub circles: Vec<Circle>,
    pub edges: Vec<Edge>,
-   pub polys: Vec<Poly>,
-   pub colors: Vec<RGB>,
+   pub polys: Vec<PolyRef>,
 }
 
 impl Rasterizer {
    pub fn new() -> Self {
       let points = create_default_vec(65536);
       let segments = create_default_vec(65536);
-      let circles = create_default_vec(65536);
       let edges = create_default_vec(65536);
       let polys = create_default_vec(65536);
-      let colors = create_default_vec(65536);
 
       Rasterizer {
          points: points,
          segments: segments,
-         circles: circles,
          edges: edges,
          polys: polys,
-         colors: colors,
       }
    }
 
    #[allow(unused_variables)]
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
+      self.tranfer_scene(scene);
+   }
 
+   pub fn tranfer_scene(&mut self, scene: &Scene) {
+      for i in 0..scene.points.len() {
+         self.points[i] = scene.points[i];
+      }
+
+      for i in 0..scene.segments.len() {
+         self.segments[i] = scene.segments[i];
+      }
+
+      for i in 0..scene.edges.len() {
+         self.edges[i] = scene.edges[i];
+      }
+
+      for i in 0..scene.polys.len() {
+         self.polys[i].start = scene.polys[i].start;
+         self.polys[i].end = scene.polys[i].end;
+         self.polys[i].src = i;
+      }
    }
 }
 
