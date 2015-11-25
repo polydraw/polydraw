@@ -93,8 +93,6 @@ impl Renderer for SceneRenderer {
 
       let scene = self.create_scene();
 
-      scene.check_correctness();
-
       self.rasterizer.render(&scene, frame);
    }
 }
