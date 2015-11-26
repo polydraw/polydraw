@@ -1,9 +1,11 @@
 use std::cmp::{PartialOrd, Ordering};
 use std::iter::repeat;
-use std::usize;
+use std::{usize, i64};
 
 use frame::Frame;
 use draw::RGB;
+
+pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -249,15 +251,17 @@ pub struct Rasterizer {
    pub edges: Vec<Edge>,
    pub polys: Vec<PolyRef>,
 
-   pub points_end: usize,
-   pub segments_end: usize,
-   pub edges_end: usize,
-   pub polys_end: usize,
-
    pub vert_intersections_ref: Vec<IntersectionRef>,
    pub hori_intersections_ref: Vec<IntersectionRef>,
    pub vert_intersections: Vec<i64>,
    pub hori_intersections: Vec<i64>,
+
+   pub points_end: usize,
+   pub segments_end: usize,
+   pub edges_end: usize,
+   pub polys_end: usize,
+   pub vert_intersections_end: usize,
+   pub hori_intersections_end: usize,
 }
 
 impl Rasterizer {
@@ -278,15 +282,17 @@ impl Rasterizer {
          edges: edges,
          polys: polys,
 
-         points_end: 0,
-         segments_end: 0,
-         edges_end: 0,
-         polys_end: 0,
-
          vert_intersections_ref: vert_intersections_ref,
          hori_intersections_ref: hori_intersections_ref,
          vert_intersections: vert_intersections,
          hori_intersections: hori_intersections,
+
+         points_end: 0,
+         segments_end: 0,
+         edges_end: 0,
+         polys_end: 0,
+         vert_intersections_end: 0,
+         hori_intersections_end: 0,
       }
    }
 
@@ -295,6 +301,8 @@ impl Rasterizer {
       self.tranfer_scene(scene);
 
       self.check_correctness(scene);
+
+      self.intersect_edges();
    }
 
    pub fn tranfer_scene(&mut self, scene: &Scene) {
@@ -306,6 +314,8 @@ impl Rasterizer {
       self.segments_end = scene.segments.len();
       for i in 0..self.segments_end {
          self.segments[i] = scene.segments[i];
+
+         self.vert_intersections_ref[i].start = usize::MAX;
       }
 
       self.edges_end = scene.edges.len();
@@ -334,9 +344,7 @@ impl Rasterizer {
    fn check_poly_connected(&self, poly: &PolyRef) {
       let mut prev = self.edge_head(&self.edges[poly.end - 1]);
 
-      for edge_index in poly.start..poly.end {
-         let ref edge = self.edges[edge_index];
-
+      for edge in &self.edges[poly.start..poly.end] {
          let current = self.edge_tail(edge);
          if current != prev {
             panic!("Unclosed poly : {:?}", poly);
@@ -347,8 +355,7 @@ impl Rasterizer {
    }
 
    fn check_segments_orientation(&self, poly: &PolyRef) {
-      for edge_index in poly.start..poly.end {
-         let ref edge = self.edges[edge_index];
+      for edge in &self.edges[poly.start..poly.end] {
          let ref segment = self.segments[edge.segment];
 
          let ref less = self.points[segment.p1];
@@ -361,9 +368,7 @@ impl Rasterizer {
    }
 
    fn check_edges_orientation(&self, poly: &PolyRef) {
-      for edge_index in poly.start..poly.end {
-         let ref edge = self.edges[edge_index];
-
+      for edge in &self.edges[poly.start..poly.end] {
          let tail = self.edge_tail(edge);
          let head = self.edge_head(edge);
 
@@ -386,7 +391,7 @@ impl Rasterizer {
       let len = self.edges_end;
       let mut coverage: Vec<bool> = repeat(false).take(len).collect();
 
-      for poly in &self.polys[0..self.polys_end] {
+      for poly in &self.polys[..self.polys_end] {
          for edge_index in poly.start..poly.end {
             coverage[edge_index] = true;
          }
@@ -401,7 +406,7 @@ impl Rasterizer {
       let len = scene.circles.len();
       let mut coverage: Vec<bool> = repeat(false).take(len).collect();
 
-      for edge in &self.edges[0..self.edges_end] {
+      for edge in &self.edges[..self.edges_end] {
          if edge.circle != usize::MAX {
             coverage[edge.circle] = true;
          }
@@ -416,7 +421,7 @@ impl Rasterizer {
       let len = self.segments_end;
       let mut coverage: Vec<bool> = repeat(false).take(len).collect();
 
-      for edge in &self.edges[0..self.edges_end] {
+      for edge in &self.edges[..self.edges_end] {
          coverage[edge.segment] = true;
       }
 
@@ -462,9 +467,161 @@ impl Rasterizer {
          &self.points[segment.p1]
       }
    }
+
+   fn intersect_edges(&mut self) {
+      self.vert_intersections_end = 0;
+      self.hori_intersections_end = 0;
+
+      for edge in &self.edges[..self.edges_end] {
+         let i = edge.segment;
+
+         let ref mut vert_ref = self.vert_intersections_ref[i];
+         if vert_ref.start == usize::MAX {
+            continue;
+         }
+
+         let ref mut hori_ref = self.hori_intersections_ref[i];
+
+         let segment = self.segments[i];
+         let p1 = self.points[segment.p1];
+         let p2 = self.points[segment.p2];
+
+         vert_ref.start = self.vert_intersections_end;
+         hori_ref.start = self.hori_intersections_end;
+
+         let (vert_end, x_first_px) = v_multi_intersect_fast(
+            p1, p2, 1000, self.vert_intersections_end, &mut self.vert_intersections
+         );
+
+         let (hori_end, y_first_px) = h_multi_intersect_fast(
+            p1, p2, 1000, self.hori_intersections_end, &mut self.hori_intersections
+         );
+
+         self.vert_intersections_end = vert_end;
+         vert_ref.end = vert_end;
+         vert_ref.first_px = x_first_px;
+
+         self.hori_intersections_end = hori_end;
+         hori_ref.end = hori_end;
+         hori_ref.first_px = y_first_px;
+      }
+   }
 }
 
-pub fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
+fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
    repeat(T::default()).take(capacity).collect()
 }
 
+fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
+   let (p1, p2) = if p1.y > p2.y {
+      (p2, p1)
+   } else {
+      (p1, p2)
+   };
+
+   let start = 1 + p1.y / step_y;
+   let end = 1 + (p2.y - 1) / step_y;
+
+   let dy = p2.y - p1.y;
+   let dx = p2.x - p1.x;
+   let dx_signum = dx.signum();
+
+   let step_x = dx * step_y / dy;
+
+   let max_div_dy = i64::MAX / dy;
+
+   let err_step = max_div_dy * (step_y * dx * dx_signum - step_x * dx_signum * dy);
+
+   let first_y = start * step_y;
+
+   let fdy = first_y - p1.y;
+   let fdx = dx * fdy / dy;
+
+   let mut x = p1.x + fdx;
+
+   if err_step == 0 {
+      for _ in start..end {
+         inters[vec_start] = x;
+         vec_start += 1;
+
+         x += step_x;
+      }
+
+      return (vec_start, first_y);
+   }
+
+   let mut err = max_div_dy * (fdy * dx * dx_signum - fdx * dx_signum * dy) - HALF_MAX_ERR;
+
+   for _ in start..end {
+      if err > 0 {
+         x += dx_signum;
+         err -= i64::MAX;
+      }
+
+      inters[vec_start] = x;
+      vec_start += 1;
+
+      x += step_x;
+
+      err += err_step;
+   }
+
+   (vec_start, first_y)
+}
+
+fn v_multi_intersect_fast(p1: Point, p2: Point, step_x: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
+   let (p1, p2) = if p1.x > p2.x {
+      (p2, p1)
+   } else {
+      (p1, p2)
+   };
+
+   let start = 1 + p1.x / step_x;
+   let end = 1 + (p2.x - 1) / step_x;
+
+   let dx = p2.x - p1.x;
+   let dy = p2.y - p1.y;
+   let dy_signum = dy.signum();
+
+   let step_y = dy * step_x / dx;
+
+   let max_div_dx = i64::MAX / dx;
+
+   let err_step = max_div_dx * (step_x * dy * dy_signum - step_y * dy_signum * dx);
+
+   let first_x = start * step_x;
+
+   let fdx = first_x - p1.x;
+   let fdy = dy * fdx / dx;
+
+   let mut y = p1.y + fdy;
+
+   if err_step == 0 {
+      for _ in start..end {
+         inters[vec_start] = y;
+         vec_start += 1;
+
+         y += step_y;
+      }
+
+      return (vec_start, first_x);
+   }
+
+   let mut err = max_div_dx * (fdx * dy * dy_signum - fdy * dy_signum * dx) - HALF_MAX_ERR;
+
+   for _ in start..end {
+      if err > 0 {
+         y += dy_signum;
+         err -= i64::MAX;
+      }
+
+      inters[vec_start] = y;
+      vec_start += 1;
+
+      y += step_y;
+
+      err += err_step;
+   }
+
+   (vec_start, first_x)
+}
