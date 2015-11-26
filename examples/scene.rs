@@ -85,13 +85,27 @@ impl SceneRenderer {
          colors: colors,
       }
    }
+
+   fn scale_scene(&self, scene: &mut Scene) {
+      let scale = 50_000;
+
+      for point in &mut scene.points {
+         point.x = scale * point.x;
+         point.y = scale * point.y;
+      }
+
+      for circle in &mut scene.circles {
+         circle.radius = scale * circle.radius;
+      }
+   }
 }
 
 impl Renderer for SceneRenderer {
    fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
-      let scene = self.create_scene();
+      let mut scene = self.create_scene();
+      self.scale_scene(&mut scene);
 
       self.rasterizer.render(&scene, frame);
    }
