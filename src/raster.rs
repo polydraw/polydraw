@@ -1,4 +1,4 @@
-use std::cmp::{PartialOrd, Ordering};
+use std::cmp::{PartialOrd, Ordering, min, max};
 use std::iter::repeat;
 use std::{usize, i64};
 
@@ -300,9 +300,11 @@ impl Rasterizer {
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
       self.tranfer_scene(scene);
 
-      self.check_correctness(scene);
+      self.check_scene_correctness(scene);
 
       self.intersect_edges();
+
+      self.check_intersections();
    }
 
    pub fn tranfer_scene(&mut self, scene: &Scene) {
@@ -331,7 +333,7 @@ impl Rasterizer {
       }
    }
 
-   pub fn check_correctness(&self, scene: &Scene) {
+   pub fn check_scene_correctness(&self, scene: &Scene) {
       for poly in &self.polys[0..self.polys_end] {
          self.check_poly_connected(poly);
          self.check_segments_orientation(poly);
@@ -504,6 +506,41 @@ impl Rasterizer {
          self.hori_intersections_end = hori_end;
          hori_ref.end = hori_end;
          hori_ref.first_px = y_first_px;
+      }
+   }
+
+   fn check_intersections(&self) {
+      for edge in &self.edges[..self.edges_end] {
+         let segment = self.segments[edge.segment];
+         let p1 = self.points[segment.p1];
+         let p2 = self.points[segment.p2];
+
+         let min_x = min(p1.x, p2.x);
+         let max_x = max(p1.x, p2.x);
+         let min_y = min(p1.y, p2.y);
+         let max_y = max(p1.y, p2.y);
+
+         let ref vert_ref = self.vert_intersections_ref[edge.segment];
+
+         let mut prev_x = i64::MIN;
+         for i in vert_ref.start..vert_ref.end {
+            let x = self.vert_intersections[i];
+            assert!(min_x <= x);
+            assert!(max_x >= x);
+            assert!(prev_x < x);
+            prev_x = x;
+         }
+
+         let ref hori_ref = self.hori_intersections_ref[edge.segment];
+
+         let mut prev_y = i64::MIN;
+         for i in hori_ref.start..hori_ref.end {
+            let y = self.hori_intersections[i];
+            assert!(min_y <= y);
+            assert!(max_y >= y);
+            assert!(prev_y < y);
+            prev_y = y;
+         }
       }
    }
 }
