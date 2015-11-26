@@ -218,6 +218,31 @@ impl Default for PolyRef {
    }
 }
 
+#[derive(Debug, Clone)]
+pub struct IntersectionRef {
+   first_px: i64,
+   start: usize,
+   end: usize,
+}
+
+impl IntersectionRef {
+   #[inline]
+   pub fn new(first_px: i64, start: usize, end: usize) -> Self {
+      IntersectionRef {
+         first_px: first_px,
+         start: start,
+         end: end,
+      }
+   }
+}
+
+impl Default for IntersectionRef {
+   #[inline]
+   fn default() -> IntersectionRef {
+      IntersectionRef::new(0, 0, 0)
+   }
+}
+
 pub struct Rasterizer {
    pub points: Vec<Point>,
    pub segments: Vec<Segment>,
@@ -228,6 +253,11 @@ pub struct Rasterizer {
    pub segments_end: usize,
    pub edges_end: usize,
    pub polys_end: usize,
+
+   pub vert_intersections_ref: Vec<IntersectionRef>,
+   pub hori_intersections_ref: Vec<IntersectionRef>,
+   pub vert_intersections: Vec<i64>,
+   pub hori_intersections: Vec<i64>,
 }
 
 impl Rasterizer {
@@ -236,6 +266,11 @@ impl Rasterizer {
       let segments = create_default_vec(65536);
       let edges = create_default_vec(65536);
       let polys = create_default_vec(65536);
+
+      let vert_intersections_ref = create_default_vec(65536);
+      let hori_intersections_ref = create_default_vec(65536);
+      let vert_intersections = create_default_vec(65536);
+      let hori_intersections = create_default_vec(65536);
 
       Rasterizer {
          points: points,
@@ -247,6 +282,11 @@ impl Rasterizer {
          segments_end: 0,
          edges_end: 0,
          polys_end: 0,
+
+         vert_intersections_ref: vert_intersections_ref,
+         hori_intersections_ref: hori_intersections_ref,
+         vert_intersections: vert_intersections,
+         hori_intersections: hori_intersections,
       }
    }
 
