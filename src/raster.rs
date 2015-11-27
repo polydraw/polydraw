@@ -7,6 +7,8 @@ use draw::RGB;
 
 pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
+const DIV_PER_PIXEL: i64 = 1000;
+
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Point {
@@ -262,6 +264,10 @@ pub struct Rasterizer {
    pub polys_end: usize,
    pub vert_intersections_end: usize,
    pub hori_intersections_end: usize,
+
+   pub polys_min_y: Vec<i64>,
+   pub polys_max_y: Vec<i64>,
+   pub polys_sorted_min_y: Vec<usize>,
 }
 
 impl Rasterizer {
@@ -275,6 +281,10 @@ impl Rasterizer {
       let hori_intersections_ref = create_default_vec(65536);
       let vert_intersections = create_default_vec(65536);
       let hori_intersections = create_default_vec(65536);
+
+      let polys_min_y = create_default_vec(65536);
+      let polys_max_y = create_default_vec(65536);
+      let polys_sorted_min_y = create_default_vec(65536);
 
       Rasterizer {
          points: points,
@@ -293,6 +303,10 @@ impl Rasterizer {
          polys_end: 0,
          vert_intersections_end: 0,
          hori_intersections_end: 0,
+
+         polys_min_y: polys_min_y,
+         polys_max_y: polys_max_y,
+         polys_sorted_min_y: polys_sorted_min_y,
       }
    }
 
@@ -305,6 +319,8 @@ impl Rasterizer {
       self.intersect_edges();
 
       self.check_intersections();
+
+      self.calc_poly_min_max_y();
    }
 
    pub fn tranfer_scene(&mut self, scene: &Scene) {
@@ -484,19 +500,19 @@ impl Rasterizer {
 
          let ref mut hori_ref = self.hori_intersections_ref[i];
 
-         let segment = self.segments[i];
-         let p1 = self.points[segment.p1];
-         let p2 = self.points[segment.p2];
+         let ref segment = self.segments[i];
+         let ref p1 = self.points[segment.p1];
+         let ref p2 = self.points[segment.p2];
 
          vert_ref.start = self.vert_intersections_end;
          hori_ref.start = self.hori_intersections_end;
 
          let (vert_end, x_first_px) = v_multi_intersect_fast(
-            p1, p2, 1000, self.vert_intersections_end, &mut self.vert_intersections
+            p1, p2, DIV_PER_PIXEL, self.vert_intersections_end, &mut self.vert_intersections
          );
 
          let (hori_end, y_first_px) = h_multi_intersect_fast(
-            p1, p2, 1000, self.hori_intersections_end, &mut self.hori_intersections
+            p1, p2, DIV_PER_PIXEL, self.hori_intersections_end, &mut self.hori_intersections
          );
 
          self.vert_intersections_end = vert_end;
@@ -511,9 +527,9 @@ impl Rasterizer {
 
    fn check_intersections(&self) {
       for edge in &self.edges[..self.edges_end] {
-         let segment = self.segments[edge.segment];
-         let p1 = self.points[segment.p1];
-         let p2 = self.points[segment.p2];
+         let ref segment = self.segments[edge.segment];
+         let ref p1 = self.points[segment.p1];
+         let ref p2 = self.points[segment.p2];
 
          let min_x = min(p1.x, p2.x);
          let max_x = max(p1.x, p2.x);
@@ -543,13 +559,51 @@ impl Rasterizer {
          }
       }
    }
+
+   fn calc_poly_min_max_y(&mut self) {
+      let mut sorted_min_y = Vec::with_capacity(self.polys_end);
+
+      for i in 0..self.polys_end {
+         let ref poly = self.polys[i];
+
+         let mut poly_min_y = i64::MAX;
+         let mut poly_max_y = i64::MIN;
+
+         for edge in &self.edges[poly.start..poly.end] {
+            let ref segment = self.segments[edge.segment];
+            let ref p1 = self.points[segment.p1];
+            let ref p2 = self.points[segment.p2];
+
+            let min_y = min(p1.y, p2.y);
+            let max_y = max(p1.y, p2.y);
+
+            if poly_min_y < min_y {
+               poly_min_y = min_y;
+            }
+
+            if poly_max_y < max_y {
+               poly_max_y = max_y;
+            }
+         }
+
+         self.polys_min_y[i] = poly_min_y;
+         self.polys_max_y[i] = poly_max_y;
+         sorted_min_y.push(i);
+      }
+
+      sorted_min_y.sort_by(|a, b| self.polys_min_y[*a].cmp(&self.polys_min_y[*b]));
+
+      for i in 0..self.polys_end {
+         self.polys_sorted_min_y[i] = sorted_min_y[i];
+      }
+   }
 }
 
 fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
    repeat(T::default()).take(capacity).collect()
 }
 
-fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
+fn h_multi_intersect_fast(p1: &Point, p2: &Point, step_y: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
    let (p1, p2) = if p1.y > p2.y {
       (p2, p1)
    } else {
@@ -606,7 +660,7 @@ fn h_multi_intersect_fast(p1: Point, p2: Point, step_y: i64, mut vec_start: usiz
    (vec_start, first_y)
 }
 
-fn v_multi_intersect_fast(p1: Point, p2: Point, step_x: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
+fn v_multi_intersect_fast(p1: &Point, p2: &Point, step_x: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
    let (p1, p2) = if p1.x > p2.x {
       (p2, p1)
    } else {
