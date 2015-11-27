@@ -326,7 +326,7 @@ impl Rasterizer {
 
       self.calc_poly_min_max_y();
 
-      self.check_poly_min_max_y();
+      self.check_poly_min_max_y(min_y, max_y);
    }
 
    pub fn tranfer_scene(&mut self, scene: &Scene) {
@@ -604,7 +604,7 @@ impl Rasterizer {
       }
    }
 
-   fn check_poly_min_max_y(&self) {
+   fn check_poly_min_max_y(&self, all_min_y: i64, all_max_y: i64) {
       let mut prev_min_y = i64::MIN;
       for i in 0..self.polys_end {
          let poly_i = self.polys_sorted_min_y[i];
@@ -612,10 +612,10 @@ impl Rasterizer {
          let min_y = self.polys_min_y[poly_i];
          let max_y = self.polys_max_y[poly_i];
 
-         if min_y == i64::MAX {
+         if min_y == i64::MAX || min_y < all_min_y {
             panic!("Bad poly min_y value");
          }
-         if max_y == i64::MIN {
+         if max_y == i64::MIN || max_y > all_max_y {
             panic!("Bad poly max_y value");
          }
 
