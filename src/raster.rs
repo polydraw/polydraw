@@ -320,6 +320,10 @@ impl Rasterizer {
 
       self.check_intersections();
 
+      let (min_x, min_y, max_x, max_y) = self.min_max_x_y();
+
+      self.check_min_max_x_y(min_x, min_y, max_x, max_y);
+
       self.calc_poly_min_max_y();
 
       self.check_poly_min_max_y();
@@ -620,6 +624,69 @@ impl Rasterizer {
          }
 
          prev_min_y = min_y;
+      }
+   }
+
+   fn min_max_x_y(&self) -> (i64, i64, i64, i64) {
+      let mut min_x = i64::MAX;
+      let mut min_y = i64::MAX;
+
+      let mut max_x = i64::MIN;
+      let mut max_y = i64::MIN;
+
+      for segment in &self.segments[..self.segments_end] {
+         let p1 = &self.points[segment.p1];
+         let p2 = &self.points[segment.p2];
+
+         let s_min_x = min(p1.x, p2.x);
+         let s_min_y = min(p1.y, p2.y);
+
+         let s_max_x = min(p1.x, p2.x);
+         let s_max_y = min(p1.y, p2.y);
+
+         if s_min_x < min_x {
+            min_x = s_min_x;
+         }
+
+         if s_min_y < min_y {
+            min_y = s_min_y;
+         }
+
+         if s_max_x > max_x {
+            max_x = s_max_x;
+         }
+
+         if s_max_y > max_y {
+            max_y = s_max_y;
+         }
+      }
+
+      (min_x, min_y, max_x, max_y)
+   }
+
+   fn check_min_max_x_y(&self, min_x: i64, min_y: i64, max_x: i64, max_y: i64) {
+      if min_x == i64::MAX {
+         panic!("Unitialized min_x");
+      }
+
+      if min_y == i64::MAX {
+         panic!("Unitialized min_y");
+      }
+
+      if max_x == i64::MIN {
+         panic!("Unitialized max_x");
+      }
+
+      if max_y == i64::MIN {
+         panic!("Unitialized max_y");
+      }
+
+      if min_x > max_x {
+         panic!("Wrong min_x max_x");
+      }
+
+      if min_y > max_y {
+         panic!("Wrong min_y max_y");
       }
    }
 }
