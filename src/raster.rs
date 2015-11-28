@@ -9,6 +9,15 @@ pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
 const DIV_PER_PIXEL: i64 = 1000;
 
+#[inline]
+fn to_px(v: i64) -> i64 {
+   v / DIV_PER_PIXEL
+}
+
+#[inline]
+fn from_px(v: i64) -> i64 {
+   v as i64 * DIV_PER_PIXEL
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Point {
@@ -327,6 +336,25 @@ impl Rasterizer {
       self.calc_poly_min_max_y();
 
       self.check_poly_min_max_y(min_y, max_y);
+
+      let x_start = to_px(min_x);
+      let x_end = to_px(max_x - 1) + 1;
+      let y_start = to_px(min_y);
+      let y_end = to_px(max_y - 1) + 1;
+
+      for y in y_start..y_end {
+         let y_world = from_px(y);
+         let y_split = y_world + DIV_PER_PIXEL;
+
+         let mut x = x_start;
+
+         while x < x_end {
+            let mut x_world = from_px(x);
+            let mut x_split = x_world + DIV_PER_PIXEL;
+
+            x += 1;
+         }
+      }
    }
 
    pub fn tranfer_scene(&mut self, scene: &Scene) {
