@@ -207,7 +207,7 @@ pub struct Scene {
    pub colors: Vec<RGB>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct PolyRef {
    pub start: usize,
    pub end: usize,
@@ -267,16 +267,21 @@ pub struct Rasterizer {
    pub vert_intersections: Vec<i64>,
    pub hori_intersections: Vec<i64>,
 
+   pub polys_src_end: usize,
+   pub polys_start: usize,
+   pub polys_end: usize,
+
    pub points_end: usize,
    pub segments_end: usize,
    pub edges_end: usize,
-   pub polys_end: usize,
    pub vert_intersections_end: usize,
    pub hori_intersections_end: usize,
 
    pub polys_min_y: Vec<i64>,
    pub polys_max_y: Vec<i64>,
    pub polys_sorted_min_y: Vec<usize>,
+
+   pub polys_transferred: usize,
 }
 
 impl Rasterizer {
@@ -306,22 +311,27 @@ impl Rasterizer {
          vert_intersections: vert_intersections,
          hori_intersections: hori_intersections,
 
+         polys_src_end: 0,
+         polys_start: 0,
+         polys_end: 0,
+
          points_end: 0,
          segments_end: 0,
          edges_end: 0,
-         polys_end: 0,
          vert_intersections_end: 0,
          hori_intersections_end: 0,
 
          polys_min_y: polys_min_y,
          polys_max_y: polys_max_y,
          polys_sorted_min_y: polys_sorted_min_y,
+
+         polys_transferred: 0,
       }
    }
 
    #[allow(unused_variables)]
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
-      self.tranfer_scene(scene);
+      self.transfer_scene(scene);
 
       self.check_scene_correctness(scene);
 
@@ -346,18 +356,24 @@ impl Rasterizer {
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
 
+         self.transfer_upper_polys(y_world);
+
+         self.print_current_polys();
+
          let mut x = x_start;
 
          while x < x_end {
-            let mut x_world = from_px(x);
-            let mut x_split = x_world + DIV_PER_PIXEL;
+            let x_world = from_px(x);
+            let x_split = x_world + DIV_PER_PIXEL;
 
             x += 1;
          }
+
+         panic!("END");
       }
    }
 
-   pub fn tranfer_scene(&mut self, scene: &Scene) {
+   pub fn transfer_scene(&mut self, scene: &Scene) {
       self.points_end = scene.points.len();
       for i in 0..self.points_end {
          self.points[i] = scene.points[i];
@@ -375,8 +391,11 @@ impl Rasterizer {
          self.edges[i] = scene.edges[i];
       }
 
-      self.polys_end = scene.polys.len();
-      for i in 0..self.polys_end {
+      let polys_len = scene.polys.len();
+      self.polys_src_end = polys_len;
+      self.polys_start = polys_len;
+      self.polys_end = polys_len;
+      for i in 0..polys_len {
          self.polys[i].start = scene.polys[i].start;
          self.polys[i].end = scene.polys[i].end;
          self.polys[i].src = i;
@@ -716,6 +735,43 @@ impl Rasterizer {
       if min_y > max_y {
          panic!("Wrong min_y max_y");
       }
+   }
+
+   fn transfer_upper_polys(&mut self, y: i64) {
+      while self.polys_transferred < self.polys_src_end {
+         let poly_index = self.polys_sorted_min_y[self.polys_transferred];
+         let poly_min_y = self.polys_min_y[poly_index];
+
+         if poly_min_y > y {
+            break;
+         }
+
+         self.polys[self.polys_end] = self.polys[poly_index];
+         self.polys_end += 1;
+
+         self.polys_transferred += 1;
+      }
+   }
+
+   fn print_current_polys(&self) {
+      for poly in &self.polys[self.polys_start..self.polys_end] {
+         self.print_poly(poly);
+      }
+   }
+
+   fn print_poly(&self, poly: &PolyRef) {
+      println!("PolyRef src: {}, size: {}", poly.src, poly.end - poly.start);
+
+      for edge in &self.edges[poly.start..poly.end] {
+         self.print_edge(edge);
+      }
+   }
+
+   fn print_edge(&self, edge: &Edge) {
+      let tail = self.edge_tail(edge);
+      let head = self.edge_head(edge);
+
+      println!("Edge type: {:?}, {:?} -> {:?}", edge.edge_type, tail, head);
    }
 }
 
