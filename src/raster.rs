@@ -174,6 +174,37 @@ impl Default for Edge {
    }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct EdgeRef {
+   pub edge_type: EdgeType,
+   pub segment: usize,
+   pub p1: Point,
+   pub p2: Point,
+}
+
+impl EdgeRef {
+   #[inline]
+   pub fn new(edge_type: EdgeType, segment: usize, p1: Point, p2: Point) -> Self {
+      EdgeRef {
+         edge_type: edge_type,
+         segment: segment,
+         p1: p1,
+         p2: p2,
+      }
+   }
+
+   #[inline]
+   pub fn reversed(&self) -> bool {
+      self.edge_type.reversed()
+   }
+}
+
+impl Default for EdgeRef {
+   fn default() -> EdgeRef {
+      EdgeRef::new(EdgeType::LTR, 0, Point::default(), Point::default())
+   }
+}
+
 #[derive(Debug, Clone)]
 pub struct Poly {
    pub start: usize,
@@ -267,6 +298,11 @@ pub struct Rasterizer {
    pub vert_intersections: Vec<i64>,
    pub hori_intersections: Vec<i64>,
 
+   pub pool_ref: Vec<usize>,
+   pub pool_a: Vec<EdgeRef>,
+   pub pool_b: Vec<EdgeRef>,
+   pub pool_c: Vec<EdgeRef>,
+
    pub polys_src_end: usize,
    pub polys_start: usize,
    pub polys_end: usize,
@@ -296,6 +332,11 @@ impl Rasterizer {
       let vert_intersections = create_default_vec(65536);
       let hori_intersections = create_default_vec(65536);
 
+      let pool_ref = create_default_vec(65536);
+      let pool_a = create_default_vec(65536);
+      let pool_b = create_default_vec(65536);
+      let pool_c = create_default_vec(65536);
+
       let polys_min_y = create_default_vec(65536);
       let polys_max_y = create_default_vec(65536);
       let polys_sorted_min_y = create_default_vec(65536);
@@ -310,6 +351,11 @@ impl Rasterizer {
          hori_intersections_ref: hori_intersections_ref,
          vert_intersections: vert_intersections,
          hori_intersections: hori_intersections,
+
+         pool_ref: pool_ref,
+         pool_a: pool_a,
+         pool_b: pool_b,
+         pool_c: pool_c,
 
          polys_src_end: 0,
          polys_start: 0,
@@ -391,14 +437,38 @@ impl Rasterizer {
          self.edges[i] = scene.edges[i];
       }
 
+      let mut pool_index = 0;
       let polys_len = scene.polys.len();
       self.polys_src_end = polys_len;
       self.polys_start = polys_len;
       self.polys_end = polys_len;
       for i in 0..polys_len {
+         let ref poly = &scene.polys[i];
          self.polys[i].start = scene.polys[i].start;
          self.polys[i].end = scene.polys[i].end;
          self.polys[i].src = i;
+
+         self.pool_ref[i] = pool_index;
+
+         for edge in &scene.edges[poly.start..poly.end] {
+            let ref mut edge_ref = self.pool_a[pool_index];
+            edge_ref.segment = edge.segment;
+            edge_ref.edge_type = edge.edge_type;
+
+            let ref segment = scene.segments[edge.segment];
+            let (ref p1, ref p2) = if edge.reversed() {
+               (scene.points[segment.p2], scene.points[segment.p1])
+            } else {
+               (scene.points[segment.p1], scene.points[segment.p2])
+            };
+
+            edge_ref.p1 = *p1;
+            edge_ref.p2 = *p2;
+
+            pool_index += 1;
+         }
+
+         pool_index += 4;
       }
    }
 
