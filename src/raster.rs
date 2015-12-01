@@ -605,15 +605,23 @@ impl Rasterizer {
       for poly_index in 0..self.polys_src_end {
          let edge_start = self.pool_poly_ref[poly_index];
          let poly_len = pool_lens[poly_index];
+
          if poly_len < 3 {
             panic!("Insufficient edge count: {}", poly_len);
          }
+
          let mut p2_prev = pool[edge_start + poly_len - 1].p2;
          for edge_index in edge_start..edge_start + poly_len {
             let edge = pool[edge_index];
+
+            if edge.edge_type.reversed() != (edge.p1 > edge.p2) {
+               panic!("Wrong edge points ordering");
+            }
+
             if edge.p1 != p2_prev {
                panic!("Unconnected poly");
             }
+
             p2_prev = edge.p2;
          }
       }
