@@ -146,16 +146,16 @@ impl EdgeType {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Edge {
+pub struct EdgeSrc {
    pub edge_type: EdgeType,
    pub segment: usize,
    pub circle: usize,
 }
 
-impl Edge {
+impl EdgeSrc {
    #[inline]
    pub fn new(edge_type: EdgeType, segment: usize, circle: usize) -> Self {
-      Edge {
+      EdgeSrc {
          edge_type: edge_type,
          segment: segment,
          circle: circle,
@@ -168,24 +168,24 @@ impl Edge {
    }
 }
 
-impl Default for Edge {
-   fn default() -> Edge {
-      Edge::new(EdgeType::LTR, 0, 0)
+impl Default for EdgeSrc {
+   fn default() -> EdgeSrc {
+      EdgeSrc::new(EdgeType::LTR, 0, 0)
    }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct EdgeRef {
+pub struct Edge {
    pub edge_type: EdgeType,
    pub segment: usize,
    pub p1: Point,
    pub p2: Point,
 }
 
-impl EdgeRef {
+impl Edge {
    #[inline]
    pub fn new(edge_type: EdgeType, segment: usize, p1: Point, p2: Point) -> Self {
-      EdgeRef {
+      Edge {
          edge_type: edge_type,
          segment: segment,
          p1: p1,
@@ -199,9 +199,9 @@ impl EdgeRef {
    }
 }
 
-impl Default for EdgeRef {
-   fn default() -> EdgeRef {
-      EdgeRef::new(EdgeType::LTR, 0, Point::default(), Point::default())
+impl Default for Edge {
+   fn default() -> Edge {
+      Edge::new(EdgeType::LTR, 0, Point::default(), Point::default())
    }
 }
 
@@ -233,7 +233,7 @@ pub struct Scene {
    pub points: Vec<Point>,
    pub segments: Vec<Segment>,
    pub circles: Vec<Circle>,
-   pub edges: Vec<Edge>,
+   pub edges: Vec<EdgeSrc>,
    pub polys: Vec<Poly>,
    pub colors: Vec<RGB>,
 }
@@ -290,7 +290,7 @@ impl Default for IntersectionRef {
 pub struct Rasterizer {
    pub points: Vec<Point>,
    pub segments: Vec<Segment>,
-   pub edges: Vec<Edge>,
+   pub edges: Vec<EdgeSrc>,
    pub polys: Vec<PolyRef>,
 
    pub vert_intersections_ref: Vec<IntersectionRef>,
@@ -298,10 +298,13 @@ pub struct Rasterizer {
    pub vert_intersections: Vec<i64>,
    pub hori_intersections: Vec<i64>,
 
-   pub pool_ref: Vec<usize>,
-   pub pool_a: Vec<EdgeRef>,
-   pub pool_b: Vec<EdgeRef>,
-   pub pool_c: Vec<EdgeRef>,
+   pub pool_poly_ref: Vec<usize>,
+   pub pool_a_lens: Vec<usize>,
+   pub pool_b_lens: Vec<usize>,
+   pub pool_c_lens: Vec<usize>,
+   pub pool_a: Vec<Edge>,
+   pub pool_b: Vec<Edge>,
+   pub pool_c: Vec<Edge>,
 
    pub polys_src_end: usize,
    pub polys_start: usize,
@@ -332,7 +335,10 @@ impl Rasterizer {
       let vert_intersections = create_default_vec(65536);
       let hori_intersections = create_default_vec(65536);
 
-      let pool_ref = create_default_vec(65536);
+      let pool_poly_ref = create_default_vec(65536);
+      let pool_a_lens = create_default_vec(65536);
+      let pool_b_lens = create_default_vec(65536);
+      let pool_c_lens = create_default_vec(65536);
       let pool_a = create_default_vec(65536);
       let pool_b = create_default_vec(65536);
       let pool_c = create_default_vec(65536);
@@ -352,7 +358,10 @@ impl Rasterizer {
          vert_intersections: vert_intersections,
          hori_intersections: hori_intersections,
 
-         pool_ref: pool_ref,
+         pool_poly_ref: pool_poly_ref,
+         pool_a_lens: pool_a_lens,
+         pool_b_lens: pool_b_lens,
+         pool_c_lens: pool_c_lens,
          pool_a: pool_a,
          pool_b: pool_b,
          pool_c: pool_c,
@@ -380,6 +389,8 @@ impl Rasterizer {
       self.transfer_scene(scene);
 
       self.check_scene_correctness(scene);
+
+      self.check_pool(&self.pool_a, &self.pool_a_lens);
 
       self.intersect_edges();
 
@@ -448,7 +459,8 @@ impl Rasterizer {
          self.polys[i].end = scene.polys[i].end;
          self.polys[i].src = i;
 
-         self.pool_ref[i] = pool_index;
+         self.pool_poly_ref[i] = pool_index;
+         self.pool_a_lens[i] = poly.end - poly.start;
 
          for edge in &scene.edges[poly.start..poly.end] {
             let ref mut edge_ref = self.pool_a[pool_index];
@@ -589,9 +601,27 @@ impl Rasterizer {
       }
    }
 
+   fn check_pool(&self, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
+      for poly_index in 0..self.polys_src_end {
+         let edge_start = self.pool_poly_ref[poly_index];
+         let poly_len = pool_lens[poly_index];
+         if poly_len < 3 {
+            panic!("Insufficient edge count: {}", poly_len);
+         }
+         let mut p2_prev = pool[edge_start + poly_len - 1].p2;
+         for edge_index in edge_start..edge_start + poly_len {
+            let edge = pool[edge_index];
+            if edge.p1 != p2_prev {
+               panic!("Unconnected poly");
+            }
+            p2_prev = edge.p2;
+         }
+      }
+   }
+
    // TODO: Combine into edge_head_tail method?
 
-   fn edge_head(&self, edge: &Edge) -> &Point {
+   fn edge_head(&self, edge: &EdgeSrc) -> &Point {
       let ref segment = self.segments[edge.segment];
       if edge.reversed() {
          &self.points[segment.p1]
@@ -600,7 +630,7 @@ impl Rasterizer {
       }
    }
 
-   fn edge_tail(&self, edge: &Edge) -> &Point {
+   fn edge_tail(&self, edge: &EdgeSrc) -> &Point {
       let ref segment = self.segments[edge.segment];
       if edge.reversed() {
          &self.points[segment.p2]
@@ -837,11 +867,11 @@ impl Rasterizer {
       }
    }
 
-   fn print_edge(&self, edge: &Edge) {
+   fn print_edge(&self, edge: &EdgeSrc) {
       let tail = self.edge_tail(edge);
       let head = self.edge_head(edge);
 
-      println!("Edge type: {:?}, {:?} -> {:?}", edge.edge_type, tail, head);
+      println!("EdgeSrc type: {:?}, {:?} -> {:?}", edge.edge_type, tail, head);
    }
 }
 
