@@ -299,12 +299,13 @@ pub struct Rasterizer {
    pub hori_intersections: Vec<i64>,
 
    pub pool_poly_ref: Vec<usize>,
-   pub pool_a_lens: Vec<usize>,
-   pub pool_b_lens: Vec<usize>,
-   pub pool_c_lens: Vec<usize>,
-   pub pool_a: Vec<Edge>,
-   pub pool_b: Vec<Edge>,
-   pub pool_c: Vec<Edge>,
+   pub pool_upper_lens: Vec<usize>,
+   pub pool_lower_lens: Vec<usize>,
+   pub pool_left_lens: Vec<usize>,
+   pub pool_upper: Vec<Edge>,
+   pub pool_lower: Vec<Edge>,
+   pub pool_left: Vec<Edge>,
+   pub pool_upper_active: Vec<usize>,
 
    pub polys_src_end: usize,
    pub polys_start: usize,
@@ -336,12 +337,13 @@ impl Rasterizer {
       let hori_intersections = create_default_vec(65536);
 
       let pool_poly_ref = create_default_vec(65536);
-      let pool_a_lens = create_default_vec(65536);
-      let pool_b_lens = create_default_vec(65536);
-      let pool_c_lens = create_default_vec(65536);
-      let pool_a = create_default_vec(65536);
-      let pool_b = create_default_vec(65536);
-      let pool_c = create_default_vec(65536);
+      let pool_upper_lens = create_default_vec(65536);
+      let pool_lower_lens = create_default_vec(65536);
+      let pool_left_lens = create_default_vec(65536);
+      let pool_upper = create_default_vec(65536);
+      let pool_lower = create_default_vec(65536);
+      let pool_left = create_default_vec(65536);
+      let pool_upper_active = create_default_vec(65536);
 
       let polys_min_y = create_default_vec(65536);
       let polys_max_y = create_default_vec(65536);
@@ -359,12 +361,13 @@ impl Rasterizer {
          hori_intersections: hori_intersections,
 
          pool_poly_ref: pool_poly_ref,
-         pool_a_lens: pool_a_lens,
-         pool_b_lens: pool_b_lens,
-         pool_c_lens: pool_c_lens,
-         pool_a: pool_a,
-         pool_b: pool_b,
-         pool_c: pool_c,
+         pool_upper_lens: pool_upper_lens,
+         pool_lower_lens: pool_lower_lens,
+         pool_left_lens: pool_left_lens,
+         pool_upper: pool_upper,
+         pool_lower: pool_lower,
+         pool_left: pool_left,
+         pool_upper_active: pool_upper_active,
 
          polys_src_end: 0,
          polys_start: 0,
@@ -390,7 +393,7 @@ impl Rasterizer {
 
       self.check_scene_correctness(scene);
 
-      self.check_pool(&self.pool_a, &self.pool_a_lens);
+      self.check_pool(&self.pool_upper, &self.pool_upper_lens);
 
       self.intersect_edges();
 
@@ -414,6 +417,8 @@ impl Rasterizer {
          let y_split = y_world + DIV_PER_PIXEL;
 
          self.transfer_upper_polys(y_world);
+
+         self.h_split(y_split, y + 1);
 
          self.print_current_polys();
 
@@ -460,10 +465,10 @@ impl Rasterizer {
          self.polys[i].src = i;
 
          self.pool_poly_ref[i] = pool_index;
-         self.pool_a_lens[i] = poly.end - poly.start;
+         self.pool_upper_lens[i] = poly.end - poly.start;
 
          for edge in &scene.edges[poly.start..poly.end] {
-            let ref mut edge_ref = self.pool_a[pool_index];
+            let ref mut edge_ref = self.pool_upper[pool_index];
             edge_ref.segment = edge.segment;
             edge_ref.edge_type = edge.edge_type;
 
@@ -857,7 +862,50 @@ impl Rasterizer {
          self.polys[self.polys_end] = self.polys[poly_index];
          self.polys_end += 1;
 
+         self.pool_upper_active[self.polys_transferred] = poly_index;
+
          self.polys_transferred += 1;
+      }
+   }
+
+   fn h_split(&mut self, y: i64, y_px: i64) {
+      for i in 0..self.polys_transferred {
+         let poly_index = self.pool_upper_active[self.polys_transferred];
+         //let ref poly = self.polys[poly_index];
+         if self.polys_max_y[poly_index] <= y {
+            // PUSH DIRECTLY TO LOWER
+/*
+            for edge_i in poly.start..poly.end {
+               self.lower_edges.push(
+                  self.upper_edges[edge_i].clone()
+               );
+            }
+
+            self.lower_polys.push(
+               PolyRef::new(poly.src, lower_start, lower_end)
+            );
+*/
+         } else {
+            self.h_split_poly(poly_index, y, y_px);
+         }
+      }
+   }
+
+   fn h_split_poly(&mut self, poly_index: usize, y: i64, y_px: i64) {
+      let poly_start = self.pool_poly_ref[poly_index];
+      let poly_len = self.pool_upper_lens[poly_index];
+
+      let mut i = poly_start;
+      let end = poly_start + poly_len;
+
+      loop { // Edge's first point below y
+         let ref edge = self.pool_upper[i];
+
+         i += 1;
+
+         if i == end {
+            return;
+         }
       }
    }
 
