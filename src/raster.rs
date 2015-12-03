@@ -107,7 +107,7 @@ impl Default for Circle {
    }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum EdgeType {
    LTR,  // line top-right
    LTL,  // line top-left
@@ -135,7 +135,7 @@ impl EdgeType {
    pub fn reversed(&self) -> bool {
       match *self {
          EdgeType::LBR | EdgeType::LBL | EdgeType::LHL | EdgeType::LVB |
-         EdgeType::CBR | EdgeType::CBL | EdgeType::ATR | EdgeType::ATL => {
+         EdgeType::CBR | EdgeType::CBL | EdgeType::ABR | EdgeType::ABL => {
             true
          },
          _ => {
@@ -306,6 +306,7 @@ pub struct Rasterizer {
    pub pool_lower: Vec<Edge>,
    pub pool_left: Vec<Edge>,
    pub pool_upper_active: Vec<usize>,
+   pub pool_lower_active: Vec<usize>,
 
    pub polys_src_end: usize,
    pub polys_start: usize,
@@ -344,6 +345,7 @@ impl Rasterizer {
       let pool_lower = create_default_vec(65536);
       let pool_left = create_default_vec(65536);
       let pool_upper_active = create_default_vec(65536);
+      let pool_lower_active = create_default_vec(65536);
 
       let polys_min_y = create_default_vec(65536);
       let polys_max_y = create_default_vec(65536);
@@ -368,6 +370,7 @@ impl Rasterizer {
          pool_lower: pool_lower,
          pool_left: pool_left,
          pool_upper_active: pool_upper_active,
+         pool_lower_active: pool_lower_active,
 
          polys_src_end: 0,
          polys_start: 0,
@@ -870,21 +873,19 @@ impl Rasterizer {
 
    fn h_split(&mut self, y: i64, y_px: i64) {
       for i in 0..self.polys_transferred {
-         let poly_index = self.pool_upper_active[self.polys_transferred];
-         //let ref poly = self.polys[poly_index];
+         let poly_index = self.pool_upper_active[i];
+
          if self.polys_max_y[poly_index] <= y {
-            // PUSH DIRECTLY TO LOWER
-/*
-            for edge_i in poly.start..poly.end {
-               self.lower_edges.push(
-                  self.upper_edges[edge_i].clone()
-               );
+            let poly_start = self.pool_poly_ref[poly_index];
+            let poly_len = self.pool_upper_lens[poly_index];
+
+            for edge_i in poly_start..poly_start + poly_len {
+               self.pool_lower[edge_i] = self.pool_upper[edge_i];
             }
 
-            self.lower_polys.push(
-               PolyRef::new(poly.src, lower_start, lower_end)
-            );
-*/
+            self.pool_lower_lens[poly_index] = poly_len;
+
+            // ADD poly to some lower list
          } else {
             self.h_split_poly(poly_index, y, y_px);
          }
@@ -892,14 +893,57 @@ impl Rasterizer {
    }
 
    fn h_split_poly(&mut self, poly_index: usize, y: i64, y_px: i64) {
+      let p1;
+      let p2;
+
       let poly_start = self.pool_poly_ref[poly_index];
       let poly_len = self.pool_upper_lens[poly_index];
 
       let mut i = poly_start;
+      let mut upper_i = poly_start;
+      let mut lower_i = poly_start;
       let end = poly_start + poly_len;
 
       loop { // Edge's first point below y
-         let ref edge = self.pool_upper[i];
+         let mut edge = self.pool_upper[i];
+
+         match edge.edge_type {
+            EdgeType::LTR | EdgeType::LTL | EdgeType::LVT | EdgeType::CTR |
+            EdgeType::CTL | EdgeType::ATR | EdgeType::ATL => {
+               let y2 = edge.p2.y;
+               if y2 < y {
+                  self.pool_lower[lower_i] = edge;
+                  lower_i += 1;
+               } else if y2 > y {
+                  let x1_intersect = self.h_intersection(&edge, y_px);
+
+                  p1 = Point::new(x1_intersect, y);
+
+                  let mut upper_edge = edge.clone();
+
+                  edge.p2 = p1;
+                  self.pool_lower[lower_i] = edge;
+                  lower_i += 1;
+
+                  upper_edge.p1 = p1;
+                  self.pool_upper[upper_i] = upper_edge;
+                  upper_i += 1;
+
+                  break;
+               } else {
+                  p1 = edge.p2;
+
+                  self.pool_lower[lower_i] = edge;
+                  lower_i += 1;
+
+                  break;
+               }
+            },
+            _ => {
+               self.pool_lower[lower_i] = edge;
+               lower_i += 1;
+            }
+         }
 
          i += 1;
 
@@ -907,6 +951,89 @@ impl Rasterizer {
             return;
          }
       }
+
+      i += 1;
+
+      loop { // Edge's first point above y
+         let mut edge = self.pool_upper[i];
+
+         match edge.edge_type {
+            EdgeType::LBR | EdgeType::LBL | EdgeType::LVB | EdgeType::CBR |
+            EdgeType::CBL | EdgeType::ABR | EdgeType::ABL => {
+               let y2 = edge.p1.y;
+               if y2 > y {
+                  self.pool_upper[upper_i] = edge;
+                  upper_i += 1;
+               } else if y2 < y {
+                  let x2_intersect = self.h_intersection(&edge, y_px);
+
+                  p2 = Point::new(x2_intersect, y);
+
+                  let mut lower_edge = edge.clone();
+
+                  edge.p2 = p2;
+                  self.pool_upper[upper_i] = edge;
+                  upper_i += 1;
+
+                  self.pool_lower[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, p1, p2);
+                  lower_i += 1;
+
+                  lower_edge.p1 = p2;
+                  self.pool_lower[lower_i] = lower_edge;
+                  lower_i += 1;
+
+                  break;
+               } else {
+                  p2 = edge.p1;
+
+                  self.pool_upper[upper_i] = edge;
+                  upper_i += 1;
+
+                  self.pool_lower[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, p1, p2);
+                  lower_i += 1;
+
+                  break;
+               }
+            }
+            _ => {
+               self.pool_upper[upper_i] = edge;
+               upper_i += 1;
+            }
+
+         }
+
+         i += 1;
+
+         if i == end {
+            return;
+         }
+      }
+
+      i += 1;
+
+      for j in i..end { // Edge's first point again below y
+         self.pool_lower[lower_i] = self.pool_upper[j];
+         lower_i += 1;
+      }
+
+      self.pool_upper[upper_i] = Edge::new(EdgeType::LHL, usize::MAX, p2, p1);
+      upper_i += 1;
+
+      self.pool_upper_lens[poly_index] = upper_i - poly_start;
+      self.pool_lower_lens[poly_index] = lower_i - poly_start;
+   }
+
+   #[inline]
+   fn h_intersection(&self, edge: &Edge, y_px: i64) -> i64 {
+      if edge.edge_type == EdgeType::LVT || edge.edge_type == EdgeType::LVB {
+         return edge.p1.x;
+      }
+
+      let ref h_ref = self.hori_intersections_ref[edge.segment];
+
+      self.hori_intersections[
+         h_ref.start + (y_px - h_ref.first_px) as usize
+      ]
    }
 
    fn print_current_polys(&self) {

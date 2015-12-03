@@ -56,12 +56,12 @@ impl SceneRenderer {
          EdgeSrc::new(EdgeType::LVB, 5, usize::MAX),
          EdgeSrc::new(EdgeType::CBL, 3, 0),
          EdgeSrc::new(EdgeType::LHL, 0, usize::MAX),
-         EdgeSrc::new(EdgeType::ABL, 3, 0),
+         EdgeSrc::new(EdgeType::ATR, 3, 0),
          EdgeSrc::new(EdgeType::LVB, 4, usize::MAX),
          EdgeSrc::new(EdgeType::LHL, 1, usize::MAX),
          EdgeSrc::new(EdgeType::LVT, 6, usize::MAX),
          EdgeSrc::new(EdgeType::LHR, 8, usize::MAX),
-         EdgeSrc::new(EdgeType::ATR, 7, 1),
+         EdgeSrc::new(EdgeType::ABL, 7, 1),
       ];
 
       let polys = vec![
