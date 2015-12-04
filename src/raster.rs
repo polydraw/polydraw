@@ -404,9 +404,9 @@ impl Rasterizer {
 
       self.check_min_max_x_y(min_x, min_y, max_x, max_y);
 
-      self.calc_poly_min_max_y();
+      self.calc_poly_min_max_y(scene);
 
-      self.check_poly_min_max_y(min_y, max_y);
+      self.check_poly_min_max_y(scene, min_y, max_y);
 
       let x_start = to_px(min_x);
       let x_end = to_px(max_x - 1) + 1;
@@ -590,19 +590,20 @@ impl Rasterizer {
       }
    }
 
-   fn calc_poly_min_max_y(&mut self) {
-      let mut sorted_min_y = Vec::with_capacity(self.polys_end);
+   fn calc_poly_min_max_y(&mut self, scene: &Scene) {
+      let polys_end = scene.polys.len();
+      let mut sorted_min_y = Vec::with_capacity(polys_end);
 
-      for i in 0..self.polys_end {
-         let ref poly = self.polys[i];
+      for i in 0..polys_end {
+         let ref poly = scene.polys[i];
 
          let mut poly_min_y = i64::MAX;
          let mut poly_max_y = i64::MIN;
 
-         for edge in &self.edges[poly.start..poly.end] {
-            let ref segment = self.segments[edge.segment];
-            let ref p1 = self.points[segment.p1];
-            let ref p2 = self.points[segment.p2];
+         for edge in &scene.edges[poly.start..poly.end] {
+            let ref segment = scene.segments[edge.segment];
+            let ref p1 = scene.points[segment.p1];
+            let ref p2 = scene.points[segment.p2];
 
             let min_y = min(p1.y, p2.y);
             let max_y = max(p1.y, p2.y);
@@ -623,14 +624,15 @@ impl Rasterizer {
 
       sorted_min_y.sort_by(|a, b| self.polys_min_y[*a].cmp(&self.polys_min_y[*b]));
 
-      for i in 0..self.polys_end {
+      for i in 0..scene.polys.len() {
          self.polys_sorted_min_y[i] = sorted_min_y[i];
       }
    }
 
-   fn check_poly_min_max_y(&self, all_min_y: i64, all_max_y: i64) {
+   fn check_poly_min_max_y(&self, scene: &Scene, all_min_y: i64, all_max_y: i64) {
+      let polys_end = scene.polys.len();
       let mut prev_min_y = i64::MIN;
-      for i in 0..self.polys_end {
+      for i in 0..polys_end {
          let poly_i = self.polys_sorted_min_y[i];
 
          let min_y = self.polys_min_y[poly_i];
