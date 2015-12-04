@@ -396,9 +396,9 @@ impl Rasterizer {
 
       self.check_pool(&self.pool_upper, &self.pool_upper_lens);
 
-      self.intersect_edges();
+      self.intersect_edges(scene);
 
-      self.check_intersections();
+      self.check_intersections(scene);
 
       let (min_x, min_y, max_x, max_y) = self.min_max_x_y();
 
@@ -514,13 +514,11 @@ impl Rasterizer {
       }
    }
 
-   // TODO: Combine into edge_head_tail method?
-
-   fn intersect_edges(&mut self) {
+   fn intersect_edges(&mut self, scene: &Scene) {
       self.vert_intersections_end = 0;
       self.hori_intersections_end = 0;
 
-      for edge in &self.edges[..self.edges_end] {
+      for edge in &scene.edges {
          let i = edge.segment;
 
          let ref mut vert_ref = self.vert_intersections_ref[i];
@@ -530,9 +528,9 @@ impl Rasterizer {
 
          let ref mut hori_ref = self.hori_intersections_ref[i];
 
-         let ref segment = self.segments[i];
-         let ref p1 = self.points[segment.p1];
-         let ref p2 = self.points[segment.p2];
+         let ref segment = scene.segments[i];
+         let ref p1 = scene.points[segment.p1];
+         let ref p2 = scene.points[segment.p2];
 
          vert_ref.start = self.vert_intersections_end;
          hori_ref.start = self.hori_intersections_end;
@@ -555,11 +553,11 @@ impl Rasterizer {
       }
    }
 
-   fn check_intersections(&self) {
-      for edge in &self.edges[..self.edges_end] {
-         let ref segment = self.segments[edge.segment];
-         let ref p1 = self.points[segment.p1];
-         let ref p2 = self.points[segment.p2];
+   fn check_intersections(&self, scene: &Scene) {
+      for edge in &self.edges {
+         let ref segment = scene.segments[edge.segment];
+         let ref p1 = scene.points[segment.p1];
+         let ref p2 = scene.points[segment.p2];
 
          let min_x = min(p1.x, p2.x);
          let max_x = max(p1.x, p2.x);
