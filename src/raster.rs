@@ -423,8 +423,6 @@ impl Rasterizer {
 
          self.h_split(y_split, y + 1);
 
-         self.print_current_polys();
-
          let mut x = x_start;
 
          while x < x_end {
@@ -1034,27 +1032,6 @@ impl Rasterizer {
       self.hori_intersections[
          h_ref.start + (y_px - h_ref.first_px) as usize
       ]
-   }
-
-   fn print_current_polys(&self) {
-      for poly in &self.polys[self.polys_start..self.polys_end] {
-         self.print_poly(poly);
-      }
-   }
-
-   fn print_poly(&self, poly: &PolyRef) {
-      println!("PolyRef src: {}, size: {}", poly.src, poly.end - poly.start);
-
-      for edge in &self.edges[poly.start..poly.end] {
-         self.print_edge(edge);
-      }
-   }
-
-   fn print_edge(&self, edge: &EdgeSrc) {
-      let tail = self.edge_tail(edge);
-      let head = self.edge_head(edge);
-
-      println!("EdgeSrc type: {:?}, {:?} -> {:?}", edge.edge_type, tail, head);
    }
 }
 
