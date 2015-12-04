@@ -394,8 +394,6 @@ impl Rasterizer {
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
       self.transfer_scene(scene);
 
-      self.check_scene_correctness(scene);
-
       self.check_pool(&self.pool_upper, &self.pool_upper_lens);
 
       self.intersect_edges();
@@ -490,123 +488,6 @@ impl Rasterizer {
       }
    }
 
-   pub fn check_scene_correctness(&self, scene: &Scene) {
-      for poly in &self.polys[0..self.polys_end] {
-         self.check_poly_connected(poly);
-         self.check_segments_orientation(poly);
-         self.check_edges_orientation(poly);
-      }
-
-      self.check_index_coverage(scene);
-   }
-
-   fn check_poly_connected(&self, poly: &PolyRef) {
-      let mut prev = self.edge_head(&self.edges[poly.end - 1]);
-
-      for edge in &self.edges[poly.start..poly.end] {
-         let current = self.edge_tail(edge);
-         if current != prev {
-            panic!("Unclosed poly : {:?}", poly);
-         }
-
-         prev = self.edge_head(edge);
-      }
-   }
-
-   fn check_segments_orientation(&self, poly: &PolyRef) {
-      for edge in &self.edges[poly.start..poly.end] {
-         let ref segment = self.segments[edge.segment];
-
-         let ref less = self.points[segment.p1];
-         let ref greater = self.points[segment.p2];
-
-         if greater <= less {
-            panic!("Wrong segment orientation : {:?} / {:?}", edge, segment);
-         }
-      }
-   }
-
-   fn check_edges_orientation(&self, poly: &PolyRef) {
-      for edge in &self.edges[poly.start..poly.end] {
-         let tail = self.edge_tail(edge);
-         let head = self.edge_head(edge);
-
-         let reversed = edge.reversed();
-
-         if (reversed && tail <= head) || (!reversed && head <= tail) {
-            panic!("Wrong edge orientation : {:?}", edge);
-         }
-      }
-   }
-
-   fn check_index_coverage(&self, scene: &Scene) {
-      self.check_edge_index_coverage();
-      self.check_circle_index_coverage(scene);
-      self.check_segment_index_coverage();
-      self.check_point_index_coverage(scene);
-   }
-
-   fn check_edge_index_coverage(&self) {
-      let len = self.edges_end;
-      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
-
-      for poly in &self.polys[..self.polys_end] {
-         for edge_index in poly.start..poly.end {
-            coverage[edge_index] = true;
-         }
-      }
-
-      if coverage.contains(&false) {
-         panic!("Unreferenced edge found");
-      }
-   }
-
-   fn check_circle_index_coverage(&self, scene: &Scene) {
-      let len = scene.circles.len();
-      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
-
-      for edge in &self.edges[..self.edges_end] {
-         if edge.circle != usize::MAX {
-            coverage[edge.circle] = true;
-         }
-      }
-
-      if coverage.contains(&false) {
-         panic!("Unreferenced circle found");
-      }
-   }
-
-   fn check_segment_index_coverage(&self) {
-      let len = self.segments_end;
-      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
-
-      for edge in &self.edges[..self.edges_end] {
-         coverage[edge.segment] = true;
-      }
-
-      if coverage.contains(&false) {
-         panic!("Unreferenced segment found");
-      }
-   }
-
-   fn check_point_index_coverage(&self, scene: &Scene) {
-      let len = self.points_end;
-      let mut coverage: Vec<bool> = repeat(false).take(len).collect();
-
-      for circle in &scene.circles {
-         coverage[circle.center] = true;
-      }
-
-      for segment in &self.segments[0..self.segments_end] {
-         coverage[segment.p1] = true;
-         coverage[segment.p2] = true;
-      }
-
-      if coverage.contains(&false) {
-         panic!("Unreferenced segment found");
-      }
-   }
-
    fn check_pool(&self, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
       for poly_index in 0..self.polys_src_end {
          let edge_start = self.pool_poly_ref[poly_index];
@@ -634,24 +515,6 @@ impl Rasterizer {
    }
 
    // TODO: Combine into edge_head_tail method?
-
-   fn edge_head(&self, edge: &EdgeSrc) -> &Point {
-      let ref segment = self.segments[edge.segment];
-      if edge.reversed() {
-         &self.points[segment.p1]
-      } else {
-         &self.points[segment.p2]
-      }
-   }
-
-   fn edge_tail(&self, edge: &EdgeSrc) -> &Point {
-      let ref segment = self.segments[edge.segment];
-      if edge.reversed() {
-         &self.points[segment.p2]
-      } else {
-         &self.points[segment.p1]
-      }
-   }
 
    fn intersect_edges(&mut self) {
       self.vert_intersections_end = 0;
