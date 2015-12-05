@@ -548,25 +548,21 @@ impl Rasterizer {
       let mut sorted_min_y = Vec::with_capacity(polys_end);
 
       for i in 0..polys_end {
-         let ref poly = scene.polys[i];
+         let poly_start = self.pool_poly_ref[i];
+         let poly_end = poly_start + self.pool_upper_lens[i];
 
          let mut poly_min_y = i64::MAX;
          let mut poly_max_y = i64::MIN;
 
-         for edge in &scene.edges[poly.start..poly.end] {
-            let ref segment = scene.segments[edge.segment];
-            let ref p1 = scene.points[segment.p1];
-            let ref p2 = scene.points[segment.p2];
+         for edge_i in poly_start..poly_end {
+            let ref edge = self.pool_upper[edge_i];
 
-            let min_y = min(p1.y, p2.y);
-            let max_y = max(p1.y, p2.y);
-
-            if min_y < poly_min_y  {
-               poly_min_y = min_y;
+            if edge.p1.y < poly_min_y  {
+               poly_min_y = edge.p1.y;
             }
 
-            if max_y > poly_max_y {
-               poly_max_y = max_y;
+            if edge.p1.y > poly_max_y {
+               poly_max_y = edge.p1.y;
             }
          }
 
