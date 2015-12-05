@@ -288,11 +288,6 @@ impl Default for IntersectionRef {
 }
 
 pub struct Rasterizer {
-   pub points: Vec<Point>,
-   pub segments: Vec<Segment>,
-   pub edges: Vec<EdgeSrc>,
-   pub polys: Vec<PolyRef>,
-
    pub vert_intersections_ref: Vec<IntersectionRef>,
    pub hori_intersections_ref: Vec<IntersectionRef>,
    pub vert_intersections: Vec<i64>,
@@ -308,13 +303,6 @@ pub struct Rasterizer {
    pub pool_upper_active: Vec<usize>,
    pub pool_lower_active: Vec<usize>,
 
-   pub polys_src_end: usize,
-   pub polys_start: usize,
-   pub polys_end: usize,
-
-   pub points_end: usize,
-   pub segments_end: usize,
-   pub edges_end: usize,
    pub vert_intersections_end: usize,
    pub hori_intersections_end: usize,
 
@@ -327,11 +315,6 @@ pub struct Rasterizer {
 
 impl Rasterizer {
    pub fn new() -> Self {
-      let points = create_default_vec(65536);
-      let segments = create_default_vec(65536);
-      let edges = create_default_vec(65536);
-      let polys = create_default_vec(65536);
-
       let vert_intersections_ref = create_default_vec(65536);
       let hori_intersections_ref = create_default_vec(65536);
       let vert_intersections = create_default_vec(65536);
@@ -352,11 +335,6 @@ impl Rasterizer {
       let polys_sorted_min_y = create_default_vec(65536);
 
       Rasterizer {
-         points: points,
-         segments: segments,
-         edges: edges,
-         polys: polys,
-
          vert_intersections_ref: vert_intersections_ref,
          hori_intersections_ref: hori_intersections_ref,
          vert_intersections: vert_intersections,
@@ -372,13 +350,6 @@ impl Rasterizer {
          pool_upper_active: pool_upper_active,
          pool_lower_active: pool_lower_active,
 
-         polys_src_end: 0,
-         polys_start: 0,
-         polys_end: 0,
-
-         points_end: 0,
-         segments_end: 0,
-         edges_end: 0,
          vert_intersections_end: 0,
          hori_intersections_end: 0,
 
@@ -394,13 +365,13 @@ impl Rasterizer {
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
       self.transfer_scene(scene);
 
-      self.check_pool(&self.pool_upper, &self.pool_upper_lens);
+      self.check_pool(scene, &self.pool_upper, &self.pool_upper_lens);
 
       self.intersect_edges(scene);
 
       self.check_intersections(scene);
 
-      let (min_x, min_y, max_x, max_y) = self.min_max_x_y();
+      let (min_x, min_y, max_x, max_y) = self.min_max_x_y(scene);
 
       self.check_min_max_x_y(min_x, min_y, max_x, max_y);
 
@@ -417,7 +388,7 @@ impl Rasterizer {
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
 
-         self.transfer_upper_polys(y_world);
+         self.transfer_upper_polys(scene, y_world);
 
          self.h_split(y_split, y + 1);
 
@@ -435,34 +406,14 @@ impl Rasterizer {
    }
 
    pub fn transfer_scene(&mut self, scene: &Scene) {
-      self.points_end = scene.points.len();
-      for i in 0..self.points_end {
-         self.points[i] = scene.points[i];
-      }
-
-      self.segments_end = scene.segments.len();
-      for i in 0..self.segments_end {
-         self.segments[i] = scene.segments[i];
-
+      for i in 0..scene.segments.len() {
          self.vert_intersections_ref[i].start = usize::MAX;
-      }
-
-      self.edges_end = scene.edges.len();
-      for i in 0..self.edges_end {
-         self.edges[i] = scene.edges[i];
       }
 
       let mut pool_index = 0;
       let polys_len = scene.polys.len();
-      self.polys_src_end = polys_len;
-      self.polys_start = polys_len;
-      self.polys_end = polys_len;
       for i in 0..polys_len {
          let ref poly = &scene.polys[i];
-         self.polys[i].start = scene.polys[i].start;
-         self.polys[i].end = scene.polys[i].end;
-         self.polys[i].src = i;
-
          self.pool_poly_ref[i] = pool_index;
          self.pool_upper_lens[i] = poly.end - poly.start;
 
@@ -488,8 +439,8 @@ impl Rasterizer {
       }
    }
 
-   fn check_pool(&self, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
-      for poly_index in 0..self.polys_src_end {
+   fn check_pool(&self, scene: &Scene, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
+      for poly_index in 0..scene.polys.len() {
          let edge_start = self.pool_poly_ref[poly_index];
          let poly_len = pool_lens[poly_index];
 
@@ -554,7 +505,7 @@ impl Rasterizer {
    }
 
    fn check_intersections(&self, scene: &Scene) {
-      for edge in &self.edges {
+      for edge in &scene.edges {
          let ref segment = scene.segments[edge.segment];
          let ref p1 = scene.points[segment.p1];
          let ref p2 = scene.points[segment.p2];
@@ -651,16 +602,16 @@ impl Rasterizer {
       }
    }
 
-   fn min_max_x_y(&self) -> (i64, i64, i64, i64) {
+   fn min_max_x_y(&self, scene: &Scene) -> (i64, i64, i64, i64) {
       let mut min_x = i64::MAX;
       let mut min_y = i64::MAX;
 
       let mut max_x = i64::MIN;
       let mut max_y = i64::MIN;
 
-      for segment in &self.segments[..self.segments_end] {
-         let p1 = &self.points[segment.p1];
-         let p2 = &self.points[segment.p2];
+      for segment in &scene.segments {
+         let p1 = &scene.points[segment.p1];
+         let p2 = &scene.points[segment.p2];
 
          let s_min_x = min(p1.x, p2.x);
          let s_min_y = min(p1.y, p2.y);
@@ -714,17 +665,14 @@ impl Rasterizer {
       }
    }
 
-   fn transfer_upper_polys(&mut self, y: i64) {
-      while self.polys_transferred < self.polys_src_end {
+   fn transfer_upper_polys(&mut self, scene: &Scene, y: i64) {
+      while self.polys_transferred < scene.polys.len() {
          let poly_index = self.polys_sorted_min_y[self.polys_transferred];
          let poly_min_y = self.polys_min_y[poly_index];
 
          if poly_min_y > y {
             break;
          }
-
-         self.polys[self.polys_end] = self.polys[poly_index];
-         self.polys_end += 1;
 
          self.pool_upper_active[self.polys_transferred] = poly_index;
 
