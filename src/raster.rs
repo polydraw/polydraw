@@ -406,10 +406,6 @@ impl Rasterizer {
    }
 
    pub fn transfer_scene(&mut self, scene: &Scene) {
-      for i in 0..scene.segments.len() {
-         self.vert_intersections_ref[i].start = usize::MAX;
-      }
-
       let mut pool_index = 0;
       let polys_len = scene.polys.len();
       for i in 0..polys_len {
@@ -466,8 +462,7 @@ impl Rasterizer {
    }
 
    fn intersect_edges(&mut self, scene: &Scene) {
-      self.vert_intersections_end = 0;
-      self.hori_intersections_end = 0;
+      self.reset_intersections(scene);
 
       for edge in &scene.edges {
          let i = edge.segment;
@@ -501,6 +496,15 @@ impl Rasterizer {
          self.hori_intersections_end = hori_end;
          hori_ref.end = hori_end;
          hori_ref.first_px = y_first_px;
+      }
+   }
+
+   fn reset_intersections(&mut self, scene: &Scene) {
+      self.vert_intersections_end = 0;
+      self.hori_intersections_end = 0;
+
+      for i in 0..scene.segments.len() {
+         self.vert_intersections_ref[i].start = usize::MAX;
       }
    }
 
