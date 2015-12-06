@@ -310,7 +310,8 @@ pub struct Rasterizer {
    pub polys_max_y: Vec<i64>,
    pub polys_sorted_min_y: Vec<usize>,
 
-   pub polys_transferred: usize,
+   pub upper_active_start: usize,
+   pub upper_active_end: usize,
 }
 
 impl Rasterizer {
@@ -357,7 +358,8 @@ impl Rasterizer {
          polys_max_y: polys_max_y,
          polys_sorted_min_y: polys_sorted_min_y,
 
-         polys_transferred: 0,
+         upper_active_start: 0,
+         upper_active_end: 0,
       }
    }
 
@@ -388,8 +390,6 @@ impl Rasterizer {
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
 
-         self.transfer_upper_polys(scene, y_world);
-
          self.h_split(y_split, y + 1);
 
          let mut x = x_start;
@@ -407,8 +407,7 @@ impl Rasterizer {
 
    pub fn transfer_scene(&mut self, scene: &Scene) {
       let mut pool_index = 0;
-      let polys_len = scene.polys.len();
-      for i in 0..polys_len {
+      for i in 0..scene.polys.len() {
          let ref poly = &scene.polys[i];
          self.pool_poly_ref[i] = pool_index;
          self.pool_upper_lens[i] = poly.end - poly.start;
@@ -431,8 +430,11 @@ impl Rasterizer {
             pool_index += 1;
          }
 
+         // Leave 4 position for further hori and vert splitting
          pool_index += 4;
       }
+
+      self.upper_active_end = scene.polys.len();
    }
 
    fn check_pool(&self, scene: &Scene, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
@@ -660,23 +662,8 @@ impl Rasterizer {
       }
    }
 
-   fn transfer_upper_polys(&mut self, scene: &Scene, y: i64) {
-      while self.polys_transferred < scene.polys.len() {
-         let poly_index = self.polys_sorted_min_y[self.polys_transferred];
-         let poly_min_y = self.polys_min_y[poly_index];
-
-         if poly_min_y > y {
-            break;
-         }
-
-         self.pool_upper_active[self.polys_transferred] = poly_index;
-
-         self.polys_transferred += 1;
-      }
-   }
-
    fn h_split(&mut self, y: i64, y_px: i64) {
-      for i in 0..self.polys_transferred {
+      for i in self.upper_active_start .. self.upper_active_end {
          let poly_index = self.pool_upper_active[i];
 
          if self.polys_max_y[poly_index] <= y {
