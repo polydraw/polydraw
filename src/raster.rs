@@ -570,7 +570,7 @@ impl Rasterizer {
          self.polys_sorted_min_y[i] = i;
       }
 
-      sort_polys_min_y(&mut self.polys_sorted_min_y, &self.polys_min_y, polys_end);
+      sort_polys_min_y(&mut self.polys_sorted_min_y, &self.polys_min_y, &self.polys_max_y, polys_end);
    }
 
    fn check_poly_min_max_y(&self, scene: &Scene, all_min_y: i64, all_max_y: i64) {
@@ -959,6 +959,12 @@ fn v_multi_intersect_fast(p1: &Point, p2: &Point, step_x: i64, mut vec_start: us
    (vec_start, first_x)
 }
 
-fn sort_polys_min_y(polys_sorted_min_y: &mut Vec<usize>, polys_min_y: &Vec<i64>, polys_len: usize) {
-   polys_sorted_min_y[..polys_len].sort_by(|a, b| polys_min_y[*a].cmp(&polys_min_y[*b]));
+fn sort_polys_min_y(polys_sorted_min_y: &mut Vec<usize>, polys_min_y: &Vec<i64>, polys_max_y: &Vec<i64>, polys_len: usize) {
+   polys_sorted_min_y[..polys_len].sort_by(|a, b| {
+      match polys_min_y[*a].cmp(&polys_min_y[*b]) {
+         Ordering::Less => Ordering::Less,
+         Ordering::Greater => Ordering::Greater,
+         Ordering::Equal => polys_max_y[*a].cmp(&polys_max_y[*b])
+      }
+   });
 }
