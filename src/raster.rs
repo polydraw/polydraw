@@ -382,6 +382,8 @@ impl Rasterizer {
 
          self.advance_upper_range(y_world, y_split);
 
+         self.check_upper_range(y_world, y_split);
+
          self.h_split(y_split, y + 1);
 
          let mut x = x_start;
@@ -699,6 +701,41 @@ impl Rasterizer {
          self.upper_active_end += 1;
 
          self.sort_sink_upper_last_poly();
+      }
+   }
+
+   fn check_upper_range(&mut self, y_world: i64, y_split: i64) {
+      for i in 0..self.upper_active_start {
+         let poly_index = self.upper_active[i];
+
+         let max_y = self.upper_max_y[poly_index];
+         if max_y > y_world {
+            panic!("Poly below upper range: {}", poly_index);
+         }
+      }
+
+      for i in self.upper_active_end..self.polys_len {
+         let poly_index = self.upper_active[i];
+
+         let min_y = self.upper_min_y[poly_index];
+         if min_y < y_split {
+            panic!("Poly above upper range: {}", poly_index);
+         }
+      }
+
+      for i in self.upper_active_start..self.upper_active_end {
+         let poly_index = self.upper_active[i];
+
+         let min_y = self.upper_min_y[poly_index];
+         let max_y = self.upper_max_y[poly_index];
+
+         if max_y <= y_world {
+            panic!("Poly max y too low: {}", poly_index);
+         }
+
+         if min_y >= y_split {
+            panic!("Poly min y too high: {}", poly_index);
+         }
       }
    }
 
