@@ -386,6 +386,8 @@ impl Rasterizer {
 
          self.h_split(y_split, y + 1);
 
+         //self.print_upper_edges();
+
          self.check_upper_edges(y_split);
 
          let mut x = x_start;
@@ -469,77 +471,93 @@ impl Rasterizer {
       let mut hori_prev_end = 0;
 
       for edge in &scene.edges {
-         let i = edge.segment;
+         match edge.edge_type {
+            EdgeType::LTR | EdgeType::LTL | EdgeType::LBR | EdgeType::LBL |
+            EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL |
+            EdgeType::ATR | EdgeType::ATL | EdgeType::ABR | EdgeType::ABL => {
 
-         let ref mut vert_ref = self.vert_intersections_ref[i];
-         if vert_ref.start == usize::MAX {
-            continue;
+               let segment_index = edge.segment;
+
+               let ref mut vert_ref = self.vert_intersections_ref[segment_index];
+               if vert_ref.start != usize::MAX {
+                  continue;
+               }
+
+               let ref mut hori_ref = self.hori_intersections_ref[segment_index];
+
+               let ref segment = scene.segments[segment_index];
+               let ref p1 = scene.points[segment.p1];
+               let ref p2 = scene.points[segment.p2];
+
+               vert_ref.start = vert_prev_end;
+               hori_ref.start = hori_prev_end;
+
+               let (vert_end, x_first_px) = v_multi_intersect_fast(
+                  p1, p2, DIV_PER_PIXEL, vert_ref.start, &mut self.vert_intersections
+               );
+
+               let (hori_end, y_first_px) = h_multi_intersect_fast(
+                  p1, p2, DIV_PER_PIXEL, hori_ref.start, &mut self.hori_intersections
+               );
+
+               vert_prev_end = vert_end;
+               vert_ref.end = vert_end;
+               vert_ref.first_px = x_first_px;
+
+               hori_prev_end = hori_end;
+               hori_ref.end = hori_end;
+               hori_ref.first_px = y_first_px;
+            },
+            _ => {}
          }
-
-         let ref mut hori_ref = self.hori_intersections_ref[i];
-
-         let ref segment = scene.segments[i];
-         let ref p1 = scene.points[segment.p1];
-         let ref p2 = scene.points[segment.p2];
-
-         vert_ref.start = vert_prev_end;
-         hori_ref.start = hori_prev_end;
-
-         let (vert_end, x_first_px) = v_multi_intersect_fast(
-            p1, p2, DIV_PER_PIXEL, vert_ref.start, &mut self.vert_intersections
-         );
-
-         let (hori_end, y_first_px) = h_multi_intersect_fast(
-            p1, p2, DIV_PER_PIXEL, hori_ref.start, &mut self.hori_intersections
-         );
-
-         vert_prev_end = vert_end;
-         vert_ref.end = vert_end;
-         vert_ref.first_px = x_first_px;
-
-         hori_prev_end = hori_end;
-         hori_ref.end = hori_end;
-         hori_ref.first_px = y_first_px;
       }
    }
 
    fn reset_intersections(&mut self, scene: &Scene) {
       for i in 0..scene.segments.len() {
          self.vert_intersections_ref[i].start = usize::MAX;
+         self.hori_intersections_ref[i].start = usize::MAX;
       }
    }
 
    fn check_intersections(&self, scene: &Scene) {
       for edge in &scene.edges {
-         let ref segment = scene.segments[edge.segment];
-         let ref p1 = scene.points[segment.p1];
-         let ref p2 = scene.points[segment.p2];
+         match edge.edge_type {
+            EdgeType::LTR | EdgeType::LTL | EdgeType::LBR | EdgeType::LBL |
+            EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL |
+            EdgeType::ATR | EdgeType::ATL | EdgeType::ABR | EdgeType::ABL => {
+               let ref segment = scene.segments[edge.segment];
+               let ref p1 = scene.points[segment.p1];
+               let ref p2 = scene.points[segment.p2];
 
-         let min_x = min(p1.x, p2.x);
-         let max_x = max(p1.x, p2.x);
-         let min_y = min(p1.y, p2.y);
-         let max_y = max(p1.y, p2.y);
+               let min_x = min(p1.x, p2.x);
+               let max_x = max(p1.x, p2.x);
+               let min_y = min(p1.y, p2.y);
+               let max_y = max(p1.y, p2.y);
 
-         let ref vert_ref = self.vert_intersections_ref[edge.segment];
+               let ref vert_ref = self.vert_intersections_ref[edge.segment];
 
-         let mut prev_x = i64::MIN;
-         for i in vert_ref.start..vert_ref.end {
-            let x = self.vert_intersections[i];
-            assert!(min_x <= x);
-            assert!(max_x >= x);
-            assert!(prev_x < x);
-            prev_x = x;
-         }
+               let mut prev_y = i64::MIN;
+               for i in vert_ref.start..vert_ref.end {
+                  let y = self.vert_intersections[i];
+                  assert!(min_y <= y);
+                  assert!(max_y >= y);
+                  assert!(prev_y < y);
+                  prev_y = y;
+               }
 
-         let ref hori_ref = self.hori_intersections_ref[edge.segment];
+               let ref hori_ref = self.hori_intersections_ref[edge.segment];
 
-         let mut prev_y = i64::MIN;
-         for i in hori_ref.start..hori_ref.end {
-            let y = self.hori_intersections[i];
-            assert!(min_y <= y);
-            assert!(max_y >= y);
-            assert!(prev_y < y);
-            prev_y = y;
+               let mut prev_x = i64::MIN;
+               for i in hori_ref.start..hori_ref.end {
+                  let x = self.hori_intersections[i];
+                  assert!(min_x <= x);
+                  assert!(max_x >= x);
+                  assert!(prev_x < x);
+                  prev_x = x;
+               }
+            },
+            _ => {}
          }
       }
    }
@@ -795,7 +813,7 @@ impl Rasterizer {
 
    fn h_split_poly(&mut self, poly_index: usize, y: i64, y_px: i64) {
       let p1;
-      let p2;
+      let mut p2 = Point::default();
 
       let poly_start = self.poly_to_pool[poly_index];
       let poly_end = poly_start + self.upper_edges_len[poly_index];
@@ -848,7 +866,7 @@ impl Rasterizer {
          i += 1;
 
          if i == poly_end {
-            return;
+            panic!("Polygon ends before Y split line");
          }
       }
 
@@ -905,7 +923,7 @@ impl Rasterizer {
          i += 1;
 
          if i == poly_end {
-            return;
+            break;
          }
       }
 
@@ -916,7 +934,8 @@ impl Rasterizer {
          lower_i += 1;
       }
 
-      self.upper_edges[upper_i] = Edge::new(EdgeType::LHL, usize::MAX, p2, p1);
+      let last_upper = Edge::new(EdgeType::LHL, usize::MAX, p2, p1);
+      self.upper_edges[upper_i] = last_upper;
       upper_i += 1;
 
       self.upper_edges_len[poly_index] = upper_i - poly_start;
@@ -927,14 +946,18 @@ impl Rasterizer {
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
 
+         // println!("P: {:?}", poly_index);
+
          let poly_start = self.poly_to_pool[poly_index];
          let poly_end = poly_start + self.upper_edges_len[poly_index];
 
-         for edge_idex in poly_start..poly_end {
-            let ref edge = self.upper_edges[edge_idex];
+         for edge_index in poly_start..poly_end {
+            let ref edge = self.upper_edges[edge_index];
+
+            // println!("E: {:?} -> {:?}", edge.p1, edge.p2);
 
             if edge.p1.y < y_split {
-               panic!("Upper polygon below split point - Poly: {}, Edge Y: {}, Split Y: {}", poly_index, edge.p1.y, y_split);
+               panic!("Upper polygon below split point - Poly: {}, Edge / Split Y: {} {}", poly_index, edge.p1.y, y_split);
             }
          }
       }
@@ -947,6 +970,8 @@ impl Rasterizer {
       }
 
       let ref h_ref = self.hori_intersections_ref[edge.segment];
+
+      assert!(h_ref.start != usize::MAX);
 
       self.hori_intersections[
          h_ref.start + (y_px - h_ref.first_px) as usize
@@ -993,7 +1018,7 @@ fn h_multi_intersect_fast(p1: &Point, p2: &Point, step_y: i64, mut vec_start: us
          x += step_x;
       }
 
-      return (vec_start, first_y);
+      return (vec_start, start);
    }
 
    let mut err = max_div_dy * (fdy * dx * dx_signum - fdx * dx_signum * dy) - HALF_MAX_ERR;
@@ -1012,7 +1037,7 @@ fn h_multi_intersect_fast(p1: &Point, p2: &Point, step_y: i64, mut vec_start: us
       err += err_step;
    }
 
-   (vec_start, first_y)
+   (vec_start, start)
 }
 
 fn v_multi_intersect_fast(p1: &Point, p2: &Point, step_x: i64, mut vec_start: usize, inters: &mut Vec<i64>) -> (usize, i64) {
@@ -1050,7 +1075,7 @@ fn v_multi_intersect_fast(p1: &Point, p2: &Point, step_x: i64, mut vec_start: us
          y += step_y;
       }
 
-      return (vec_start, first_x);
+      return (vec_start, start);
    }
 
    let mut err = max_div_dx * (fdx * dy * dy_signum - fdy * dy_signum * dx) - HALF_MAX_ERR;
@@ -1069,6 +1094,6 @@ fn v_multi_intersect_fast(p1: &Point, p2: &Point, step_x: i64, mut vec_start: us
       err += err_step;
    }
 
-   (vec_start, first_x)
+   (vec_start, start)
 }
 
