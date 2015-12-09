@@ -308,6 +308,13 @@ pub struct Rasterizer {
 
    pub lower_edges: Vec<Edge>,
    pub lower_edges_len: Vec<usize>,
+
+   pub lower_min_y: Vec<i64>,
+   pub lower_max_y: Vec<i64>,
+
+   pub lower_active: Vec<usize>,
+   pub lower_active_start: usize,
+   pub lower_active_end: usize,
 }
 
 impl Rasterizer {
@@ -322,12 +329,16 @@ impl Rasterizer {
       let upper_edges = create_default_vec(65536);
       let upper_edges_len = create_default_vec(65536);
 
-      let lower_edges = create_default_vec(65536);
-      let lower_edges_len = create_default_vec(65536);
-
       let upper_min_y = create_default_vec(65536);
       let upper_max_y = create_default_vec(65536);
       let upper_active = create_default_vec(65536);
+
+      let lower_edges = create_default_vec(65536);
+      let lower_edges_len = create_default_vec(65536);
+
+      let lower_min_y = create_default_vec(65536);
+      let lower_max_y = create_default_vec(65536);
+      let lower_active = create_default_vec(65536);
 
       Rasterizer {
          vert_intersections_ref: vert_intersections_ref,
@@ -350,6 +361,13 @@ impl Rasterizer {
 
          lower_edges: lower_edges,
          lower_edges_len: lower_edges_len,
+
+         lower_min_y: lower_min_y,
+         lower_max_y: lower_max_y,
+
+         lower_active: lower_active,
+         lower_active_start: 0,
+         lower_active_end: 0,
       }
    }
 
