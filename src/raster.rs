@@ -386,8 +386,6 @@ impl Rasterizer {
 
          self.h_split(y_split, y + 1);
 
-         //self.print_upper_edges();
-
          self.check_upper_edges(y_split);
 
          let mut x = x_start;
@@ -398,8 +396,6 @@ impl Rasterizer {
 
             x += 1;
          }
-
-         panic!("END");
       }
    }
 
@@ -878,7 +874,7 @@ impl Rasterizer {
          match edge.edge_type {
             EdgeType::LBR | EdgeType::LBL | EdgeType::LVB | EdgeType::CBR |
             EdgeType::CBL | EdgeType::ABR | EdgeType::ABL => {
-               let y2 = edge.p1.y;
+               let y2 = edge.p2.y;
                if y2 > y {
                   self.upper_edges[upper_i] = edge;
                   upper_i += 1;
@@ -954,7 +950,7 @@ impl Rasterizer {
          for edge_index in poly_start..poly_end {
             let ref edge = self.upper_edges[edge_index];
 
-            // println!("E: {:?} -> {:?}", edge.p1, edge.p2);
+            // println!("E: {:?}", edge);
 
             if edge.p1.y < y_split {
                panic!("Upper polygon below split point - Poly: {}, Edge / Split Y: {} {}", poly_index, edge.p1.y, y_split);
