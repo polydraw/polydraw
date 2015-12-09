@@ -382,7 +382,7 @@ impl Rasterizer {
 
          self.advance_upper_range(y_world, y_split);
 
-         self.check_upper_range(y_world, y_split);
+         self.check_upper_range(y_split);
 
          self.h_split(y_split, y + 1);
 
@@ -687,18 +687,22 @@ impl Rasterizer {
    }
 
    fn advance_upper_range(&mut self, y_world: i64, y_split: i64) {
-      self.advance_upper_range_start(y_world);
+      self.advance_upper_range_start(y_world, y_split);
 
       self.advance_upper_range_end(y_split);
    }
 
-   fn advance_upper_range_start(&mut self, y_world: i64) {
+   fn advance_upper_range_start(&mut self, y_world: i64, y_split: i64) {
       while self.upper_active_start < self.upper_active_end {
          let poly_index = self.upper_active[self.upper_active_start];
 
          let max_y = self.upper_max_y[poly_index];
-         if max_y > y_world {
+         if max_y > y_split {
             break;
+         }
+
+         if max_y > y_world {
+            self.copy_to_lower(poly_index);
          }
 
          self.upper_active_start += 1;
@@ -720,22 +724,27 @@ impl Rasterizer {
       }
    }
 
-   fn check_upper_range(&mut self, y_world: i64, y_split: i64) {
+   fn copy_to_lower(&mut self, poly_index: usize) {
+      let poly_start = self.poly_to_pool[poly_index];
+
+      let poly_len = self.upper_edges_len[poly_index];
+      self.lower_edges_len[poly_index] = poly_len;
+
+      let poly_end = poly_start + poly_len;
+      for edge_i in poly_start..poly_end {
+         self.lower_edges[edge_i] = self.upper_edges[edge_i];
+      }
+
+      // Adjust lower range
+   }
+
+   fn check_upper_range(&mut self, y_split: i64) {
       for i in 0..self.upper_active_start {
          let poly_index = self.upper_active[i];
 
          let max_y = self.upper_max_y[poly_index];
-         if max_y > y_world {
-            panic!("Poly below upper range: {}", poly_index);
-         }
-      }
-
-      for i in self.upper_active_end..self.polys_len {
-         let poly_index = self.upper_active[i];
-
-         let min_y = self.upper_min_y[poly_index];
-         if min_y < y_split {
-            panic!("Poly above upper range: {}", poly_index);
+         if max_y > y_split {
+            panic!("Discarded upper poly above split point: {}", poly_index);
          }
       }
 
@@ -745,12 +754,21 @@ impl Rasterizer {
          let min_y = self.upper_min_y[poly_index];
          let max_y = self.upper_max_y[poly_index];
 
-         if max_y <= y_world {
-            panic!("Poly max y too low: {}", poly_index);
+         if max_y <= y_split {
+            panic!("Active poly max y too low: {}", poly_index);
          }
 
          if min_y >= y_split {
-            panic!("Poly min y too high: {}", poly_index);
+            panic!("Active poly min y too high: {}", poly_index);
+         }
+      }
+
+      for i in self.upper_active_end..self.polys_len {
+         let poly_index = self.upper_active[i];
+
+         let min_y = self.upper_min_y[poly_index];
+         if min_y < y_split {
+            panic!("Upcoming poly below split point: {}", poly_index);
          }
       }
    }
@@ -789,21 +807,9 @@ impl Rasterizer {
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
 
-         if self.upper_max_y[poly_index] <= y {
-            let poly_start = self.poly_to_pool[poly_index];
-            let poly_len = self.upper_edges_len[poly_index];
-            let poly_end = poly_start + poly_len;
+         assert!(self.upper_max_y[poly_index] > y);
 
-            for edge_i in poly_start..poly_end {
-               self.lower_edges[edge_i] = self.upper_edges[edge_i];
-            }
-
-            self.lower_edges_len[poly_index] = poly_len;
-
-            // ADD poly to some lower list
-         } else {
-            self.h_split_poly(poly_index, y, y_px);
-         }
+         self.h_split_poly(poly_index, y, y_px);
       }
    }
 
@@ -942,15 +948,11 @@ impl Rasterizer {
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
 
-         // println!("P: {:?}", poly_index);
-
          let poly_start = self.poly_to_pool[poly_index];
          let poly_end = poly_start + self.upper_edges_len[poly_index];
 
          for edge_index in poly_start..poly_end {
             let ref edge = self.upper_edges[edge_index];
-
-            // println!("E: {:?}", edge);
 
             if edge.p1.y < y_split {
                panic!("Upper polygon below split point - Poly: {}, Edge / Split Y: {} {}", poly_index, edge.p1.y, y_split);
