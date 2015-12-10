@@ -309,12 +309,15 @@ pub struct Rasterizer {
    pub lower_edges: Vec<Edge>,
    pub lower_edges_len: Vec<usize>,
 
-   pub lower_min_y: Vec<i64>,
-   pub lower_max_y: Vec<i64>,
+   pub lower_min_x: Vec<i64>,
+   pub lower_max_x: Vec<i64>,
 
    pub lower_active: Vec<usize>,
    pub lower_active_start: usize,
    pub lower_active_end: usize,
+
+   pub final_edges: Vec<Edge>,
+   pub final_edges_len: Vec<usize>,
 }
 
 impl Rasterizer {
@@ -336,9 +339,12 @@ impl Rasterizer {
       let lower_edges = create_default_vec(65536);
       let lower_edges_len = create_default_vec(65536);
 
-      let lower_min_y = create_default_vec(65536);
-      let lower_max_y = create_default_vec(65536);
+      let lower_min_x = create_default_vec(65536);
+      let lower_max_x = create_default_vec(65536);
       let lower_active = create_default_vec(65536);
+
+      let final_edges = create_default_vec(65536);
+      let final_edges_len = create_default_vec(65536);
 
       Rasterizer {
          vert_intersections_ref: vert_intersections_ref,
@@ -362,12 +368,15 @@ impl Rasterizer {
          lower_edges: lower_edges,
          lower_edges_len: lower_edges_len,
 
-         lower_min_y: lower_min_y,
-         lower_max_y: lower_max_y,
+         lower_min_x: lower_min_x,
+         lower_max_x: lower_max_x,
 
          lower_active: lower_active,
          lower_active_start: 0,
          lower_active_end: 0,
+
+         final_edges: final_edges,
+         final_edges_len: final_edges_len,
       }
    }
 
@@ -385,9 +394,9 @@ impl Rasterizer {
 
       self.check_min_max_x_y(min_x, min_y, max_x, max_y);
 
-      self.calc_poly_min_max_y();
+      self.update_upper_min_max_y();
 
-      self.check_poly_min_max_y(min_y, max_y);
+      self.check_upper_min_max_y(min_y, max_y);
 
       let x_start = to_px(min_x);
       let x_end = to_px(max_x - 1) + 1;
@@ -576,7 +585,7 @@ impl Rasterizer {
       }
    }
 
-   fn calc_poly_min_max_y(&mut self) {
+   fn update_upper_min_max_y(&mut self) {
       for i in 0..self.polys_len {
          let poly_start = self.poly_to_pool[i];
          let poly_end = poly_start + self.upper_edges_len[i];
@@ -601,10 +610,10 @@ impl Rasterizer {
          self.upper_active[i] = i;
       }
 
-      self.sort_upper_min_y();
+      self.sort_upper_active();
    }
 
-   fn sort_upper_min_y(&mut self) {
+   fn sort_upper_active(&mut self) {
       let upper_active = &mut self.upper_active;
       let upper_min_y = &self.upper_min_y;
       let upper_max_y = &self.upper_max_y;
@@ -618,7 +627,7 @@ impl Rasterizer {
       });
    }
 
-   fn check_poly_min_max_y(&self, all_min_y: i64, all_max_y: i64) {
+   fn check_upper_min_max_y(&self, all_min_y: i64, all_max_y: i64) {
       let mut prev_min_y = i64::MIN;
       for i in 0..self.polys_len {
          let poly_i = self.upper_active[i];
@@ -639,6 +648,50 @@ impl Rasterizer {
 
          prev_min_y = min_y;
       }
+   }
+
+   #[allow(dead_code)]
+   fn update_lower_min_max_y(&mut self) {
+      for i in 0..self.lower_active_end {
+         let poly_start = self.poly_to_pool[i];
+         let poly_end = poly_start + self.lower_edges_len[i];
+
+         let mut poly_min_x = i64::MAX;
+         let mut poly_max_x = i64::MIN;
+
+         for edge_i in poly_start..poly_end {
+            let ref edge = self.lower_edges[edge_i];
+
+            if edge.p1.x < poly_min_x  {
+               poly_min_x = edge.p1.x;
+            }
+
+            if edge.p1.x > poly_max_x {
+               poly_max_x = edge.p1.x;
+            }
+         }
+
+         self.lower_min_x[i] = poly_min_x;
+         self.lower_max_x[i] = poly_max_x;
+         self.lower_active[i] = i;
+      }
+
+      self.sort_lower_active();
+   }
+
+   #[allow(dead_code)]
+   fn sort_lower_active(&mut self) {
+      let lower_active = &mut self.lower_active;
+      let lower_min_x = &self.lower_min_x;
+      let lower_max_x = &self.lower_max_x;
+
+      lower_active[..self.lower_active_end].sort_by(|a, b| {
+         match lower_min_x[*a].cmp(&lower_min_x[*b]) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Equal => lower_max_x[*a].cmp(&lower_max_x[*b])
+         }
+      });
    }
 
    fn min_max_x_y(&self, scene: &Scene) -> (i64, i64, i64, i64) {
@@ -756,6 +809,36 @@ impl Rasterizer {
       // Adjust lower range
    }
 
+   fn sort_sink_upper_last_poly(&mut self) {
+      let mut active_last = self.upper_active_end - 1;
+      if active_last <= self.upper_active_start {
+         return;
+      }
+
+      let mut active_prev = active_last - 1;
+
+      while active_prev >= self.upper_active_start {
+         let poly_last = self.upper_active[active_last];
+         let poly_prev = self.upper_active[active_prev];
+
+         let max_y_last = self.upper_max_y[poly_last];
+         let max_y_prev = self.upper_max_y[poly_prev];
+
+         if max_y_prev <= max_y_last {
+            return;
+         }
+
+         self.upper_active[active_last] = poly_prev;
+         self.upper_active[active_prev] = poly_last;
+
+         active_last -= 1;
+         if active_last <= self.upper_active_start {
+            return;
+         }
+         active_prev = active_last - 1;
+      }
+   }
+
    fn check_upper_range(&mut self, y_split: i64) {
       for i in 0..self.upper_active_start {
          let poly_index = self.upper_active[i];
@@ -791,30 +874,82 @@ impl Rasterizer {
       }
    }
 
-   fn sort_sink_upper_last_poly(&mut self) {
-      let mut active_last = self.upper_active_end - 1;
-      if active_last <= self.upper_active_start {
+   fn advance_lower_range(&mut self, x_world: i64, x_split: i64) {
+      self.advance_lower_range_start(x_world, x_split);
+
+      self.advance_lower_range_end(x_split);
+   }
+
+   fn advance_lower_range_start(&mut self, x_world: i64, x_split: i64) {
+      while self.lower_active_start < self.lower_active_end {
+         let poly_index = self.lower_active[self.lower_active_start];
+
+         let max_x = self.lower_max_x[poly_index];
+         if max_x > x_split {
+            break;
+         }
+
+         if max_x > x_world {
+            self.copy_to_active(poly_index);
+         }
+
+         self.lower_active_start += 1;
+      }
+   }
+
+   fn advance_lower_range_end(&mut self, x_split: i64) {
+      while self.lower_active_end < self.polys_len {
+         let poly_index = self.lower_active[self.lower_active_end];
+
+         let min_x = self.lower_min_x[poly_index];
+         if min_x >= x_split {
+            break;
+         }
+
+         self.lower_active_end += 1;
+
+         self.sort_sink_lower_last_poly();
+      }
+   }
+
+   fn copy_to_active(&mut self, poly_index: usize) {
+      let poly_start = self.poly_to_pool[poly_index];
+
+      let poly_len = self.lower_edges_len[poly_index];
+      self.lower_edges_len[poly_index] = poly_len;
+
+      let poly_end = poly_start + poly_len;
+      for edge_i in poly_start..poly_end {
+         self.final_edges[edge_i] = self.lower_edges[edge_i];
+      }
+
+      // Adjust active range
+   }
+
+   fn sort_sink_lower_last_poly(&mut self) {
+      let mut active_last = self.lower_active_end - 1;
+      if active_last <= self.lower_active_start {
          return;
       }
 
       let mut active_prev = active_last - 1;
 
-      while active_prev >= self.upper_active_start {
-         let poly_last = self.upper_active[active_last];
-         let poly_prev = self.upper_active[active_prev];
+      while active_prev >= self.lower_active_start {
+         let poly_last = self.lower_active[active_last];
+         let poly_prev = self.lower_active[active_prev];
 
-         let max_y_last = self.upper_max_y[poly_last];
-         let max_y_prev = self.upper_max_y[poly_prev];
+         let max_x_last = self.lower_max_x[poly_last];
+         let max_x_prev = self.lower_max_x[poly_prev];
 
-         if max_y_prev <= max_y_last {
+         if max_x_prev <= max_x_last {
             return;
          }
 
-         self.upper_active[active_last] = poly_prev;
-         self.upper_active[active_prev] = poly_last;
+         self.lower_active[active_last] = poly_prev;
+         self.lower_active[active_prev] = poly_last;
 
          active_last -= 1;
-         if active_last <= self.upper_active_start {
+         if active_last <= self.lower_active_start {
             return;
          }
          active_prev = active_last - 1;
