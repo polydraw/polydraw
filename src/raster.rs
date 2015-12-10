@@ -420,6 +420,8 @@ impl Rasterizer {
 
          self.update_lower_min_max_x();
 
+         self.check_lower_min_max_x(min_x, max_x);
+
          let mut x = x_start;
 
          while x < x_end {
@@ -592,113 +594,6 @@ impl Rasterizer {
       }
    }
 
-   fn update_upper_min_max_y(&mut self) {
-      for poly_index in 0..self.polys_len {
-         let poly_start = self.poly_to_pool[poly_index];
-         let poly_end = poly_start + self.upper_edges_len[poly_index];
-
-         let mut poly_min_y = i64::MAX;
-         let mut poly_max_y = i64::MIN;
-
-         for edge_i in poly_start..poly_end {
-            let ref edge = self.upper_edges[edge_i];
-
-            if edge.p1.y < poly_min_y  {
-               poly_min_y = edge.p1.y;
-            }
-
-            if edge.p1.y > poly_max_y {
-               poly_max_y = edge.p1.y;
-            }
-         }
-
-         self.upper_min_y[poly_index] = poly_min_y;
-         self.upper_max_y[poly_index] = poly_max_y;
-      }
-
-      self.sort_upper_active();
-   }
-
-   fn sort_upper_active(&mut self) {
-      let upper_active = &mut self.upper_active;
-      let upper_min_y = &self.upper_min_y;
-      let upper_max_y = &self.upper_max_y;
-
-      upper_active[..self.polys_len].sort_by(|a, b| {
-         match upper_min_y[*a].cmp(&upper_min_y[*b]) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Greater => Ordering::Greater,
-            Ordering::Equal => upper_max_y[*a].cmp(&upper_max_y[*b])
-         }
-      });
-   }
-
-   fn check_upper_min_max_y(&self, all_min_y: i64, all_max_y: i64) {
-      let mut prev_min_y = i64::MIN;
-      for i in 0..self.polys_len {
-         let poly_i = self.upper_active[i];
-
-         let min_y = self.upper_min_y[poly_i];
-         let max_y = self.upper_max_y[poly_i];
-
-         if min_y == i64::MAX || min_y < all_min_y {
-            panic!("Bad poly min_y value");
-         }
-         if max_y == i64::MIN || max_y > all_max_y {
-            panic!("Bad poly max_y value");
-         }
-
-         if prev_min_y > min_y  {
-            panic!("Polys not sorted by min y");
-         }
-
-         prev_min_y = min_y;
-      }
-   }
-
-   fn update_lower_min_max_x(&mut self) {
-      for active_index in 0..self.lower_active_end {
-         let poly_index = self.lower_active[active_index];
-
-         let poly_start = self.poly_to_pool[poly_index];
-         let poly_end = poly_start + self.lower_edges_len[poly_index];
-
-         let mut poly_min_x = i64::MAX;
-         let mut poly_max_x = i64::MIN;
-
-         for edge_i in poly_start..poly_end {
-            let ref edge = self.lower_edges[edge_i];
-
-            if edge.p1.x < poly_min_x  {
-               poly_min_x = edge.p1.x;
-            }
-
-            if edge.p1.x > poly_max_x {
-               poly_max_x = edge.p1.x;
-            }
-         }
-
-         self.lower_min_x[poly_index] = poly_min_x;
-         self.lower_max_x[poly_index] = poly_max_x;
-      }
-
-      self.sort_lower_active();
-   }
-
-   fn sort_lower_active(&mut self) {
-      let lower_active = &mut self.lower_active;
-      let lower_min_x = &self.lower_min_x;
-      let lower_max_x = &self.lower_max_x;
-
-      lower_active[..self.lower_active_end].sort_by(|a, b| {
-         match lower_min_x[*a].cmp(&lower_min_x[*b]) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Greater => Ordering::Greater,
-            Ordering::Equal => lower_max_x[*a].cmp(&lower_max_x[*b])
-         }
-      });
-   }
-
    fn min_max_x_y(&self, scene: &Scene) -> (i64, i64, i64, i64) {
       let mut min_x = i64::MAX;
       let mut min_y = i64::MAX;
@@ -759,6 +654,136 @@ impl Rasterizer {
 
       if min_y > max_y {
          panic!("Wrong min_y max_y");
+      }
+   }
+
+   fn update_upper_min_max_y(&mut self) {
+      for poly_index in 0..self.polys_len {
+         let poly_start = self.poly_to_pool[poly_index];
+         let poly_end = poly_start + self.upper_edges_len[poly_index];
+
+         let mut poly_min_y = i64::MAX;
+         let mut poly_max_y = i64::MIN;
+
+         for edge_i in poly_start..poly_end {
+            let ref edge = self.upper_edges[edge_i];
+
+            if edge.p1.y < poly_min_y  {
+               poly_min_y = edge.p1.y;
+            }
+
+            if edge.p1.y > poly_max_y {
+               poly_max_y = edge.p1.y;
+            }
+         }
+
+         self.upper_min_y[poly_index] = poly_min_y;
+         self.upper_max_y[poly_index] = poly_max_y;
+      }
+
+      self.sort_upper_active();
+   }
+
+   fn sort_upper_active(&mut self) {
+      let upper_active = &mut self.upper_active;
+      let upper_min_y = &self.upper_min_y;
+      let upper_max_y = &self.upper_max_y;
+
+      upper_active[..self.polys_len].sort_by(|a, b| {
+         match upper_min_y[*a].cmp(&upper_min_y[*b]) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Equal => upper_max_y[*a].cmp(&upper_max_y[*b])
+         }
+      });
+   }
+
+   fn check_upper_min_max_y(&self, all_min_y: i64, all_max_y: i64) {
+      let mut prev_min_y = i64::MIN;
+      for active_index in 0..self.polys_len {
+         let poly_index = self.upper_active[active_index];
+
+         let min_y = self.upper_min_y[poly_index];
+         let max_y = self.upper_max_y[poly_index];
+
+         if min_y == i64::MAX || min_y < all_min_y {
+            panic!("Bad poly min_y value");
+         }
+         if max_y == i64::MIN || max_y > all_max_y {
+            panic!("Bad poly max_y value");
+         }
+
+         if prev_min_y > min_y  {
+            panic!("Polys not sorted by min y");
+         }
+
+         prev_min_y = min_y;
+      }
+   }
+
+   fn update_lower_min_max_x(&mut self) {
+      for active_index in 0..self.lower_active_end {
+         let poly_index = self.lower_active[active_index];
+
+         let poly_start = self.poly_to_pool[poly_index];
+         let poly_end = poly_start + self.lower_edges_len[poly_index];
+
+         let mut poly_min_x = i64::MAX;
+         let mut poly_max_x = i64::MIN;
+
+         for edge_i in poly_start..poly_end {
+            let ref edge = self.lower_edges[edge_i];
+
+            if edge.p1.x < poly_min_x  {
+               poly_min_x = edge.p1.x;
+            }
+
+            if edge.p1.x > poly_max_x {
+               poly_max_x = edge.p1.x;
+            }
+         }
+
+         self.lower_min_x[poly_index] = poly_min_x;
+         self.lower_max_x[poly_index] = poly_max_x;
+      }
+
+      self.sort_lower_active();
+   }
+
+   fn sort_lower_active(&mut self) {
+      let lower_active = &mut self.lower_active;
+      let lower_min_x = &self.lower_min_x;
+      let lower_max_x = &self.lower_max_x;
+
+      lower_active[..self.lower_active_end].sort_by(|a, b| {
+         match lower_min_x[*a].cmp(&lower_min_x[*b]) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Equal => lower_max_x[*a].cmp(&lower_max_x[*b])
+         }
+      });
+   }
+
+   fn check_lower_min_max_x(&self, all_min_x: i64, all_max_x: i64) {
+      let mut prev_min_x = i64::MIN;
+      for active_index in self.lower_active_start..self.lower_active_end {
+         let poly_index = self.lower_active[active_index];
+
+         let min_x = self.lower_min_x[poly_index];
+         let max_x = self.lower_max_x[poly_index];
+
+         if min_x == i64::MAX || min_x < all_min_x {
+            panic!("Bad poly min_x value");
+         }
+         if max_x == i64::MIN || max_x > all_max_x {
+            panic!("Bad poly max_x value");
+         }
+
+         if prev_min_x > min_x  {
+            panic!("Polys not sorted by min x");
+         }
+
+         prev_min_x = min_x;
       }
    }
 
