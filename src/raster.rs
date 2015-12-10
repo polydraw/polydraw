@@ -407,6 +407,9 @@ impl Rasterizer {
          let y_world = from_px(y);
          let y_split = y_world + DIV_PER_PIXEL;
 
+         self.lower_active_start = 0;
+         self.lower_active_end = 0;
+
          self.advance_upper_range(y_world, y_split);
 
          self.check_upper_range(y_split);
@@ -414,6 +417,8 @@ impl Rasterizer {
          self.h_split(y_split, y + 1);
 
          self.check_upper_edges(y_split);
+
+         self.update_lower_min_max_x();
 
          let mut x = x_start;
 
@@ -455,6 +460,8 @@ impl Rasterizer {
 
          // Leave 4 position for further hori and vert splitting
          pool_index += 4;
+
+         self.upper_active[i] = i;
       }
 
       self.upper_active_start = 0;
@@ -586,9 +593,9 @@ impl Rasterizer {
    }
 
    fn update_upper_min_max_y(&mut self) {
-      for i in 0..self.polys_len {
-         let poly_start = self.poly_to_pool[i];
-         let poly_end = poly_start + self.upper_edges_len[i];
+      for poly_index in 0..self.polys_len {
+         let poly_start = self.poly_to_pool[poly_index];
+         let poly_end = poly_start + self.upper_edges_len[poly_index];
 
          let mut poly_min_y = i64::MAX;
          let mut poly_max_y = i64::MIN;
@@ -605,9 +612,8 @@ impl Rasterizer {
             }
          }
 
-         self.upper_min_y[i] = poly_min_y;
-         self.upper_max_y[i] = poly_max_y;
-         self.upper_active[i] = i;
+         self.upper_min_y[poly_index] = poly_min_y;
+         self.upper_max_y[poly_index] = poly_max_y;
       }
 
       self.sort_upper_active();
@@ -650,11 +656,12 @@ impl Rasterizer {
       }
    }
 
-   #[allow(dead_code)]
-   fn update_lower_min_max_y(&mut self) {
-      for i in 0..self.lower_active_end {
-         let poly_start = self.poly_to_pool[i];
-         let poly_end = poly_start + self.lower_edges_len[i];
+   fn update_lower_min_max_x(&mut self) {
+      for active_index in 0..self.lower_active_end {
+         let poly_index = self.lower_active[active_index];
+
+         let poly_start = self.poly_to_pool[poly_index];
+         let poly_end = poly_start + self.lower_edges_len[poly_index];
 
          let mut poly_min_x = i64::MAX;
          let mut poly_max_x = i64::MIN;
@@ -671,15 +678,13 @@ impl Rasterizer {
             }
          }
 
-         self.lower_min_x[i] = poly_min_x;
-         self.lower_max_x[i] = poly_max_x;
-         self.lower_active[i] = i;
+         self.lower_min_x[poly_index] = poly_min_x;
+         self.lower_max_x[poly_index] = poly_max_x;
       }
 
       self.sort_lower_active();
    }
 
-   #[allow(dead_code)]
    fn sort_lower_active(&mut self) {
       let lower_active = &mut self.lower_active;
       let lower_min_x = &self.lower_min_x;
@@ -806,7 +811,12 @@ impl Rasterizer {
          self.lower_edges[edge_i] = self.upper_edges[edge_i];
       }
 
-      // Adjust lower range
+      self.add_lower_active(poly_index);
+   }
+
+   fn add_lower_active(&mut self, poly_index: usize) {
+      self.lower_active[self.lower_active_end] = poly_index;
+      self.lower_active_end += 1;
    }
 
    fn sort_sink_upper_last_poly(&mut self) {
@@ -923,7 +933,7 @@ impl Rasterizer {
          self.final_edges[edge_i] = self.lower_edges[edge_i];
       }
 
-      // Adjust active range
+      // Adjust final range
    }
 
    fn sort_sink_lower_last_poly(&mut self) {
@@ -963,6 +973,8 @@ impl Rasterizer {
          assert!(self.upper_max_y[poly_index] > y);
 
          self.h_split_poly(poly_index, y, y_px);
+
+         self.add_lower_active(poly_index);
       }
    }
 
