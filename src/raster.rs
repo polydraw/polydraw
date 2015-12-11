@@ -315,6 +315,7 @@ pub struct Rasterizer {
    pub lower_active: Vec<usize>,
    pub lower_active_start: usize,
    pub lower_active_end: usize,
+   pub lower_active_full: usize,
 
    pub final_edges: Vec<Edge>,
    pub final_edges_len: Vec<usize>,
@@ -374,6 +375,7 @@ impl Rasterizer {
          lower_active: lower_active,
          lower_active_start: 0,
          lower_active_end: 0,
+         lower_active_full: 0,
 
          final_edges: final_edges,
          final_edges_len: final_edges_len,
@@ -409,6 +411,7 @@ impl Rasterizer {
 
          self.lower_active_start = 0;
          self.lower_active_end = 0;
+         self.lower_active_full = 0;
 
          self.advance_upper_range(y_world, y_split);
 
@@ -427,6 +430,10 @@ impl Rasterizer {
          while x < x_end {
             let x_world = from_px(x);
             let x_split = x_world + DIV_PER_PIXEL;
+
+            self.advance_lower_range(x_world, x_split);
+
+            self.check_lower_range(x_split);
 
             x += 1;
          }
@@ -722,7 +729,7 @@ impl Rasterizer {
    }
 
    fn update_lower_min_max_x(&mut self) {
-      for active_index in 0..self.lower_active_end {
+      for active_index in 0..self.lower_active_full {
          let poly_index = self.lower_active[active_index];
 
          let poly_start = self.poly_to_pool[poly_index];
@@ -755,7 +762,7 @@ impl Rasterizer {
       let lower_min_x = &self.lower_min_x;
       let lower_max_x = &self.lower_max_x;
 
-      lower_active[..self.lower_active_end].sort_by(|a, b| {
+      lower_active[..self.lower_active_full].sort_by(|a, b| {
          match lower_min_x[*a].cmp(&lower_min_x[*b]) {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
@@ -766,7 +773,7 @@ impl Rasterizer {
 
    fn check_lower_min_max_x(&self, all_min_x: i64, all_max_x: i64) {
       let mut prev_min_x = i64::MIN;
-      for active_index in self.lower_active_start..self.lower_active_end {
+      for active_index in 0..self.lower_active_full {
          let poly_index = self.lower_active[active_index];
 
          let min_x = self.lower_min_x[poly_index];
@@ -840,8 +847,8 @@ impl Rasterizer {
    }
 
    fn add_lower_active(&mut self, poly_index: usize) {
-      self.lower_active[self.lower_active_end] = poly_index;
-      self.lower_active_end += 1;
+      self.lower_active[self.lower_active_full] = poly_index;
+      self.lower_active_full += 1;
    }
 
    fn sort_sink_upper_last_poly(&mut self) {
@@ -933,7 +940,7 @@ impl Rasterizer {
    }
 
    fn advance_lower_range_end(&mut self, x_split: i64) {
-      while self.lower_active_end < self.polys_len {
+      while self.lower_active_end < self.lower_active_full {
          let poly_index = self.lower_active[self.lower_active_end];
 
          let min_x = self.lower_min_x[poly_index];
@@ -988,6 +995,41 @@ impl Rasterizer {
             return;
          }
          active_prev = active_last - 1;
+      }
+   }
+
+   fn check_lower_range(&mut self, x_split: i64) {
+      for i in 0..self.lower_active_start {
+         let poly_index = self.lower_active[i];
+
+         let max_x = self.lower_max_x[poly_index];
+         if max_x > x_split {
+            panic!("Discarded lower poly after split point: {}", poly_index);
+         }
+      }
+
+      for i in self.lower_active_start..self.lower_active_end {
+         let poly_index = self.lower_active[i];
+
+         let min_x = self.lower_min_x[poly_index];
+         let max_x = self.lower_max_x[poly_index];
+
+         if max_x <= x_split {
+            panic!("Active poly max x too left: {}", poly_index);
+         }
+
+         if min_x >= x_split {
+            panic!("Active poly min x too right: {}", poly_index);
+         }
+      }
+
+      for i in self.lower_active_end..self.lower_active_full {
+         let poly_index = self.lower_active[i];
+
+         let min_x = self.lower_min_x[poly_index];
+         if min_x < x_split {
+            panic!("Upcoming poly before split point: {}", poly_index);
+         }
       }
    }
 
