@@ -386,7 +386,7 @@ impl Rasterizer {
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
       self.transfer_scene(scene);
 
-      self.check_pool(&self.upper_edges, &self.upper_edges_len);
+      self.check_upper_initial_pool();
 
       self.intersect_edges(scene);
 
@@ -417,9 +417,13 @@ impl Rasterizer {
 
          self.check_upper_range(y_split);
 
+         self.check_upper_pool();
+
          self.h_split(y_split, y + 1);
 
          self.check_upper_edges(y_split);
+
+         self.check_lower_initial_pool();
 
          self.update_lower_min_max_x();
 
@@ -477,29 +481,54 @@ impl Rasterizer {
       self.upper_active_end = 0;
    }
 
-   fn check_pool(&self, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
+   fn check_upper_initial_pool(&self) {
       for poly_index in 0..self.polys_len {
-         let edge_start = self.poly_to_pool[poly_index];
-         let poly_len = pool_lens[poly_index];
+         self.check_pool_poly(poly_index, &self.upper_edges, &self.upper_edges_len);
+      }
+   }
 
-         if poly_len < 3 {
-            panic!("Insufficient edge count: {}", poly_len);
+   fn check_upper_pool(&self) {
+      for active_index in self.upper_active_start..self.upper_active_end {
+         let poly_index = self.upper_active[active_index];
+         self.check_pool_poly(poly_index, &self.upper_edges, &self.upper_edges_len);
+      }
+   }
+
+   fn check_lower_initial_pool(&self) {
+      for active_index in 0..self.lower_active_full {
+         let poly_index = self.lower_active[active_index];
+         self.check_pool_poly(poly_index, &self.lower_edges, &self.lower_edges_len);
+      }
+   }
+
+   fn check_lower_pool(&self) {
+      for active_index in self.lower_active_start..self.lower_active_end {
+         let poly_index = self.lower_active[active_index];
+         self.check_pool_poly(poly_index, &self.lower_edges, &self.lower_edges_len);
+      }
+   }
+
+   fn check_pool_poly(&self, poly_index: usize, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
+      let edge_start = self.poly_to_pool[poly_index];
+      let poly_len = pool_lens[poly_index];
+
+      if poly_len < 3 {
+         panic!("Insufficient edge count: {}", poly_len);
+      }
+
+      let mut p2_prev = pool[edge_start + poly_len - 1].p2;
+      for edge_index in edge_start..edge_start + poly_len {
+         let edge = pool[edge_index];
+
+         if edge.edge_type.reversed() != (edge.p1 > edge.p2) {
+            panic!("Wrong edge points ordering");
          }
 
-         let mut p2_prev = pool[edge_start + poly_len - 1].p2;
-         for edge_index in edge_start..edge_start + poly_len {
-            let edge = pool[edge_index];
-
-            if edge.edge_type.reversed() != (edge.p1 > edge.p2) {
-               panic!("Wrong edge points ordering");
-            }
-
-            if edge.p1 != p2_prev {
-               panic!("Unconnected poly");
-            }
-
-            p2_prev = edge.p2;
+         if edge.p1 != p2_prev {
+            panic!("Unconnected poly [{}] {:?} / {:?}", poly_index, edge.p1, p2_prev);
          }
+
+         p2_prev = edge.p2;
       }
    }
 
@@ -1004,7 +1033,7 @@ impl Rasterizer {
 
          let max_x = self.lower_max_x[poly_index];
          if max_x > x_split {
-            panic!("Discarded lower poly after split point: {}", poly_index);
+            panic!("Discarded lower poly after split point: [{}] {} / {}", poly_index, max_x, x_split);
          }
       }
 
@@ -1015,11 +1044,11 @@ impl Rasterizer {
          let max_x = self.lower_max_x[poly_index];
 
          if max_x <= x_split {
-            panic!("Active poly max x too left: {}", poly_index);
+            panic!("Active poly max x too small: [{}] {} / {}", poly_index, max_x, x_split);
          }
 
          if min_x >= x_split {
-            panic!("Active poly min x too right: {}", poly_index);
+            panic!("Active poly min x too big: [{}] {} / {}", poly_index, min_x, x_split);
          }
       }
 
@@ -1028,7 +1057,7 @@ impl Rasterizer {
 
          let min_x = self.lower_min_x[poly_index];
          if min_x < x_split {
-            panic!("Upcoming poly before split point: {}", poly_index);
+            panic!("Upcoming poly before split point: [{}] {} / {}", poly_index, min_x, x_split);
          }
       }
    }
@@ -1136,7 +1165,7 @@ impl Rasterizer {
 
                   break;
                } else {
-                  p2 = edge.p1;
+                  p2 = edge.p2;
 
                   self.upper_edges[upper_i] = edge;
                   upper_i += 1;
