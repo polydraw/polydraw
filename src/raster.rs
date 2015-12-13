@@ -881,32 +881,32 @@ impl Rasterizer {
    }
 
    fn sort_sink_upper_last_poly(&mut self) {
-      let mut active_last = self.upper_active_end - 1;
-      if active_last <= self.upper_active_start {
+      let mut active = self.upper_active_end - 1;
+      if active <= self.upper_active_start {
          return;
       }
 
-      let mut active_prev = active_last - 1;
+      let mut active_prev = active - 1;
 
       while active_prev >= self.upper_active_start {
-         let poly_last = self.upper_active[active_last];
+         let poly = self.upper_active[active];
          let poly_prev = self.upper_active[active_prev];
 
-         let max_y_last = self.upper_max_y[poly_last];
+         let max_y = self.upper_max_y[poly];
          let max_y_prev = self.upper_max_y[poly_prev];
 
-         if max_y_prev <= max_y_last {
+         if max_y_prev <= max_y {
             return;
          }
 
-         self.upper_active[active_last] = poly_prev;
-         self.upper_active[active_prev] = poly_last;
+         self.upper_active[active] = poly_prev;
+         self.upper_active[active_prev] = poly;
 
-         active_last -= 1;
-         if active_last <= self.upper_active_start {
+         active -= 1;
+         if active <= self.upper_active_start {
             return;
          }
-         active_prev = active_last - 1;
+         active_prev = active - 1;
       }
    }
 
@@ -931,7 +931,7 @@ impl Rasterizer {
          if max_y < prev_max_y {
             panic!(
                "Active poly max x smaller than previous: [{}] {} / {} / {}",
-               poly_index, max_y, prev_max_x, x_split
+               poly_index, max_y, prev_max_y, y_split
             );
          }
 
@@ -1009,32 +1009,32 @@ impl Rasterizer {
    }
 
    fn sort_sink_lower_last_poly(&mut self) {
-      let mut active_last = self.lower_active_end - 1;
-      if active_last <= self.lower_active_start {
+      let mut active = self.lower_active_end - 1;
+      if active <= self.lower_active_start {
          return;
       }
 
-      let mut active_prev = active_last - 1;
+      let mut active_prev = active - 1;
 
       while active_prev >= self.lower_active_start {
-         let poly_last = self.lower_active[active_last];
+         let poly = self.lower_active[active];
          let poly_prev = self.lower_active[active_prev];
 
-         let max_x_last = self.lower_max_x[poly_last];
+         let max_x = self.lower_max_x[poly];
          let max_x_prev = self.lower_max_x[poly_prev];
 
-         if max_x_prev <= max_x_last {
+         if max_x_prev <= max_x {
             return;
          }
 
-         self.lower_active[active_last] = poly_prev;
-         self.lower_active[active_prev] = poly_last;
+         self.lower_active[active] = poly_prev;
+         self.lower_active[active_prev] = poly;
 
-         active_last -= 1;
-         if active_last <= self.lower_active_start {
+         active -= 1;
+         if active <= self.lower_active_start {
             return;
          }
-         active_prev = active_last - 1;
+         active_prev = active - 1;
       }
    }
 
