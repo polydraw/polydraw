@@ -319,6 +319,9 @@ pub struct Rasterizer {
 
    pub final_edges: Vec<Edge>,
    pub final_edges_len: Vec<usize>,
+
+   pub final_active: Vec<usize>,
+   pub final_active_full: usize,
 }
 
 impl Rasterizer {
@@ -346,6 +349,8 @@ impl Rasterizer {
 
       let final_edges = create_default_vec(65536);
       let final_edges_len = create_default_vec(65536);
+
+      let final_active = create_default_vec(65536);
 
       Rasterizer {
          vert_intersections_ref: vert_intersections_ref,
@@ -379,6 +384,9 @@ impl Rasterizer {
 
          final_edges: final_edges,
          final_edges_len: final_edges_len,
+
+         final_active: final_active,
+         final_active_full: 0,
       }
    }
 
@@ -437,11 +445,15 @@ impl Rasterizer {
             let x_world = from_px(x);
             let x_split = x_world + DIV_PER_PIXEL;
 
+            self.final_active_full = 0;
+
             self.advance_lower_range(x_world, x_split);
 
             self.check_lower_range(x_split);
 
             self.check_lower_pool();
+
+            self.v_split(x_split, x + 1);
 
             x += 1;
          }
@@ -1010,7 +1022,12 @@ impl Rasterizer {
          self.final_edges[edge_i] = self.lower_edges[edge_i];
       }
 
-      // Adjust final range
+      self.add_final_active(poly_index);
+   }
+
+   fn add_final_active(&mut self, poly_index: usize) {
+      self.final_active[self.final_active_full] = poly_index;
+      self.final_active_full += 1;
    }
 
    fn sort_sink_lower_last_poly(&mut self) {
@@ -1232,6 +1249,149 @@ impl Rasterizer {
       self.lower_edges_len[poly_index] = lower_i - poly_start;
    }
 
+   fn v_split(&mut self, x: i64, x_px: i64) {
+      for i in self.lower_active_start..self.lower_active_end {
+         let poly_index = self.lower_active[i];
+
+         assert!(self.lower_max_x[poly_index] > x);
+
+         self.v_split_poly(poly_index, x, x_px);
+
+         self.add_final_active(poly_index);
+      }
+   }
+
+   fn v_split_poly(&mut self, poly_index: usize, x: i64, x_px: i64) {
+      let p1;
+      let mut p2 = Point::default();
+
+      let poly_start = self.poly_to_pool[poly_index];
+      let poly_end = poly_start + self.lower_edges_len[poly_index];
+
+      let mut i = poly_start;
+      let mut lower_i = poly_start;
+      let mut final_i = poly_start;
+
+      loop { // Edge's first point to the left of x
+         let mut edge = self.lower_edges[i];
+
+         match edge.edge_type {
+            EdgeType::LTR | EdgeType::LBR | EdgeType::LHR | EdgeType::CTR |
+            EdgeType::CBR | EdgeType::ATR | EdgeType::ABR => {
+               let x2 = edge.p2.x;
+               if x2 < x {
+                  self.final_edges[final_i] = edge;
+                  final_i += 1;
+               } else if x2 > x {
+                  let y1_intersect = self.v_intersection(&edge, x_px);
+
+                  p1 = Point::new(x, y1_intersect);
+
+                  let mut lower_edge = edge.clone();
+
+                  edge.p2 = p1;
+                  self.final_edges[final_i] = edge;
+                  final_i += 1;
+
+                  lower_edge.p1 = p1;
+                  self.lower_edges[lower_i] = lower_edge;
+                  lower_i += 1;
+
+                  break;
+               } else {
+                  p1 = edge.p2;
+
+                  self.final_edges[final_i] = edge;
+                  final_i += 1;
+
+                  break;
+               }
+            },
+            _ => {
+               self.final_edges[final_i] = edge;
+               final_i += 1;
+            }
+         }
+
+         i += 1;
+
+         if i == poly_end {
+            panic!("Polygon ends before X split line");
+         }
+      }
+
+      i += 1;
+
+      loop { // Edge's first point to the right of x
+         let mut edge = self.lower_edges[i];
+
+         match edge.edge_type {
+            EdgeType::LTL | EdgeType::LBL | EdgeType::LHL | EdgeType::CTL |
+            EdgeType::CBL | EdgeType::ATL | EdgeType::ABL => {
+               let x2 = edge.p2.x;
+               if x2 > x {
+                  self.lower_edges[lower_i] = edge;
+                  lower_i += 1;
+               } else if x2 < x {
+                  let y2_intersect = self.v_intersection(&edge, x_px);
+
+                  p2 = Point::new(x, y2_intersect);
+
+                  let mut final_edge = edge.clone();
+
+                  edge.p2 = p2;
+                  self.lower_edges[lower_i] = edge;
+                  lower_i += 1;
+
+                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, p1, p2);
+                  final_i += 1;
+
+                  final_edge.p1 = p2;
+                  self.final_edges[final_i] = final_edge;
+                  final_i += 1;
+
+                  break;
+               } else {
+                  p2 = edge.p2;
+
+                  self.lower_edges[lower_i] = edge;
+                  lower_i += 1;
+
+                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, p1, p2);
+                  final_i += 1;
+
+                  break;
+               }
+            }
+            _ => {
+               self.lower_edges[lower_i] = edge;
+               lower_i += 1;
+            }
+
+         }
+
+         i += 1;
+
+         if i == poly_end {
+            break;
+         }
+      }
+
+      i += 1;
+
+      for j in i..poly_end { // Edge's first point again to the left of x
+         self.final_edges[final_i] = self.lower_edges[j];
+         final_i += 1;
+      }
+
+      let last_lower = Edge::new(EdgeType::LVT, usize::MAX, p2, p1);
+      self.lower_edges[lower_i] = last_lower;
+      lower_i += 1;
+
+      self.lower_edges_len[poly_index] = lower_i - poly_start;
+      self.final_edges_len[poly_index] = final_i - poly_start;
+   }
+
    fn check_upper_bounds(&self, y_split: i64) {
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
@@ -1278,6 +1438,21 @@ impl Rasterizer {
 
       self.hori_intersections[
          h_ref.start + (y_px - h_ref.first_px) as usize
+      ]
+   }
+
+   #[inline]
+   fn v_intersection(&self, edge: &Edge, x_px: i64) -> i64 {
+      if edge.edge_type == EdgeType::LHR || edge.edge_type == EdgeType::LHL {
+         return edge.p1.y;
+      }
+
+      let ref v_ref = self.vert_intersections_ref[edge.segment];
+
+      assert!(v_ref.start != usize::MAX);
+
+      self.vert_intersections[
+         v_ref.start + (x_px - v_ref.first_px) as usize
       ]
    }
 }
