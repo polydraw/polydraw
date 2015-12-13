@@ -513,15 +513,16 @@ impl Rasterizer {
    }
 
    fn check_pool_poly(&self, poly_index: usize, pool: &Vec<Edge>, pool_lens: &Vec<usize>) {
-      let edge_start = self.poly_to_pool[poly_index];
+      let poly_start = self.poly_to_pool[poly_index];
       let poly_len = pool_lens[poly_index];
+      let poly_end = poly_start + poly_len;
 
       if poly_len < 3 {
          panic!("Insufficient edge count: {}", poly_len);
       }
 
-      let mut p2_prev = pool[edge_start + poly_len - 1].p2;
-      for edge_index in edge_start..edge_start + poly_len {
+      let mut p2_prev = pool[poly_end - 1].p2;
+      for edge_index in poly_start..poly_end {
          let edge = pool[edge_index];
 
          if edge.edge_type.reversed() != (edge.p1 > edge.p2) {
