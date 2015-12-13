@@ -457,6 +457,10 @@ impl Rasterizer {
 
             self.check_lower_bounds(x_split);
 
+            self.check_final_pool();
+
+            self.check_final_bounds(x_split);
+
             x += 1;
          }
       }
@@ -523,6 +527,13 @@ impl Rasterizer {
       for active_index in self.lower_active_start..self.lower_active_end {
          let poly_index = self.lower_active[active_index];
          self.check_pool_poly(poly_index, &self.lower_edges, &self.lower_edges_len);
+      }
+   }
+
+   fn check_final_pool(&self) {
+      for active_index in 0..self.final_active_full {
+         let poly_index = self.final_active[active_index];
+         self.check_pool_poly(poly_index, &self.final_edges, &self.final_edges_len);
       }
    }
 
@@ -1448,6 +1459,26 @@ impl Rasterizer {
                panic!(
                   "Lower polygon above split point - Poly: {}, Edge / Split Y: {} {}",
                   poly_index, edge.p1.y, y_split
+               );
+            }
+         }
+      }
+   }
+
+   fn check_final_bounds(&self, x_split: i64) {
+      for active_index in 0..self.final_active_full {
+         let poly_index = self.final_active[active_index];
+
+         let poly_start = self.poly_to_pool[poly_index];
+         let poly_end = poly_start + self.final_edges_len[poly_index];
+
+         for edge_i in poly_start..poly_end {
+            let ref edge = self.final_edges[edge_i];
+
+            if edge.p1.x > x_split  {
+               panic!(
+                  "Final polygon to the right of split point - Poly: {}, Edge / Split X: {} {}",
+                  poly_index, edge.p1.x, x_split
                );
             }
          }
