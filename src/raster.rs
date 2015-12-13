@@ -455,6 +455,8 @@ impl Rasterizer {
 
             self.v_split(x_split, x + 1);
 
+            self.check_lower_bounds(x_split);
+
             x += 1;
          }
       }
@@ -1403,7 +1405,30 @@ impl Rasterizer {
             let ref edge = self.upper_edges[edge_index];
 
             if edge.p1.y < y_split {
-               panic!("Upper polygon below split point - Poly: {}, Edge / Split Y: {} {}", poly_index, edge.p1.y, y_split);
+               panic!(
+                  "Upper polygon below split point - Poly: {}, Edge / Split Y: {} {}",
+                  poly_index, edge.p1.y, y_split
+               );
+            }
+         }
+      }
+   }
+
+   fn check_lower_bounds(&self, x_split: i64) {
+      for i in self.lower_active_start..self.lower_active_end {
+         let poly_index = self.lower_active[i];
+
+         let poly_start = self.poly_to_pool[poly_index];
+         let poly_end = poly_start + self.lower_edges_len[poly_index];
+
+         for edge_index in poly_start..poly_end {
+            let ref edge = self.lower_edges[edge_index];
+
+            if edge.p1.x < x_split {
+               panic!(
+                  "Lower polygon to the left split point - Poly: {}, Edge / Split X: {} {}",
+                  poly_index, edge.p1.x, x_split
+               );
             }
          }
       }
@@ -1420,7 +1445,10 @@ impl Rasterizer {
             let ref edge = self.lower_edges[edge_i];
 
             if edge.p1.y > y_split  {
-               panic!("Lower polygon above split point - Poly: {}, Edge / Split Y: {} {}", poly_index, edge.p1.y, y_split);
+               panic!(
+                  "Lower polygon above split point - Poly: {}, Edge / Split Y: {} {}",
+                  poly_index, edge.p1.y, y_split
+               );
             }
          }
       }
