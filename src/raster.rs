@@ -829,9 +829,9 @@ impl Rasterizer {
    }
 
    fn advance_upper_range(&mut self, y_world: i64, y_split: i64) {
-      self.advance_upper_range_start(y_world, y_split);
-
       self.advance_upper_range_end(y_split);
+
+      self.advance_upper_range_start(y_world, y_split);
    }
 
    fn advance_upper_range_start(&mut self, y_world: i64, y_split: i64) {
@@ -886,32 +886,32 @@ impl Rasterizer {
    }
 
    fn sort_sink_upper_last_poly(&mut self) {
-      let mut active = self.upper_active_end - 1;
-      if active <= self.upper_active_start {
+      let mut active_this = self.upper_active_end - 1;
+      if active_this <= self.upper_active_start {
          return;
       }
 
-      let mut active_prev = active - 1;
+      let mut active_prev = active_this - 1;
 
       while active_prev >= self.upper_active_start {
-         let poly = self.upper_active[active];
+         let poly_this = self.upper_active[active_this];
          let poly_prev = self.upper_active[active_prev];
 
-         let max_y = self.upper_max_y[poly];
+         let max_y_this = self.upper_max_y[poly_this];
          let max_y_prev = self.upper_max_y[poly_prev];
 
-         if max_y_prev <= max_y {
+         if max_y_prev <= max_y_this {
             return;
          }
 
-         self.upper_active[active] = poly_prev;
-         self.upper_active[active_prev] = poly;
+         self.upper_active[active_this] = poly_prev;
+         self.upper_active[active_prev] = poly_this;
 
-         active -= 1;
-         if active <= self.upper_active_start {
+         active_this -= 1;
+         if active_this <= self.upper_active_start {
             return;
          }
-         active_prev = active - 1;
+         active_prev = active_this - 1;
       }
    }
 
@@ -962,9 +962,9 @@ impl Rasterizer {
    }
 
    fn advance_lower_range(&mut self, x_world: i64, x_split: i64) {
-      self.advance_lower_range_start(x_world, x_split);
-
       self.advance_lower_range_end(x_split);
+
+      self.advance_lower_range_start(x_world, x_split);
    }
 
    fn advance_lower_range_start(&mut self, x_world: i64, x_split: i64) {
@@ -1014,32 +1014,32 @@ impl Rasterizer {
    }
 
    fn sort_sink_lower_last_poly(&mut self) {
-      let mut active = self.lower_active_end - 1;
-      if active <= self.lower_active_start {
+      let mut active_this = self.lower_active_end - 1;
+      if active_this <= self.lower_active_start {
          return;
       }
 
-      let mut active_prev = active - 1;
+      let mut active_prev = active_this - 1;
 
       while active_prev >= self.lower_active_start {
-         let poly = self.lower_active[active];
+         let poly_this = self.lower_active[active_this];
          let poly_prev = self.lower_active[active_prev];
 
-         let max_x = self.lower_max_x[poly];
+         let max_x_this = self.lower_max_x[poly_this];
          let max_x_prev = self.lower_max_x[poly_prev];
 
-         if max_x_prev <= max_x {
+         if max_x_prev <= max_x_this {
             return;
          }
 
-         self.lower_active[active] = poly_prev;
-         self.lower_active[active_prev] = poly;
+         self.lower_active[active_this] = poly_prev;
+         self.lower_active[active_prev] = poly_this;
 
-         active -= 1;
-         if active <= self.lower_active_start {
+         active_this -= 1;
+         if active_this <= self.lower_active_start {
             return;
          }
-         active_prev = active - 1;
+         active_prev = active_this - 1;
       }
    }
 
