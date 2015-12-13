@@ -910,7 +910,7 @@ impl Rasterizer {
       }
    }
 
-   fn check_upper_range(&mut self, y_split: i64) {
+   fn check_upper_range(&self, y_split: i64) {
       for i in 0..self.upper_active_start {
          let poly_index = self.upper_active[i];
 
@@ -920,11 +920,20 @@ impl Rasterizer {
          }
       }
 
+      let mut prev_max_y = i64::MIN;
+
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
 
          let min_y = self.upper_min_y[poly_index];
          let max_y = self.upper_max_y[poly_index];
+
+         if max_y < prev_max_y {
+            panic!(
+               "Active poly max x smaller than previous: [{}] {} / {} / {}",
+               poly_index, max_y, prev_max_x, x_split
+            );
+         }
 
          if max_y <= y_split {
             panic!("Active poly max y too low: {}", poly_index);
@@ -933,6 +942,8 @@ impl Rasterizer {
          if min_y >= y_split {
             panic!("Active poly min y too high: {}", poly_index);
          }
+
+         prev_max_y = max_y;
       }
 
       for i in self.upper_active_end..self.polys_len {
@@ -1027,7 +1038,7 @@ impl Rasterizer {
       }
    }
 
-   fn check_lower_range(&mut self, x_split: i64) {
+   fn check_lower_range(&self, x_split: i64) {
       for i in 0..self.lower_active_start {
          let poly_index = self.lower_active[i];
 
@@ -1037,11 +1048,20 @@ impl Rasterizer {
          }
       }
 
+      let mut prev_max_x = i64::MIN;
+
       for i in self.lower_active_start..self.lower_active_end {
          let poly_index = self.lower_active[i];
 
          let min_x = self.lower_min_x[poly_index];
          let max_x = self.lower_max_x[poly_index];
+
+         if max_x < prev_max_x {
+            panic!(
+               "Active poly max x smaller than previous: [{}] {} / {} / {}",
+               poly_index, max_x, prev_max_x, x_split
+            );
+         }
 
          if max_x <= x_split {
             panic!("Active poly max x too small: [{}] {} / {}", poly_index, max_x, x_split);
@@ -1050,6 +1070,8 @@ impl Rasterizer {
          if min_x >= x_split {
             panic!("Active poly min x too big: [{}] {} / {}", poly_index, min_x, x_split);
          }
+
+         prev_max_x = max_x;
       }
 
       for i in self.lower_active_end..self.lower_active_full {
