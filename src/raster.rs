@@ -555,7 +555,10 @@ impl Rasterizer {
          }
 
          if edge.p1 != p2_prev {
-            panic!("Unconnected poly [{}] {:?} / {:?}", poly_index, edge.p1, p2_prev);
+            panic!(
+               "Unconnected poly [{}] i {} start {} end {} ({}, {}) / ({}, {})",
+               poly_index, edge_index, poly_start, poly_end, p2_prev.x, p2_prev.y, edge.p1.x, edge.p1.y
+            );
          }
 
          p2_prev = edge.p2;
@@ -1028,7 +1031,7 @@ impl Rasterizer {
       let poly_start = self.poly_to_pool[poly_index];
 
       let poly_len = self.lower_edges_len[poly_index];
-      self.lower_edges_len[poly_index] = poly_len;
+      self.final_edges_len[poly_index] = poly_len;
 
       let poly_end = poly_start + poly_len;
       for edge_i in poly_start..poly_end {
