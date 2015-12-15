@@ -9,6 +9,9 @@ pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
 const DIV_PER_PIXEL: i64 = 1000;
 
+const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
+
+
 #[inline]
 fn to_px(v: i64) -> i64 {
    v / DIV_PER_PIXEL
@@ -460,6 +463,12 @@ impl Rasterizer {
             self.check_final_pool();
 
             self.check_final_bounds(x_split);
+
+            if self.final_active_full != 0 {
+               let color = self.active_color(scene);
+
+               frame.put_pixel(x as i32, y as i32, &color);
+            }
 
             x += 1;
          }
@@ -1518,6 +1527,46 @@ impl Rasterizer {
       ]
    }
 
+   #[inline]
+   pub fn active_color(&self, scene: &Scene) -> RGB {
+      let mut r: i64 = 0;
+      let mut g: i64 = 0;
+      let mut b: i64 = 0;
+
+      let mut total_area: i64 = 0;
+
+      for active_index in 0..self.final_active_full - 1 {
+         let poly_index = self.final_active[active_index];
+
+         let area = self.double_area(poly_index);
+
+         let ref color = scene.colors[scene.polys[poly_index].color];
+
+         r += (color.r as i64) * area;
+         g += (color.g as i64) * area;
+         b += (color.b as i64) * area;
+
+         total_area += area;
+      }
+
+      let poly_index = self.final_active[self.final_active_full - 1];
+
+      let area = DOUBLE_PIXEL_AREA - total_area;
+
+      let ref color = scene.colors[scene.polys[poly_index].color];
+
+      r += (color.r as i64) * area;
+      g += (color.g as i64) * area;
+      b += (color.b as i64) * area;
+
+      r /= DOUBLE_PIXEL_AREA;
+      g /= DOUBLE_PIXEL_AREA;
+      b /= DOUBLE_PIXEL_AREA;
+
+      RGB::new(r as u8, g as u8, b as u8)
+   }
+
+   #[inline]
    fn double_area(&self, poly_index: usize) -> i64 {
       let poly_start = self.poly_to_pool[poly_index];
       let poly_end = poly_start + self.final_edges_len[poly_index];

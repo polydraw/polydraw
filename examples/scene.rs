@@ -87,7 +87,7 @@ impl SceneRenderer {
    }
 
    fn scale_scene(&self, scene: &mut Scene) {
-      let scale = 100_000;
+      let scale = 50_000;
 
       for point in &mut scene.points {
          point.x = scale * point.x;
