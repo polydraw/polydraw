@@ -1517,6 +1517,34 @@ impl Rasterizer {
          v_ref.start + (x_px - v_ref.first_px) as usize
       ]
    }
+
+   fn double_area(&self, poly_index: usize) -> i64 {
+      let poly_start = self.poly_to_pool[poly_index];
+      let poly_end = poly_start + self.final_edges_len[poly_index];
+
+      let mut area = 0;
+
+      for edge_i in poly_start..poly_end {
+         let ref edge = self.final_edges[edge_i];
+
+         match edge.edge_type {
+            EdgeType::LHR | EdgeType::LHL => {
+               area += (edge.p2.x - edge.p1.x) * 2 * edge.p1.y;
+            },
+            EdgeType::LTR | EdgeType::LBR | EdgeType::CTR |
+            EdgeType::CBR | EdgeType::ATR | EdgeType::ABR |
+            EdgeType::LTL | EdgeType::LBL | EdgeType::CTL |
+            EdgeType::CBL | EdgeType::ATL | EdgeType::ABL => {
+               area += (edge.p2.x - edge.p1.x) * (edge.p1.y + edge.p2.y);
+            },
+            _ => {}
+         }
+      }
+
+      assert!(area >= 0);
+
+      area
+   }
 }
 
 fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
