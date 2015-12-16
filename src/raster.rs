@@ -456,21 +456,38 @@ impl Rasterizer {
 
             self.check_lower_pool();
 
-            self.v_split(x_split, x + 1);
+            match self.can_advance_stripe(x_end) {
+               Some(x_delta) => {
+                  let poly_index = self.lower_active[self.lower_active_start];
 
-            self.check_lower_bounds(x_split);
+                  self.v_split_poly(poly_index, from_px(x_delta), x_delta);
 
-            self.check_final_pool();
+                  let ref color = scene.colors[scene.polys[poly_index].color];
 
-            self.check_final_bounds(x_split);
+                  for fill_x in x..x_delta {
+                     frame.put_pixel(fill_x as i32, y as i32, &color);
+                  }
 
-            if self.final_active_full != 0 {
-               let color = self.active_color(scene);
+                  x = x_delta;
+               },
+               None => {
+                  self.v_split(x_split, x + 1);
 
-               frame.put_pixel(x as i32, y as i32, &color);
+                  self.check_lower_bounds(x_split);
+
+                  self.check_final_pool();
+
+                  self.check_final_bounds(x_split);
+
+                  if self.final_active_full != 0 {
+                     let color = self.active_color(scene);
+
+                     frame.put_pixel(x as i32, y as i32, &color);
+                  }
+
+                  x += 1;
+               }
             }
-
-            x += 1;
          }
       }
    }
@@ -1525,6 +1542,27 @@ impl Rasterizer {
       self.vert_intersections[
          v_ref.start + (x_px - v_ref.first_px) as usize
       ]
+   }
+
+   #[inline]
+   fn can_advance_stripe(&self, x_end: i64) -> Option<i64> {
+      if self.final_active_full != 0 {
+         return None;
+      }
+
+      let active_len = self.lower_active_end - self.lower_active_start;
+
+      if active_len != 1 {
+         return None;
+      }
+
+      if self.lower_active_end == self.lower_active_full {
+         return Some(x_end);
+      }
+
+      let poly_index = self.lower_active[self.lower_active_end];
+
+      Some(self.lower_min_x[poly_index] / DIV_PER_PIXEL)
    }
 
    #[inline]
