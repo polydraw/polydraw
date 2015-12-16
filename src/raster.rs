@@ -4,6 +4,7 @@ use std::{usize, i64};
 
 use frame::Frame;
 use draw::RGB;
+use geom::number::NumberOps;
 
 pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
@@ -600,8 +601,8 @@ impl Rasterizer {
       for edge in &scene.edges {
          match edge.edge_type {
             EdgeType::LTR | EdgeType::LTL | EdgeType::LBR | EdgeType::LBL |
-            EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL |
-            EdgeType::ATR | EdgeType::ATL | EdgeType::ABR | EdgeType::ABL => {
+            EdgeType::CTL | EdgeType::CBR | EdgeType::CBL |
+            EdgeType::ATR | EdgeType::ATL | EdgeType::ABR => {
 
                let segment_index = edge.segment;
 
@@ -634,6 +635,75 @@ impl Rasterizer {
                hori_prev_end = hori_end;
                hori_ref.end = hori_end;
                hori_ref.first_px = y_first_px;
+            },
+            EdgeType::CTR => {
+
+               let segment_index = edge.segment;
+
+               let ref mut vert_ref = self.vert_intersections_ref[segment_index];
+               if vert_ref.start != usize::MAX {
+                  continue;
+               }
+
+               let ref mut hori_ref = self.hori_intersections_ref[segment_index];
+
+               let ref segment = scene.segments[segment_index];
+               let ref p1 = scene.points[segment.p1];
+               let ref p2 = scene.points[segment.p2];
+
+               hori_ref.start = hori_prev_end;
+               vert_ref.start = vert_prev_end;
+
+               let ref circle = scene.circles[edge.circle];
+               let ref center = scene.points[circle.center];
+               let radius = circle.radius;
+
+               let start = 1 + p1.y / DIV_PER_PIXEL;
+               let end = 1 + (p2.y - 1) / DIV_PER_PIXEL;
+
+               for y_px in start..end {
+                  let y = from_px(y_px);
+                  let dy = y - center.y;
+
+                  assert!(dy > 0);
+                  assert!(radius > dy);
+
+                  let dx = (radius * radius - dy * dy).sqrt();
+
+                  assert!(dx > 0);
+
+                  let x = center.x - dx;
+
+                  self.hori_intersections[hori_prev_end] = x;
+                  hori_prev_end += 1;
+
+               }
+
+               hori_ref.end = hori_prev_end;
+               hori_ref.first_px = start;
+
+               let start = 1 + p1.x / DIV_PER_PIXEL;
+               let end = 1 + (p2.x - 1) / DIV_PER_PIXEL;
+
+               for x_px in start..end {
+                  let x = from_px(x_px);
+                  let dx = center.x - x;
+
+                  assert!(dx > 0);
+                  assert!(radius > dx);
+
+                  let dy = (radius * radius - dx * dx).sqrt();
+
+                  assert!(dy > 0);
+
+                  let y = center.y + dy;
+
+                  self.vert_intersections[vert_prev_end] = y;
+                  vert_prev_end += 1;
+               }
+
+               vert_ref.end = vert_prev_end;
+               vert_ref.first_px = start;
             },
             _ => {}
          }
