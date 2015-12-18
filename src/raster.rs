@@ -600,9 +600,7 @@ impl Rasterizer {
 
       for edge in &scene.edges {
          match edge.edge_type {
-            EdgeType::LTR | EdgeType::LTL | EdgeType::LBR | EdgeType::LBL |
-            EdgeType::CTL | EdgeType::CBR | EdgeType::CBL |
-            EdgeType::ATR | EdgeType::ATL | EdgeType::ABR => {
+            EdgeType::LTR | EdgeType::LTL | EdgeType::LBR | EdgeType::LBL => {
 
                let segment_index = edge.segment;
 
@@ -636,7 +634,7 @@ impl Rasterizer {
                hori_ref.end = hori_end;
                hori_ref.first_px = y_first_px;
             },
-            EdgeType::CTR => {
+            EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL => {
 
                let segment_index = edge.segment;
 
@@ -661,18 +659,22 @@ impl Rasterizer {
                let start = 1 + p1.y / DIV_PER_PIXEL;
                let end = 1 + (p2.y - 1) / DIV_PER_PIXEL;
 
+               assert!(p1.y <= p2.y);
+
                for y_px in start..end {
                   let y = from_px(y_px);
                   let dy = y - center.y;
 
-                  assert!(dy > 0);
-                  assert!(radius > dy);
+                  assert!(radius > dy.abs());
 
                   let dx = (radius * radius - dy * dy).sqrt();
 
                   assert!(dx > 0);
 
-                  let x = center.x - dx;
+                  let x = match edge.edge_type {
+                     EdgeType::CTR | EdgeType::CTL => center.x - dx,
+                     _ => center.x + dx
+                  };
 
                   self.hori_intersections[hori_prev_end] = x;
                   hori_prev_end += 1;
@@ -682,21 +684,30 @@ impl Rasterizer {
                hori_ref.end = hori_prev_end;
                hori_ref.first_px = start;
 
-               let start = 1 + p1.x / DIV_PER_PIXEL;
-               let end = 1 + (p2.x - 1) / DIV_PER_PIXEL;
+               let (x1, x2) = match edge.edge_type {
+                  EdgeType::CTR | EdgeType::CBL => (p1.x, p2.x),
+                  _ => (p2.x, p1.x),
+               };
+
+               assert!(x1 <= x2);
+
+               let start = 1 + x1 / DIV_PER_PIXEL;
+               let end = 1 + (x2 - 1) / DIV_PER_PIXEL;
 
                for x_px in start..end {
                   let x = from_px(x_px);
                   let dx = center.x - x;
 
-                  assert!(dx > 0);
-                  assert!(radius > dx);
+                  assert!(radius > dx.abs());
 
                   let dy = (radius * radius - dx * dx).sqrt();
 
                   assert!(dy > 0);
 
-                  let y = center.y + dy;
+                  let y = match edge.edge_type {
+                     EdgeType::CTR | EdgeType::CBR => center.y + dy,
+                     _ => center.y - dy
+                  };
 
                   self.vert_intersections[vert_prev_end] = y;
                   vert_prev_end += 1;
@@ -1592,6 +1603,7 @@ impl Rasterizer {
 
       let ref h_ref = self.hori_intersections_ref[edge.segment];
 
+      assert!(y_px >= h_ref.first_px);
       assert!(h_ref.start != usize::MAX);
 
       self.hori_intersections[
@@ -1607,6 +1619,7 @@ impl Rasterizer {
 
       let ref v_ref = self.vert_intersections_ref[edge.segment];
 
+      assert!(x_px >= v_ref.first_px);
       assert!(v_ref.start != usize::MAX);
 
       self.vert_intersections[
