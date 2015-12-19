@@ -682,17 +682,17 @@ impl Rasterizer {
                let start = 1 + p1.y / DIV_PER_PIXEL;
                let end = 1 + (p2.y - 1) / DIV_PER_PIXEL;
 
-               assert!(p1.y <= p2.y);
+               debug_assert!(p1.y <= p2.y);
 
                for y_px in start..end {
                   let y = from_px(y_px);
                   let dy = y - center.y;
 
-                  assert!(radius > dy.abs());
+                  debug_assert!(radius > dy.abs());
 
                   let dx = (radius * radius - dy * dy).sqrt();
 
-                  assert!(dx > 0);
+                  debug_assert!(dx > 0);
 
                   let x = match edge.edge_type {
                      EdgeType::CTR | EdgeType::CTL => center.x - dx,
@@ -712,7 +712,7 @@ impl Rasterizer {
                   _ => (p2.x, p1.x),
                };
 
-               assert!(x1 <= x2);
+               debug_assert!(x1 <= x2);
 
                let start = 1 + x1 / DIV_PER_PIXEL;
                let end = 1 + (x2 - 1) / DIV_PER_PIXEL;
@@ -721,11 +721,11 @@ impl Rasterizer {
                   let x = from_px(x_px);
                   let dx = center.x - x;
 
-                  assert!(radius > dx.abs());
+                  debug_assert!(radius > dx.abs());
 
                   let dy = (radius * radius - dx * dx).sqrt();
 
-                  assert!(dy > 0);
+                  debug_assert!(dy > 0);
 
                   let y = match edge.edge_type {
                      EdgeType::CTR | EdgeType::CBR => center.y + dy,
@@ -771,9 +771,9 @@ impl Rasterizer {
                let mut prev_y = i64::MIN;
                for i in vert_ref.start..vert_ref.end {
                   let y = self.vert_intersections[i];
-                  assert!(min_y <= y);
-                  assert!(max_y >= y);
-                  assert!(prev_y < y);
+                  debug_assert!(min_y <= y);
+                  debug_assert!(max_y >= y);
+                  debug_assert!(prev_y < y);
                   prev_y = y;
                }
 
@@ -782,9 +782,9 @@ impl Rasterizer {
                let mut prev_x = i64::MIN;
                for i in hori_ref.start..hori_ref.end {
                   let x = self.hori_intersections[i];
-                  assert!(min_x <= x);
-                  assert!(max_x >= x);
-                  assert!(prev_x < x);
+                  debug_assert!(min_x <= x);
+                  debug_assert!(max_x >= x);
+                  debug_assert!(prev_x < x);
                   prev_x = x;
                }
             },
@@ -1256,7 +1256,7 @@ impl Rasterizer {
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
 
-         assert!(self.upper_max_y[poly_index] > y);
+         debug_assert!(self.upper_max_y[poly_index] > y);
 
          self.h_split_poly(poly_index, y, y_px);
 
@@ -1399,7 +1399,7 @@ impl Rasterizer {
       for i in self.lower_active_start..self.lower_active_end {
          let poly_index = self.lower_active[i];
 
-         assert!(self.lower_max_x[poly_index] > x);
+         debug_assert!(self.lower_max_x[poly_index] > x);
 
          self.v_split_poly(poly_index, x, x_px);
 
@@ -1626,8 +1626,8 @@ impl Rasterizer {
 
       let ref h_ref = self.hori_intersections_ref[edge.segment];
 
-      assert!(y_px >= h_ref.first_px);
-      assert!(h_ref.start != usize::MAX);
+      debug_assert!(y_px >= h_ref.first_px);
+      debug_assert!(h_ref.start != usize::MAX);
 
       self.hori_intersections[
          h_ref.start + (y_px - h_ref.first_px) as usize
@@ -1642,8 +1642,8 @@ impl Rasterizer {
 
       let ref v_ref = self.vert_intersections_ref[edge.segment];
 
-      assert!(x_px >= v_ref.first_px);
-      assert!(v_ref.start != usize::MAX);
+      debug_assert!(x_px >= v_ref.first_px);
+      debug_assert!(v_ref.start != usize::MAX);
 
       self.vert_intersections[
          v_ref.start + (x_px - v_ref.first_px) as usize
@@ -1753,7 +1753,7 @@ impl Rasterizer {
          }
       }
 
-      assert!(area >= 0);
+      debug_assert!(area >= 0);
 
       area
    }
