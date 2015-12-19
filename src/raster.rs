@@ -13,6 +13,10 @@ const DIV_PER_PIXEL: i64 = 1000;
 const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
 
 
+macro_rules! debug_check {
+   ($expr:expr) => (if cfg!(debug_assertions) { $expr; })
+}
+
 #[inline]
 fn to_px(v: i64) -> i64 {
    v / DIV_PER_PIXEL
@@ -416,23 +420,22 @@ impl Rasterizer {
       }
    }
 
-   #[allow(unused_variables)]
    pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
       self.transfer_scene(scene);
 
-      self.check_upper_initial_pool();
+      debug_check!(self.check_upper_initial_pool());
 
       self.intersect_edges(scene);
 
-      self.check_intersections(scene);
+      debug_check!(self.check_intersections(scene));
 
       let (min_x, min_y, max_x, max_y) = self.min_max_x_y(scene);
 
-      self.check_min_max_x_y(min_x, min_y, max_x, max_y);
+      debug_check!(self.check_min_max_x_y(min_x, min_y, max_x, max_y));
 
       self.update_upper_min_max_y();
 
-      self.check_upper_min_max_y(min_y, max_y);
+      debug_check!(self.check_upper_min_max_y(min_y, max_y));
 
       let x_start = to_px(min_x);
       let x_end = to_px(max_x - 1) + 1;
@@ -449,21 +452,21 @@ impl Rasterizer {
 
          self.advance_upper_range(y_world, y_split);
 
-         self.check_upper_range(y_split);
+         debug_check!(self.check_upper_range(y_split));
 
-         self.check_upper_pool();
+         debug_check!(self.check_upper_pool());
 
          self.h_split(y_split, y + 1);
 
-         self.check_upper_bounds(y_split);
+         debug_check!(self.check_upper_bounds(y_split));
 
-         self.check_lower_initial_pool();
+         debug_check!(self.check_lower_initial_pool());
 
-         self.check_lower_initial_bounds(y_split);
+         debug_check!(self.check_lower_initial_bounds(y_split));
 
          self.update_lower_min_max_x();
 
-         self.check_lower_min_max_x(min_x, max_x);
+         debug_check!(self.check_lower_min_max_x(min_x, max_x));
 
          let mut x = x_start;
 
@@ -475,9 +478,9 @@ impl Rasterizer {
 
             self.advance_lower_range(x_world, x_split);
 
-            self.check_lower_range(x_split);
+            debug_check!(self.check_lower_range(x_split));
 
-            self.check_lower_pool();
+            debug_check!(self.check_lower_pool());
 
             match self.can_advance_stripe(x_end) {
                Some(x_delta) => {
@@ -496,11 +499,11 @@ impl Rasterizer {
                None => {
                   self.v_split(x_split, x + 1);
 
-                  self.check_lower_bounds(x_split);
+                  debug_check!(self.check_lower_bounds(x_split));
 
-                  self.check_final_pool();
+                  debug_check!(self.check_final_pool());
 
-                  self.check_final_bounds(x_split);
+                  debug_check!(self.check_final_bounds(x_split));
 
                   if self.final_active_full != 0 {
                      let color = self.active_color(scene);
