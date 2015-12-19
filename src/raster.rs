@@ -203,6 +203,26 @@ impl Edge {
    pub fn reversed(&self) -> bool {
       self.edge_type.reversed()
    }
+
+   #[inline]
+   fn vert_bottom(p1: Point, p2: Point) -> Edge {
+      Edge::new(EdgeType::LVB, usize::MAX, usize::MAX, p1, p2)
+   }
+
+   #[inline]
+   fn vert_top(p1: Point, p2: Point) -> Edge {
+      Edge::new(EdgeType::LVT, usize::MAX, usize::MAX, p1, p2)
+   }
+
+   #[inline]
+   fn hori_left(p1: Point, p2: Point) -> Edge {
+      Edge::new(EdgeType::LHL, usize::MAX, usize::MAX, p1, p2)
+   }
+
+   #[inline]
+   fn hori_right(p1: Point, p2: Point) -> Edge {
+      Edge::new(EdgeType::LHR, usize::MAX, usize::MAX, p1, p2)
+   }
 }
 
 impl Default for Edge {
@@ -1326,7 +1346,7 @@ impl Rasterizer {
                   self.upper_edges[upper_i] = edge;
                   upper_i += 1;
 
-                  self.lower_edges[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, usize::MAX, p1, p2);
+                  self.lower_edges[lower_i] = Edge::hori_right(p1, p2);
                   lower_i += 1;
 
                   lower_edge.p1 = p2;
@@ -1340,7 +1360,7 @@ impl Rasterizer {
                   self.upper_edges[upper_i] = edge;
                   upper_i += 1;
 
-                  self.lower_edges[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, usize::MAX, p1, p2);
+                  self.lower_edges[lower_i] = Edge::hori_right(p1, p2);
                   lower_i += 1;
 
                   break;
@@ -1367,7 +1387,7 @@ impl Rasterizer {
          lower_i += 1;
       }
 
-      let last_upper = Edge::new(EdgeType::LHL, usize::MAX, usize::MAX, p2, p1);
+      let last_upper = Edge::hori_left(p2, p1);
       self.upper_edges[upper_i] = last_upper;
       upper_i += 1;
 
@@ -1469,7 +1489,7 @@ impl Rasterizer {
                   self.lower_edges[lower_i] = edge;
                   lower_i += 1;
 
-                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, usize::MAX, p1, p2);
+                  self.final_edges[final_i] = Edge::vert_bottom(p1, p2);
                   final_i += 1;
 
                   final_edge.p1 = p2;
@@ -1483,7 +1503,7 @@ impl Rasterizer {
                   self.lower_edges[lower_i] = edge;
                   lower_i += 1;
 
-                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, usize::MAX, p1, p2);
+                  self.final_edges[final_i] = Edge::vert_bottom(p1, p2);
                   final_i += 1;
 
                   break;
@@ -1510,7 +1530,7 @@ impl Rasterizer {
          final_i += 1;
       }
 
-      let last_lower = Edge::new(EdgeType::LVT, usize::MAX, usize::MAX, p2, p1);
+      let last_lower = Edge::vert_top(p2, p1);
       self.lower_edges[lower_i] = last_lower;
       lower_i += 1;
 
