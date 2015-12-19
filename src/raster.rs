@@ -182,16 +182,18 @@ impl Default for EdgeSrc {
 pub struct Edge {
    pub edge_type: EdgeType,
    pub segment: usize,
+   pub circle: usize,
    pub p1: Point,
    pub p2: Point,
 }
 
 impl Edge {
    #[inline]
-   pub fn new(edge_type: EdgeType, segment: usize, p1: Point, p2: Point) -> Self {
+   pub fn new(edge_type: EdgeType, segment: usize, circle: usize, p1: Point, p2: Point) -> Self {
       Edge {
          edge_type: edge_type,
          segment: segment,
+         circle: circle,
          p1: p1,
          p2: p2,
       }
@@ -205,7 +207,7 @@ impl Edge {
 
 impl Default for Edge {
    fn default() -> Edge {
-      Edge::new(EdgeType::LTR, 0, Point::default(), Point::default())
+      Edge::new(EdgeType::LTR, 0, 0, Point::default(), Point::default())
    }
 }
 
@@ -504,8 +506,9 @@ impl Rasterizer {
 
          for edge in &scene.edges[poly.start..poly.end] {
             let ref mut edge_ref = self.upper_edges[pool_index];
-            edge_ref.segment = edge.segment;
             edge_ref.edge_type = edge.edge_type;
+            edge_ref.segment = edge.segment;
+            edge_ref.circle = edge.circle;
 
             let ref segment = scene.segments[edge.segment];
             let (ref p1, ref p2) = if edge.reversed() {
@@ -1323,7 +1326,7 @@ impl Rasterizer {
                   self.upper_edges[upper_i] = edge;
                   upper_i += 1;
 
-                  self.lower_edges[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, p1, p2);
+                  self.lower_edges[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, usize::MAX, p1, p2);
                   lower_i += 1;
 
                   lower_edge.p1 = p2;
@@ -1337,7 +1340,7 @@ impl Rasterizer {
                   self.upper_edges[upper_i] = edge;
                   upper_i += 1;
 
-                  self.lower_edges[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, p1, p2);
+                  self.lower_edges[lower_i] = Edge::new(EdgeType::LHR, usize::MAX, usize::MAX, p1, p2);
                   lower_i += 1;
 
                   break;
@@ -1364,7 +1367,7 @@ impl Rasterizer {
          lower_i += 1;
       }
 
-      let last_upper = Edge::new(EdgeType::LHL, usize::MAX, p2, p1);
+      let last_upper = Edge::new(EdgeType::LHL, usize::MAX, usize::MAX, p2, p1);
       self.upper_edges[upper_i] = last_upper;
       upper_i += 1;
 
@@ -1466,7 +1469,7 @@ impl Rasterizer {
                   self.lower_edges[lower_i] = edge;
                   lower_i += 1;
 
-                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, p1, p2);
+                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, usize::MAX, p1, p2);
                   final_i += 1;
 
                   final_edge.p1 = p2;
@@ -1480,7 +1483,7 @@ impl Rasterizer {
                   self.lower_edges[lower_i] = edge;
                   lower_i += 1;
 
-                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, p1, p2);
+                  self.final_edges[final_i] = Edge::new(EdgeType::LVB, usize::MAX, usize::MAX, p1, p2);
                   final_i += 1;
 
                   break;
@@ -1507,7 +1510,7 @@ impl Rasterizer {
          final_i += 1;
       }
 
-      let last_lower = Edge::new(EdgeType::LVT, usize::MAX, p2, p1);
+      let last_lower = Edge::new(EdgeType::LVT, usize::MAX, usize::MAX, p2, p1);
       self.lower_edges[lower_i] = last_lower;
       lower_i += 1;
 
@@ -1659,7 +1662,7 @@ impl Rasterizer {
       for active_index in 0..self.final_active_full - 1 {
          let poly_index = self.final_active[active_index];
 
-         let area = self.double_area(poly_index);
+         let area = self.double_area(poly_index, scene);
 
          let ref color = scene.colors[scene.polys[poly_index].color];
 
@@ -1688,7 +1691,7 @@ impl Rasterizer {
    }
 
    #[inline]
-   fn double_area(&self, poly_index: usize) -> i64 {
+   fn double_area(&self, poly_index: usize, scene: &Scene) -> i64 {
       let poly_start = self.poly_to_pool[poly_index];
       let poly_end = poly_start + self.final_edges_len[poly_index];
 
@@ -1701,11 +1704,30 @@ impl Rasterizer {
             EdgeType::LHR | EdgeType::LHL => {
                area += (edge.p2.x - edge.p1.x) * 2 * edge.p1.y;
             },
-            EdgeType::LTR | EdgeType::LBR | EdgeType::CTR |
+            EdgeType::LTR | EdgeType::LBR | EdgeType::CTR => {
+               area += (edge.p2.x - edge.p1.x) * (edge.p1.y + edge.p2.y);
+            },
             EdgeType::CBR | EdgeType::ATR | EdgeType::ABR |
             EdgeType::LTL | EdgeType::LBL | EdgeType::CTL |
             EdgeType::CBL | EdgeType::ATL | EdgeType::ABL => {
-               area += (edge.p2.x - edge.p1.x) * (edge.p1.y + edge.p2.y);
+               let dx = edge.p2.x - edge.p1.x;
+               let dy = edge.p2.y - edge.p1.y;
+
+               area += dx * (edge.p1.y + edge.p2.y);
+
+               let side = (dx * dx + dy * dy).sqrt();
+
+               let ref circle = scene.circles[edge.circle];
+               let radius = circle.radius;
+
+               let alpha = 2. * (side as f64 / (2 * radius) as f64).asin();
+
+               let segment_area = ((radius * radius) as f64 * (alpha - alpha.sin())) as i64;
+
+               match edge.edge_type {
+                  EdgeType::CTR | EdgeType::CTL | EdgeType::CBR | EdgeType::CBL => area += segment_area,
+                  _ => area -= segment_area
+               }
             },
             _ => {}
          }
