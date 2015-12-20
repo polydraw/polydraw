@@ -546,7 +546,8 @@ impl Rasterizer {
             pool_index += 1;
          }
 
-         // Leave 4 position for further hori and vert splitting
+         // 4 extra positions for additional horizontal and vertical edges
+         // added in during the split passes
          pool_index += 4;
 
          self.upper_active[i] = i;
