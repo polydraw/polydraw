@@ -1322,9 +1322,7 @@ impl Rasterizer {
 
          i += 1;
 
-         if i == poly_end {
-            panic!("Polygon ends before Y split line");
-         }
+         debug_assert!(i != poly_end, "Polygon should not end before Y split line");
       }
 
       i += 1;
