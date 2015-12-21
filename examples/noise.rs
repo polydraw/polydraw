@@ -42,7 +42,5 @@ fn main() {
    Application::new()
       .renderer(&mut renderer)
       .title("Noise")
-      .size(800, 400)
-      .position(400, 200)
       .run();
 }
