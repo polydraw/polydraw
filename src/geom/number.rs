@@ -51,7 +51,7 @@ impl NumberOps for i64 {
 
 #[cfg(test)]
 mod tests {
-   use test::{Bencher, black_box};
+   //use test::{Bencher, black_box};
    use std::i64;
 
    use super::*;
@@ -85,6 +85,7 @@ mod tests {
       }
    }
 
+/*
    #[bench]
    fn bench_rounding_div(b: &mut Bencher) {
       b.iter(|| {
@@ -122,4 +123,5 @@ mod tests {
          }
       });
    }
+*/
 }

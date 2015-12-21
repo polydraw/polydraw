@@ -1,8 +1,4 @@
-#![feature(test)]
-#![feature(op_assign_traits)]
-
 extern crate libc;
-extern crate test;
 
 pub mod sys;
 pub mod os;

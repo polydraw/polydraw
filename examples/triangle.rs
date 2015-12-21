@@ -1,7 +1,3 @@
-#![feature(test)]
-
-extern crate test;
-
 extern crate polydraw;
 
 use std::cmp::{min, max};

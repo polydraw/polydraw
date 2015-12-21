@@ -165,7 +165,7 @@ pub fn v_intersect(p1: Point, p2: Point, x: i64) -> i64 {
 
 #[cfg(test)]
 mod tests {
-   use test::Bencher;
+   //use test::Bencher;
 
    use super::super::point::Point;
    use super::super::ring::Ring;
@@ -232,6 +232,7 @@ mod tests {
       }
    }
 
+/*
    #[bench]
    fn bench_lineinter(b: &mut Bencher) {
       let mut inters = Ring::new(100_000);
@@ -259,4 +260,5 @@ mod tests {
          }
       });
    }
+*/
 }

@@ -520,6 +520,7 @@ pub fn v_split_push_vertical(x: i64, y1: i64, y2: i64, left: &mut Ring<Edge>, sr
    ));
 }
 
+/*
 #[cfg(test)]
 mod tests {
    use test::Bencher;
@@ -599,3 +600,4 @@ mod tests {
       });
    }
 }
+*/

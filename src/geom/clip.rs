@@ -165,6 +165,7 @@ pub fn v_split_edge(x: i64, p1: Point, p2: Point, left: &mut Ring<Point>, right:
    }
 }
 
+/*
 #[cfg(test)]
 mod tests {
    use test::Bencher;
@@ -246,3 +247,4 @@ mod tests {
       });
    }
 }
+*/

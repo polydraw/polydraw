@@ -1,5 +1,3 @@
-#![feature(augmented_assignments)]
-
 #![allow(dead_code)]
 extern crate polydraw;
 
