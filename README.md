@@ -10,4 +10,4 @@ Initial features will include:
 
 An OpenCL GPU rasterization implmentation will follow after the initial release.
 
-The project is still in a proof-of-concept state with around 10 000 lines of Rust code currently. We are planning for an initial release in Q2 of 2016.
+The project is still in a proof-of-concept state with around 6 500 lines of Rust code currently. We are planning for an initial release in Q2 of 2016.
