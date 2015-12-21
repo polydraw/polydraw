@@ -53,26 +53,3 @@ impl Ord for Point {
       }
    }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-   use test::{Bencher, black_box};
-
-   use super::*;
-
-   #[bench]
-   fn bench_update(b: &mut Bencher) {
-      let mut p = Point::new(5, 7);
-      b.iter(|| {
-         for _ in 0..1000 {
-            black_box(
-               p.update(
-                  black_box(3), 8
-               )
-            );
-         }
-      });
-   }
-}
-*/
