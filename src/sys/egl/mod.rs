@@ -33,7 +33,6 @@ impl FnPtrLoader for Loader {
       let addr = unsafe {
          ffi::eglGetProcAddress(cname)
       };
-      println!("{}: {:?}", name, addr);
 
       addr
    }

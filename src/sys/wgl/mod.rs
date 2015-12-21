@@ -160,7 +160,6 @@ impl FnPtrLoader for Loader {
       let addr = unsafe {
          ffi::wglGetProcAddress(cname)
       };
-      println!("{}: {:?}", name, addr);
 
       addr
    }
