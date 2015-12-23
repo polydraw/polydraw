@@ -8,6 +8,6 @@ Initial features will include:
 * Multithreaded CPU rasterization
 * Linux, Windows and Mac OS X support
 
-Initial alpha usage stage is planned for Q2 of 2016.
+Alpha release is planned for Q2 of 2016.
 
 An OpenCL GPU rasterization implmentation will follow after the initial release.
