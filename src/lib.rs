@@ -2,6 +2,7 @@ extern crate libc;
 
 pub mod sys;
 pub mod os;
+pub mod num;
 pub mod geom;
 pub mod application;
 pub mod renderer;

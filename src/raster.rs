@@ -4,7 +4,7 @@ use std::{usize, i64};
 
 use frame::Frame;
 use draw::RGB;
-use geom::number::NumberOps;
+use num::NumberOps;
 
 pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
