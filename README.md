@@ -1,13 +1,13 @@
-PolyDraw is an early work-in-progress high-quality 2D graphics library written in Rust.
+PolyDraw is a very early work-in-progress high-quality 2D graphics library written in Rust.
 
 Initial features will include:
 
-* Shapes and text drawing and blending
-* Highest quality anti-aliasing
-* Sub-pixel rasterization support
+* Custom 2D drawing algorithms (including shapes, curves and text)
+* Best quality anti-aliasing
+* Sub-pixel LCD rasterization support
 * Multithreaded CPU rasterization
 * Linux, Windows and Mac OS X support
 
-An OpenCL GPU rasterization implmentation will follow after the initial release.
+Initial alpha usage stage is planned for Q2 of 2016.
 
-The project is still in a proof-of-concept state. Initial release is planned for Q2 of 2016.
+An OpenCL GPU rasterization implmentation will follow after the initial release.
