@@ -1,10 +1,11 @@
-use std::cmp::{PartialOrd, Ordering, min, max};
+use std::cmp::{Ordering, min, max};
 use std::iter::repeat;
 use std::{usize, i64};
 
 use frame::Frame;
 use draw::RGB;
 use num::NumberOps;
+use geom::point::Point;
 
 pub const HALF_MAX_ERR: i64  = i64::MAX / 2;
 
@@ -25,50 +26,6 @@ fn to_px(v: i64) -> i64 {
 #[inline]
 fn from_px(v: i64) -> i64 {
    v as i64 * DIV_PER_PIXEL
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Point {
-   pub x: i64,
-   pub y: i64,
-}
-
-impl Point {
-   #[inline]
-   pub fn new(x: i64, y: i64) -> Self {
-      Point {
-         x: x,
-         y: y,
-      }
-   }
-}
-
-impl Default for Point {
-   fn default() -> Point {
-      Point::new(0, 0)
-   }
-}
-
-impl PartialOrd for Point {
-   fn partial_cmp(&self, other: &Point) -> Option<Ordering> {
-      Some(self.cmp(other))
-   }
-}
-
-impl Ord for Point {
-   fn cmp(&self, other: &Point) -> Ordering {
-      if self.y < other.y {
-         Ordering::Less
-      } else if self.y > other.y {
-         Ordering::Greater
-      } else if self.x < other.x {
-         Ordering::Less
-      } else if self.x > other.x {
-         Ordering::Greater
-      } else {
-         Ordering::Equal
-      }
-   }
 }
 
 #[derive(Debug, Clone, Copy)]

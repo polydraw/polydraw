@@ -4,7 +4,8 @@ use std::usize;
 
 use polydraw::{Application, Renderer, Frame};
 use polydraw::draw::RGB;
-use polydraw::raster::{Scene, Point, Segment, Circle, EdgeType, EdgeSrc, Poly, Rasterizer};
+use polydraw::geom::point::Point;
+use polydraw::raster::{Scene, Segment, Circle, EdgeType, EdgeSrc, Poly, Rasterizer};
 
 struct SceneRenderer {
    rasterizer: Rasterizer,
