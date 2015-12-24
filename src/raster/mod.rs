@@ -5,6 +5,7 @@ pub mod intersection;
 pub mod poly;
 pub mod rasterizer;
 pub mod scene;
+pub mod pool;
 
 pub use self::scene::Scene;
 pub use self::circle::Circle;
