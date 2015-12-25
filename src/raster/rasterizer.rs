@@ -158,25 +158,25 @@ impl Rasterizer {
 
       for y in y_start..y_end {
          let y_world = from_px(y);
-         let y_split = y_world + DIV_PER_PIXEL;
+         let y_slice = y_world + DIV_PER_PIXEL;
 
          self.lower_active_start = 0;
          self.lower_active_end = 0;
          self.lower_active_full = 0;
 
-         self.advance_upper_range(y_world, y_split);
+         self.advance_upper_range(y_world, y_slice);
 
-         debug_check!(self.check_upper_range(y_split));
+         debug_check!(self.check_upper_range(y_slice));
 
          debug_check!(self.check_upper_pool());
 
-         self.h_split(y_split, y + 1);
+         self.h_slice(y_slice, y + 1);
 
-         debug_check!(self.check_upper_bounds(y_split));
+         debug_check!(self.check_upper_bounds(y_slice));
 
          debug_check!(self.check_lower_initial_pool());
 
-         debug_check!(self.check_lower_initial_bounds(y_split));
+         debug_check!(self.check_lower_initial_bounds(y_slice));
 
          self.update_lower_min_max_x();
 
@@ -186,13 +186,13 @@ impl Rasterizer {
 
          while x < x_end {
             let x_world = from_px(x);
-            let x_split = x_world + DIV_PER_PIXEL;
+            let x_slice = x_world + DIV_PER_PIXEL;
 
             self.final_active_full = 0;
 
-            self.advance_lower_range(x_world, x_split);
+            self.advance_lower_range(x_world, x_slice);
 
-            debug_check!(self.check_lower_range(x_split));
+            debug_check!(self.check_lower_range(x_slice));
 
             debug_check!(self.check_lower_pool());
 
@@ -200,7 +200,7 @@ impl Rasterizer {
                Some(x_delta) => {
                   let poly_index = self.lower_active[self.lower_active_start];
 
-                  self.v_split_poly(poly_index, from_px(x_delta), x_delta);
+                  self.v_slice_poly(poly_index, from_px(x_delta), x_delta);
 
                   let ref color = scene.colors[scene.polys[poly_index].color];
 
@@ -211,13 +211,13 @@ impl Rasterizer {
                   x = x_delta;
                },
                None => {
-                  self.v_split(x_split, x + 1);
+                  self.v_slice(x_slice, x + 1);
 
-                  debug_check!(self.check_lower_bounds(x_split));
+                  debug_check!(self.check_lower_bounds(x_slice));
 
                   debug_check!(self.check_final_pool());
 
-                  debug_check!(self.check_final_bounds(x_split));
+                  debug_check!(self.check_final_bounds(x_slice));
 
                   if self.final_active_full != 0 {
                      let color = self.active_color(scene);
@@ -261,7 +261,7 @@ impl Rasterizer {
          }
 
          // 4 extra positions for additional horizontal and vertical edges
-         // added in during the split passes
+         // added in during the slice passes
          pool_index += 4;
 
          self.upper_active[i] = i;
@@ -464,18 +464,18 @@ impl Rasterizer {
       }
    }
 
-   fn advance_upper_range(&mut self, y_world: i64, y_split: i64) {
-      self.advance_upper_range_end(y_split);
+   fn advance_upper_range(&mut self, y_world: i64, y_slice: i64) {
+      self.advance_upper_range_end(y_slice);
 
-      self.advance_upper_range_start(y_world, y_split);
+      self.advance_upper_range_start(y_world, y_slice);
    }
 
-   fn advance_upper_range_start(&mut self, y_world: i64, y_split: i64) {
+   fn advance_upper_range_start(&mut self, y_world: i64, y_slice: i64) {
       while self.upper_active_start < self.upper_active_end {
          let poly_index = self.upper_active[self.upper_active_start];
 
          let max_y = self.upper_max_y[poly_index];
-         if max_y > y_split {
+         if max_y > y_slice {
             break;
          }
 
@@ -487,12 +487,12 @@ impl Rasterizer {
       }
    }
 
-   fn advance_upper_range_end(&mut self, y_split: i64) {
+   fn advance_upper_range_end(&mut self, y_slice: i64) {
       while self.upper_active_end < self.polys_len {
          let poly_index = self.upper_active[self.upper_active_end];
 
          let min_y = self.upper_min_y[poly_index];
-         if min_y >= y_split {
+         if min_y >= y_slice {
             break;
          }
 
@@ -551,13 +551,13 @@ impl Rasterizer {
       }
    }
 
-   fn check_upper_range(&self, y_split: i64) {
+   fn check_upper_range(&self, y_slice: i64) {
       for i in 0..self.upper_active_start {
          let poly_index = self.upper_active[i];
 
          let max_y = self.upper_max_y[poly_index];
-         if max_y > y_split {
-            panic!("Discarded upper poly above split point: {}", poly_index);
+         if max_y > y_slice {
+            panic!("Discarded upper poly above slice point: {}", poly_index);
          }
       }
 
@@ -572,15 +572,15 @@ impl Rasterizer {
          if max_y < prev_max_y {
             panic!(
                "Active poly max y smaller than previous: [{}] {} / {} / {}",
-               poly_index, max_y, prev_max_y, y_split
+               poly_index, max_y, prev_max_y, y_slice
             );
          }
 
-         if max_y <= y_split {
+         if max_y <= y_slice {
             panic!("Active poly max y too low: {}", poly_index);
          }
 
-         if min_y >= y_split {
+         if min_y >= y_slice {
             panic!("Active poly min y too high: {}", poly_index);
          }
 
@@ -591,24 +591,24 @@ impl Rasterizer {
          let poly_index = self.upper_active[i];
 
          let min_y = self.upper_min_y[poly_index];
-         if min_y < y_split {
-            panic!("Upcoming poly below split point: {}", poly_index);
+         if min_y < y_slice {
+            panic!("Upcoming poly below slice point: {}", poly_index);
          }
       }
    }
 
-   fn advance_lower_range(&mut self, x_world: i64, x_split: i64) {
-      self.advance_lower_range_end(x_split);
+   fn advance_lower_range(&mut self, x_world: i64, x_slice: i64) {
+      self.advance_lower_range_end(x_slice);
 
-      self.advance_lower_range_start(x_world, x_split);
+      self.advance_lower_range_start(x_world, x_slice);
    }
 
-   fn advance_lower_range_start(&mut self, x_world: i64, x_split: i64) {
+   fn advance_lower_range_start(&mut self, x_world: i64, x_slice: i64) {
       while self.lower_active_start < self.lower_active_end {
          let poly_index = self.lower_active[self.lower_active_start];
 
          let max_x = self.lower_max_x[poly_index];
-         if max_x > x_split {
+         if max_x > x_slice {
             break;
          }
 
@@ -620,12 +620,12 @@ impl Rasterizer {
       }
    }
 
-   fn advance_lower_range_end(&mut self, x_split: i64) {
+   fn advance_lower_range_end(&mut self, x_slice: i64) {
       while self.lower_active_end < self.lower_active_full {
          let poly_index = self.lower_active[self.lower_active_end];
 
          let min_x = self.lower_min_x[poly_index];
-         if min_x >= x_split {
+         if min_x >= x_slice {
             break;
          }
 
@@ -684,13 +684,13 @@ impl Rasterizer {
       }
    }
 
-   fn check_lower_range(&self, x_split: i64) {
+   fn check_lower_range(&self, x_slice: i64) {
       for i in 0..self.lower_active_start {
          let poly_index = self.lower_active[i];
 
          let max_x = self.lower_max_x[poly_index];
-         if max_x > x_split {
-            panic!("Discarded lower poly after split point: [{}] {} / {}", poly_index, max_x, x_split);
+         if max_x > x_slice {
+            panic!("Discarded lower poly after slice point: [{}] {} / {}", poly_index, max_x, x_slice);
          }
       }
 
@@ -705,16 +705,16 @@ impl Rasterizer {
          if max_x < prev_max_x {
             panic!(
                "Active poly max x smaller than previous: [{}] {} / {} / {}",
-               poly_index, max_x, prev_max_x, x_split
+               poly_index, max_x, prev_max_x, x_slice
             );
          }
 
-         if max_x <= x_split {
-            panic!("Active poly max x too small: [{}] {} / {}", poly_index, max_x, x_split);
+         if max_x <= x_slice {
+            panic!("Active poly max x too small: [{}] {} / {}", poly_index, max_x, x_slice);
          }
 
-         if min_x >= x_split {
-            panic!("Active poly min x too big: [{}] {} / {}", poly_index, min_x, x_split);
+         if min_x >= x_slice {
+            panic!("Active poly min x too big: [{}] {} / {}", poly_index, min_x, x_slice);
          }
 
          prev_max_x = max_x;
@@ -724,25 +724,25 @@ impl Rasterizer {
          let poly_index = self.lower_active[i];
 
          let min_x = self.lower_min_x[poly_index];
-         if min_x < x_split {
-            panic!("Upcoming poly before split point: [{}] {} / {}", poly_index, min_x, x_split);
+         if min_x < x_slice {
+            panic!("Upcoming poly before slice point: [{}] {} / {}", poly_index, min_x, x_slice);
          }
       }
    }
 
-   fn h_split(&mut self, y: i64, y_px: i64) {
+   fn h_slice(&mut self, y: i64, y_px: i64) {
       for i in self.upper_active_start..self.upper_active_end {
          let poly_index = self.upper_active[i];
 
          debug_assert!(self.upper_max_y[poly_index] > y);
 
-         self.h_split_poly(poly_index, y, y_px);
+         self.h_slice_poly(poly_index, y, y_px);
 
          self.add_lower_active(poly_index);
       }
    }
 
-   fn h_split_poly(&mut self, poly_index: usize, y: i64, y_px: i64) {
+   fn h_slice_poly(&mut self, poly_index: usize, y: i64, y_px: i64) {
       let p1;
       let mut p2 = Point::default();
 
@@ -796,7 +796,7 @@ impl Rasterizer {
 
          i += 1;
 
-         debug_assert!(i != poly_end, "Polygon should not end before Y split line");
+         debug_assert!(i != poly_end, "Polygon should not end before Y slice line");
       }
 
       i += 1;
@@ -871,19 +871,19 @@ impl Rasterizer {
       self.lower_edges_len[poly_index] = lower_i - poly_start;
    }
 
-   fn v_split(&mut self, x: i64, x_px: i64) {
+   fn v_slice(&mut self, x: i64, x_px: i64) {
       for i in self.lower_active_start..self.lower_active_end {
          let poly_index = self.lower_active[i];
 
          debug_assert!(self.lower_max_x[poly_index] > x);
 
-         self.v_split_poly(poly_index, x, x_px);
+         self.v_slice_poly(poly_index, x, x_px);
 
          self.add_final_active(poly_index);
       }
    }
 
-   fn v_split_poly(&mut self, poly_index: usize, x: i64, x_px: i64) {
+   fn v_slice_poly(&mut self, poly_index: usize, x: i64, x_px: i64) {
       let p1;
       let mut p2 = Point::default();
 
@@ -938,7 +938,7 @@ impl Rasterizer {
          i += 1;
 
          if i == poly_end {
-            panic!("Polygon ends before X split line");
+            panic!("Polygon ends before X slice line");
          }
       }
 
