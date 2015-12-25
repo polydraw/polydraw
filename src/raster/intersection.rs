@@ -4,7 +4,7 @@ use std::{i64, usize};
 use geom::point::Point;
 use num::NumberOps;
 
-use super::rasterizer::{Rasterizer, DIV_PER_PIXEL, from_px};
+use super::rasterizer::Rasterizer;
 use super::edge::{Edge, EdgeType};
 use super::scene::Scene;
 
@@ -86,11 +86,11 @@ impl RasterizerIntersection for Rasterizer {
                hori_ref.start = hori_prev_end;
 
                let (vert_end, x_first_px) = v_multi_intersect_fast(
-                  p1, p2, DIV_PER_PIXEL, vert_ref.start, &mut self.vert_intersections
+                  p1, p2, self.div_per_pixel, vert_ref.start, &mut self.vert_intersections
                );
 
                let (hori_end, y_first_px) = h_multi_intersect_fast(
-                  p1, p2, DIV_PER_PIXEL, hori_ref.start, &mut self.hori_intersections
+                  p1, p2, self.div_per_pixel, hori_ref.start, &mut self.hori_intersections
                );
 
                vert_prev_end = vert_end;
@@ -123,13 +123,13 @@ impl RasterizerIntersection for Rasterizer {
                let ref center = scene.points[circle.center];
                let radius = circle.radius;
 
-               let start = 1 + p1.y / DIV_PER_PIXEL;
-               let end = 1 + (p2.y - 1) / DIV_PER_PIXEL;
+               let start = 1 + p1.y / self.div_per_pixel;
+               let end = 1 + (p2.y - 1) / self.div_per_pixel;
 
                debug_assert!(p1.y <= p2.y);
 
                for y_px in start..end {
-                  let y = from_px(y_px);
+                  let y = y_px * self.div_per_pixel;
                   let dy = y - center.y;
 
                   debug_assert!(radius > dy.abs());
@@ -158,11 +158,11 @@ impl RasterizerIntersection for Rasterizer {
 
                debug_assert!(x1 <= x2);
 
-               let start = 1 + x1 / DIV_PER_PIXEL;
-               let end = 1 + (x2 - 1) / DIV_PER_PIXEL;
+               let start = 1 + x1 / self.div_per_pixel;
+               let end = 1 + (x2 - 1) / self.div_per_pixel;
 
                for x_px in start..end {
-                  let x = from_px(x_px);
+                  let x = x_px * self.div_per_pixel;
                   let dx = center.x - x;
 
                   debug_assert!(radius > dx.abs());

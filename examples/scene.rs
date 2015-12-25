@@ -9,12 +9,14 @@ use polydraw::raster::{Scene, Segment, Circle, EdgeType, EdgeSrc, Poly, Rasteriz
 
 struct SceneRenderer {
    rasterizer: Rasterizer,
+   div_per_pixel: i64,
 }
 
 impl SceneRenderer {
    fn new() -> Self {
       SceneRenderer {
          rasterizer: Rasterizer::new(),
+         div_per_pixel: 1000,
       }
    }
 
@@ -108,7 +110,7 @@ impl Renderer for SceneRenderer {
       let mut scene = self.create_scene();
       self.scale_scene(&mut scene);
 
-      self.rasterizer.render(&scene, frame);
+      self.rasterizer.render(&scene, frame, self.div_per_pixel);
    }
 }
 

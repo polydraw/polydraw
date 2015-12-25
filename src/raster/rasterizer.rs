@@ -12,23 +12,9 @@ use super::pool::RasterizerPool;
 use super::edge::{Edge, EdgeType};
 use super::scene::Scene;
 
-pub const DIV_PER_PIXEL: i64 = 1000;
-
-const DOUBLE_PIXEL_AREA: i64 = DIV_PER_PIXEL * DIV_PER_PIXEL * 2;
-
 
 macro_rules! debug_check {
    ($expr:expr) => (if cfg!(debug_assertions) { $expr; })
-}
-
-#[inline]
-pub fn to_px(v: i64) -> i64 {
-   v / DIV_PER_PIXEL
-}
-
-#[inline]
-pub fn from_px(v: i64) -> i64 {
-   v as i64 * DIV_PER_PIXEL
 }
 
 pub struct Rasterizer {
@@ -66,6 +52,9 @@ pub struct Rasterizer {
 
    pub final_active: Vec<usize>,
    pub final_active_full: usize,
+
+   pub div_per_pixel: i64,
+   pub double_pixel_area: i64,
 }
 
 impl Rasterizer {
@@ -131,10 +120,16 @@ impl Rasterizer {
 
          final_active: final_active,
          final_active_full: 0,
+
+         div_per_pixel: 0,
+         double_pixel_area: 0,
       }
    }
 
-   pub fn render(&mut self, scene: &Scene, frame: &mut Frame) {
+   pub fn render(&mut self, scene: &Scene, frame: &mut Frame, div_per_pixel: i64) {
+      self.div_per_pixel = div_per_pixel;
+      self.double_pixel_area = div_per_pixel * div_per_pixel * 2;
+
       self.transfer_scene(scene);
 
       debug_check!(self.check_upper_initial_pool());
@@ -151,14 +146,14 @@ impl Rasterizer {
 
       debug_check!(self.check_upper_min_max_y(min_y, max_y));
 
-      let x_start = to_px(min_x);
-      let x_end = to_px(max_x - 1) + 1;
-      let y_start = to_px(min_y);
-      let y_end = to_px(max_y - 1) + 1;
+      let x_start = self.to_px(min_x);
+      let x_end = self.to_px(max_x - 1) + 1;
+      let y_start = self.to_px(min_y);
+      let y_end = self.to_px(max_y - 1) + 1;
 
       for y in y_start..y_end {
-         let y_world = from_px(y);
-         let y_slice = y_world + DIV_PER_PIXEL;
+         let y_world = self.from_px(y);
+         let y_slice = y_world + self.div_per_pixel;
 
          self.lower_active_start = 0;
          self.lower_active_end = 0;
@@ -185,8 +180,8 @@ impl Rasterizer {
          let mut x = x_start;
 
          while x < x_end {
-            let x_world = from_px(x);
-            let x_slice = x_world + DIV_PER_PIXEL;
+            let x_world = self.from_px(x);
+            let x_slice = x_world + self.div_per_pixel;
 
             self.final_active_full = 0;
 
@@ -200,7 +195,8 @@ impl Rasterizer {
                Some(x_delta) => {
                   let poly_index = self.lower_active[self.lower_active_start];
 
-                  self.v_slice_poly(poly_index, from_px(x_delta), x_delta);
+                  let x_delta_world = self.from_px(x_delta);
+                  self.v_slice_poly(poly_index, x_delta_world, x_delta);
 
                   let ref color = scene.colors[scene.polys[poly_index].color];
 
@@ -230,6 +226,16 @@ impl Rasterizer {
             }
          }
       }
+   }
+
+   #[inline]
+   pub fn to_px(&self, v: i64) -> i64 {
+      v / self.div_per_pixel
+   }
+
+   #[inline]
+   pub fn from_px(&self, v: i64) -> i64 {
+      v * self.div_per_pixel
    }
 
    pub fn transfer_scene(&mut self, scene: &Scene) {
@@ -1032,7 +1038,7 @@ impl Rasterizer {
 
       let poly_index = self.lower_active[self.lower_active_end];
 
-      Some(self.lower_min_x[poly_index] / DIV_PER_PIXEL)
+      Some(self.lower_min_x[poly_index] / self.div_per_pixel)
    }
 
    #[inline]
@@ -1059,7 +1065,7 @@ impl Rasterizer {
 
       let poly_index = self.final_active[self.final_active_full - 1];
 
-      let area = DOUBLE_PIXEL_AREA - total_area;
+      let area = self.double_pixel_area - total_area;
 
       let ref color = scene.colors[scene.polys[poly_index].color];
 
@@ -1067,9 +1073,9 @@ impl Rasterizer {
       g += (color.g as i64) * area;
       b += (color.b as i64) * area;
 
-      r /= DOUBLE_PIXEL_AREA;
-      g /= DOUBLE_PIXEL_AREA;
-      b /= DOUBLE_PIXEL_AREA;
+      r /= self.double_pixel_area;
+      g /= self.double_pixel_area;
+      b /= self.double_pixel_area;
 
       RGB::new(r as u8, g as u8, b as u8)
    }
