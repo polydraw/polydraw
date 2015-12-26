@@ -1,14 +1,23 @@
 #![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
 pub use libc::{
-   c_short, c_int, c_uint, c_long, c_ulong, c_void, uintptr_t
-};
-pub use libc::types::os::arch::extra::{
-   HANDLE, LONG_PTR, LRESULT, HINSTANCE, LPCWSTR, HMODULE, LPVOID, BOOL, DWORD,
-   WCHAR, WORD
+   c_char, c_short, c_ushort, c_int, c_uint, c_long, c_ulong, c_void, uintptr_t,
+   wchar_t,
 };
 use std::mem;
 
+pub type BYTE = u8;
+pub type WORD = c_ushort;
+pub type DWORD = c_ulong;
+pub type BOOL = c_int;
+pub type CHAR = c_char;
+pub type WCHAR = wchar_t;
+
+pub type LPVOID = *mut c_void;
+pub type HANDLE = LPVOID;
+pub type HINSTANCE = HANDLE;
+pub type HMODULE = HANDLE;
 pub type HWND = HANDLE;
 pub type HICON = HANDLE;
 pub type HBRUSH = HANDLE;
@@ -16,12 +25,31 @@ pub type HMENU = HANDLE;
 pub type HDC = HANDLE;
 pub type HCURSOR = HICON;
 
+#[cfg(target_arch = "x86")]
+pub type LONG_PTR = c_long;
+#[cfg(target_arch = "x86_64")]
+pub type LONG_PTR = i64;
+
+pub type LRESULT = LONG_PTR;
+
 pub type WPARAM = uintptr_t;
 pub type LPARAM = LONG_PTR;
+
+pub type LPCWSTR = *const WCHAR;
+pub type LPCSTR = *const CHAR;
+
+pub type LPWSTR = *mut WCHAR;
+pub type LPSTR = *mut CHAR;
+
+pub type LPWCH = *mut WCHAR;
+pub type LPCH = *mut CHAR;
 
 pub type ATOM = u16;
 
 pub type WNDPROC = Option<unsafe extern "system" fn(HWND, c_uint, WPARAM, LPARAM) -> LRESULT>;
+
+pub const TRUE:                       BOOL = 1;
+pub const FALSE:                      BOOL = 0;
 
 pub const CS_VREDRAW:                 c_ulong = 0x00000001;
 pub const CS_HREDRAW:                 c_ulong = 0x00000002;

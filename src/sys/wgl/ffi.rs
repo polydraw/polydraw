@@ -5,14 +5,8 @@ use std::mem;
 pub use libc::{
    c_char, c_int, c_uint, c_void
 };
-pub use libc::types::os::arch::extra::{
-   WORD, DWORD, BYTE, BOOL, HANDLE
-};
-pub use libc::consts::os::extra::{
-   TRUE
-};
 pub use super::super::win32::ffi::{
-   HDC
+   WORD, DWORD, BYTE, BOOL, HANDLE, TRUE, HDC
 };
 
 use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
