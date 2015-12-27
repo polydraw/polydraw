@@ -2,8 +2,8 @@ PolyDraw is a very early work-in-progress high-quality 2D graphics library writt
 
 Initial features will include:
 
-* Custom 2D drawing algorithms (including shapes, curves and text)
-* Highest quality anti-aliasing
+* 2D drawing algorithms (including shapes, curves and text)
+* High-quality analytical anti-aliasing
 * Sub-pixel LCD rasterization support
 * Multithreaded CPU rasterization
 * Linux, Windows and Mac OS X support
