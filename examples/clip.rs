@@ -14,52 +14,52 @@ pub struct Edge {
 
 impl Edge {
    #[inline]
-   pub fn new(edge_type: EdgeType, p1: Point, p2: Point) -> Self {
+   pub fn new(edge_type: EdgeType, x1: i64, y1: i64, x2: i64, y2: i64) -> Self {
       Edge {
          edge_type: edge_type,
-         p1: p1,
-         p2: p2,
+         p1: Point::new(x1, y1),
+         p2: Point::new(x2, y2),
       }
    }
 
    #[inline]
-   pub fn vert_top(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LVT, p1, p2)
+   pub fn vert_top(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LVT, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn vert_bottom(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LVB, p1, p2)
+   pub fn vert_bottom(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LVB, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn hori_right(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LHR, p1, p2)
+   pub fn hori_right(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LHR, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn hori_left(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LHL, p1, p2)
+   pub fn hori_left(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LHL, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn top_right(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LTR, p1, p2)
+   pub fn top_right(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LTR, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn top_left(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LTL, p1, p2)
+   pub fn top_left(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LTL, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn bottom_right(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LBR, p1, p2)
+   pub fn bottom_right(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LBR, x1, y1, x2, y2)
    }
 
    #[inline]
-   pub fn bottom_left(p1: Point, p2: Point) -> Edge {
-      Edge::new(EdgeType::LBL, p1, p2)
+   pub fn bottom_left(x1: i64, y1: i64, x2: i64, y2: i64) -> Edge {
+      Edge::new(EdgeType::LBL, x1, y1, x2, y2)
    }
 }
 
@@ -75,13 +75,13 @@ struct ClipRenderer {
 impl ClipRenderer {
    fn new() -> Self {
       let edges = vec![
-         Edge::top_left(Point::new(5, 1), Point::new(1, 6)),       // 0
-         Edge::top_right(Point::new(1, 6), Point::new(8, 9)),      // 1
-         Edge::bottom_right(Point::new(8, 9), Point::new(9, 6)),   // 2
-         Edge::bottom_left(Point::new(9, 6), Point::new(5, 1)),    // 3
-         Edge::top_right(Point::new(1, 1), Point::new(3, 8)),      // 4
-         Edge::bottom_right(Point::new(3, 8), Point::new(10, 4)),  // 5
-         Edge::bottom_left(Point::new(10, 4), Point::new(1, 1)),   // 6
+         Edge::top_left(5, 1, 1, 6),       // 0
+         Edge::top_right(1, 6, 8, 9),      // 1
+         Edge::bottom_right(8, 9, 9, 6),   // 2
+         Edge::bottom_left(9, 6, 5, 1),    // 3
+         Edge::top_right(1, 1, 3, 8),      // 4
+         Edge::bottom_right(3, 8, 10, 4),  // 5
+         Edge::bottom_left(10, 4, 1, 1),   // 6
       ];
 
       let polys = vec![
