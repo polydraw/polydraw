@@ -1,8 +1,10 @@
 extern crate polydraw;
 
+use std::i64;
+
 use polydraw::geom::point::Point;
 use polydraw::{Application, Renderer, Frame};
-use polydraw::raster::{Scene, Rasterizer, EdgeType, Poly};
+use polydraw::raster::{Scene, Rasterizer, EdgeType, Poly, create_default_vec};
 
 
 #[derive(Debug, Clone, Copy)]
@@ -70,6 +72,9 @@ struct ClipRenderer {
 
    edges: Vec<Edge>,
    polys: Vec<Poly>,
+
+   edge_min_y: Vec<i64>,
+   edge_max_y: Vec<i64>,
 }
 
 impl ClipRenderer {
@@ -89,12 +94,20 @@ impl ClipRenderer {
          Poly::new(4, 7, 1),    // 1
       ];
 
+      let edges_len = edges.len();
+
+      let edge_min_y = create_default_vec(edges_len);
+      let edge_max_y = create_default_vec(edges_len);
+
       ClipRenderer {
          rasterizer: Rasterizer::new(),
          div_per_pixel: 1000,
 
          edges: edges,
          polys: polys,
+
+         edge_min_y: edge_min_y,
+         edge_max_y: edge_max_y,
       }
    }
 
@@ -120,11 +133,44 @@ impl ClipRenderer {
          colors: colors,
       }
    }
+
+   fn init_edge_min_max_y(&mut self) {
+      for edge_index in 0..self.edges.len() {
+         let ref edge = self.edges[edge_index];
+
+         let mut min_y = i64::MAX;
+         let mut max_y = i64::MIN;
+
+         let (edge_min_y, edge_max_y) = if edge.edge_type.reversed() {
+            (edge.p2.y, edge.p1.y)
+         } else {
+            (edge.p1.y, edge.p2.y)
+         };
+
+         if edge_min_y < min_y  {
+            min_y = edge_min_y;
+         }
+
+         if edge_max_y > max_y {
+            max_y = edge_max_y;
+         }
+
+         self.edge_min_y[edge_index] = min_y;
+         self.edge_max_y[edge_index] = max_y;
+      }
+
+      println!("MIN Y {:?}", self.edge_min_y);
+      println!("MAX Y {:?}", self.edge_max_y);
+
+      panic!("END");
+   }
 }
 
 impl Renderer for ClipRenderer {
    fn render(&mut self, frame: &mut Frame) {
       frame.clear();
+
+      self.init_edge_min_max_y();
 
       let scene = self.create_scene();
 

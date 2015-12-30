@@ -1129,7 +1129,7 @@ impl Rasterizer {
    }
 }
 
-fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
+pub fn create_default_vec<T>(capacity: usize) -> Vec<T> where T: Default + Clone {
    repeat(T::default()).take(capacity).collect()
 }
 

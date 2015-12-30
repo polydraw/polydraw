@@ -12,4 +12,4 @@ pub use self::circle::Circle;
 pub use self::segment::Segment;
 pub use self::edge::{EdgeType, EdgeSrc};
 pub use self::poly::Poly;
-pub use self::rasterizer::Rasterizer;
+pub use self::rasterizer::{Rasterizer, create_default_vec};
