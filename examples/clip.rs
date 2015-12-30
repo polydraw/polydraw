@@ -1,5 +1,6 @@
 extern crate polydraw;
 
+use std::cmp::Ordering;
 use std::i64;
 
 use polydraw::geom::point::Point;
@@ -75,6 +76,7 @@ struct ClipRenderer {
 
    edge_min_y: Vec<i64>,
    edge_max_y: Vec<i64>,
+   edge_order: Vec<usize>,
 }
 
 impl ClipRenderer {
@@ -98,6 +100,7 @@ impl ClipRenderer {
 
       let edge_min_y = create_default_vec(edges_len);
       let edge_max_y = create_default_vec(edges_len);
+      let edge_order = create_default_vec(edges_len);
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
@@ -108,6 +111,7 @@ impl ClipRenderer {
 
          edge_min_y: edge_min_y,
          edge_max_y: edge_max_y,
+         edge_order: edge_order,
       }
    }
 
@@ -157,12 +161,30 @@ impl ClipRenderer {
 
          self.edge_min_y[edge_index] = min_y;
          self.edge_max_y[edge_index] = max_y;
+         self.edge_order[edge_index] = edge_index;
       }
+
+      self.sort_edge_order();
 
       println!("MIN Y {:?}", self.edge_min_y);
       println!("MAX Y {:?}", self.edge_max_y);
+      println!("ORDER {:?}", self.edge_order);
 
       panic!("END");
+   }
+
+   fn sort_edge_order(&mut self) {
+      let edge_order = &mut self.edge_order;
+      let edge_min_y = &self.edge_min_y;
+      let edge_max_y = &self.edge_max_y;
+
+      edge_order.sort_by(|a, b| {
+         match edge_min_y[*a].cmp(&edge_min_y[*b]) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+            Ordering::Equal => edge_max_y[*a].cmp(&edge_max_y[*b])
+         }
+      });
    }
 }
 
