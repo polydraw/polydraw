@@ -170,6 +170,8 @@ impl ClipRenderer {
       println!("MAX Y {:?}", self.edge_max_y);
       println!("ORDER {:?}", self.edge_order);
 
+      self.iterate_edges();
+
       panic!("END");
    }
 
@@ -185,6 +187,20 @@ impl ClipRenderer {
             Ordering::Equal => edge_max_y[*a].cmp(&edge_max_y[*b])
          }
       });
+   }
+
+   fn iterate_edges(&self) {
+      let mut prev_y = i64::MIN;
+      for order_index in 0..self.edges.len() {
+         let edge_index = self.edge_order[order_index];
+         let ref edge = self.edges[edge_index];
+         let min_y = self.edge_min_y[edge_index];
+
+         if min_y != prev_y {
+            println!("HOR {:?}", min_y);
+            prev_y = min_y;
+         }
+      }
    }
 }
 
