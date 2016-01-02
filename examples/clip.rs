@@ -68,7 +68,7 @@ impl Edge {
 
 
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Partial {
+pub struct Segment {
    pub edge_type: EdgeType,
    pub p1: Point,
    pub p2: Point,
@@ -83,12 +83,12 @@ struct ClipRenderer {
    edges: Vec<Edge>,
    polys: Vec<Poly>,
 
-   partials: Vec<Partial>,
-   partials_end: usize,
+   segments: Vec<Segment>,
+   segments_end: usize,
 
-   partials_min_y: Vec<i64>,
-   partials_max_y: Vec<i64>,
-   partials_order: Vec<usize>,
+   segments_min_y: Vec<i64>,
+   segments_max_y: Vec<i64>,
+   segments_order: Vec<usize>,
 }
 
 impl ClipRenderer {
@@ -108,11 +108,11 @@ impl ClipRenderer {
          Poly::new(4, 7, 1),    // 1
       ];
 
-      let partials = create_default_vec(65536);
+      let segments = create_default_vec(65536);
 
-      let partials_min_y = create_default_vec(65536);
-      let partials_max_y = create_default_vec(65536);
-      let partials_order = create_default_vec(65536);
+      let segments_min_y = create_default_vec(65536);
+      let segments_max_y = create_default_vec(65536);
+      let segments_order = create_default_vec(65536);
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
@@ -121,12 +121,12 @@ impl ClipRenderer {
          edges: edges,
          polys: polys,
 
-         partials: partials,
-         partials_end: 0,
+         segments: segments,
+         segments_end: 0,
 
-         partials_min_y: partials_min_y,
-         partials_max_y: partials_max_y,
-         partials_order: partials_order,
+         segments_min_y: segments_min_y,
+         segments_max_y: segments_max_y,
+         segments_order: segments_order,
       }
    }
 
@@ -153,64 +153,64 @@ impl ClipRenderer {
       }
    }
 
-   fn eval_partials_min_max_y(&mut self) {
-      for partial_index in 0..self.partials_end {
-         let ref partial = self.partials[partial_index];
+   fn eval_segments_min_max_y(&mut self) {
+      for segment_index in 0..self.segments_end {
+         let ref segment = self.segments[segment_index];
 
          let mut min_y = i64::MAX;
          let mut max_y = i64::MIN;
 
-         let (partial_min_y, partial_max_y) = if partial.edge_type.reversed() {
-            (partial.p2.y, partial.p1.y)
+         let (segment_min_y, segment_max_y) = if segment.edge_type.reversed() {
+            (segment.p2.y, segment.p1.y)
          } else {
-            (partial.p1.y, partial.p2.y)
+            (segment.p1.y, segment.p2.y)
          };
 
-         if partial_min_y < min_y  {
-            min_y = partial_min_y;
+         if segment_min_y < min_y  {
+            min_y = segment_min_y;
          }
 
-         if partial_max_y > max_y {
-            max_y = partial_max_y;
+         if segment_max_y > max_y {
+            max_y = segment_max_y;
          }
 
-         self.partials_min_y[partial_index] = min_y;
-         self.partials_max_y[partial_index] = max_y;
-         self.partials_order[partial_index] = partial_index;
+         self.segments_min_y[segment_index] = min_y;
+         self.segments_max_y[segment_index] = max_y;
+         self.segments_order[segment_index] = segment_index;
       }
 
-      self.sort_partials_order();
+      self.sort_segments_order();
 
-      println!("MIN Y {:?}", &self.partials_min_y[..self.partials_end]);
-      println!("MAX Y {:?}", &self.partials_max_y[..self.partials_end]);
-      println!("ORDER {:?}", &self.partials_order[..self.partials_end]);
+      println!("MIN Y {:?}", &self.segments_min_y[..self.segments_end]);
+      println!("MAX Y {:?}", &self.segments_max_y[..self.segments_end]);
+      println!("ORDER {:?}", &self.segments_order[..self.segments_end]);
 
-      self.iterate_partials();
+      self.iterate_segments();
 
       panic!("END");
    }
 
-   fn sort_partials_order(&mut self) {
-      let partials_order = &mut self.partials_order[..self.partials_end];
-      let partials_min_y = &self.partials_min_y;
-      let partials_max_y = &self.partials_max_y;
+   fn sort_segments_order(&mut self) {
+      let segments_order = &mut self.segments_order[..self.segments_end];
+      let segments_min_y = &self.segments_min_y;
+      let segments_max_y = &self.segments_max_y;
 
-      partials_order.sort_by(|a, b| {
-         match partials_min_y[*a].cmp(&partials_min_y[*b]) {
+      segments_order.sort_by(|a, b| {
+         match segments_min_y[*a].cmp(&segments_min_y[*b]) {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
-            Ordering::Equal => partials_max_y[*a].cmp(&partials_max_y[*b])
+            Ordering::Equal => segments_max_y[*a].cmp(&segments_max_y[*b])
          }
       });
    }
 
-   fn iterate_partials(&self) {
+   fn iterate_segments(&self) {
       let mut prev_y = i64::MIN;
-      for order_index in 0..self.partials_end {
-         let partial_index = self.partials_order[order_index];
-         let min_y = self.partials_min_y[partial_index];
+      for order_index in 0..self.segments_end {
+         let segment_index = self.segments_order[order_index];
+         let min_y = self.segments_min_y[segment_index];
 
-         println!("I MIN Y {:?} {:?}", partial_index, min_y);
+         println!("I MIN Y {:?} {:?}", segment_index, min_y);
 
          if min_y != prev_y {
             println!("HOR {:?}", min_y);
@@ -219,8 +219,8 @@ impl ClipRenderer {
       }
    }
 
-   fn transfer_partials(&mut self) {
-      self.partials_end = 0;
+   fn transfer_segments(&mut self) {
+      self.segments_end = 0;
 
       for poly_index in 0..self.polys.len() {
          let ref poly = self.polys[poly_index];
@@ -228,7 +228,7 @@ impl ClipRenderer {
          for edge_index in poly.start..poly.end {
             let ref edge = self.edges[edge_index];
 
-            self.partials[self.partials_end] = Partial {
+            self.segments[self.segments_end] = Segment {
                edge_type: edge.edge_type,
                p1: edge.p1,
                p2: edge.p2,
@@ -236,11 +236,11 @@ impl ClipRenderer {
                poly: poly_index,
             };
 
-            self.partials_end += 1;
+            self.segments_end += 1;
          }
       }
 
-      println!("PARTIALS {:?}", &self.partials[..self.partials_end]);
+      println!("SEGMENTS {:?}", &self.segments[..self.segments_end]);
    }
 }
 
@@ -248,9 +248,9 @@ impl Renderer for ClipRenderer {
    fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
-      self.transfer_partials();
+      self.transfer_segments();
 
-      self.eval_partials_min_max_y();
+      self.eval_segments_min_max_y();
 
       let scene = self.create_scene();
 
