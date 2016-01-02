@@ -67,6 +67,15 @@ impl Edge {
 }
 
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Partial {
+   pub edge_type: EdgeType,
+   pub p1: Point,
+   pub p2: Point,
+   pub edge: usize,
+   pub poly: usize,
+}
+
 struct ClipRenderer {
    rasterizer: Rasterizer,
    div_per_pixel: i64,
@@ -77,6 +86,8 @@ struct ClipRenderer {
    edge_min_y: Vec<i64>,
    edge_max_y: Vec<i64>,
    edge_order: Vec<usize>,
+
+   partials: Vec<Partial>,
 }
 
 impl ClipRenderer {
@@ -96,11 +107,11 @@ impl ClipRenderer {
          Poly::new(4, 7, 1),    // 1
       ];
 
-      let edges_len = edges.len();
+      let edge_min_y = create_default_vec(65536);
+      let edge_max_y = create_default_vec(65536);
+      let edge_order = create_default_vec(65536);
 
-      let edge_min_y = create_default_vec(edges_len);
-      let edge_max_y = create_default_vec(edges_len);
-      let edge_order = create_default_vec(edges_len);
+      let partials = create_default_vec(65536);
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
@@ -112,6 +123,8 @@ impl ClipRenderer {
          edge_min_y: edge_min_y,
          edge_max_y: edge_max_y,
          edge_order: edge_order,
+
+         partials: partials,
       }
    }
 
@@ -166,9 +179,11 @@ impl ClipRenderer {
 
       self.sort_edge_order();
 
-      println!("MIN Y {:?}", self.edge_min_y);
-      println!("MAX Y {:?}", self.edge_max_y);
-      println!("ORDER {:?}", self.edge_order);
+      let edges_len = self.edges.len();
+
+      println!("MIN Y {:?}", &self.edge_min_y[..edges_len]);
+      println!("MAX Y {:?}", &self.edge_max_y[..edges_len]);
+      println!("ORDER {:?}", &self.edge_order[..edges_len]);
 
       self.iterate_edges();
 
@@ -202,11 +217,37 @@ impl ClipRenderer {
          }
       }
    }
+
+   fn transfer_partials(&mut self) {
+      let partial_index = 0;
+
+      for poly_index in 0..self.polys.len() {
+         let ref poly = self.polys[poly_index];
+
+         for edge_index in poly.start..poly.end {
+            let ref edge = self.edges[edge_index];
+
+            self.partials[partial_index] = Partial {
+               edge_type: edge.edge_type,
+               p1: edge.p1,
+               p2: edge.p2,
+               edge: edge_index,
+               poly: poly_index,
+            };
+         }
+      }
+
+      let edges_len = self.edges.len();
+
+      println!("PARTIALS {:?}", &self.partials[..edges_len]);
+   }
 }
 
 impl Renderer for ClipRenderer {
    fn render(&mut self, frame: &mut Frame) {
       frame.clear();
+
+      self.transfer_partials();
 
       self.init_edge_min_max_y();
 

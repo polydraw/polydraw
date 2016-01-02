@@ -41,6 +41,12 @@ impl EdgeType {
    }
 }
 
+impl Default for EdgeType {
+   fn default() -> EdgeType {
+      EdgeType::LTR
+   }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct EdgeSrc {
    pub edge_type: EdgeType,
