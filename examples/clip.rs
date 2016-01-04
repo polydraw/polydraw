@@ -89,6 +89,9 @@ struct ClipRenderer {
    sections_min_y: Vec<i64>,
    sections_max_y: Vec<i64>,
    sections_order: Vec<usize>,
+
+   active: Vec<Section>,
+   active_end: usize,
 }
 
 impl ClipRenderer {
@@ -114,6 +117,8 @@ impl ClipRenderer {
       let sections_max_y = create_default_vec(65536);
       let sections_order = create_default_vec(65536);
 
+      let active = create_default_vec(65536);
+
       ClipRenderer {
          rasterizer: Rasterizer::new(),
          div_per_pixel: 1000,
@@ -127,6 +132,9 @@ impl ClipRenderer {
          sections_min_y: sections_min_y,
          sections_max_y: sections_max_y,
          sections_order: sections_order,
+
+         active: active,
+         active_end: 0,
       }
    }
 
@@ -241,6 +249,10 @@ impl ClipRenderer {
       }
 
       println!("SECTIONS {:?}", &self.sections[..self.sections_end]);
+   }
+
+   fn clip_sections(&mut self) {
+
    }
 }
 
