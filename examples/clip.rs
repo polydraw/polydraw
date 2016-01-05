@@ -1,6 +1,6 @@
 extern crate polydraw;
 
-use std::cmp::Ordering;
+use std::cmp::{Ordering, min, max};
 use std::i64;
 
 use polydraw::geom::point::Point;
@@ -194,8 +194,6 @@ impl ClipRenderer {
       println!("ORDER {:?}", &self.sections_order[..self.sections_end]);
 
       self.iterate_sections();
-
-      panic!("END");
    }
 
    fn sort_sections_order(&mut self) {
@@ -252,7 +250,61 @@ impl ClipRenderer {
    }
 
    fn clip_sections(&mut self) {
+      let mut section_next = 0;
 
+      let mut active_index;
+
+      active_index = self.active_end;
+      self.active[active_index] = self.sections[self.sections_order[section_next]];
+
+      self.active_end += 1;
+      section_next += 1;
+
+      active_index = self.active_end;
+      self.active[active_index] = self.sections[self.sections_order[section_next]];
+
+      let ref s1 = self.active[0];
+      let ref s2 = self.active[1];
+
+      println!("S1 {:?}", s1);
+      println!("S2 {:?}", s2);
+
+      let intersection = self.intersect_sections(s1, s2);
+
+      println!("INTERSECTION {:?}", intersection);
+   }
+
+   fn intersect_sections(&self, s1: &Section, s2: &Section) -> Option<Point> {
+      let s1_a = (s1.p2.y - s1.p1.y) as f64;
+      let s1_b = (s1.p1.x - s1.p2.x) as f64;
+      let s1_c = (s1.p2.x * s1.p1.y - s1.p1.x * s1.p2.y) as f64;
+
+      let s2_a = (s2.p2.y - s2.p1.y) as f64;
+      let s2_b = (s2.p1.x - s2.p2.x) as f64;
+      let s2_c = (s2.p2.x * s2.p1.y - s2.p1.x * s2.p2.y) as f64;
+
+      let denominator = s1_a * s2_b - s2_a * s1_b;
+
+      if denominator == 0. {
+         return None;
+      }
+
+      let x = (s2_c * s1_b - s1_c * s2_b) / denominator;
+      let y = (s2_a * s1_c - s1_a * s2_c) / denominator;
+
+      let x = x.round() as i64;
+      let y = y.round() as i64;
+
+      let x1 = max(min(s1.p1.x, s1.p2.x), min(s2.p1.x, s2.p2.x));
+      let x2 = min(max(s1.p1.x, s1.p2.x), max(s2.p1.x, s2.p2.x));
+      let y1 = max(min(s1.p1.y, s1.p2.y), min(s2.p1.y, s2.p2.y));
+      let y2 = min(max(s1.p1.y, s1.p2.y), max(s2.p1.y, s2.p2.y));
+
+      if x < x1 || x > x2 || y < y1 || y > y2 {
+         return None;
+      }
+
+      return Some(Point::new(x, y));
    }
 }
 
@@ -264,9 +316,13 @@ impl Renderer for ClipRenderer {
 
       self.eval_sections_min_max_y();
 
+      self.clip_sections();
+
       let scene = self.create_scene();
 
       self.rasterizer.render(&scene, frame, self.div_per_pixel);
+
+      panic!("END");
    }
 }
 
