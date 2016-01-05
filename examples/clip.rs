@@ -96,7 +96,9 @@ struct ClipRenderer {
 
 impl ClipRenderer {
    fn new() -> Self {
-      let edges = vec![
+      let div_per_pixel = 1000;
+
+      let mut edges = vec![
          Edge::top_left(5, 1, 1, 6),       // 0
          Edge::top_right(1, 6, 8, 9),      // 1
          Edge::bottom_right(8, 9, 9, 6),   // 2
@@ -105,6 +107,13 @@ impl ClipRenderer {
          Edge::bottom_right(3, 8, 10, 4),  // 5
          Edge::bottom_left(10, 4, 1, 1),   // 6
       ];
+
+      for edge in edges.iter_mut() {
+         edge.p1.x *= div_per_pixel;
+         edge.p1.y *= div_per_pixel;
+         edge.p2.x *= div_per_pixel;
+         edge.p2.y *= div_per_pixel;
+      }
 
       let polys = vec![
          Poly::new(0, 4, 0),    // 0
@@ -121,7 +130,7 @@ impl ClipRenderer {
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
-         div_per_pixel: 1000,
+         div_per_pixel: div_per_pixel,
 
          edges: edges,
          polys: polys,
