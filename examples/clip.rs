@@ -91,6 +91,7 @@ struct ClipRenderer {
    sections_order: Vec<usize>,
 
    active: Vec<Section>,
+   active_source: Vec<usize>,
    active_end: usize,
 }
 
@@ -127,6 +128,7 @@ impl ClipRenderer {
       let sections_order = create_default_vec(65536);
 
       let active = create_default_vec(65536);
+      let active_source = create_default_vec(65536);
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
@@ -143,6 +145,7 @@ impl ClipRenderer {
          sections_order: sections_order,
 
          active: active,
+         active_source: active_source,
          active_end: 0,
       }
    }
@@ -259,28 +262,31 @@ impl ClipRenderer {
    }
 
    fn clip_sections(&mut self) {
-      let mut section_next = 0;
+      let sections_taget = self.sections_order[0];
+      let sections_clipper = self.sections_order[1];
 
-      let mut active_index;
+      let active_target = self.copy_to_active(sections_taget);
+      let active_clipper = self.copy_to_active(sections_clipper);
 
-      active_index = self.active_end;
-      self.active[active_index] = self.sections[self.sections_order[section_next]];
+      let ref target = self.active[active_target];
+      let ref clipper = self.active[active_clipper];
+
+      println!("TARGET {:?}", target);
+      println!("CLIPPER {:?}", clipper);
+
+      let intersection = self.intersect_sections(target, clipper);
+      println!("INTERSECTION {:?}", intersection);
+   }
+
+   fn copy_to_active(&mut self, sections_index: usize) -> usize {
+      let active_index = self.active_end;
+
+      self.active_source[active_index] = sections_index;
+      self.active[active_index] = self.sections[sections_index];
 
       self.active_end += 1;
-      section_next += 1;
 
-      active_index = self.active_end;
-      self.active[active_index] = self.sections[self.sections_order[section_next]];
-
-      let ref s1 = self.active[0];
-      let ref s2 = self.active[1];
-
-      println!("S1 {:?}", s1);
-      println!("S2 {:?}", s2);
-
-      let intersection = self.intersect_sections(s1, s2);
-
-      println!("INTERSECTION {:?}", intersection);
+      active_index
    }
 
    fn intersect_sections(&self, s1: &Section, s2: &Section) -> Option<Point> {
