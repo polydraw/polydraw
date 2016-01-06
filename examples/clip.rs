@@ -76,6 +76,25 @@ pub struct Section {
    pub poly: usize,
 }
 
+impl Section {
+   fn set_bottom(&mut self, point: &Point) {
+      if self.edge_type.reversed() {
+         self.p2 = *point;
+      } else {
+         self.p1 = *point;
+      }
+   }
+
+   fn set_top(&mut self, point: &Point) {
+      if self.edge_type.reversed() {
+         self.p1 = *point;
+      } else {
+         self.p2 = *point;
+      }
+   }
+}
+
+
 struct ClipRenderer {
    rasterizer: Rasterizer,
    div_per_pixel: i64,
@@ -262,20 +281,39 @@ impl ClipRenderer {
    }
 
    fn clip_sections(&mut self) {
-      let sections_taget = self.sections_order[0];
+      let sections_target = self.sections_order[0];
       let sections_clipper = self.sections_order[1];
 
-      let active_target = self.copy_to_active(sections_taget);
+      let active_target = self.copy_to_active(sections_target);
       let active_clipper = self.copy_to_active(sections_clipper);
 
-      let ref target = self.active[active_target];
-      let ref clipper = self.active[active_clipper];
+      println!("TARGET {:?}", self.active[active_target]);
+      println!("CLIPPER {:?}", self.active[active_clipper]);
 
-      println!("TARGET {:?}", target);
-      println!("CLIPPER {:?}", clipper);
-
-      let intersection = self.intersect_sections(target, clipper);
+      let intersection = self.intersect_sections(
+         &self.active[active_target],
+         &self.active[active_clipper]
+      );
       println!("INTERSECTION {:?}", intersection);
+
+      match intersection {
+         Some(pt) => {
+            self.sections[sections_target].set_bottom(&pt);
+            self.sections[sections_clipper].set_bottom(&pt);
+
+            self.active[active_target].set_top(&pt);
+            self.active[active_clipper].set_top(&pt);
+         },
+         None => {}
+      }
+
+      for index in 0..self.sections_end {
+         println!("SECTIONS [{}] - {:?}", index, self.sections[index]);
+      }
+
+      for index in 0..self.active_end {
+         println!("ACTIVE   [{}] - {:?}", index, self.active[index]);
+      }
    }
 
    fn copy_to_active(&mut self, sections_index: usize) -> usize {
