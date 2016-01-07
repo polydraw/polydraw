@@ -9,5 +9,3 @@ Initial features will include:
 * Linux, Windows and Mac OS X support
 
 Alpha release is planned for Q2 of 2016.
-
-An OpenCL GPU rasterization implmentation will follow after the initial release.
