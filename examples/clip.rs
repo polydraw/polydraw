@@ -220,10 +220,6 @@ impl ClipRenderer {
 
       self.sort_sections_order();
 
-      println!("MIN Y {:?}", &self.sections_min_y[..self.sections_end]);
-      println!("MAX Y {:?}", &self.sections_max_y[..self.sections_end]);
-      println!("ORDER {:?}", &self.sections_order[..self.sections_end]);
-
       self.iterate_sections();
    }
 
@@ -247,10 +243,7 @@ impl ClipRenderer {
          let section_index = self.sections_order[order_index];
          let min_y = self.sections_min_y[section_index];
 
-         println!("I MIN Y {:?} {:?}", section_index, min_y);
-
          if min_y != prev_y {
-            println!("HOR {:?}", min_y);
             prev_y = min_y;
          }
       }
@@ -276,8 +269,6 @@ impl ClipRenderer {
             self.sections_end += 1;
          }
       }
-
-      println!("SECTIONS {:?}", &self.sections[..self.sections_end]);
    }
 
    fn clip_sections(&mut self) {
@@ -287,14 +278,10 @@ impl ClipRenderer {
       let active_target = self.copy_to_active(sections_target);
       let active_clipper = self.copy_to_active(sections_clipper);
 
-      println!("TARGET {:?}", self.active[active_target]);
-      println!("CLIPPER {:?}", self.active[active_clipper]);
-
       let intersection = self.intersect_sections(
          &self.active[active_target],
          &self.active[active_clipper]
       );
-      println!("INTERSECTION {:?}", intersection);
 
       match intersection {
          Some(pt) => {
@@ -308,14 +295,6 @@ impl ClipRenderer {
             self.active[active_clipper].set_top(&pt);
          },
          None => {}
-      }
-
-      for index in 0..self.sections_end {
-         println!("SECTIONS [{}] - {:?}", index, self.sections[index]);
-      }
-
-      for index in 0..self.active_end {
-         println!("ACTIVE   [{}] - {:?}", index, self.active[index]);
       }
    }
 
@@ -331,8 +310,6 @@ impl ClipRenderer {
    }
 
    fn change_section_order(&mut self, order_index: usize, new_min_y: i64) {
-      println!("NEW MIN Y {:?}", new_min_y);
-
       let sections_index = self.sections_order[order_index];
       self.sections_min_y[sections_index] = new_min_y;
 
@@ -344,7 +321,6 @@ impl ClipRenderer {
 
          if new_min_y > self.sections_min_y[next_index] {
             self.sections_order[current_order_index] = next_index;
-            println!("Passing {:?} / {:?}", next_index, self.sections_min_y[next_index]);
          } else {
             break;
          }
@@ -355,13 +331,6 @@ impl ClipRenderer {
 
       if current_order_index != order_index {
          self.sections_order[current_order_index] = sections_index;
-         println!("Setting {:?}", sections_index);
-      }
-
-      for i in 0..self.sections_end {
-         let si = self.sections_order[i];
-         let min_y = self.sections_min_y[si];
-         println!("[I] {:?} {:?} {:?}", i, si, min_y);
       }
    }
 
