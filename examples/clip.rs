@@ -298,8 +298,11 @@ impl ClipRenderer {
 
       match intersection {
          Some(pt) => {
-            self.sections[sections_target].set_bottom(&pt);
             self.sections[sections_clipper].set_bottom(&pt);
+            self.change_section_order(1, pt.y);
+
+            self.sections[sections_target].set_bottom(&pt);
+            self.change_section_order(0, pt.y);
 
             self.active[active_target].set_top(&pt);
             self.active[active_clipper].set_top(&pt);
@@ -325,6 +328,41 @@ impl ClipRenderer {
       self.active_end += 1;
 
       active_index
+   }
+
+   fn change_section_order(&mut self, order_index: usize, new_min_y: i64) {
+      println!("NEW MIN Y {:?}", new_min_y);
+
+      let sections_index = self.sections_order[order_index];
+      self.sections_min_y[sections_index] = new_min_y;
+
+      let mut current_order_index = order_index;
+      let mut next_order_index = order_index + 1;
+
+      while next_order_index < self.sections_end {
+         let next_index = self.sections_order[next_order_index];
+
+         if new_min_y > self.sections_min_y[next_index] {
+            self.sections_order[current_order_index] = next_index;
+            println!("Passing {:?} / {:?}", next_index, self.sections_min_y[next_index]);
+         } else {
+            break;
+         }
+
+         current_order_index = next_order_index;
+         next_order_index += 1;
+      }
+
+      if current_order_index != order_index {
+         self.sections_order[current_order_index] = sections_index;
+         println!("Setting {:?}", sections_index);
+      }
+
+      for i in 0..self.sections_end {
+         let si = self.sections_order[i];
+         let min_y = self.sections_min_y[si];
+         println!("[I] {:?} {:?} {:?}", i, si, min_y);
+      }
    }
 
    fn intersect_sections(&self, s1: &Section, s2: &Section) -> Option<Point> {
