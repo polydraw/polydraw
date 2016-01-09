@@ -288,8 +288,12 @@ impl ClipRenderer {
             self.sections[sections_clipper].set_bottom(&pt);
             self.change_section_order(1, pt.y);
 
+            self.check_sections_order();
+
             self.sections[sections_target].set_bottom(&pt);
             self.change_section_order(0, pt.y);
+
+            self.check_sections_order();
 
             self.active[active_target].set_top(&pt);
             self.active[active_clipper].set_top(&pt);
@@ -365,6 +369,21 @@ impl ClipRenderer {
       }
 
       return Some(Point::new(x, y));
+   }
+
+   fn check_sections_order(&self) {
+      let mut prev_y = i64::MIN;
+
+      for order_index in 0..self.sections_end {
+         let section_index = self.sections_order[order_index];
+         let min_y = self.sections_min_y[section_index];
+
+         if min_y < prev_y {
+            panic!("Wrong sections order");
+         }
+
+         prev_y = min_y;
+      }
    }
 }
 
