@@ -108,6 +108,7 @@ struct ClipRenderer {
    sections_min_y: Vec<i64>,
    sections_max_y: Vec<i64>,
    sections_order: Vec<usize>,
+   sections_active: Vec<bool>,
 
    active: Vec<Section>,
    active_source: Vec<usize>,
@@ -145,6 +146,7 @@ impl ClipRenderer {
       let sections_min_y = create_default_vec(65536);
       let sections_max_y = create_default_vec(65536);
       let sections_order = create_default_vec(65536);
+      let sections_active = create_default_vec(65536);
 
       let active = create_default_vec(65536);
       let active_source = create_default_vec(65536);
@@ -162,6 +164,7 @@ impl ClipRenderer {
          sections_min_y: sections_min_y,
          sections_max_y: sections_max_y,
          sections_order: sections_order,
+         sections_active: sections_active,
 
          active: active,
          active_source: active_source,
@@ -266,47 +269,96 @@ impl ClipRenderer {
                poly: poly_index,
             };
 
+            self.sections_active[self.sections_end] = false;
+
             self.sections_end += 1;
          }
       }
    }
 
    fn clip_sections(&mut self) {
-      let sections_target = self.sections_order[0];
-      let sections_clipper = self.sections_order[1];
+      let mut counter = 0;
 
-      let active_target = self.copy_to_active(sections_target);
-      let active_clipper = self.copy_to_active(sections_clipper);
+      while let Some(clipper_order_index) = self.next_in_order() {
+         println!("cliper order index {:?}", clipper_order_index);
 
-      let intersection = self.intersect_sections(
-         &self.active[active_target],
-         &self.active[active_clipper]
-      );
+         let sections_clipper = self.sections_order[clipper_order_index];
 
-      match intersection {
-         Some(pt) => {
-            self.sections[sections_clipper].set_bottom(&pt);
-            self.change_section_order(1, pt.y);
+         println!("cliper sections index {:?}", sections_clipper);
 
-            self.check_sections_order();
+         let active_clipper = self.copy_to_active(clipper_order_index, sections_clipper);
 
-            self.sections[sections_target].set_bottom(&pt);
-            self.change_section_order(0, pt.y);
+         println!("cliper active index {:?}", active_clipper);
 
-            self.check_sections_order();
+         println!("cliper {:?}", self.active[active_clipper]);
 
-            self.active[active_target].set_top(&pt);
-            self.active[active_clipper].set_top(&pt);
-         },
-         None => {}
+         let active_start = 0;
+
+         for active_target in active_start..self.active_end-1 {
+            println!("target active index {:?}", active_target);
+
+            let target_order_index = self.active_source[active_target];
+
+            println!("target order index {:?}", target_order_index);
+
+            let sections_target = self.sections_order[target_order_index];
+
+            println!("target sections index {:?}", sections_target);
+
+            println!("target {:?}", self.active[active_target]);
+
+            let intersection = self.intersect_sections(
+               &self.active[active_target],
+               &self.active[active_clipper]
+            );
+
+            if let Some(point) = intersection {
+               println!("intersection {:?}", point);
+
+               self.sections[sections_clipper].set_bottom(&point);
+               self.change_section_order(clipper_order_index, point.y);
+
+               self.check_sections_order();
+
+               self.sections[sections_target].set_bottom(&point);
+               self.change_section_order(target_order_index, point.y);
+
+               self.check_sections_order();
+
+               self.active[active_target].set_top(&point);
+               self.active[active_clipper].set_top(&point);
+
+               self.sections_active[sections_target] = false;
+               self.sections_active[sections_clipper] = false;
+
+               break;
+            }
+         }
+
+         for active_index in 0..self.active_end {
+            println!("[{}] {:?}", active_index, self.active[active_index]);
+         }
       }
    }
 
-   fn copy_to_active(&mut self, sections_index: usize) -> usize {
+   fn next_in_order(&mut self) -> Option<usize> {
+      for order_index in 0..self.sections_end {
+         let section_index = self.sections_order[order_index];
+         if self.sections_active[section_index] == false {
+            return Some(order_index);
+         }
+      }
+
+      None
+   }
+
+   fn copy_to_active(&mut self, order_index: usize, sections_index: usize) -> usize {
       let active_index = self.active_end;
 
-      self.active_source[active_index] = sections_index;
+      self.active_source[active_index] = order_index;
       self.active[active_index] = self.sections[sections_index];
+
+      self.sections_active[sections_index] = true;
 
       self.active_end += 1;
 
@@ -339,6 +391,16 @@ impl ClipRenderer {
    }
 
    fn intersect_sections(&self, s1: &Section, s2: &Section) -> Option<Point> {
+      let s1_x_min = min(s1.p1.x, s1.p2.x);
+      let s2_x_min = min(s2.p1.x, s2.p2.x);
+
+      let s1_x_max = max(s1.p1.x, s1.p2.x);
+      let s2_x_max = max(s2.p1.x, s2.p2.x);
+
+      if s1_x_min >= s2_x_max || s2_x_min >= s1_x_max {
+         return None;
+      }
+
       let s1_a = (s1.p2.y - s1.p1.y) as f64;
       let s1_b = (s1.p1.x - s1.p2.x) as f64;
       let s1_c = (s1.p2.x * s1.p1.y - s1.p1.x * s1.p2.y) as f64;
@@ -359,12 +421,12 @@ impl ClipRenderer {
       let x = x.round() as i64;
       let y = y.round() as i64;
 
-      let x1 = max(min(s1.p1.x, s1.p2.x), min(s2.p1.x, s2.p2.x));
-      let x2 = min(max(s1.p1.x, s1.p2.x), max(s2.p1.x, s2.p2.x));
+      let x1 = max(s1_x_min, s2_x_min);
+      let x2 = min(s1_x_max, s2_x_max);
       let y1 = max(min(s1.p1.y, s1.p2.y), min(s2.p1.y, s2.p2.y));
       let y2 = min(max(s1.p1.y, s1.p2.y), max(s2.p1.y, s2.p2.y));
 
-      if x < x1 || x > x2 || y < y1 || y > y2 {
+      if x <= x1 || x >= x2 || y <= y1 || y >= y2 {
          return None;
       }
 
