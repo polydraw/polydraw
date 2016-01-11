@@ -241,13 +241,13 @@ impl ClipRenderer {
    }
 
    fn iterate_sections(&self) {
-      let mut prev_y = i64::MIN;
+      let mut prev_min_y = i64::MIN;
       for order_index in 0..self.sections_end {
          let section_index = self.sections_order[order_index];
          let min_y = self.sections_min_y[section_index];
 
-         if min_y != prev_y {
-            prev_y = min_y;
+         if min_y != prev_min_y {
+            prev_min_y = min_y;
          }
       }
    }
@@ -320,10 +320,14 @@ impl ClipRenderer {
                self.sections[sections_clipper].set_bottom(&point);
                self.change_section_order(clipper_order_index, point.y);
 
+               println!("checking order #1");
+
                self.check_sections_order();
 
                self.sections[sections_target].set_bottom(&point);
                self.change_section_order(target_order_index, point.y);
+
+               println!("checking order #2");
 
                self.check_sections_order();
 
@@ -386,6 +390,7 @@ impl ClipRenderer {
    fn change_section_order(&mut self, order_index: usize, new_min_y: i64) {
       let sections_index = self.sections_order[order_index];
       self.sections_min_y[sections_index] = new_min_y;
+      let new_max_y = self.sections_max_y[sections_index];
 
       let mut current_order_index = order_index;
       let mut next_order_index = order_index + 1;
@@ -393,7 +398,10 @@ impl ClipRenderer {
       while next_order_index < self.sections_end {
          let next_index = self.sections_order[next_order_index];
 
-         if new_min_y > self.sections_min_y[next_index] {
+         let min_y = self.sections_min_y[next_index];
+         let max_y = self.sections_max_y[next_index];
+
+         if new_min_y > min_y || (new_min_y == min_y && new_max_y > max_y) {
             self.sections_order[current_order_index] = next_index;
          } else {
             break;
@@ -452,17 +460,22 @@ impl ClipRenderer {
    }
 
    fn check_sections_order(&self) {
-      let mut prev_y = i64::MIN;
+      let mut prev_min_y = i64::MIN;
+      let mut prev_max_y = i64::MAX;
 
       for order_index in 0..self.sections_end {
          let section_index = self.sections_order[order_index];
-         let min_y = self.sections_min_y[section_index];
 
-         if min_y < prev_y {
+         let min_y = self.sections_min_y[section_index];
+         let max_y = self.sections_max_y[section_index];
+
+         if min_y < prev_min_y || (min_y == prev_min_y && max_y < prev_max_y) {
             panic!("Wrong sections order");
          }
 
-         prev_y = min_y;
+         prev_min_y = min_y;
+
+         prev_max_y = self.sections_max_y[section_index];
       }
    }
 }
