@@ -277,9 +277,11 @@ impl ClipRenderer {
    }
 
    fn clip_sections(&mut self) {
-      let mut counter = 0;
-
       while let Some(clipper_order_index) = self.next_in_order() {
+         println!("---------------------");
+
+         println!("ORD {:?}", &self.sections_order[0..self.sections_end]);
+
          println!("cliper order index {:?}", clipper_order_index);
 
          let sections_clipper = self.sections_order[clipper_order_index];
@@ -335,8 +337,24 @@ impl ClipRenderer {
             }
          }
 
+         let mut active_ones = vec![];
+         for i in 0..self.sections_end {
+            if self.sections_active[i] == true {
+               active_ones.push(1);
+            } else {
+               active_ones.push(0);
+            }
+         }
+         println!("ACT {:?}", &active_ones);
+
          for active_index in 0..self.active_end {
-            println!("[{}] {:?}", active_index, self.active[active_index]);
+            println!("A [{}] {:?}", active_index, &self.active[active_index]);
+         }
+
+         println!("*");
+
+         for sections_index in 0..self.sections_end {
+            println!("S [{}] {:?}", sections_index, &self.sections[sections_index]);
          }
       }
    }
