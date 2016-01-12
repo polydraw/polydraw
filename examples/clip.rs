@@ -107,8 +107,10 @@ struct ClipRenderer {
 
    sections_min_y: Vec<i64>,
    sections_max_y: Vec<i64>,
-   sections_order: Vec<usize>,
    sections_active: Vec<bool>,
+
+   order_to_section: Vec<usize>,
+   section_to_order: Vec<usize>,
 
    active: Vec<Section>,
    active_source: Vec<usize>,
@@ -145,8 +147,10 @@ impl ClipRenderer {
 
       let sections_min_y = create_default_vec(65536);
       let sections_max_y = create_default_vec(65536);
-      let sections_order = create_default_vec(65536);
       let sections_active = create_default_vec(65536);
+
+      let order_to_section = create_default_vec(65536);
+      let section_to_order = create_default_vec(65536);
 
       let active = create_default_vec(65536);
       let active_source = create_default_vec(65536);
@@ -163,8 +167,10 @@ impl ClipRenderer {
 
          sections_min_y: sections_min_y,
          sections_max_y: sections_max_y,
-         sections_order: sections_order,
          sections_active: sections_active,
+
+         order_to_section: order_to_section,
+         section_to_order: section_to_order,
 
          active: active,
          active_source: active_source,
@@ -218,20 +224,21 @@ impl ClipRenderer {
 
          self.sections_min_y[section_index] = min_y;
          self.sections_max_y[section_index] = max_y;
-         self.sections_order[section_index] = section_index;
+         self.order_to_section[section_index] = section_index;
       }
 
       self.sort_sections_order();
+      self.init_section_to_order();
 
       self.iterate_sections();
    }
 
    fn sort_sections_order(&mut self) {
-      let sections_order = &mut self.sections_order[..self.sections_end];
+      let order_to_section = &mut self.order_to_section[..self.sections_end];
       let sections_min_y = &self.sections_min_y;
       let sections_max_y = &self.sections_max_y;
 
-      sections_order.sort_by(|a, b| {
+      order_to_section.sort_by(|a, b| {
          match sections_min_y[*a].cmp(&sections_min_y[*b]) {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
@@ -240,10 +247,17 @@ impl ClipRenderer {
       });
    }
 
+   fn init_section_to_order(&mut self) {
+      for order_index in 0..self.sections_end {
+         let section_index = self.order_to_section[order_index];
+         self.section_to_order[section_index] = order_index;
+      }
+   }
+
    fn iterate_sections(&self) {
       let mut prev_min_y = i64::MIN;
       for order_index in 0..self.sections_end {
-         let section_index = self.sections_order[order_index];
+         let section_index = self.order_to_section[order_index];
          let min_y = self.sections_min_y[section_index];
 
          if min_y != prev_min_y {
@@ -280,15 +294,15 @@ impl ClipRenderer {
       while let Some(clipper_order_index) = self.next_in_order() {
          println!("---------------------");
 
-         println!("ORD {:?}", &self.sections_order[0..self.sections_end]);
+         println!("ORD {:?}", &self.order_to_section[0..self.sections_end]);
 
          println!("cliper order index {:?}", clipper_order_index);
 
-         let sections_clipper = self.sections_order[clipper_order_index];
+         let sections_clipper = self.order_to_section[clipper_order_index];
 
          println!("cliper sections index {:?}", sections_clipper);
 
-         let active_clipper = self.copy_to_active(clipper_order_index, sections_clipper);
+         let active_clipper = self.copy_to_active(sections_clipper);
 
          println!("cliper active index {:?}", active_clipper);
 
@@ -299,13 +313,13 @@ impl ClipRenderer {
          for active_target in active_start..self.active_end-1 {
             println!("target active index {:?}", active_target);
 
-            let target_order_index = self.active_source[active_target];
-
-            println!("target order index {:?}", target_order_index);
-
-            let sections_target = self.sections_order[target_order_index];
+            let sections_target = self.active_source[active_target];
 
             println!("target sections index {:?}", sections_target);
+
+            let target_order_index = self.section_to_order[sections_target];
+
+            println!("target order index {:?}", target_order_index);
 
             println!("target {:?}", self.active[active_target]);
 
@@ -323,6 +337,7 @@ impl ClipRenderer {
                println!("checking order #1");
 
                self.check_sections_order();
+               self.check_active_max_y();
 
                self.sections[sections_target].set_bottom(&point);
                self.change_section_order(target_order_index, point.y);
@@ -330,6 +345,7 @@ impl ClipRenderer {
                println!("checking order #2");
 
                self.check_sections_order();
+               self.check_active_max_y();
 
                self.active[active_target].set_top(&point);
                self.active[active_clipper].set_top(&point);
@@ -357,15 +373,15 @@ impl ClipRenderer {
 
          println!("*");
 
-         for sections_index in 0..self.sections_end {
-            println!("S [{}] {:?}", sections_index, &self.sections[sections_index]);
+         for section_index in 0..self.sections_end {
+            println!("S [{}] {:?}", section_index, &self.sections[section_index]);
          }
       }
    }
 
    fn next_in_order(&mut self) -> Option<usize> {
       for order_index in 0..self.sections_end {
-         let section_index = self.sections_order[order_index];
+         let section_index = self.order_to_section[order_index];
          if self.sections_active[section_index] == false {
             return Some(order_index);
          }
@@ -374,13 +390,13 @@ impl ClipRenderer {
       None
    }
 
-   fn copy_to_active(&mut self, order_index: usize, sections_index: usize) -> usize {
+   fn copy_to_active(&mut self, section_index: usize) -> usize {
       let active_index = self.active_end;
 
-      self.active_source[active_index] = order_index;
-      self.active[active_index] = self.sections[sections_index];
+      self.active_source[active_index] = section_index;
+      self.active[active_index] = self.sections[section_index];
 
-      self.sections_active[sections_index] = true;
+      self.sections_active[section_index] = true;
 
       self.active_end += 1;
 
@@ -388,21 +404,22 @@ impl ClipRenderer {
    }
 
    fn change_section_order(&mut self, order_index: usize, new_min_y: i64) {
-      let sections_index = self.sections_order[order_index];
-      self.sections_min_y[sections_index] = new_min_y;
-      let new_max_y = self.sections_max_y[sections_index];
+      let section_index = self.order_to_section[order_index];
+      self.sections_min_y[section_index] = new_min_y;
+      let new_max_y = self.sections_max_y[section_index];
 
       let mut current_order_index = order_index;
       let mut next_order_index = order_index + 1;
 
       while next_order_index < self.sections_end {
-         let next_index = self.sections_order[next_order_index];
+         let next_index = self.order_to_section[next_order_index];
 
          let min_y = self.sections_min_y[next_index];
          let max_y = self.sections_max_y[next_index];
 
          if new_min_y > min_y || (new_min_y == min_y && new_max_y > max_y) {
-            self.sections_order[current_order_index] = next_index;
+            self.order_to_section[current_order_index] = next_index;
+            self.section_to_order[next_index] = current_order_index;
          } else {
             break;
          }
@@ -412,7 +429,8 @@ impl ClipRenderer {
       }
 
       if current_order_index != order_index {
-         self.sections_order[current_order_index] = sections_index;
+         self.order_to_section[current_order_index] = section_index;
+         self.section_to_order[section_index] = current_order_index;
       }
    }
 
@@ -464,7 +482,7 @@ impl ClipRenderer {
       let mut prev_max_y = i64::MAX;
 
       for order_index in 0..self.sections_end {
-         let section_index = self.sections_order[order_index];
+         let section_index = self.order_to_section[order_index];
 
          let min_y = self.sections_min_y[section_index];
          let max_y = self.sections_max_y[section_index];
@@ -476,6 +494,34 @@ impl ClipRenderer {
          prev_min_y = min_y;
 
          prev_max_y = self.sections_max_y[section_index];
+      }
+
+      println!("SORD {:?}", &self.order_to_section[0..self.sections_end]);
+   }
+
+   fn check_active_max_y(&self) {
+      for active_index in 0..self.active_end {
+         let ref active_section = self.active[active_index];
+
+         let section_index = self.active_source[active_index];
+
+         println!("section_index {:?}", section_index);
+
+         let ref section = self.sections[section_index];
+
+         let active_max_y = max(active_section.p1.y, active_section.p2.y);
+
+         if self.sections_active[section_index] == false {
+            let section_min_y = min(section.p1.y, section.p2.y);
+
+            if active_max_y > section_min_y {
+               println!("{:?}", active_section);
+               panic!(
+                  "Active max y [{}] {} > Section min y [{}] {}",
+                  active_index, active_max_y, section_index, section_min_y
+               );
+            }
+         }
       }
    }
 }
