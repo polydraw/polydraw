@@ -115,6 +115,7 @@ struct ClipRenderer {
    active: Vec<Section>,
    active_source: Vec<usize>,
    active_end: usize,
+   active_max_y: Vec<i64>,
 }
 
 impl ClipRenderer {
@@ -154,6 +155,7 @@ impl ClipRenderer {
 
       let active = create_default_vec(65536);
       let active_source = create_default_vec(65536);
+      let active_max_y = create_default_vec(65536);
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
@@ -175,6 +177,7 @@ impl ClipRenderer {
          active: active,
          active_source: active_source,
          active_end: 0,
+         active_max_y: active_max_y,
       }
    }
 
@@ -334,6 +337,11 @@ impl ClipRenderer {
                self.sections[sections_clipper].set_bottom(&point);
                self.change_section_order(clipper_order_index, point.y);
 
+               self.sections_active[sections_clipper] = false;
+
+               self.active[active_clipper].set_top(&point);
+               self.active_max_y[active_clipper] = point.y;
+
                println!("checking order #1");
 
                self.check_sections_order();
@@ -342,16 +350,15 @@ impl ClipRenderer {
                self.sections[sections_target].set_bottom(&point);
                self.change_section_order(target_order_index, point.y);
 
+               self.sections_active[sections_target] = false;
+
+               self.active[active_target].set_top(&point);
+               self.active_max_y[active_target] = point.y;
+
                println!("checking order #2");
 
                self.check_sections_order();
                self.check_active_max_y();
-
-               self.active[active_target].set_top(&point);
-               self.active[active_clipper].set_top(&point);
-
-               self.sections_active[sections_target] = false;
-               self.sections_active[sections_clipper] = false;
 
                break;
             }
@@ -395,6 +402,7 @@ impl ClipRenderer {
 
       self.active_source[active_index] = section_index;
       self.active[active_index] = self.sections[section_index];
+      self.active_max_y[active_index] = self.sections_max_y[section_index];
 
       self.sections_active[section_index] = true;
 
@@ -510,6 +518,13 @@ impl ClipRenderer {
          let ref section = self.sections[section_index];
 
          let active_max_y = max(active_section.p1.y, active_section.p2.y);
+
+         if active_max_y != self.active_max_y[active_index] {
+            panic!(
+               "Wrong active max y [{}] {} != {}",
+               active_index, active_max_y, self.active_max_y[active_index]
+            );
+         }
 
          if self.sections_active[section_index] == false {
             let section_min_y = min(section.p1.y, section.p2.y);
