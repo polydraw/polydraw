@@ -116,6 +116,8 @@ struct ClipRenderer {
    active_source: Vec<usize>,
    active_end: usize,
    active_max_y: Vec<i64>,
+
+   order_to_active: Vec<usize>,
 }
 
 impl ClipRenderer {
@@ -157,6 +159,8 @@ impl ClipRenderer {
       let active_source = create_default_vec(65536);
       let active_max_y = create_default_vec(65536);
 
+      let order_to_active = create_default_vec(65536);
+
       ClipRenderer {
          rasterizer: Rasterizer::new(),
          div_per_pixel: div_per_pixel,
@@ -178,6 +182,8 @@ impl ClipRenderer {
          active_source: active_source,
          active_end: 0,
          active_max_y: active_max_y,
+
+         order_to_active: order_to_active,
       }
    }
 
@@ -406,9 +412,48 @@ impl ClipRenderer {
 
       self.sections_active[section_index] = true;
 
+      self.order_to_active[active_index] = active_index;
+      self.reorder_active(active_index);
+
       self.active_end += 1;
 
       active_index
+   }
+
+   fn reorder_active(&mut self, order_index: usize) {
+      let active_index = self.order_to_active[order_index];
+      let max_y = self.active_max_y[active_index];
+
+      let mut curr_index = order_index;
+
+      if curr_index == 0 {
+         return;
+      }
+
+      let mut prev_index = curr_index - 1;
+
+      loop {
+         let prev_active_index = self.order_to_active[prev_index];
+         let prev_max_y = self.active_max_y[prev_active_index];
+
+         if prev_max_y <= max_y {
+            break;
+         }
+
+         self.order_to_active[curr_index] = prev_active_index;
+
+         curr_index = prev_index;
+
+         if curr_index == 0 {
+            break;
+         }
+
+         prev_index -= 1;
+      }
+
+      if curr_index != order_index {
+         self.order_to_active[curr_index] = active_index;
+      }
    }
 
    fn change_section_order(&mut self, order_index: usize, new_min_y: i64) {
@@ -425,12 +470,12 @@ impl ClipRenderer {
          let min_y = self.sections_min_y[next_index];
          let max_y = self.sections_max_y[next_index];
 
-         if new_min_y > min_y || (new_min_y == min_y && new_max_y > max_y) {
-            self.order_to_section[current_order_index] = next_index;
-            self.section_to_order[next_index] = current_order_index;
-         } else {
+         if !(new_min_y > min_y || (new_min_y == min_y && new_max_y > max_y)) {
             break;
          }
+
+         self.order_to_section[current_order_index] = next_index;
+         self.section_to_order[next_index] = current_order_index;
 
          current_order_index = next_order_index;
          next_order_index += 1;
