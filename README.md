@@ -4,7 +4,7 @@ Initial features will include:
 
 * 2D drawing algorithms (including shapes, curves and text)
 * High-quality analytical anti-aliasing
-* Sub-pixel LCD rasterization support
+* Sub-pixel LCD rasterization
 * Multithreaded CPU rasterization
 * Linux, Windows and Mac OS X support
 
