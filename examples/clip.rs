@@ -319,7 +319,9 @@ impl ClipRenderer {
 
          let active_start = 0;
 
-         for active_target in active_start..self.active_end-1 {
+         for active_order_target in active_start..self.active_end-1 {
+            let active_target = self.order_to_active[active_order_target];
+
             println!("target active index {:?}", active_target);
 
             let sections_target = self.active_source[active_target];
@@ -361,6 +363,8 @@ impl ClipRenderer {
                self.active[active_target].set_top(&point);
                self.active_max_y[active_target] = point.y;
 
+               self.reorder_active(active_order_target);
+
                println!("checking order #2");
 
                self.check_sections_order();
@@ -369,6 +373,10 @@ impl ClipRenderer {
                break;
             }
          }
+
+         self.reorder_active(active_clipper);
+
+         self.check_active_order();
 
          let mut active_ones = vec![];
          for i in 0..self.sections_end {
@@ -413,7 +421,6 @@ impl ClipRenderer {
       self.sections_active[section_index] = true;
 
       self.order_to_active[active_index] = active_index;
-      self.reorder_active(active_index);
 
       self.active_end += 1;
 
@@ -582,6 +589,20 @@ impl ClipRenderer {
                );
             }
          }
+      }
+   }
+
+   fn check_active_order(&self) {
+      let mut prev_max_y = i64::MIN;
+      for order_index in 0..self.active_end {
+         let active_index = self.order_to_active[order_index];
+         let max_y = self.active_max_y[active_index];
+
+         if prev_max_y > max_y {
+            panic!("Wrong active order [{}]", active_index)
+         }
+
+         prev_max_y = max_y;
       }
    }
 }
