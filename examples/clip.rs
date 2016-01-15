@@ -300,6 +300,8 @@ impl ClipRenderer {
    }
 
    fn clip_sections(&mut self) {
+      let mut active_start = 0;
+
       while let Some(clipper_order_index) = self.next_in_order() {
          println!("---------------------");
 
@@ -317,20 +319,36 @@ impl ClipRenderer {
 
          println!("cliper {:?}", self.active[active_clipper]);
 
-         let active_start = 0;
+         let clipper_min_y = self.sections_min_y[sections_clipper];
 
-         for active_order_target in active_start..self.active_end-1 {
+         println!("cliper min y {}", clipper_min_y);
+
+         while active_start < self.active_end - 1 {
+            let active_index = self.order_to_active[active_start];
+            let start_max_y = self.active_max_y[active_index];
+
+            if start_max_y > clipper_min_y {
+               break;
+            }
+
+            active_start += 1;
+            println!("active start +1 {}", active_start);
+         }
+
+         for active_order_target in active_start..self.active_end - 1 {
+            println!("target active order {}", active_order_target);
+
             let active_target = self.order_to_active[active_order_target];
 
-            println!("target active index {:?}", active_target);
+            println!("target active index {}", active_target);
 
             let sections_target = self.active_source[active_target];
 
-            println!("target sections index {:?}", sections_target);
+            println!("target sections index {}", sections_target);
 
             let target_order_index = self.section_to_order[sections_target];
 
-            println!("target order index {:?}", target_order_index);
+            println!("target order index {}", target_order_index);
 
             println!("target {:?}", self.active[active_target]);
 
