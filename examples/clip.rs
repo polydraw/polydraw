@@ -6,6 +6,7 @@ use std::i64;
 use polydraw::geom::point::Point;
 use polydraw::{Application, Renderer, Frame};
 use polydraw::raster::{Scene, Rasterizer, EdgeType, Poly, create_default_vec};
+use polydraw::num::NumberOps;
 
 
 #[derive(Debug, Clone, Copy)]
@@ -105,6 +106,8 @@ struct ClipRenderer {
    sections: Vec<Section>,
    sections_end: usize,
 
+   absolute_min_y: i64,
+
    sections_min_y: Vec<i64>,
    sections_max_y: Vec<i64>,
    sections_active: Vec<bool>,
@@ -171,6 +174,8 @@ impl ClipRenderer {
          sections: sections,
          sections_end: 0,
 
+         absolute_min_y: 0,
+
          sections_min_y: sections_min_y,
          sections_max_y: sections_max_y,
          sections_active: sections_active,
@@ -211,6 +216,8 @@ impl ClipRenderer {
    }
 
    fn eval_sections_min_max_y(&mut self) {
+      self.absolute_min_y = i64::MAX;
+
       for section_index in 0..self.sections_end {
          let ref section = self.sections[section_index];
 
@@ -229,6 +236,10 @@ impl ClipRenderer {
 
          if section_max_y > max_y {
             max_y = section_max_y;
+         }
+
+         if min_y < self.absolute_min_y {
+            self.absolute_min_y = min_y;
          }
 
          self.sections_min_y[section_index] = min_y;
@@ -300,6 +311,8 @@ impl ClipRenderer {
    }
 
    fn clip_sections(&mut self) {
+      let mut prev_min_y = self.absolute_min_y;
+
       let mut active_start = 0;
 
       while let Some(clipper_order_index) = self.next_in_order() {
@@ -313,86 +326,127 @@ impl ClipRenderer {
 
          println!("cliper sections index {:?}", sections_clipper);
 
-         let active_clipper = self.copy_to_active(sections_clipper);
-
-         println!("cliper active index {:?}", active_clipper);
-
-         println!("cliper {:?}", self.active[active_clipper]);
-
          let clipper_min_y = self.sections_min_y[sections_clipper];
 
          println!("cliper min y {}", clipper_min_y);
 
-         while active_start < self.active_end - 1 {
-            let active_index = self.order_to_active[active_start];
-            let start_max_y = self.active_max_y[active_index];
+         if clipper_min_y != prev_min_y {
+            println!("NEW MIN Y {:?}", clipper_min_y);
 
-            if start_max_y > clipper_min_y {
-               break;
+            let active_end = self.active_end;
+
+            for active_order_target in active_start..self.active_end {
+               println!("target active order {}", active_order_target);
+
+               let active_target = self.order_to_active[active_order_target];
+
+               println!("target active index {}", active_target);
+
+               let sections_target = self.active_source[active_target];
+
+               println!("target sections index {}", sections_target);
+
+               let target_order_index = self.section_to_order[sections_target];
+
+               println!("target order index {}", target_order_index);
+
+               println!("target {:?}", self.active[active_target]);
+
+               let intersection = self.hori_intersect_active(
+                  &self.active[active_target], clipper_min_y
+               );
+
+               if let Some(point) = intersection {
+                  println!("intersection {:?}", point);
+
+                  self.split_active(active_target, &point);
+               }
             }
 
-            active_start += 1;
-            println!("active start +1 {}", active_start);
-         }
+            active_start = active_end;
 
-         for active_order_target in active_start..self.active_end - 1 {
-            println!("target active order {}", active_order_target);
+            self.check_sections_order();
+            self.check_active_max_y();
 
-            let active_target = self.order_to_active[active_order_target];
+            prev_min_y = clipper_min_y;
+         } else {
+            let active_clipper = self.copy_to_active(sections_clipper);
 
-            println!("target active index {}", active_target);
+            println!("cliper active index {:?}", active_clipper);
 
-            let sections_target = self.active_source[active_target];
+            println!("cliper {:?}", self.active[active_clipper]);
 
-            println!("target sections index {}", sections_target);
+            while active_start < self.active_end - 1 {
+               let active_index = self.order_to_active[active_start];
+               let start_max_y = self.active_max_y[active_index];
 
-            let target_order_index = self.section_to_order[sections_target];
+               if start_max_y > clipper_min_y {
+                  break;
+               }
 
-            println!("target order index {}", target_order_index);
-
-            println!("target {:?}", self.active[active_target]);
-
-            let intersection = self.intersect_sections(
-               &self.active[active_target],
-               &self.active[active_clipper]
-            );
-
-            if let Some(point) = intersection {
-               println!("intersection {:?}", point);
-
-               self.sections[sections_clipper].set_bottom(&point);
-               self.change_section_order(clipper_order_index, point.y);
-
-               self.sections_active[sections_clipper] = false;
-
-               self.active[active_clipper].set_top(&point);
-               self.active_max_y[active_clipper] = point.y;
-
-               println!("checking order #1");
-
-               self.check_sections_order();
-               self.check_active_max_y();
-
-               self.sections[sections_target].set_bottom(&point);
-               self.change_section_order(target_order_index, point.y);
-
-               self.sections_active[sections_target] = false;
-
-               self.active[active_target].set_top(&point);
-               self.active_max_y[active_target] = point.y;
-
-               self.reorder_active(active_order_target);
-
-               println!("checking order #2");
-
-               self.check_sections_order();
-               self.check_active_max_y();
-
-               break;
+               active_start += 1;
+               println!("active start +1 {}", active_start);
             }
-         }
 
-         self.reorder_active(active_clipper);
+            for active_order_target in active_start..self.active_end - 1 {
+               println!("target active order {}", active_order_target);
+
+               let active_target = self.order_to_active[active_order_target];
+
+               println!("target active index {}", active_target);
+
+               let sections_target = self.active_source[active_target];
+
+               println!("target sections index {}", sections_target);
+
+               let target_order_index = self.section_to_order[sections_target];
+
+               println!("target order index {}", target_order_index);
+
+               println!("target {:?}", self.active[active_target]);
+
+               let intersection = self.intersect_sections(
+                  &self.active[active_target],
+                  &self.active[active_clipper]
+               );
+
+               if let Some(point) = intersection {
+                  println!("intersection {:?}", point);
+
+                  self.sections[sections_clipper].set_bottom(&point);
+                  self.change_section_order(clipper_order_index, point.y);
+
+                  self.sections_active[sections_clipper] = false;
+
+                  self.active[active_clipper].set_top(&point);
+                  self.active_max_y[active_clipper] = point.y;
+
+                  println!("checking order #1");
+
+                  self.check_sections_order();
+                  self.check_active_max_y();
+
+                  self.sections[sections_target].set_bottom(&point);
+                  self.change_section_order(target_order_index, point.y);
+
+                  self.sections_active[sections_target] = false;
+
+                  self.active[active_target].set_top(&point);
+                  self.active_max_y[active_target] = point.y;
+
+                  self.reorder_active(active_order_target);
+
+                  println!("checking order #2");
+
+                  self.check_sections_order();
+                  self.check_active_max_y();
+
+                  break;
+               }
+            }
+
+            self.reorder_active(active_clipper);
+         }
 
          self.check_active_order();
 
@@ -443,6 +497,23 @@ impl ClipRenderer {
       self.active_end += 1;
 
       active_index
+   }
+
+   fn split_active(&mut self, active_index: usize, point: &Point) {
+      let new_index = self.active_end;
+
+      self.active_source[new_index] = self.active_source[active_index];
+      self.active[new_index] = self.active[active_index];
+      self.active_max_y[new_index] = self.active_max_y[active_index];
+
+      self.active[new_index].set_bottom(&point);
+
+      self.active[active_index].set_top(&point);
+      self.active_max_y[active_index] = point.y;
+
+      self.order_to_active[new_index] = new_index;
+
+      self.active_end += 1;
    }
 
    fn reorder_active(&mut self, order_index: usize) {
@@ -555,6 +626,28 @@ impl ClipRenderer {
       return Some(Point::new(x, y));
    }
 
+   fn hori_intersect_active(&self, active: &Section, y: i64) -> Option<Point> {
+      // TODO: Use original edge as an intersection segment
+
+      let x1 = active.p1.x;
+      let y1 = active.p1.y;
+
+      let x2 = active.p2.x;
+      let y2 = active.p2.y;
+
+      let y_max = max(y1, y2);
+
+      if y_max <= y {
+         return None;
+      }
+
+      let x = x1 + ((x2 - x1) * (y - y1)).rounding_div(y2 - y1);
+
+      assert!(x >= min(x1, x2) && x <= max(x1, x2));
+
+      Some(Point::new(x, y))
+   }
+
    fn check_sections_order(&self) {
       let mut prev_min_y = i64::MIN;
       let mut prev_max_y = i64::MAX;
@@ -566,7 +659,10 @@ impl ClipRenderer {
          let max_y = self.sections_max_y[section_index];
 
          if min_y < prev_min_y || (min_y == prev_min_y && max_y < prev_max_y) {
-            panic!("Wrong sections order");
+            panic!(
+               "Wrong sections order [{}/{}], min/max y {} / {}, prev min/max y {} / {}",
+               order_index, section_index, min_y, max_y, prev_min_y, prev_max_y
+            );
          }
 
          prev_min_y = min_y;
