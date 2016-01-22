@@ -93,6 +93,14 @@ impl Section {
          self.p2 = *point;
       }
    }
+
+   fn bottom_and_top(&self) -> (Point, Point) {
+      if self.edge_type.reversed() {
+         (self.p2, self.p1)
+      } else {
+         (self.p1, self.p2)
+      }
+   }
 }
 
 
@@ -126,11 +134,13 @@ struct ClipRenderer {
    active_end: usize,
    active_max_y: Vec<i64>,
 
+   order_to_active: Vec<usize>,
+
    active_shift_index: Vec<usize>,
    active_shift_y: Vec<i64>,
    active_shift_end: usize,
 
-   order_to_active: Vec<usize>,
+   shift_to_active: Vec<usize>,
 }
 
 impl ClipRenderer {
@@ -175,6 +185,7 @@ impl ClipRenderer {
       let active_shift_y = create_default_vec(65536);
 
       let order_to_active = create_default_vec(65536);
+      let shift_to_active = create_default_vec(65536);
 
       ClipRenderer {
          rasterizer: Rasterizer::new(),
@@ -200,11 +211,13 @@ impl ClipRenderer {
          active_end: 0,
          active_max_y: active_max_y,
 
+         order_to_active: order_to_active,
+
          active_shift_index: active_shift_index,
          active_shift_y: active_shift_y,
          active_shift_end: 0,
 
-         order_to_active: order_to_active,
+         shift_to_active: shift_to_active,
       }
    }
 
@@ -507,6 +520,8 @@ impl ClipRenderer {
 
       self.active_shift_end += 1;
 
+      self.calc_shift_order();
+
       self.check_active_shift();
    }
 
@@ -774,9 +789,13 @@ impl ClipRenderer {
       let mut shift_start = 0;
 
       for shift_index in 0..self.active_shift_end {
+         println!("SHIFT [{}]", shift_index);
+
          let shift_end = self.active_shift_index[shift_index];
 
-         for active_index in shift_start..shift_end {
+         for shift_order_index in shift_start..shift_end {
+            let active_index = self.shift_to_active[shift_order_index];
+
             let ref section = self.active[active_index];
 
             let (p1, p2) = if section.edge_type.reversed() {
@@ -787,6 +806,35 @@ impl ClipRenderer {
 
             println!("A {:?} -> {:?}", p1, p2);
          }
+
+         shift_start = shift_end;
+      }
+   }
+
+   fn calc_shift_order(&mut self) {
+      for active_index in 0..self.active_end {
+         self.shift_to_active[active_index] = active_index;
+      }
+
+      let mut shift_start = 0;
+
+      let active = &self.active;
+
+      for shift_index in 0..self.active_shift_end {
+         let shift_end = self.active_shift_index[shift_index];
+
+         let shift_to_active = &mut self.shift_to_active[shift_start..shift_end];
+
+         shift_to_active.sort_by(|a, b| {
+            let (a_p1, a_p2) = active[*a].bottom_and_top();
+            let (b_p1, b_p2) = active[*b].bottom_and_top();
+
+            match a_p1.x.cmp(&b_p1.x) {
+               Ordering::Less => Ordering::Less,
+               Ordering::Greater => Ordering::Greater,
+               Ordering::Equal => a_p2.x.cmp(&b_p2.x)
+            }
+         });
 
          shift_start = shift_end;
       }
