@@ -351,7 +351,6 @@ pub fn GET_Y_LPARAM(dwValue: LPARAM) -> c_int {
 #[link(name = "kernel32")]
 extern "system" {
    pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
-
 }
 
 #[link(name = "user32")]
