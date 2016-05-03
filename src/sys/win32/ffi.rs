@@ -348,8 +348,15 @@ pub fn GET_Y_LPARAM(dwValue: LPARAM) -> c_int {
    HIWORD(dwValue as DWORD) as c_short as c_int
 }
 
+#[link(name = "kernel32")]
 extern "system" {
    pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
+
+}
+
+#[link(name = "user32")]
+extern "system" {
+   pub fn LoadCursorW(hInstance: HINSTANCE, lpCursorName: LPCWSTR) -> HCURSOR;
 
    pub fn RegisterClassExW(lpWndClass: *const WNDCLASSEXW) -> ATOM;
 
@@ -364,8 +371,6 @@ extern "system" {
    pub fn GetDC(hwnd: HWND) -> HDC;
 
    pub fn SetCursor(hCursor: HCURSOR) -> HCURSOR;
-
-   pub fn LoadCursorW(hInstance: HINSTANCE, lpCursorName: LPCWSTR) -> HCURSOR;
 
    pub fn GetWindowLongPtrW(
       hwnd: HWND,
