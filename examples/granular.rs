@@ -1,6 +1,9 @@
 extern crate polydraw;
 
+use std::cmp::min;
+
 use polydraw::geom::point::Point;
+use polydraw::raster::create_default_vec;
 
 
 #[derive(Debug, Clone, Copy)]
@@ -21,6 +24,14 @@ impl Edge {
 }
 
 
+fn calc_edges_min_y(edges: &Vec<Edge>, edges_min_y: &mut Vec<i64>) {
+   for (index, edge) in edges.iter().enumerate() {
+      let min_y = min(edge.p1.y, edge.p2.y);
+      edges_min_y[index] = min_y;
+   }
+}
+
+
 fn main() {
    let edges = vec![
       Edge::new(0, 35, 15, 15),
@@ -31,8 +42,12 @@ fn main() {
       Edge::new(0, 0, 15, 20),
    ];
 
-   for edge in edges {
-      println!("{:?}", edge);
-   }
+   let mut edges_min_y: Vec<i64> = create_default_vec(edges.len());
 
+   calc_edges_min_y(&edges, &mut edges_min_y);
+
+   for (index, edge) in edges.iter().enumerate() {
+      println!("{:?} - {}", edge, edges_min_y[index]);
+   }
 }
+
