@@ -43,8 +43,11 @@ impl DevRenderer {
 
    fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
       let min_y_index = _min_y_index(poly);
+      let max_y_index = _max_y_index(poly);
 
-      println!("[{:?}] = {:?}", min_y_index, poly.points[min_y_index]);
+      println!("MIN [{:?}] = {:?}", min_y_index, poly.points[min_y_index]);
+
+      println!("MAX [{:?}] = {:?}", max_y_index, poly.points[max_y_index]);
 
       for point in poly.points.iter() {
          frame.put_pixel(point.x as i32, point.y as i32, &poly.color)
@@ -90,6 +93,29 @@ fn _min_y_index(poly: &Poly) -> usize {
    min_index
 }
 
+
+fn _max_y_index(poly: &Poly) -> usize {
+   let mut min_after = false;
+
+   let (first, rest) = poly.points.split_first().unwrap();
+
+   let mut max_y = first.y;
+   let mut max_index: usize = 0;
+
+   for (index, point) in rest.iter().enumerate() {
+      if point.y < max_y {
+         if min_after {
+            return max_index;
+         }
+      } else {
+         min_after = true;
+         max_index = index + 1;
+         max_y = point.y;
+      }
+   }
+
+   max_index
+}
 
 
 fn main() {
