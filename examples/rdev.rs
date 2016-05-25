@@ -12,50 +12,25 @@ struct Poly {
 
 
 impl Poly {
-   fn min_y_index(&self) -> usize {
-      let mut max_after = false;
-
+   fn min_max_y_index(&self) -> (usize, usize) {
       let (first, rest) = self.points.split_first().unwrap();
 
       let mut min_y = first.y;
+      let mut max_y = min_y;
       let mut min_index: usize = 0;
-
-      for (index, point) in rest.iter().enumerate() {
-         if point.y > min_y {
-            if max_after {
-               return min_index;
-            }
-         } else {
-            max_after = true;
-            min_index = index + 1;
-            min_y = point.y;
-         }
-      }
-
-      min_index
-   }
-
-   fn max_y_index(&self) -> usize {
-      let mut min_after = false;
-
-      let (first, rest) = self.points.split_first().unwrap();
-
-      let mut max_y = first.y;
       let mut max_index: usize = 0;
 
       for (index, point) in rest.iter().enumerate() {
-         if point.y < max_y {
-            if min_after {
-               return max_index;
-            }
-         } else {
-            min_after = true;
+         if point.y < min_y {
+            min_index = index + 1;
+            min_y = point.y;
+         } else if point.y > max_y {
             max_index = index + 1;
             max_y = point.y;
          }
       }
 
-      max_index
+      (min_index, max_index)
    }
 }
 
@@ -92,8 +67,7 @@ impl DevRenderer {
    }
 
    fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
-      let min_y_index = poly.min_y_index();
-      let max_y_index = poly.max_y_index();
+      let (min_y_index, max_y_index) = poly.min_max_y_index();
 
       println!("MIN [{:?}] = {:?}", min_y_index, poly.points[min_y_index]);
 
