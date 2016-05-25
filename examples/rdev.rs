@@ -73,6 +73,26 @@ impl DevRenderer {
 
       println!("MAX [{:?}] = {:?}", max_y_index, poly.points[max_y_index]);
 
+      let points_len = poly.points.len();
+      let count = if max_y_index > min_y_index {
+         max_y_index - min_y_index
+      } else {
+         points_len - max_y_index + min_y_index - 1
+      };
+
+      println!("COUNT = {}", count);
+
+      let mut index = min_y_index;
+      for _ in 0..count {
+         if index >= points_len {
+            index -= points_len;
+         }
+
+         println!("[{}] = {:?}", index, poly.points[index]);
+
+         index += 1;
+      }
+
       for point in poly.points.iter() {
          frame.put_pixel(point.x as i32, point.y as i32, &poly.color)
       }
