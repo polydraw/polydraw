@@ -40,6 +40,12 @@ impl DevRenderer {
          scene: scene,
       }
    }
+
+   fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
+      for point in poly.points.iter() {
+         frame.put_pixel(point.x as i32, point.y as i32, &poly.color)
+      }
+   }
 }
 
 
@@ -48,12 +54,8 @@ impl Renderer for DevRenderer {
    fn render(&mut self, frame: &mut Frame) {
       frame.clear();
 
-      let white = RGB::new(255, 255, 255);
-
       for poly in self.scene.polys.iter() {
-         for point in poly.points.iter() {
-            frame.put_pixel(point.x as i32, point.y as i32, &white)
-         }
+         self._render_poly(frame, poly);
       }
    }
 }
