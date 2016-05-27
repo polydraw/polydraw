@@ -74,23 +74,38 @@ impl DevRenderer {
       println!("MAX [{:?}] = {:?}", max_y_index, poly.points[max_y_index]);
 
       let points_len = poly.points.len();
-      let count = if max_y_index > min_y_index {
-         max_y_index - min_y_index
+      let clockwise_count = if max_y_index > min_y_index {
+         max_y_index - min_y_index + 1
       } else {
-         points_len - max_y_index + min_y_index - 1
+         points_len - min_y_index + max_y_index + 1
       };
 
-      println!("COUNT = {}", count);
+      let counter_count = points_len - clockwise_count + 2;
+
+      println!("CLOCKWISE COUNT = {}", clockwise_count);
 
       let mut index = min_y_index;
-      for _ in 0..count {
-         if index >= points_len {
-            index -= points_len;
+      for _ in 0..clockwise_count {
+         if index == points_len {
+            index = 0;
          }
 
          println!("[{}] = {:?}", index, poly.points[index]);
 
          index += 1;
+      }
+
+      println!("COUNTER COUNT = {}", counter_count);
+
+      let mut index = min_y_index;
+      for _ in 0..counter_count {
+         println!("[{}] = {:?}", index, poly.points[index]);
+
+         if index == 0 {
+            index = points_len - 1;
+         } else {
+            index -= 1;
+         }
       }
 
       for point in poly.points.iter() {
