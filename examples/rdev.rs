@@ -12,7 +12,72 @@ struct Poly {
 
 
 impl Poly {
-   fn min_max_y_index(&self) -> (usize, usize) {
+   fn left_right_points(&self) -> (Vec<Point>, Vec<Point>) {
+      let (min_y_i, max_y_i) = self._min_max_y_index();
+
+      let (left_count, right_count) = self._left_right_count(min_y_i, max_y_i);
+
+      return (
+         self._left_points(min_y_i, left_count),
+         self._right_points(min_y_i, right_count)
+      )
+   }
+
+   fn _left_points(&self, min_y_i: usize, left_count: usize) -> Vec<Point> {
+      let mut left = Vec::with_capacity(left_count);
+
+      let points_len = self.points.len();
+
+      let mut index = min_y_i;
+
+      for _ in 0..left_count {
+         left.push(self.points[index]);
+
+         if index == 0 {
+            index = points_len - 1;
+         } else {
+            index -= 1;
+         }
+      }
+
+      return left;
+   }
+
+   fn _right_points(&self, min_y_i: usize, right_count: usize) -> Vec<Point> {
+      let mut right = Vec::with_capacity(right_count);
+
+      let points_len = self.points.len();
+
+      let mut index = min_y_i;
+
+      for _ in 0..right_count {
+         if index == points_len {
+            index = 0;
+         }
+
+         right.push(self.points[index]);
+
+         index += 1;
+      }
+
+      return right;
+   }
+
+   fn _left_right_count(&self, min_y_i: usize, max_y_i: usize) -> (usize, usize) {
+      let points_len = self.points.len();
+
+      let left_count = if max_y_i > min_y_i {
+         max_y_i - min_y_i + 1
+      } else {
+         points_len - min_y_i + max_y_i + 1
+      };
+
+      let right_count = points_len - left_count + 2;
+
+      return (left_count, right_count)
+   }
+
+   fn _min_max_y_index(&self) -> (usize, usize) {
       let (first, rest) = self.points.split_first().unwrap();
 
       let mut min_y = first.y;
@@ -67,45 +132,18 @@ impl DevRenderer {
    }
 
    fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
-      let (min_y_index, max_y_index) = poly.min_max_y_index();
+      let (left_points, right_points) = poly.left_right_points();
 
-      println!("MIN [{:?}] = {:?}", min_y_index, poly.points[min_y_index]);
+      println!("LEFT");
 
-      println!("MAX [{:?}] = {:?}", max_y_index, poly.points[max_y_index]);
-
-      let points_len = poly.points.len();
-      let clockwise_count = if max_y_index > min_y_index {
-         max_y_index - min_y_index + 1
-      } else {
-         points_len - min_y_index + max_y_index + 1
-      };
-
-      let counter_count = points_len - clockwise_count + 2;
-
-      println!("CLOCKWISE COUNT = {}", clockwise_count);
-
-      let mut index = min_y_index;
-      for _ in 0..clockwise_count {
-         if index == points_len {
-            index = 0;
-         }
-
-         println!("[{}] = {:?}", index, poly.points[index]);
-
-         index += 1;
+      for (index, point) in left_points.iter().enumerate() {
+         println!("[{}] = {:?}", index, point);
       }
 
-      println!("COUNTER COUNT = {}", counter_count);
+      println!("RIGHT");
 
-      let mut index = min_y_index;
-      for _ in 0..counter_count {
-         println!("[{}] = {:?}", index, poly.points[index]);
-
-         if index == 0 {
-            index = points_len - 1;
-         } else {
-            index -= 1;
-         }
+      for (index, point) in right_points.iter().enumerate() {
+         println!("[{}] = {:?}", index, point);
       }
 
       for point in poly.points.iter() {
