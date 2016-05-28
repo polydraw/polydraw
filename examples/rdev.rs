@@ -12,15 +12,32 @@ struct Poly {
 
 
 impl Poly {
-   fn left_right_points(&self) -> (Vec<Point>, Vec<Point>) {
+   fn left_right_edges(&self) -> (Vec<Edge>, Vec<Edge>) {
       let (min_y_i, max_y_i) = self._min_max_y_index();
 
       let (left_count, right_count) = self._left_right_count(min_y_i, max_y_i);
 
-      return (
-         self._left_points(min_y_i, left_count),
-         self._right_points(min_y_i, right_count)
-      )
+      let left_points = self._left_points(min_y_i, left_count);
+
+      let left_edges = self._edges_from_points(&left_points);
+
+      let right_points = self._right_points(min_y_i, right_count);
+
+      let right_edges = self._edges_from_points(&right_points);
+
+      (left_edges, right_edges)
+   }
+
+   fn _edges_from_points(&self, points: &Vec<Point>) -> Vec<Edge> {
+      let mut edges: Vec<Edge> = Vec::with_capacity(points.len() - 1);
+
+      for index in 0..points.len() - 1 {
+         edges.push(
+            Edge::new(points[index], points[index + 1])
+         );
+      }
+
+      edges
    }
 
    fn _left_points(&self, min_y_i: usize, left_count: usize) -> Vec<Point> {
@@ -100,6 +117,23 @@ impl Poly {
 }
 
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct Edge {
+   p1: Point,
+   p2: Point,
+}
+
+impl Edge {
+   #[inline]
+   fn new(p1: Point, p2: Point) -> Self {
+      Edge {
+         p1: p1,
+         p2: p2,
+      }
+   }
+}
+
+
 struct Scene {
    polys: Vec<Poly>,
 }
@@ -132,18 +166,18 @@ impl DevRenderer {
    }
 
    fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
-      let (left_points, right_points) = poly.left_right_points();
+      let (left_edges, right_edges) = poly.left_right_edges();
 
       println!("LEFT");
 
-      for (index, point) in left_points.iter().enumerate() {
-         println!("[{}] = {:?}", index, point);
+      for (index, edge) in left_edges.iter().enumerate() {
+         println!("[{}] = {:?}", index, edge);
       }
 
       println!("RIGHT");
 
-      for (index, point) in right_points.iter().enumerate() {
-         println!("[{}] = {:?}", index, point);
+      for (index, edge) in right_edges.iter().enumerate() {
+         println!("[{}] = {:?}", index, edge);
       }
 
       for point in poly.points.iter() {
