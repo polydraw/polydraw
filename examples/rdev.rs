@@ -153,6 +153,32 @@ impl Scene {
 }
 
 
+struct Advancer {
+   delta: f64,
+   f64x: f64,
+}
+
+
+impl Advancer {
+   fn new(edge: Edge) -> Self {
+      let dx = edge.p2.x - edge.p1.x;
+      let dy = edge.p2.y - edge.p1.y;
+
+      let delta = dx as f64 / dy as f64;
+      let f64x = edge.p1.x as f64;
+
+      Advancer {
+         delta: delta,
+         f64x: f64x,
+      }
+   }
+
+   fn advance(&mut self) -> i64 {
+      self.f64x += self.delta;
+      self.f64x.round() as i64
+   }
+}
+
 struct DevRenderer {
    scene: Scene,
 }
@@ -168,43 +194,40 @@ impl DevRenderer {
    fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
       let (min_y, max_y, left_edges, right_edges) = poly.left_right_edges();
 
-      println!("min_y {:?}, max_y {:?}", min_y, max_y);
-
-      println!("LEFT");
-
-      for (index, edge) in left_edges.iter().enumerate() {
-         println!("[{}] = {:?}", index, edge);
-      }
-
-      println!("RIGHT");
-
-      for (index, edge) in right_edges.iter().enumerate() {
-         println!("[{}] = {:?}", index, edge);
-      }
-
       let mut left_i = 0;
       let mut right_i = 0;
 
       let mut left_edge = left_edges[left_i];
       let mut right_edge = right_edges[right_i];
 
+      let mut left_x = left_edge.p1.x;
+      let mut right_x = right_edge.p1.x;
+
+      let left_last_i = left_edges.len() - 1;
+      let right_last_i = right_edges.len() - 1;
+
+      let mut left_advancer = Advancer::new(left_edge);
+      let mut right_advancer = Advancer::new(right_edge);
+
       for y in min_y..max_y + 1 {
-         if left_edge.p2.y < y {
+         if left_edge.p2.y == y && left_i != left_last_i {
             left_i += 1;
             left_edge = left_edges[left_i];
+            left_advancer = Advancer::new(left_edge);
          }
 
-         if right_edge.p2.y < y {
+         if right_edge.p2.y == y && right_i != right_last_i  {
             right_i += 1;
             right_edge = right_edges[right_i];
+            right_advancer = Advancer::new(right_edge);
          }
 
-         println!("Y {:?} LEFT {:?} ", y, left_edge);
-         println!("Y {:?} RIGHT {:?} ", y, right_edge);
-      }
+         for x in left_x..right_x {
+            frame.put_pixel(x as i32, y as i32, &poly.color)
+         }
 
-      for point in poly.points.iter() {
-         frame.put_pixel(point.x as i32, point.y as i32, &poly.color)
+         left_x = left_advancer.advance();
+         right_x = right_advancer.advance();
       }
    }
 }
@@ -217,8 +240,6 @@ impl Renderer for DevRenderer {
       for poly in self.scene.polys.iter() {
          self._render_poly(frame, poly);
       }
-
-      panic!("Bye!");
    }
 }
 
@@ -240,7 +261,7 @@ fn main() {
          Point::new(100, 500),
          Point::new(700, 100),
          Point::new(900, 200),
-         Point::new(900, 1000),
+         Point::new(900, 700),
       ],
       color: RGB::new(128, 59, 89),
    };
@@ -253,7 +274,7 @@ fn main() {
    Application::new()
       .renderer(&mut renderer)
       .title("Dev Rasterizer")
-      .size(800, 450)
+      .size(1200, 800)
       .run();
 }
 
