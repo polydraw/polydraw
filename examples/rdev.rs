@@ -1,6 +1,7 @@
 extern crate polydraw;
 
 use polydraw::{Application, Renderer, Frame};
+use polydraw::raster::create_default_vec;
 use polydraw::geom::point::Point;
 use polydraw::draw::RGB;
 
@@ -9,6 +10,9 @@ struct Poly {
    points: Vec<Point>,
    color: RGB,
 }
+
+
+const SUBPIXELS: i64 = 3;
 
 
 impl Poly {
@@ -25,7 +29,7 @@ impl Poly {
 
       let right_edges = self._edges_from_points(&right_points);
 
-      (min_y, max_y, left_edges, right_edges)
+      (min_y * SUBPIXELS, max_y * SUBPIXELS, left_edges, right_edges)
    }
 
    fn _edges_from_points(&self, points: &Vec<Point>) -> Vec<Edge> {
@@ -33,7 +37,7 @@ impl Poly {
 
       for index in 0..points.len() - 1 {
          edges.push(
-            Edge::new(points[index], points[index + 1])
+            Edge::new(points[index] * SUBPIXELS, points[index + 1] * SUBPIXELS)
          );
       }
 
@@ -181,6 +185,9 @@ impl Advancer {
 
 struct DevRenderer {
    scene: Scene,
+   buf: Option<Vec<RGB>>,
+   width: u32,
+   height: u32,
 }
 
 
@@ -188,58 +195,113 @@ impl DevRenderer {
    fn new(scene: Scene) -> Self {
       DevRenderer {
          scene: scene,
+         buf: None,
+         width: 0,
+         height: 0,
       }
    }
 
-   fn _render_poly(&self, frame: &mut Frame, poly: &Poly) {
-      let (min_y, max_y, left_edges, right_edges) = poly.left_right_edges();
+   fn _render_polys(&mut self) {
+      let mut buf = self.buf.as_mut().unwrap();
 
-      let mut left_i = 0;
-      let mut right_i = 0;
+      for poly in self.scene.polys.iter() {
+         let (min_y, max_y, left_edges, right_edges) = poly.left_right_edges();
 
-      let mut left_edge = left_edges[left_i];
-      let mut right_edge = right_edges[right_i];
+         let mut left_i = 0;
+         let mut right_i = 0;
 
-      let mut left_x = left_edge.p1.x;
-      let mut right_x = right_edge.p1.x;
+         let mut left_edge = left_edges[left_i];
+         let mut right_edge = right_edges[right_i];
 
-      let left_last_i = left_edges.len() - 1;
-      let right_last_i = right_edges.len() - 1;
+         let mut left_x = left_edge.p1.x;
+         let mut right_x = right_edge.p1.x;
 
-      let mut left_advancer = Advancer::new(left_edge);
-      let mut right_advancer = Advancer::new(right_edge);
+         let left_last_i = left_edges.len() - 1;
+         let right_last_i = right_edges.len() - 1;
 
-      for y in min_y..max_y + 1 {
-         if left_edge.p2.y == y && left_i != left_last_i {
-            left_i += 1;
-            left_edge = left_edges[left_i];
-            left_advancer = Advancer::new(left_edge);
+         let mut left_advancer = Advancer::new(left_edge);
+         let mut right_advancer = Advancer::new(right_edge);
+
+         for y in min_y..max_y + 1 {
+            if left_edge.p2.y == y && left_i != left_last_i {
+               left_i += 1;
+               left_edge = left_edges[left_i];
+               left_advancer = Advancer::new(left_edge);
+            }
+
+            if right_edge.p2.y == y && right_i != right_last_i  {
+               right_i += 1;
+               right_edge = right_edges[right_i];
+               right_advancer = Advancer::new(right_edge);
+            }
+
+            for x in left_x..right_x {
+               buf[y as usize * self.width as usize * SUBPIXELS as usize + x as usize] = poly.color;
+               //frame.put_pixel(x as i32, y as i32, &poly.color)
+            }
+
+            left_x = left_advancer.advance();
+            right_x = right_advancer.advance();
          }
+      }
+   }
 
-         if right_edge.p2.y == y && right_i != right_last_i  {
-            right_i += 1;
-            right_edge = right_edges[right_i];
-            right_advancer = Advancer::new(right_edge);
+   #[inline]
+   fn clear(&mut self) {
+      let mut buf = self.buf.as_mut().unwrap();
+
+      for i in 0..buf.len() {
+         buf[i] = RGB::default();
+      }
+   }
+
+   #[inline]
+   fn _render_buffer(&mut self, frame: &mut Frame) {
+      let buf = self.buf.as_mut().unwrap();
+
+      let divisor = (SUBPIXELS * SUBPIXELS) as u16;
+
+      for y in 0..self.height as usize {
+         for x in 0..self.width as usize {
+            let mut r: u16 = 0;
+            let mut g: u16 = 0;
+            let mut b: u16 = 0;
+            for box_y in 0..SUBPIXELS as usize {
+               for box_x in 0..SUBPIXELS as usize {
+                  let pos = (box_y + y * SUBPIXELS as usize * self.width as usize * SUBPIXELS as usize) + box_x + x * SUBPIXELS as usize;
+                  let color = &buf[pos];
+                  r += color.r as u16;
+                  g += color.g as u16;
+                  b += color.b as u16;
+               }
+            }
+
+            r /= divisor;
+            g /= divisor;
+            b /= divisor;
+
+            frame.put_pixel(x as i32, y as i32, &RGB::new(r as u8, g as u8, b as u8));
          }
-
-         for x in left_x..right_x {
-            frame.put_pixel(x as i32, y as i32, &poly.color)
-         }
-
-         left_x = left_advancer.advance();
-         right_x = right_advancer.advance();
       }
    }
 }
 
 
 impl Renderer for DevRenderer {
-   fn render(&mut self, frame: &mut Frame) {
-      frame.clear();
+   fn init(&mut self, width: u32, height: u32) {
+      self.buf = Some(
+         create_default_vec((width * height * (SUBPIXELS * SUBPIXELS) as u32) as usize)
+      );
+      self.width = width;
+      self.height = height;
+   }
 
-      for poly in self.scene.polys.iter() {
-         self._render_poly(frame, poly);
-      }
+   fn render(&mut self, frame: &mut Frame) {
+      self.clear();
+
+      self._render_polys();
+
+      self._render_buffer(frame);
    }
 }
 

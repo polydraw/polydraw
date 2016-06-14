@@ -1,4 +1,6 @@
 use std::cmp::{PartialOrd, Ordering};
+use std::ops::Mul;
+
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Point {
@@ -50,6 +52,17 @@ impl Ord for Point {
          Ordering::Greater
       } else {
          Ordering::Equal
+      }
+   }
+}
+
+impl Mul<i64> for Point {
+   type Output = Point;
+
+   fn mul(self, val: i64) -> Point {
+      Point {
+         x: self.x * val,
+         y: self.y * val,
       }
    }
 }
