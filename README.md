@@ -15,7 +15,7 @@ Polydraw provides all the building blocks for the 2D graphics development of ric
 
 * Rasterization of shapes & paths
 * Text rendering
-* Blending & compostiion
+* Blending & compositing
 * Analytical anti-aliasing
 * Subpixel rendering
 * Gradients
