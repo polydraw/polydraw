@@ -1,5 +1,9 @@
 extern crate polydraw;
 
+use std::path::Path;
+use std::io::Write;
+use std::fs::File;
+
 use polydraw::{Application, Renderer, Frame};
 use polydraw::raster::create_default_vec;
 use polydraw::geom::point::Point;
@@ -188,6 +192,8 @@ struct DevRenderer {
    buf: Option<Vec<RGB>>,
    width: u32,
    height: u32,
+   written: bool,
+   rasterized: Option<Vec<RGB>>,
 }
 
 
@@ -198,6 +204,8 @@ impl DevRenderer {
          buf: None,
          width: 0,
          height: 0,
+         written: false,
+         rasterized: None,
       }
    }
 
@@ -259,6 +267,8 @@ impl DevRenderer {
    fn _render_buffer(&mut self, frame: &mut Frame) {
       let buf = self.buf.as_mut().unwrap();
 
+      let rasterized = self.rasterized.as_mut().unwrap();
+
       let divisor = (SUBPIXELS * SUBPIXELS) as u16;
 
       for y in 0..self.height as usize {
@@ -280,7 +290,11 @@ impl DevRenderer {
             g /= divisor;
             b /= divisor;
 
-            frame.put_pixel(x as i32, y as i32, &RGB::new(r as u8, g as u8, b as u8));
+            let color = RGB::new(r as u8, g as u8, b as u8);
+
+            frame.put_pixel(x as i32, y as i32, &color);
+
+            rasterized[y * self.width as usize + x] = color;
          }
       }
    }
@@ -292,6 +306,11 @@ impl Renderer for DevRenderer {
       self.buf = Some(
          create_default_vec((width * height * (SUBPIXELS * SUBPIXELS) as u32) as usize)
       );
+
+      self.rasterized = Some(
+         create_default_vec((width * height) as usize)
+      );
+
       self.width = width;
       self.height = height;
    }
@@ -302,7 +321,38 @@ impl Renderer for DevRenderer {
       self._render_polys();
 
       self._render_buffer(frame);
+
+      if self.written == false {
+         write_ppm("buffer.ppm", self.width as usize, self.height as usize, self.rasterized.as_mut().unwrap());
+
+         self.written = true;
+      }
    }
+}
+
+
+pub fn write_ppm(filename: &str, width: usize, height: usize, buffer: &Vec<RGB>) -> std::io::Result<()> {
+   let path = Path::new(filename);
+   let mut file = try!(File::create(&path));
+
+   let header = format!("P6 {} {} 255\n", width, height);
+
+   try!(file.write(header.as_bytes()));
+
+   let mut data = Vec::with_capacity(width * height);
+
+   for y in 0..height {
+      for x in 0..width {
+         let i = (y * width + x) as usize;
+         data.push(buffer[i].r);
+         data.push(buffer[i].g);
+         data.push(buffer[i].b);
+      }
+   }
+
+   try!(file.write(&data));
+
+   Ok(())
 }
 
 
