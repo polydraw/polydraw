@@ -9,9 +9,24 @@
 
 ```
 
-**The library is under initial research and development. Alpha release is planned for _Q3 of 2016_.**
+**The library is under initial research and development. Release is planned for _2017_.**
 
-Polydraw provides all the building blocks for the 2D graphics development of rich interactive applications and games.
+Polydraw is a 2D vector graphics engine written in the Rust programming language for development of rich interactive applications and games.
+
+
+**Currently the demos/examples work on the following combinations of operating systems and GPU platforms:**
+
+| OS            | Subsystem     | Working  |
+| ------------- |:-------------:| --------:|
+| Windows       | WGL/OpenGL    | Yes      |
+| Windows       | DirectX       | No       |
+| Mac OS X      | Core OpenGL   | No       |
+| Linux         | EGL/OpenGL    | Yes      |
+| Linux         | GLX/OpenGL    | No       |
+
+During the upcoming phases of research and development we will post new demos and technical articles.
+
+#### Planned Features
 
 * Rasterization of shapes & paths
 * Text rendering
