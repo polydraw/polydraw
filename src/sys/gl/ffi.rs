@@ -10,6 +10,7 @@ pub use libc::{
 use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
 
 pub type GLenum = c_uint;
+pub type GLubyte = c_uchar;
 pub type GLint = c_int;
 pub type GLuint = c_uint;
 pub type GLsizei = c_int;
