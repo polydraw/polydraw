@@ -7,10 +7,12 @@ use libc::{
 };
 
 use std::mem;
+use std::ptr;
 
 use error::{RuntimeError, ErrorKind};
 
 use super::x11::ffi::Display as X11Display;
+use super::x11::ffi::XVisualInfo;
 use super::x11;
 
 
@@ -106,4 +108,26 @@ pub fn choose_config(display: &Display, screen_id: &x11::ScreenID) -> Result<Con
    Ok(Config {
       ptr: chosen
    })
+}
+
+
+pub fn get_visual(display: &Display, config: &Config) -> Result<XVisualInfo, RuntimeError> {
+   let info_ptr = unsafe {
+      ffi::glXGetVisualFromFBConfig(display.ptr, config.ptr)
+   };
+
+   if info_ptr.is_null() {
+      return Err(RuntimeError::new(
+         ErrorKind::GLX,
+         "Failed to get visual from FBConfig".to_string()
+      ));
+   }
+
+   let info = unsafe {
+      ptr::read(info_ptr as *const _)
+   };
+
+   x11::xfree(info_ptr as *mut c_void);
+
+   Ok(info)
 }
