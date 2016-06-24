@@ -11,9 +11,7 @@ use std::mem;
 use error::{RuntimeError, ErrorKind};
 
 use super::x11::ffi::Display as X11Display;
-use super::x11::ffi::XFree;
 use super::x11;
-use super::xcb;
 
 
 pub struct Display {
@@ -103,7 +101,7 @@ pub fn choose_config(display: &Display, screen_id: &x11::ScreenID) -> Result<Con
 
    let chosen = unsafe { *result };
 
-   unsafe { XFree(result as *mut c_void); }
+   x11::xfree(result as *mut c_void);
 
    Ok(Config {
       ptr: chosen

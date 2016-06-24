@@ -118,6 +118,12 @@ pub struct ScreenID {
    pub screen: ffi::c_int
 }
 
+pub fn xfree(data: *mut ffi::c_void) {
+   unsafe {
+      ffi::XFree(data);
+   }
+}
+
 #[cfg(test)]
 mod test {
    use std::env;
