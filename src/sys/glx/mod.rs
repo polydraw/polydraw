@@ -24,6 +24,10 @@ pub struct Config {
    pub ptr: ffi::GLXFBConfig
 }
 
+pub struct Context {
+   pub ptr: ffi::GLXContext
+}
+
 pub struct Version {
    pub major: c_int,
    pub minor: c_int,
@@ -110,7 +114,6 @@ pub fn choose_config(display: &Display, screen_id: &x11::ScreenID) -> Result<Con
    })
 }
 
-
 pub fn get_visual(display: &Display, config: &Config) -> Result<XVisualInfo, RuntimeError> {
    let info_ptr = unsafe {
       ffi::glXGetVisualFromFBConfig(display.ptr, config.ptr)
@@ -130,4 +133,26 @@ pub fn get_visual(display: &Display, config: &Config) -> Result<XVisualInfo, Run
    x11::xfree(info_ptr as *mut c_void);
 
    Ok(info)
+}
+
+pub fn create_new_context(display: &Display, config: &Config) -> Result<Context, RuntimeError> {
+   let context = unsafe {
+      ffi::glXCreateNewContext(
+         display.ptr,
+         config.ptr,
+         ffi::GLX_RGBA_TYPE,
+         ptr::null_mut(),
+         1
+      )
+   };
+   if context.is_null() {
+      return Err(RuntimeError::new(
+         ErrorKind::GLX,
+         "glXCreateNewContext failed".to_string()
+      ));
+   }
+
+   Ok(Context {
+      ptr: context
+   })
 }

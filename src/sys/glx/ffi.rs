@@ -45,6 +45,7 @@ pub const GLX_DRAWABLE_TYPE:              c_int = 0x8010;
 pub const GLX_RENDER_TYPE:                c_int = 0x8011;
 pub const GLX_X_RENDERABLE:               c_int = 0x8012;
 pub const GLX_FBCONFIG_ID:                c_int = 0x8013;
+pub const GLX_RGBA_TYPE:                  c_int = 0x8014;
 
 pub const GLX_RGBA_BIT:                   c_int = 0x0001;
 pub const GLX_COLOR_INDEX_BIT:            c_int = 0x0002;
@@ -108,7 +109,7 @@ extern "C" {
       renderType: c_int,
       shareList: GLXContext,
       direct: c_int
-   );
+   ) -> GLXContext;
 
    pub fn glXSwapBuffers(
       display: *mut Display,

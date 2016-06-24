@@ -6,6 +6,7 @@ use sys::glx;
 pub struct GlxContext {
    pub version: glx::Version,
    pub config: glx::Config,
+   pub context: glx::Context,
 }
 
 impl GlxContext {
@@ -24,9 +25,12 @@ impl GlxContext {
 
       println!("Visual bits per RGB {}", visual.bits_per_rgb);
 
+      let context = try!(glx::create_new_context(&display, &config));
+
       Ok(GlxContext {
          version: version,
          config: config,
+         context: context,
       })
    }
 }
