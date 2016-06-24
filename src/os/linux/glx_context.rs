@@ -1,6 +1,7 @@
 use error::RuntimeError;
 
 use sys::x11;
+use sys::xcb;
 use sys::glx;
 
 pub struct GlxContext {
@@ -10,7 +11,7 @@ pub struct GlxContext {
 }
 
 impl GlxContext {
-   pub fn new(x11_display: &x11::Display, screen_id: &x11::ScreenID) -> Result<Self, RuntimeError> {
+   pub fn new(x11_display: &x11::Display, screen_id: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
       let display = glx::Display{
          ptr: x11_display.ptr,
       };
@@ -26,6 +27,10 @@ impl GlxContext {
       println!("Visual bits per RGB {}", visual.bits_per_rgb);
 
       let context = try!(glx::create_new_context(&display, &config));
+
+      let win = try!(glx::create_rendering_area(&display, &config, window.window_id.id));
+
+      println!("Rendering area {}", win);
 
       Ok(GlxContext {
          version: version,

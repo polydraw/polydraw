@@ -11,10 +11,12 @@ use std::ptr;
 
 use error::{RuntimeError, ErrorKind};
 
+use super::xcb::ffi::xcb_window_t;
 use super::x11::ffi::Display as X11Display;
 use super::x11::ffi::XVisualInfo;
 use super::x11;
 
+pub type GLXNativeWindowType = xcb_window_t;
 
 pub struct Display {
    pub ptr: *mut X11Display
@@ -155,4 +157,28 @@ pub fn create_new_context(display: &Display, config: &Config) -> Result<Context,
    Ok(Context {
       ptr: context
    })
+}
+
+pub fn create_rendering_area(
+   display: &Display,
+   config: &Config,
+   native_window: GLXNativeWindowType
+) -> Result<ffi::GLXWindow, RuntimeError> {
+   let win = unsafe {
+      ffi::glXCreateWindow(
+         display.ptr,
+         config.ptr,
+         native_window,
+         ptr::null()
+      )
+   };
+
+   if win == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::GLX,
+         "glXCreateWindow failed".to_string()
+      ));
+   }
+
+   Ok(win)
 }

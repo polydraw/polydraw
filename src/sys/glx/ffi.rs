@@ -4,11 +4,14 @@ pub use libc::{
    c_uchar, c_int, c_void,
 };
 
+use super::GLXNativeWindowType;
+
 pub use sys::gl::ffi::GLubyte;
 pub use sys::x11::ffi::{XID, Display, XVisualInfo};
 
 
 pub type GLXDrawable = XID;
+pub type GLXWindow = XID;
 
 pub const GLX_WINDOW_BIT:                 c_int = 0x0001;
 pub const GLX_PIXMAP_BIT:                 c_int = 0x0002;
@@ -126,4 +129,11 @@ extern "C" {
       drawable: GLXDrawable,
       ctx: GLXContext
    ) -> c_int;
+
+   pub fn glXCreateWindow(
+      display: *mut Display,
+      config: GLXFBConfig,
+      window: GLXNativeWindowType,
+      attrib_list: *const c_int
+   ) -> GLXWindow;
 }
