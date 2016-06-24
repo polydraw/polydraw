@@ -9,6 +9,7 @@ pub struct LinuxDisplay {
    pub display: x11::Display,
    pub connection: Rc<xcb::Connection>,
    pub screen: xcb::Screen,
+   pub screen_id: x11::ScreenID,
 }
 
 impl LinuxDisplay {
@@ -17,12 +18,15 @@ impl LinuxDisplay {
 
       let connection = Rc::new(try!(display.xcb_connection()));
 
-      let screen = try!(Self::init_screen(&display, &connection));
+      let screen_id = display.default_screen();
+
+      let screen = try!(connection.screen_of_display(&screen_id));
 
       Ok(LinuxDisplay {
          display: display,
          connection: connection,
          screen: screen,
+         screen_id: screen_id,
       })
    }
 
@@ -33,16 +37,6 @@ impl LinuxDisplay {
       display.xcb_own_event_queue();
 
       Ok(display)
-   }
-
-   #[inline]
-   pub fn init_screen(
-      display: &x11::Display, connection: &xcb::Connection
-   ) -> Result<xcb::Screen, RuntimeError> {
-
-      let screen_id = display.default_screen();
-
-      connection.screen_of_display(&screen_id)
    }
 
    #[inline]

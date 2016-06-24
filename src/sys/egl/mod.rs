@@ -231,7 +231,7 @@ pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
    if result != ffi::EGL_TRUE {
       return Err(RuntimeError::new(
          ErrorKind::EGL,
-         "Choosing config failed".to_string()
+         "Choosing EGL config failed".to_string()
       ));
    }
 

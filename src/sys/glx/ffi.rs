@@ -31,6 +31,7 @@ pub const GLX_ACCUM_RED_SIZE:             c_int = 0x000e;
 pub const GLX_ACCUM_GREEN_SIZE:           c_int = 0x000f;
 pub const GLX_ACCUM_BLUE_SIZE:            c_int = 0x0010;
 pub const GLX_ACCUM_ALPHA_SIZE:           c_int = 0x0011;
+
 pub const GLX_CONFIG_CAVEAT:              c_int = 0x0020;
 pub const GLX_X_VISUAL_TYPE:              c_int = 0x0022;
 pub const GLX_TRANSPARENT_TYPE:           c_int = 0x0023;
@@ -39,6 +40,7 @@ pub const GLX_TRANSPARENT_RED_VALUE:      c_int = 0x0025;
 pub const GLX_TRANSPARENT_GREEN_VALUE:    c_int = 0x0026;
 pub const GLX_TRANSPARENT_BLUE_VALUE:     c_int = 0x0027;
 pub const GLX_TRANSPARENT_ALPHA_VALUE:    c_int = 0x0028;
+
 pub const GLX_DRAWABLE_TYPE:              c_int = 0x8010;
 pub const GLX_RENDER_TYPE:                c_int = 0x8011;
 pub const GLX_X_RENDERABLE:               c_int = 0x8012;
@@ -47,15 +49,14 @@ pub const GLX_FBCONFIG_ID:                c_int = 0x8013;
 pub const GLX_RGBA_BIT:                   c_int = 0x0001;
 pub const GLX_COLOR_INDEX_BIT:            c_int = 0x0002;
 
-pub const GLX_TRANSPARENT_RGB:            c_int = 0x8008;
-pub const GLX_TRANSPARENT_INDEX:          c_int = 0x8009;
-
 pub const GLX_TRUE_COLOR:                 c_int = 0x8002;
 pub const GLX_DIRECT_COLOR:               c_int = 0x8003;
 pub const GLX_PSEUDO_COLOR:               c_int = 0x8004;
 pub const GLX_STATIC_COLOR:               c_int = 0x8005;
 pub const GLX_GRAY_SCALE:                 c_int = 0x8006;
 pub const GLX_STATIC_GRAY:                c_int = 0x8007;
+pub const GLX_TRANSPARENT_RGB:            c_int = 0x8008;
+pub const GLX_TRANSPARENT_INDEX:          c_int = 0x8009;
 
 pub enum GLXFBConfigRec {}
 pub type GLXFBConfig = *mut GLXFBConfigRec;
