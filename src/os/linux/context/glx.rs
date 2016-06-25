@@ -5,6 +5,8 @@ use sys::xcb;
 use sys::glx;
 use sys::gl;
 
+use super::Context;
+
 pub struct GlxContext {
    pub display: glx::Display,
    pub version: glx::Version,
@@ -13,8 +15,8 @@ pub struct GlxContext {
    pub rendering_area: glx::GLXWindow,
 }
 
-impl GlxContext {
-   pub fn new(x11_display: &x11::Display, screen_id: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
+impl Context for GlxContext {
+   fn new(x11_display: &x11::Display, screen_id: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
       let display = glx::Display{
          ptr: x11_display.ptr,
       };
@@ -39,6 +41,13 @@ impl GlxContext {
    }
 
    #[inline]
+   fn swap_buffers(&self) -> Result<(), RuntimeError> {
+      glx::swap_buffers(&self.display, self.rendering_area)
+   }
+}
+
+impl GlxContext {
+   #[inline]
    pub fn init_rendering_area(
       display: &glx::Display,
       config: &glx::Config,
@@ -61,10 +70,5 @@ impl GlxContext {
 
       gl::reset_pixelstore_alignment();
       gl::enable_framebuffer_srgb();
-   }
-
-   #[inline]
-   pub fn swap_buffers(&self) -> Result<(), RuntimeError> {
-      glx::swap_buffers(&self.display, self.rendering_area)
    }
 }

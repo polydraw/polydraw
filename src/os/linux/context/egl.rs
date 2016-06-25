@@ -5,6 +5,8 @@ use sys::xcb;
 use sys::egl;
 use sys::gl;
 
+use super::Context;
+
 pub struct EglContext {
    pub display: egl::Display,
    pub version: egl::Version,
@@ -13,8 +15,8 @@ pub struct EglContext {
    pub surface: egl::Surface,
 }
 
-impl EglContext {
-   pub fn new(x11_display: &x11::Display, window: &xcb::Window) -> Result<Self, RuntimeError> {
+impl Context for EglContext {
+   fn new(x11_display: &x11::Display, _: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
       try!(Self::bind());
 
       let display = try!(egl::Display::from_native(x11_display));
@@ -38,6 +40,13 @@ impl EglContext {
       })
    }
 
+   #[inline]
+   fn swap_buffers(&self) -> Result<(), RuntimeError> {
+      egl::swap_buffers(&self.display, &self.surface)
+   }
+}
+
+impl EglContext {
    #[inline]
    pub fn bind() -> Result<(), RuntimeError> {
       egl::bind_api(egl::API::OpenGL)
@@ -87,10 +96,5 @@ impl EglContext {
 
       gl::reset_pixelstore_alignment();
       gl::enable_framebuffer_srgb();
-   }
-
-   #[inline]
-   pub fn swap_buffers(&self) -> Result<(), RuntimeError> {
-      egl::swap_buffers(&self.display, &self.surface)
    }
 }
