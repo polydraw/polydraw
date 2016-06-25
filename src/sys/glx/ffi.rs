@@ -12,6 +12,7 @@ pub use sys::x11::ffi::{XID, Display, XVisualInfo};
 
 pub type GLXDrawable = XID;
 pub type GLXWindow = XID;
+pub type Bool = c_int;
 
 pub const GLX_WINDOW_BIT:                 c_int = 0x0001;
 pub const GLX_PIXMAP_BIT:                 c_int = 0x0002;
@@ -136,4 +137,11 @@ extern "C" {
       window: GLXNativeWindowType,
       attrib_list: *const c_int
    ) -> GLXWindow;
+
+   pub fn glXMakeContextCurrent(
+      display: *mut Display,
+      draw: GLXDrawable,
+      read: GLXDrawable,
+      ctx: GLXContext
+   ) -> Bool;
 }

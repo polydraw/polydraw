@@ -49,7 +49,7 @@ pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
 
    if result == 0 {
       return Err(RuntimeError::new(
-         ErrorKind::EGL,
+         ErrorKind::GLX,
          "glXQueryVersion failed".to_string()
       ));
    }
@@ -181,4 +181,29 @@ pub fn create_rendering_area(
    }
 
    Ok(win)
+}
+
+pub fn make_current(
+   display: &Display,
+   rendering_area: ffi::GLXWindow,
+   context: &Context,
+) -> Result<(), RuntimeError> {
+
+   let made_current = unsafe {
+      ffi::glXMakeContextCurrent(
+         display.ptr,
+         rendering_area,
+         rendering_area,
+         context.ptr
+      )
+   };
+
+   if made_current == 0 {
+      return Err(RuntimeError::new(
+         ErrorKind::GLX,
+         "glXMakeContextCurrent failed".to_string()
+      ));
+   }
+
+   Ok(())
 }

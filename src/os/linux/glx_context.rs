@@ -28,9 +28,11 @@ impl GlxContext {
 
       let context = try!(glx::create_new_context(&display, &config));
 
-      let win = try!(glx::create_rendering_area(&display, &config, window.window_id.id));
+      let rendering_area = try!(glx::create_rendering_area(&display, &config, window.window_id.id));
 
-      println!("Rendering area {}", win);
+      println!("Rendering area {}", rendering_area);
+
+      try!(glx::make_current(&display, rendering_area, &context));
 
       Ok(GlxContext {
          version: version,
