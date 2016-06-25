@@ -22,7 +22,7 @@ Polydraw is a 2D vector graphics engine written in the Rust programming language
 | Windows       | DirectX       | No                  |
 | Mac OS X      | Core OpenGL   | No                  |
 | Linux         | EGL/OpenGL    | Yes                 |
-| Linux         | GLX/OpenGL    | _Under development_ |
+| Linux         | GLX/OpenGL    | Yes                 |
 
 During the upcoming phases of research and development we will post new demos and technical articles.
 
