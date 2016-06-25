@@ -19,7 +19,7 @@ use super::x11;
 
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
-pub use super::glx::ffi::GLXWindow;
+pub use self::ffi::GLXWindow;
 
 pub type GLXNativeWindowType = xcb_window_t;
 
