@@ -1,7 +1,7 @@
 #![allow(non_camel_case_types)]
 
 pub use libc::{
-   c_uchar, c_int, c_void,
+   c_char, c_uchar, c_int, c_void,
 };
 
 use super::GLXNativeWindowType;
@@ -83,7 +83,7 @@ extern "C" {
    ) -> c_int;
 
    pub fn glXGetProcAddress(
-      procname: *const GLubyte
+      procname: *const c_char
    ) -> __glXMustCastToProperFunctionPointerType;
 
    pub fn glXGetVisualFromFBConfig(

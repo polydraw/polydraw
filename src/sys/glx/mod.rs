@@ -8,6 +8,7 @@ use libc::{
 
 use std::mem;
 use std::ptr;
+use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
 
@@ -16,7 +17,31 @@ use super::x11::ffi::Display as X11Display;
 use super::x11::ffi::XVisualInfo;
 use super::x11;
 
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+
+pub use super::glx::ffi::GLXWindow;
+
 pub type GLXNativeWindowType = xcb_window_t;
+
+pub struct Loader;
+
+impl Loader {
+   pub fn new() -> Self {
+      Loader
+   }
+}
+
+impl FnPtrLoader for Loader {
+   fn get_proc_addr(&self, name: &str) -> FnPtr {
+      let cname = CString::new(name).unwrap().as_ptr();
+
+      let addr = unsafe {
+         ffi::glXGetProcAddress(cname)
+      };
+
+      addr
+   }
+}
 
 pub struct Display {
    pub ptr: *mut X11Display
@@ -204,6 +229,18 @@ pub fn make_current(
          "glXMakeContextCurrent failed".to_string()
       ));
    }
+
+   Ok(())
+}
+
+pub fn swap_buffers(
+   display: &Display,
+   rendering_area: ffi::GLXWindow,
+) -> Result<(), RuntimeError> {
+
+   unsafe {
+      ffi::glXSwapBuffers(display.ptr, rendering_area)
+   };
 
    Ok(())
 }
