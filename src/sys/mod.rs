@@ -8,4 +8,3 @@ pub mod gl;
 pub mod glx;
 pub mod egl;
 pub mod wgl;
-pub mod cl;
