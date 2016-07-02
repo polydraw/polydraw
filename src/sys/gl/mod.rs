@@ -374,3 +374,52 @@ impl Drop for Shader {
       };
    }
 }
+
+pub struct Program {
+   pub name: ffi::GLuint,
+}
+
+impl Program {
+   pub fn new() -> Self {
+      let name = unsafe {
+         ffi::glCreateProgram()
+      };
+
+      Program {
+         name: name,
+      }
+   }
+
+   #[inline]
+   pub fn attach_shader(&self, shader: &Shader) {
+      unsafe {
+         ffi::glAttachShader(self.name, shader.name)
+      };
+   }
+
+   #[inline]
+   pub fn link(&self) {
+      unsafe {
+         ffi::glLinkProgram(self.name)
+      };
+   }
+
+   #[inline]
+   pub fn is_linked(&self) -> bool {
+      let mut linked: ffi::GLint = unsafe { mem::uninitialized() };
+
+      unsafe {
+         ffi::glGetProgramiv(self.name, ffi::GL_LINK_STATUS, &mut linked);
+      };
+
+      linked == 1
+   }
+}
+
+impl Drop for Program {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::glDeleteProgram(self.name)
+      };
+   }
+}
