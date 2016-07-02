@@ -343,7 +343,7 @@ extern "C" {
 
    pub fn glDeleteShader(shader: GLuint) -> ();
 
-   pub fn glCreateProgram(n: GLsizei, pipelines: *mut GLuint) -> ();
+   pub fn glCreateProgram() -> GLuint;
 
    pub fn glAttachShader(program: GLuint, shader: GLuint) -> ();
 
