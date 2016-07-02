@@ -306,8 +306,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    true
 }
 
-#[cfg_attr(target_os="linux", link(name="GLESv2"))]
-//#[cfg_attr(target_os="linux", link(name="GL"))]
+#[cfg_attr(target_os="linux", link(name="GL"))]
 #[cfg_attr(target_os="windows", link(name="opengl32"))]
 extern "C" {
    pub fn glGetError() -> GLenum;
