@@ -405,6 +405,13 @@ impl Program {
    }
 
    #[inline]
+   pub fn use_(&self) {
+      unsafe {
+         ffi::glUseProgram(self.name)
+      };
+   }
+
+   #[inline]
    pub fn is_linked(&self) -> bool {
       let mut linked: ffi::GLint = unsafe { mem::uninitialized() };
 
