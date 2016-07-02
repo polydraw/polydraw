@@ -2,6 +2,7 @@ pub mod ffi;
 
 use std::mem;
 use std::ptr;
+use std::ffi::CString;
 
 use super::utils::fn_ptr::FnPtrLoader;
 
@@ -336,6 +337,33 @@ impl Shader {
       Shader {
          name: name,
       }
+   }
+
+   #[inline]
+   pub fn shader_source(&self, string: &str) {
+      let cstring = CString::new(string).unwrap().as_ptr();
+
+      unsafe {
+         ffi::glShaderSource(self.name, 1, &cstring, ptr::null())
+      };
+   }
+
+   #[inline]
+   pub fn compile(&self) {
+      unsafe {
+         ffi::glCompileShader(self.name)
+      };
+   }
+
+   #[inline]
+   pub fn is_compiled(&self) -> bool {
+      let mut compiled: ffi::GLint = unsafe { mem::uninitialized() };
+
+      unsafe {
+         ffi::glGetShaderiv(self.name, ffi::GL_COMPILE_STATUS, &mut compiled);
+      };
+
+      compiled == 1
    }
 }
 
