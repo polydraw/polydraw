@@ -322,3 +322,27 @@ impl Drop for Buffer {
       };
    }
 }
+
+pub struct Shader {
+   pub name: ffi::GLuint,
+}
+
+impl Shader {
+   pub fn new(shader_type: ffi::GLenum) -> Self {
+      let name = unsafe {
+         ffi::glCreateShader(shader_type)
+      };
+
+      Shader {
+         name: name,
+      }
+   }
+}
+
+impl Drop for Shader {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::glDeleteShader(self.name)
+      };
+   }
+}
