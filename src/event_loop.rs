@@ -18,7 +18,7 @@ impl<'a> EventLoop<'a> {
    pub fn run(&self, renderer: &mut Renderer, width: u32, height: u32) -> Result<(), RuntimeError> {
       renderer.init(width, height);
 
-      let mut frame = Frame::new(width, height);
+      let mut frame = try!(Frame::new(width, height));
 
       let mut quit = false;
 
@@ -53,11 +53,11 @@ impl<'a> EventLoop<'a> {
          }
 
          if new_width != frame.width || new_height != frame.height {
-            frame.resize(new_width, new_height);
+            try!(frame.resize(new_width, new_height));
             renderer.resized(new_width, new_height);
          }
 
-         frame.render(renderer);
+         try!(frame.render(renderer));
 
          try!(self.os_application.swap_buffers());
       }

@@ -81,7 +81,7 @@ pub struct Texture {
 }
 
 impl Texture {
-   pub fn new(width: u32, height: u32) -> Self {
+   pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
@@ -126,20 +126,22 @@ impl Texture {
          );
       }
 
-      Texture {
+      gl_result(Texture {
          name: name,
-      }
+      })
    }
 
    #[inline]
-   pub fn bind(&self) {
+   pub fn bind(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
       }
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn resize(&self, width: u32, height: u32) {
+   pub fn resize(&self, width: u32, height: u32) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glTexImage2D(
             ffi::GL_TEXTURE_2D,
@@ -153,10 +155,12 @@ impl Texture {
             ptr::null()
          );
       }
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn update(&self, width: u32, height: u32) {
+   pub fn update(&self, width: u32, height: u32) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glTexSubImage2D(
             ffi::GL_TEXTURE_2D,
@@ -167,6 +171,8 @@ impl Texture {
             ptr::null()
          );
       }
+
+      gl_result(())
    }
 }
 

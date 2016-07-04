@@ -1,5 +1,6 @@
 use std::ptr;
 
+use error::RuntimeError;
 use draw::RGB;
 use sys::gl::{Texture, Framebuffer, Buffer};
 use renderer::Renderer;
@@ -12,12 +13,14 @@ pub struct Frame {
 
 impl Frame {
    #[inline]
-   pub fn new(width: u32, height: u32) -> Self {
-      Frame {
+   pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
+      let gl_context = try!(FrameGLContext::new(width, height));
+
+      Ok(Frame {
          width: width,
          height: height,
-         gl_context: FrameGLContext::new(width, height)
-      }
+         gl_context: gl_context,
+      })
    }
 
    #[inline]
@@ -31,20 +34,20 @@ impl Frame {
    }
 
    #[inline]
-   pub fn resize(&mut self, width: u32, height: u32) {
+   pub fn resize(&mut self, width: u32, height: u32) -> Result<(), RuntimeError> {
       self.width = width;
       self.height = height;
 
-      self.gl_context.resize(width, height);
+      self.gl_context.resize(width, height)
    }
 
    #[inline]
-   pub fn render(&mut self, renderer: &mut Renderer) {
+   pub fn render(&mut self, renderer: &mut Renderer) -> Result<(), RuntimeError> {
       self.gl_context.pre_render();
 
       renderer.render(self);
 
-      self.gl_context.post_render(self.width, self.height);
+      self.gl_context.post_render(self.width, self.height)
    }
 }
 
@@ -56,22 +59,22 @@ struct FrameGLContext {
 
 impl FrameGLContext {
    #[inline]
-   pub fn new(width: u32, height: u32) -> Self {
-      let texture = Texture::new(width, height);
+   pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
+      let texture = try!(Texture::new(width, height));
       let framebuffer = Framebuffer::new(&texture);
       let mut buffer = Buffer::new();
 
-      texture.bind();
+      try!(texture.bind());
       framebuffer.bind();
 
       buffer.bind();
       buffer.init_data((width * height * 4) as usize);
 
-      FrameGLContext {
+      Ok(FrameGLContext {
          texture: texture,
          framebuffer: framebuffer,
          buffer: buffer,
-      }
+      })
    }
 
    #[inline]
@@ -99,9 +102,10 @@ impl FrameGLContext {
    }
 
    #[inline]
-   pub fn resize(&mut self, width: u32, height: u32) {
+   pub fn resize(&mut self, width: u32, height: u32) -> Result<(), RuntimeError> {
       self.buffer.init_data((width * height * 4) as usize);
-      self.texture.resize(width, height);
+
+      self.texture.resize(width, height)
    }
 
    #[inline]
@@ -110,11 +114,16 @@ impl FrameGLContext {
    }
 
    #[inline]
-   pub fn post_render(&mut self, width: u32, height: u32) {
+   pub fn post_render(
+      &mut self, width: u32, height: u32
+   ) -> Result<(), RuntimeError> {
+
       self.buffer.unmap();
 
-      self.texture.update(width, height);
+      try!(self.texture.update(width, height));
 
       self.framebuffer.blit(width, height);
+
+      Ok(())
    }
 }
