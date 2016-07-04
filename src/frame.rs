@@ -43,7 +43,7 @@ impl Frame {
 
    #[inline]
    pub fn render(&mut self, renderer: &mut Renderer) -> Result<(), RuntimeError> {
-      self.gl_context.pre_render();
+      try!(self.gl_context.pre_render());
 
       renderer.render(self);
 
@@ -62,13 +62,13 @@ impl FrameGLContext {
    pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
       let texture = try!(Texture::new(width, height));
       let framebuffer = try!(Framebuffer::new(&texture));
-      let mut buffer = Buffer::new();
+      let mut buffer = try!(Buffer::new());
 
       try!(texture.bind());
       try!(framebuffer.bind());
 
-      buffer.bind();
-      buffer.init_data((width * height * 4) as usize);
+      try!(buffer.bind());
+      try!(buffer.init_data((width * height * 4) as usize));
 
       Ok(FrameGLContext {
          texture: texture,
@@ -103,14 +103,14 @@ impl FrameGLContext {
 
    #[inline]
    pub fn resize(&mut self, width: u32, height: u32) -> Result<(), RuntimeError> {
-      self.buffer.init_data((width * height * 4) as usize);
+      try!(self.buffer.init_data((width * height * 4) as usize));
 
       self.texture.resize(width, height)
    }
 
    #[inline]
-   pub fn pre_render(&mut self) {
-      self.buffer.map();
+   pub fn pre_render(&mut self) -> Result<(), RuntimeError> {
+      self.buffer.map()
    }
 
    #[inline]
@@ -118,12 +118,10 @@ impl FrameGLContext {
       &mut self, width: u32, height: u32
    ) -> Result<(), RuntimeError> {
 
-      self.buffer.unmap();
+      try!(self.buffer.unmap());
 
       try!(self.texture.update(width, height));
 
-      try!(self.framebuffer.blit(width, height));
-
-      Ok(())
+      self.framebuffer.blit(width, height)
    }
 }

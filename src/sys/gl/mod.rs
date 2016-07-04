@@ -277,36 +277,40 @@ pub struct Buffer {
 }
 
 impl Buffer {
-   pub fn new() -> Self {
+   pub fn new() -> Result<Self, RuntimeError> {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
          ffi::glGenBuffers(1, &mut name)
       };
 
-      Buffer {
+      gl_result(Buffer {
          name: name,
          ptr: ptr::null_mut(),
          size: 0,
-      }
+      })
    }
 
    #[inline]
-   pub fn bind(&self) {
+   pub fn bind(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glBindBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, self.name)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn unbind(&self) {
+   pub fn unbind(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glBindBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, 0)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn init_data(&mut self, size: usize) {
+   pub fn init_data(&mut self, size: usize) -> Result<(), RuntimeError> {
       self.size = size as ffi::GLsizeiptr;
       unsafe {
          ffi::glBufferData(
@@ -316,30 +320,38 @@ impl Buffer {
             ffi::GL_STREAM_DRAW
          )
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn map(&mut self) {
+   pub fn map(&mut self) -> Result<(), RuntimeError> {
       self.ptr = unsafe {
          ffi::glMapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, ffi::GL_WRITE_ONLY)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn map_range(&mut self) {
+   pub fn map_range(&mut self) -> Result<(), RuntimeError> {
       self.ptr = unsafe {
          ffi::glMapBufferRange(
             ffi::GL_PIXEL_UNPACK_BUFFER, 0, self.size,
             ffi::GL_MAP_WRITE_BIT// | ffi::GL_MAP_UNSYNCHRONIZED_BIT
          )
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn unmap(&self) {
+   pub fn unmap(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glUnmapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER)
       };
+
+      gl_result(())
    }
 }
 
