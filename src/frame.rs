@@ -61,11 +61,11 @@ impl FrameGLContext {
    #[inline]
    pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
       let texture = try!(Texture::new(width, height));
-      let framebuffer = Framebuffer::new(&texture);
+      let framebuffer = try!(Framebuffer::new(&texture));
       let mut buffer = Buffer::new();
 
       try!(texture.bind());
-      framebuffer.bind();
+      try!(framebuffer.bind());
 
       buffer.bind();
       buffer.init_data((width * height * 4) as usize);
@@ -122,7 +122,7 @@ impl FrameGLContext {
 
       try!(self.texture.update(width, height));
 
-      self.framebuffer.blit(width, height);
+      try!(self.framebuffer.blit(width, height));
 
       Ok(())
    }

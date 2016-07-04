@@ -189,40 +189,51 @@ pub struct Framebuffer {
 }
 
 impl Framebuffer {
-   pub fn new(texture: &Texture) -> Self {
+   pub fn new(texture: &Texture) -> Result<Self, RuntimeError> {
+      let name = try!(Framebuffer::get_framebuffers());
+
+      let framebuffer = Framebuffer {
+         name: name,
+      };
+
+      try!(framebuffer.bind());
+      try!(framebuffer.attach_texture(texture));
+      try!(framebuffer.unbind());
+
+      Ok(framebuffer)
+   }
+
+   #[inline]
+   pub fn get_framebuffers() -> Result<ffi::GLuint, RuntimeError> {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
          ffi::glGenFramebuffers(1, &mut name)
       };
 
-      let framebuffer = Framebuffer {
-         name: name,
-      };
-
-      framebuffer.bind();
-      framebuffer.attach_texture(texture);
-      framebuffer.unbind();
-
-      framebuffer
+      gl_result(name)
    }
 
    #[inline]
-   pub fn bind(&self) {
+   pub fn bind(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn unbind(&self) {
+   pub fn unbind(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn attach_texture(&self, texture: &Texture) {
+   pub fn attach_texture(&self, texture: &Texture) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glFramebufferTexture2D(
             ffi::GL_READ_FRAMEBUFFER,
@@ -232,10 +243,12 @@ impl Framebuffer {
             0
          )
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn blit(&self, width: u32, height: u32) {
+   pub fn blit(&self, width: u32, height: u32) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glBlitFramebuffer(
             0, 0, width as ffi::GLint, height as ffi::GLint,
@@ -244,6 +257,8 @@ impl Framebuffer {
             ffi::GL_NEAREST
          )
       };
+
+      gl_result(())
    }
 }
 
