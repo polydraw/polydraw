@@ -29,7 +29,7 @@ impl Context for GlxContext {
 
       let rendering_area = try!(Self::init_rendering_area(&display, &config, &context, window));
 
-      Self::init_gl();
+      try!(Self::init_gl());
 
       Ok(GlxContext {
          display: display,
@@ -65,10 +65,12 @@ impl GlxContext {
    }
 
    #[inline]
-   pub fn init_gl() {
+   pub fn init_gl() -> Result<(), RuntimeError> {
       gl::load(&glx::Loader::new());
 
-      gl::reset_pixelstore_alignment();
-      gl::enable_framebuffer_srgb();
+      try!(gl::reset_pixelstore_alignment());
+      try!(gl::enable_framebuffer_srgb());
+
+      Ok(())
    }
 }

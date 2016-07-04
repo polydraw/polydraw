@@ -4,6 +4,8 @@ use std::mem;
 use std::ptr;
 use std::ffi::CString;
 
+use error::{RuntimeError, ErrorKind};
+
 use super::utils::fn_ptr::FnPtrLoader;
 
 #[inline]
@@ -14,60 +16,64 @@ pub fn load<T: FnPtrLoader>(loader: &T) {
 }
 
 #[inline]
-pub fn clear_color(red: f32, green: f32, blue: f32, alpha: f32) {
-   unsafe {
-      ffi::glClearColor(red, green, blue, alpha);
+fn gl_error<T>(message: &str) -> Result<T, RuntimeError> {
+   Err(
+      RuntimeError::new(
+         ErrorKind::GL,
+         message.to_string()
+      )
+   )
+}
+
+#[inline]
+fn gl_result<T>(value: T) -> Result<T, RuntimeError> {
+   let result = unsafe {
+      ffi::glGetError()
+   };
+
+   match result {
+      ffi::GL_NO_ERROR => Ok(value),
+      ffi::GL_INVALID_ENUM => gl_error(
+         "An unacceptable value is specified for an enumerated argument"
+      ),
+      ffi::GL_INVALID_VALUE => gl_error(
+         "A numeric argument is out of range"
+      ),
+      ffi::GL_INVALID_OPERATION => gl_error(
+         "The specified operation is not allowed in the current state"
+      ),
+      ffi::GL_INVALID_FRAMEBUFFER_OPERATION => gl_error(
+         "The framebuffer object is not complete"
+      ),
+      ffi::GL_OUT_OF_MEMORY => gl_error(
+         "There is not enough memory left to execute the command"
+      ),
+      ffi::GL_STACK_UNDERFLOW => gl_error(
+         "Performing an operation that would cause an internal stack to underflow"
+      ),
+      ffi::GL_STACK_OVERFLOW => gl_error(
+         "Performing an operation that would cause an internal stack to overflow"
+      ),
+      _ => gl_error("Unknown OpenGL error")
    }
 }
 
 #[inline]
-pub fn clear() {
-   unsafe {
-      ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
-   }
-}
-
-#[inline]
-pub fn flush() {
-   unsafe {
-      ffi::glFlush();
-   }
-}
-
-#[inline]
-pub fn finish() {
-   unsafe {
-      ffi::glFinish();
-   }
-}
-
-#[inline]
-pub fn reset_pixelstore_alignment() {
+pub fn reset_pixelstore_alignment() -> Result<(), RuntimeError> {
    unsafe {
       ffi::glPixelStorei(ffi::GL_UNPACK_ALIGNMENT, 1);
    }
+
+   gl_result(())
 }
 
 #[inline]
-pub fn enable_framebuffer_srgb() {
+pub fn enable_framebuffer_srgb() -> Result<(), RuntimeError> {
    unsafe {
       ffi::glEnable(ffi::GL_FRAMEBUFFER_SRGB);
    }
-}
 
-#[inline]
-pub fn disable_all() {
-   unsafe {
-      ffi::glDisable(ffi::GL_SCISSOR_TEST);
-      ffi::glDisable(ffi::GL_BLEND);
-      ffi::glDisable(ffi::GL_CULL_FACE);
-      ffi::glDisable(ffi::GL_DEPTH_TEST);
-      ffi::glDisable(ffi::GL_DITHER);
-      ffi::glDisable(ffi::GL_POLYGON_OFFSET_FILL);
-      ffi::glDisable(ffi::GL_SAMPLE_ALPHA_TO_COVERAGE);
-      ffi::glDisable(ffi::GL_SAMPLE_COVERAGE);
-      ffi::glDisable(ffi::GL_STENCIL_TEST);
-   };
+   gl_result(())
 }
 
 pub struct Texture {

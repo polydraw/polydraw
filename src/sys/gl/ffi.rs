@@ -42,6 +42,7 @@ pub const GL_INVALID_OPERATION:                 GLenum = 0x0502;
 pub const GL_STACK_OVERFLOW:                    GLenum = 0x0503;
 pub const GL_STACK_UNDERFLOW:                   GLenum = 0x0504;
 pub const GL_OUT_OF_MEMORY:                     GLenum = 0x0505;
+pub const GL_INVALID_FRAMEBUFFER_OPERATION:     GLenum = 0x0506;
 
 pub const GL_CURRENT_BIT:                       GLenum = 0x00000001;
 pub const GL_POINT_BIT:                         GLenum = 0x00000002;

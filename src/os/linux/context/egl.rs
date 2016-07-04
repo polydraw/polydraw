@@ -29,7 +29,7 @@ impl Context for EglContext {
 
       let surface = try!(Self::init_surface(&display, &config, &context, window));
 
-      Self::init_gl();
+      try!(Self::init_gl());
 
       Ok(EglContext {
          display: display,
@@ -89,10 +89,12 @@ impl EglContext {
    }
 
    #[inline]
-   pub fn init_gl() {
+   pub fn init_gl() -> Result<(), RuntimeError> {
       gl::load(&egl::Loader::new());
 
-      gl::reset_pixelstore_alignment();
-      gl::enable_framebuffer_srgb();
+      try!(gl::reset_pixelstore_alignment());
+      try!(gl::enable_framebuffer_srgb());
+
+      Ok(())
    }
 }

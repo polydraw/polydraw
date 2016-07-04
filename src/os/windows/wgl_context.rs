@@ -14,7 +14,7 @@ impl WglContext {
 
       let context = try!(wgl::Context::create(device_context));
 
-      Self::init_gl();
+      try!(Self::init_gl());
 
       try!(wgl::swap_interval(0));
 
@@ -24,12 +24,14 @@ impl WglContext {
    }
 
    #[inline]
-   pub fn init_gl() {
+   pub fn init_gl() -> Result<(), RuntimeError> {
       let loader = wgl::Loader::new();
       gl::load(&loader);
       wgl::load(&loader);
 
-      gl::reset_pixelstore_alignment();
-      gl::enable_framebuffer_srgb();
+      try!(gl::reset_pixelstore_alignment());
+      try!(gl::enable_framebuffer_srgb());
+
+      Ok(())
    }
 }

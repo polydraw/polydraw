@@ -11,6 +11,7 @@ pub enum ErrorKind {
    InvalidInput,
    Xlib,
    XCB,
+   GL,
    EGL,
    GLX,
    WGL,
