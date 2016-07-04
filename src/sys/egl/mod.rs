@@ -78,16 +78,23 @@ pub struct Version {
    pub minor: ffi::EGLint,
 }
 
+#[inline]
+fn egl_error<T>(message: &str) -> Result<T, RuntimeError> {
+   Err(
+      RuntimeError::new(
+         ErrorKind::EGL,
+         message.to_string()
+      )
+   )
+}
+
 pub fn bind_api(api: API) -> Result<(), RuntimeError> {
    let result = unsafe {
       ffi::eglBindAPI(api.into())
    };
 
    if result == 0 {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglBindAPI failed".to_string()
-      ));
+      return egl_error("eglBindAPI failed");
    }
 
    Ok(())
@@ -107,22 +114,13 @@ pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
 
    match result {
       ffi::EGL_FALSE => {
-         return Err(RuntimeError::new(
-            ErrorKind::EGL,
-            "eglInitialize failed".to_string()
-         ));
+         return egl_error("eglInitialize failed");
       },
       ffi::EGL_BAD_DISPLAY => {
-         return Err(RuntimeError::new(
-            ErrorKind::EGL,
-            "Not an EGL display connection".to_string()
-         ));
+         return egl_error("Not an EGL display connection");
       },
       ffi::EGL_NOT_INITIALIZED => {
-         return Err(RuntimeError::new(
-            ErrorKind::EGL,
-            "Display cannot be initialized".to_string()
-         ));
+         return egl_error("Display cannot be initialized");
       },
       ffi::EGL_TRUE => {
          return Ok(Version {
@@ -131,10 +129,7 @@ pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
          });
       },
       _ => {
-         return Err(RuntimeError::new(
-            ErrorKind::EGL,
-            "Unknown eglInitialize error".to_string()
-         ));
+         return egl_error("Unknown eglInitialize error");
       }
    }
 }
@@ -152,10 +147,7 @@ pub fn configs(display: &Display) -> Result<Vec<Config>, RuntimeError> {
    };
 
    if result == 0 {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "Getting configs count eglGetConfigs failed".to_string()
-      ));
+      return egl_error("Getting configs count eglGetConfigs failed");
    }
 
    let mut config_ptrs = Vec::with_capacity(num_config as usize);
@@ -174,10 +166,7 @@ pub fn configs(display: &Display) -> Result<Vec<Config>, RuntimeError> {
    };
 
    if result == 0 {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglGetConfigs failed".to_string()
-      ));
+      return egl_error("eglGetConfigs failed");
    }
 
    let configs = config_ptrs.iter().map(|&ptr| Config {ptr: ptr}).collect();
@@ -229,17 +218,11 @@ pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
    };
 
    if result != ffi::EGL_TRUE {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "Choosing EGL config failed".to_string()
-      ));
+      return egl_error("Choosing EGL config failed");
    }
 
    if num_config == 0 {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "Failed to find suitable EGLConfig".to_string()
-      ));
+      return egl_error("Failed to find suitable EGLConfig");
    }
 
    Ok(Config {
@@ -260,10 +243,7 @@ pub fn config_attrib(
    };
 
    if result != ffi::EGL_TRUE {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglGetConfigAttrib failed".to_string()
-      ));
+      return egl_error("eglGetConfigAttrib failed");
    }
 
    Ok(value)
@@ -326,10 +306,7 @@ pub fn create_context(display: &Display, config: &Config) -> Result<Context, Run
       )
    };
    if context.is_null() {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglCreateContext failed".to_string()
-      ));
+      return egl_error("eglCreateContext failed");
    }
 
    Ok(Context {
@@ -357,10 +334,7 @@ pub fn create_window_surface(
       )
    };
    if surface.is_null() {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglCreateWindowSurface failed".to_string()
-      ));
+      return egl_error("eglCreateWindowSurface failed");
    }
 
    Ok(Surface {
@@ -385,10 +359,7 @@ pub fn make_current(
    };
 
    if made_current != ffi::EGL_TRUE {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglMakeCurrent failed".to_string()
-      ));
+      return egl_error("eglMakeCurrent failed");
    }
 
    Ok(())
@@ -411,17 +382,11 @@ pub fn query_context(
    };
 
    if result != ffi::EGL_TRUE {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglQueyContext (EGL_RENDER_BUFFER) failed".to_string()
-      ));
+      return egl_error("eglQueyContext (EGL_RENDER_BUFFER) failed");
    }
 
    if render_buffer == ffi::EGL_SINGLE_BUFFER as i32 {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "EGL surface is single buffered".to_string()
-      ));
+      return egl_error("EGL surface is single buffered");
    }
 
    Ok(())
@@ -437,10 +402,7 @@ pub fn swap_buffers(
    };
 
    if result != ffi::EGL_TRUE {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglSwapBuffers failed".to_string()
-      ));
+      return egl_error("eglSwapBuffers failed");
    }
 
    Ok(())
@@ -456,10 +418,7 @@ pub fn swap_interval(
    };
 
    if result != ffi::EGL_TRUE {
-      return Err(RuntimeError::new(
-         ErrorKind::EGL,
-         "eglSwapInterval failed".to_string()
-      ));
+      return egl_error("eglSwapInterval failed");
    }
 
    Ok(())
@@ -472,10 +431,7 @@ impl Display {
       };
 
       if ptr.is_null() {
-         return Err(RuntimeError::new(
-            ErrorKind::EGL,
-            "eglGetDisplay failed".to_string()
-         ));
+         return egl_error("eglGetDisplay failed");
       }
 
       Ok(Display {
