@@ -21,9 +21,9 @@ impl Context for EglContext {
 
       let display = try!(egl::Display::from_native(x11_display));
 
-      let version = try!(egl::initialize(&display));
+      let version = try!(display.initialize_egl());
 
-      let config = try!(egl::choose_config(&display));
+      let config = try!(display.choose_config());
 
       let context = try!(Self::init_context(&display, &config));
 
@@ -42,7 +42,7 @@ impl Context for EglContext {
 
    #[inline]
    fn swap_buffers(&self) -> Result<(), RuntimeError> {
-      egl::swap_buffers(&self.display, &self.surface)
+      self.display.swap_buffers(&self.surface)
    }
 }
 
@@ -57,9 +57,9 @@ impl EglContext {
       display: &egl::Display, config: &egl::Config
    ) -> Result<egl::Context, RuntimeError> {
 
-      let context = try!(egl::create_context(&display, &config));
+      let context = try!(display.create_context(config));
 
-      try!(egl::query_context(&display, &context));
+      try!(display.query_context(&context));
 
       Ok(context)
    }
@@ -72,20 +72,18 @@ impl EglContext {
       window: &xcb::Window
    ) -> Result<egl::Surface, RuntimeError> {
 
-      let surface = try!(egl::create_window_surface(
-         display,
+      let surface = try!(display.create_window_surface(
          config,
          &window.window_id.id
       ));
 
-      try!(egl::make_current(
-         display,
+      try!(display.make_current(
          &surface,
          &surface,
          context
       ));
 
-      try!(egl::swap_interval(display, 0));
+      try!(display.swap_interval(0));
 
       Ok(surface)
    }
