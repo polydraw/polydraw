@@ -88,6 +88,60 @@ fn egl_error<T>(message: &str) -> Result<T, RuntimeError> {
    )
 }
 
+#[inline]
+fn egl_result<T>(value: T) -> Result<T, RuntimeError> {
+   let result = unsafe {
+      ffi::eglGetError()
+   };
+
+   match result {
+      ffi::EGL_SUCCESS => Ok(value),
+      ffi::EGL_NOT_INITIALIZED => egl_error(
+         "EGL is not initialized"
+      ),
+      ffi::EGL_BAD_ACCESS => egl_error(
+         "EGL cannot access a requested resource"
+      ),
+      ffi::EGL_BAD_ALLOC => egl_error(
+         "EGL failed to allocate resources for the requested operation"
+      ),
+      ffi::EGL_BAD_ATTRIBUTE => egl_error(
+         "Unrecognized attribute or attribute value"
+      ),
+      ffi::EGL_BAD_CONTEXT => egl_error(
+         "An EGLContext argument does not name a valid EGL rendering context"
+      ),
+      ffi::EGL_BAD_CONFIG => egl_error(
+         "An EGLConfig argument does not name a valid EGL frame buffer configuration"
+      ),
+      ffi::EGL_BAD_CURRENT_SURFACE => egl_error(
+         "The current surface is a window, pixel buffer or pixmap that is no longer valid"
+      ),
+      ffi::EGL_BAD_DISPLAY => egl_error(
+         "An EGLDisplay argument does not name a valid EGL display connection"
+      ),
+      ffi::EGL_BAD_SURFACE => egl_error(
+         "An EGLSurface argument does not name a valid surface configured for GL rendering"
+      ),
+      ffi::EGL_BAD_MATCH => egl_error(
+         "Arguments are inconsistent"
+      ),
+      ffi::EGL_BAD_PARAMETER => egl_error(
+         "One or more argument values are invalid"
+      ),
+      ffi::EGL_BAD_NATIVE_PIXMAP => egl_error(
+         "A NativePixmapType argument does not refer to a valid native pixmap"
+      ),
+      ffi::EGL_BAD_NATIVE_WINDOW => egl_error(
+         "A NativeWindowType argument does not refer to a valid native window"
+      ),
+      ffi::EGL_CONTEXT_LOST => egl_error(
+         "A power management event has occurred - the application must reinitialise OpenGL ES"
+      ),
+      _ => egl_error("Unknown EGL error")
+   }
+}
+
 pub fn bind_api(api: API) -> Result<(), RuntimeError> {
    let result = unsafe {
       ffi::eglBindAPI(api.into())
@@ -97,7 +151,7 @@ pub fn bind_api(api: API) -> Result<(), RuntimeError> {
       return egl_error("eglBindAPI failed");
    }
 
-   Ok(())
+   egl_result(())
 }
 
 pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
@@ -113,24 +167,8 @@ pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
    };
 
    match result {
-      ffi::EGL_FALSE => {
-         return egl_error("eglInitialize failed");
-      },
-      ffi::EGL_BAD_DISPLAY => {
-         return egl_error("Not an EGL display connection");
-      },
-      ffi::EGL_NOT_INITIALIZED => {
-         return egl_error("Display cannot be initialized");
-      },
-      ffi::EGL_TRUE => {
-         return Ok(Version {
-            major: major,
-            minor: minor
-         });
-      },
-      _ => {
-         return egl_error("Unknown eglInitialize error");
-      }
+      ffi::EGL_FALSE => egl_error("eglInitialize failed"),
+      _ => egl_result(Version {major: major, minor: minor}),
    }
 }
 
@@ -225,7 +263,7 @@ pub fn choose_config(display: &Display) -> Result<Config, RuntimeError> {
       return egl_error("Failed to find suitable EGLConfig");
    }
 
-   Ok(Config {
+   egl_result(Config {
       ptr: configs[0]
    })
 }
@@ -246,7 +284,7 @@ pub fn config_attrib(
       return egl_error("eglGetConfigAttrib failed");
    }
 
-   Ok(value)
+   egl_result(value)
 }
 
 pub fn print_config(display: &Display, config: &Config) {
@@ -309,7 +347,7 @@ pub fn create_context(display: &Display, config: &Config) -> Result<Context, Run
       return egl_error("eglCreateContext failed");
    }
 
-   Ok(Context {
+   egl_result(Context {
       ptr: context
    })
 }
@@ -337,7 +375,7 @@ pub fn create_window_surface(
       return egl_error("eglCreateWindowSurface failed");
    }
 
-   Ok(Surface {
+   egl_result(Surface {
       ptr: surface
    })
 }
@@ -358,11 +396,10 @@ pub fn make_current(
       )
    };
 
-   if made_current != ffi::EGL_TRUE {
-      return egl_error("eglMakeCurrent failed");
+   match made_current {
+      ffi::EGL_FALSE => egl_error("eglMakeCurrent failed"),
+      _ => egl_result(())
    }
-
-   Ok(())
 }
 
 pub fn query_context(
@@ -389,7 +426,7 @@ pub fn query_context(
       return egl_error("EGL surface is single buffered");
    }
 
-   Ok(())
+   egl_result(())
 }
 
 pub fn swap_buffers(
@@ -401,11 +438,10 @@ pub fn swap_buffers(
       ffi::eglSwapBuffers(display.ptr, surface.ptr)
    };
 
-   if result != ffi::EGL_TRUE {
-      return egl_error("eglSwapBuffers failed");
+   match result {
+      ffi::EGL_FALSE => egl_error("eglSwapBuffers failed"),
+      _ => egl_result(())
    }
-
-   Ok(())
 }
 
 pub fn swap_interval(
@@ -417,11 +453,10 @@ pub fn swap_interval(
       ffi::eglSwapInterval(display.ptr, interval)
    };
 
-   if result != ffi::EGL_TRUE {
-      return egl_error("eglSwapInterval failed");
+   match result {
+      ffi::EGL_FALSE => egl_error("eglSwapInterval failed"),
+      _ => egl_result(())
    }
-
-   Ok(())
 }
 
 impl Display {
@@ -434,7 +469,7 @@ impl Display {
          return egl_error("eglGetDisplay failed");
       }
 
-      Ok(Display {
+      egl_result(Display {
          ptr: ptr,
       })
    }

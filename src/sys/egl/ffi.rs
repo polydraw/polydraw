@@ -26,21 +26,21 @@ pub const EGL_NO_SURFACE:                   EGLSurface = 0 as EGLSurface;
 
 pub const EGL_DONT_CARE:                    EGLint = -1;
 
-pub const EGL_SUCCESS:                      EGLenum = 0x3000;
-pub const EGL_NOT_INITIALIZED:              EGLenum = 0x3001;
-pub const EGL_BAD_ACCESS:                   EGLenum = 0x3002;
-pub const EGL_BAD_ALLOC:                    EGLenum = 0x3003;
-pub const EGL_BAD_ATTRIBUTE:                EGLenum = 0x3004;
-pub const EGL_BAD_CONFIG:                   EGLenum = 0x3005;
-pub const EGL_BAD_CONTEXT:                  EGLenum = 0x3006;
-pub const EGL_BAD_CURRENT_SURFACE:          EGLenum = 0x3007;
-pub const EGL_BAD_DISPLAY:                  EGLenum = 0x3008;
-pub const EGL_BAD_MATCH:                    EGLenum = 0x3009;
-pub const EGL_BAD_NATIVE_PIXMAP:            EGLenum = 0x300A;
-pub const EGL_BAD_NATIVE_WINDOW:            EGLenum = 0x300B;
-pub const EGL_BAD_PARAMETER:                EGLenum = 0x300C;
-pub const EGL_BAD_SURFACE:                  EGLenum = 0x300D;
-pub const EGL_CONTEXT_LOST:                 EGLenum = 0x300E;
+pub const EGL_SUCCESS:                      EGLint = 0x3000;
+pub const EGL_NOT_INITIALIZED:              EGLint = 0x3001;
+pub const EGL_BAD_ACCESS:                   EGLint = 0x3002;
+pub const EGL_BAD_ALLOC:                    EGLint = 0x3003;
+pub const EGL_BAD_ATTRIBUTE:                EGLint = 0x3004;
+pub const EGL_BAD_CONFIG:                   EGLint = 0x3005;
+pub const EGL_BAD_CONTEXT:                  EGLint = 0x3006;
+pub const EGL_BAD_CURRENT_SURFACE:          EGLint = 0x3007;
+pub const EGL_BAD_DISPLAY:                  EGLint = 0x3008;
+pub const EGL_BAD_MATCH:                    EGLint = 0x3009;
+pub const EGL_BAD_NATIVE_PIXMAP:            EGLint = 0x300A;
+pub const EGL_BAD_NATIVE_WINDOW:            EGLint = 0x300B;
+pub const EGL_BAD_PARAMETER:                EGLint = 0x300C;
+pub const EGL_BAD_SURFACE:                  EGLint = 0x300D;
+pub const EGL_CONTEXT_LOST:                 EGLint = 0x300E;
 
 pub const EGL_BUFFER_SIZE:                  EGLenum = 0x3020;
 pub const EGL_ALPHA_SIZE:                   EGLenum = 0x3021;
@@ -125,6 +125,8 @@ pub type __eglMustCastToProperFunctionPointerType =
 
 #[link(name="EGL")]
 extern "C" {
+   pub fn eglGetError() -> EGLint;
+
    pub fn eglBindAPI(
       api: EGLenum
    ) -> EGLBoolean;
