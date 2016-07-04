@@ -447,10 +447,6 @@ extern "C" {
 
    pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
 
-   pub fn glMatrixMode(mode: GLenum) -> ();
-
-   pub fn glLoadIdentity() -> ();
-
    pub fn glClearColor(
       red: GLclampf,
       green: GLclampf,
