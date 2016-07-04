@@ -228,6 +228,22 @@ static mut glBufferDataPtr:                      FnPtr = NULL_PTR;
 static mut glMapBufferPtr:                       FnPtr = NULL_PTR;
 static mut glUnmapBufferPtr:                     FnPtr = NULL_PTR;
 static mut glMapBufferRangePtr:                  FnPtr = NULL_PTR;
+static mut glCreateShaderPtr:                    FnPtr = NULL_PTR;
+static mut glShaderSourcePtr:                    FnPtr = NULL_PTR;
+static mut glCompileShaderPtr:                   FnPtr = NULL_PTR;
+static mut glGetShaderivPtr:                     FnPtr = NULL_PTR;
+static mut glDeleteShaderPtr:                    FnPtr = NULL_PTR;
+static mut glCreateProgramPtr:                   FnPtr = NULL_PTR;
+static mut glAttachShaderPtr:                    FnPtr = NULL_PTR;
+static mut glLinkProgramPtr:                     FnPtr = NULL_PTR;
+static mut glUseProgramPtr:                      FnPtr = NULL_PTR;
+static mut glGetProgramivPtr:                    FnPtr = NULL_PTR;
+static mut glDeleteProgramPtr:                   FnPtr = NULL_PTR;
+static mut glGetAttribLocationPtr:               FnPtr = NULL_PTR;
+static mut glVertexAttribPointerPtr:             FnPtr = NULL_PTR;
+static mut glUniform1iPtr:                       FnPtr = NULL_PTR;
+static mut glEnableVertexAttribArrayPtr:         FnPtr = NULL_PTR;
+static mut glGetUniformLocationPtr:              FnPtr = NULL_PTR;
 
 #[inline]
 pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
@@ -289,6 +305,88 @@ pub unsafe fn glMapBufferRange(target: GLenum, offset: GLintptr, length: GLsizei
    mem::transmute::<_, extern "system" fn(GLenum, GLintptr, GLsizeiptr, GLbitfield) -> *mut c_void>(glMapBufferRangePtr)(target, offset, length, access)
 }
 
+
+#[inline]
+pub unsafe fn glCreateShader(shader_type: GLenum) -> GLuint {
+   mem::transmute::<_, extern "system" fn(GLenum) -> GLuint>(glCreateShaderPtr)(shader_type)
+}
+
+#[inline]
+pub unsafe fn glShaderSource(shader: GLuint, count: GLsizei, string: *const *const GLchar, length: *const GLint) {
+   mem::transmute::<_, extern "system" fn(GLuint, GLsizei, *const *const GLchar, *const GLint) -> ()>(glShaderSourcePtr)(shader, count, string, length)
+}
+
+#[inline]
+pub unsafe fn glCompileShader(shader: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint) -> ()>(glCompileShaderPtr)(shader)
+}
+
+#[inline]
+pub unsafe fn glDeleteShader(shader: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint) -> ()>(glDeleteShaderPtr)(shader)
+}
+
+#[inline]
+pub unsafe fn glCreateProgram() -> GLuint {
+   mem::transmute::<_, extern "system" fn() -> GLuint>(glCreateProgramPtr)()
+}
+
+#[inline]
+pub unsafe fn glAttachShader(program: GLuint, shader: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint, GLuint) -> ()>(glAttachShaderPtr)(program, shader)
+}
+
+#[inline]
+pub unsafe fn glLinkProgram(program: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint) -> ()>(glLinkProgramPtr)(program)
+}
+
+#[inline]
+pub unsafe fn glDeleteProgram(program: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint) -> ()>(glDeleteProgramPtr)(program)
+}
+
+#[inline]
+pub unsafe fn glUseProgram(program: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint) -> ()>(glUseProgramPtr)(program)
+}
+
+#[inline]
+pub unsafe fn glGetProgramiv(target: GLenum, pname: GLenum, params: *mut GLint) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLenum, *mut GLint) -> ()>(glGetProgramivPtr)(target, pname, params)
+}
+
+#[inline]
+pub unsafe fn glGetShaderiv(shader: GLuint, pname: GLenum, params: *mut GLint) {
+   mem::transmute::<_, extern "system" fn(GLuint, GLenum, *mut GLint) -> ()>(glGetShaderivPtr)(shader, pname, params)
+}
+
+#[inline]
+pub unsafe fn glGetAttribLocation(program: GLuint, name: *const GLchar) -> GLint {
+   mem::transmute::<_, extern "system" fn(GLuint, *const GLchar) -> GLint>(glGetAttribLocationPtr)(program, name)
+}
+
+#[inline]
+pub unsafe fn glGetUniformLocation(program: GLuint, name: *const GLchar) -> GLint {
+   mem::transmute::<_, extern "system" fn(GLuint, *const GLchar) -> GLint>(glGetUniformLocationPtr)(program, name)
+}
+
+#[inline]
+pub unsafe fn glEnableVertexAttribArray(index: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLuint) -> ()>(glEnableVertexAttribArrayPtr)(index)
+}
+
+#[inline]
+pub unsafe fn glUniform1i(location: GLint, v0: GLint) {
+   mem::transmute::<_, extern "system" fn(GLint, v0: GLint) -> ()>(glUniform1iPtr)(location, v0)
+}
+
+#[inline]
+pub unsafe fn glVertexAttribPointer(index: GLuint, size: GLint, _type: GLenum, normalized: GLboolean, stride: GLsizei, pointer: *const c_void) {
+   mem::transmute::<_, extern "system" fn(GLuint, GLint, GLenum, GLboolean, GLsizei, *const c_void) -> ()>(glVertexAttribPointerPtr)(index, size, _type, normalized, stride, pointer)
+}
+
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGenFramebuffersPtr = loadfn!(loader, "glGenFramebuffers");
    glDeleteFramebuffersPtr = loadfn!(loader, "glDeleteFramebuffers");
@@ -302,6 +400,22 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glMapBufferPtr = loadfn!(loader, "glMapBuffer");
    glUnmapBufferPtr = loadfn!(loader, "glUnmapBuffer");
    glMapBufferRangePtr = loadfn!(loader, "glMapBufferRange");
+   glCreateShaderPtr = loadfn!(loader, "glCreateShader");
+   glShaderSourcePtr = loadfn!(loader, "glShaderSource");
+   glCompileShaderPtr = loadfn!(loader, "glCompileShader");
+   glGetShaderivPtr = loadfn!(loader, "glGetShaderiv");
+   glDeleteShaderPtr = loadfn!(loader, "glDeleteShader");
+   glCreateProgramPtr = loadfn!(loader, "glCreateProgram");
+   glAttachShaderPtr = loadfn!(loader, "glAttachShader");
+   glLinkProgramPtr = loadfn!(loader, "glLinkProgram");
+   glUseProgramPtr = loadfn!(loader, "glUseProgram");
+   glGetProgramivPtr = loadfn!(loader, "glGetProgramiv");
+   glDeleteProgramPtr = loadfn!(loader, "glDeleteProgram");
+   glGetAttribLocationPtr = loadfn!(loader, "glGetAttribLocation");
+   glVertexAttribPointerPtr = loadfn!(loader, "glVertexAttribPointer");
+   glUniform1iPtr = loadfn!(loader, "glUniform1i");
+   glEnableVertexAttribArrayPtr = loadfn!(loader, "glEnableVertexAttribArray");
+   glGetUniformLocationPtr = loadfn!(loader, "glGetUniformLocation");
 
    true
 }
@@ -337,30 +451,6 @@ extern "C" {
 
    pub fn glLoadIdentity() -> ();
 
-   pub fn glCreateShader(shader_type: GLenum) -> GLuint;
-
-   pub fn glCompileShader(shader: GLuint) -> ();
-
-   pub fn glDeleteShader(shader: GLuint) -> ();
-
-   pub fn glCreateProgram() -> GLuint;
-
-   pub fn glAttachShader(program: GLuint, shader: GLuint) -> ();
-
-   pub fn glLinkProgram(program: GLuint) -> ();
-
-   pub fn glDeleteProgram(program: GLuint) -> ();
-
-   pub fn glGetAttribLocation(program: GLuint, name: *const GLchar) -> GLint;
-
-   pub fn glGetUniformLocationfn(program: GLuint, name: *const GLchar) -> GLint;
-
-   pub fn glUseProgram(program: GLuint) -> ();
-
-   pub fn glEnableVertexAttribArray(index: GLuint) -> ();
-
-   pub fn glUniform1i(location: GLint, v0: GLint) -> ();
-
    pub fn glClearColor(
       red: GLclampf,
       green: GLclampf,
@@ -392,62 +482,11 @@ extern "C" {
       pixels: *const GLvoid
    ) -> ();
 
-   pub fn glOrtho(
-      left: GLdouble,
-      right: GLdouble,
-      bottom: GLdouble,
-      top: GLdouble,
-      near_val: GLdouble,
-      far_val: GLdouble
-   ) -> ();
-
-   pub fn glShaderSource(
-      shader: GLuint,
-      count: GLsizei,
-      string: *const *const GLchar,
-      length: *const GLint
-   ) -> ();
-
-   pub fn glGetShaderiv(
-      shader: GLuint,
-      pname: GLenum,
-      params: *mut GLint
-   ) -> ();
-
-   pub fn glGetShaderInfoLog(
-      shader: GLuint,
-      buf_size: GLsizei,
-      length: *mut GLsizei,
-      info_log: *mut GLchar
-   ) -> ();
-
-   pub fn glGetProgramiv(
-      target: GLenum,
-      pname: GLenum,
-      params: *mut GLint
-   ) -> ();
-
-   pub fn glGetProgramInfoLog(
-      program: GLuint,
-      bufSize: GLsizei,
-      length: *mut GLsizei,
-      info_log: *mut GLchar
-   ) -> ();
-
    pub fn glViewport(
       x: GLint,
       y: GLint,
       width: GLsizei,
       height: GLsizei
-   ) -> ();
-
-   pub fn glVertexAttribPointer(
-      index: GLuint,
-      size: GLint,
-      _type: GLenum,
-      normalized: GLboolean,
-      stride: GLsizei,
-      pointer: *const c_void
    ) -> ();
 
    pub fn glDrawElements(
