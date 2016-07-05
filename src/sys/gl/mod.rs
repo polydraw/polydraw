@@ -368,41 +368,45 @@ pub struct Shader {
 }
 
 impl Shader {
-   pub fn new(shader_type: ffi::GLenum) -> Self {
+   pub fn new(shader_type: ffi::GLenum) -> Result<Self, RuntimeError> {
       let name = unsafe {
          ffi::glCreateShader(shader_type)
       };
 
-      Shader {
+      gl_result(Shader {
          name: name,
-      }
+      })
    }
 
    #[inline]
-   pub fn shader_source(&self, string: &str) {
+   pub fn shader_source(&self, string: &str) -> Result<(), RuntimeError> {
       let cstring = CString::new(string).unwrap().as_ptr();
 
       unsafe {
          ffi::glShaderSource(self.name, 1, &cstring, ptr::null())
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn compile(&self) {
+   pub fn compile(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glCompileShader(self.name)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn is_compiled(&self) -> bool {
+   pub fn is_compiled(&self) -> Result<bool, RuntimeError> {
       let mut compiled: ffi::GLint = unsafe { mem::uninitialized() };
 
       unsafe {
          ffi::glGetShaderiv(self.name, ffi::GL_COMPILE_STATUS, &mut compiled);
       };
 
-      compiled == 1
+      gl_result(compiled == 1)
    }
 }
 
@@ -419,46 +423,52 @@ pub struct Program {
 }
 
 impl Program {
-   pub fn new() -> Self {
+   pub fn new() -> Result<Self, RuntimeError> {
       let name = unsafe {
          ffi::glCreateProgram()
       };
 
-      Program {
+      gl_result(Program {
          name: name,
-      }
+      })
    }
 
    #[inline]
-   pub fn attach_shader(&self, shader: &Shader) {
+   pub fn attach_shader(&self, shader: &Shader) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glAttachShader(self.name, shader.name)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn link(&self) {
+   pub fn link(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glLinkProgram(self.name)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn use_(&self) {
+   pub fn use_(&self) -> Result<(), RuntimeError> {
       unsafe {
          ffi::glUseProgram(self.name)
       };
+
+      gl_result(())
    }
 
    #[inline]
-   pub fn is_linked(&self) -> bool {
+   pub fn is_linked(&self) -> Result<bool, RuntimeError> {
       let mut linked: ffi::GLint = unsafe { mem::uninitialized() };
 
       unsafe {
          ffi::glGetProgramiv(self.name, ffi::GL_LINK_STATUS, &mut linked);
       };
 
-      linked == 1
+      gl_result(linked == 1)
    }
 }
 
