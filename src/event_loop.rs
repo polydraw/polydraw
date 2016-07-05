@@ -1,4 +1,4 @@
-use error::RuntimeError;
+use error::VoidResult;
 use application::OsApplication;
 use renderer::Renderer;
 use frame::Frame;
@@ -15,7 +15,7 @@ impl<'a> EventLoop<'a> {
       }
    }
 
-   pub fn run(&self, renderer: &mut Renderer, width: u32, height: u32) -> Result<(), RuntimeError> {
+   pub fn run(&self, renderer: &mut Renderer, width: u32, height: u32) -> VoidResult {
       renderer.init(width, height);
 
       let mut frame = try!(Frame::new(width, height));

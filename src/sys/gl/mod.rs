@@ -4,7 +4,7 @@ use std::mem;
 use std::ptr;
 use std::ffi::CString;
 
-use error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind, VoidResult};
 
 use super::utils::fn_ptr::FnPtrLoader;
 
@@ -59,7 +59,7 @@ fn gl_result<T>(value: T) -> Result<T, RuntimeError> {
 }
 
 #[inline]
-pub fn reset_pixelstore_alignment() -> Result<(), RuntimeError> {
+pub fn reset_pixelstore_alignment() -> VoidResult {
    unsafe {
       ffi::glPixelStorei(ffi::GL_UNPACK_ALIGNMENT, 1);
    }
@@ -68,7 +68,7 @@ pub fn reset_pixelstore_alignment() -> Result<(), RuntimeError> {
 }
 
 #[inline]
-pub fn enable_framebuffer_srgb() -> Result<(), RuntimeError> {
+pub fn enable_framebuffer_srgb() -> VoidResult {
    unsafe {
       ffi::glEnable(ffi::GL_FRAMEBUFFER_SRGB);
    }
@@ -132,7 +132,7 @@ impl Texture {
    }
 
    #[inline]
-   pub fn bind(&self) -> Result<(), RuntimeError> {
+   pub fn bind(&self) -> VoidResult {
       unsafe {
          ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
       }
@@ -141,7 +141,7 @@ impl Texture {
    }
 
    #[inline]
-   pub fn resize(&self, width: u32, height: u32) -> Result<(), RuntimeError> {
+   pub fn resize(&self, width: u32, height: u32) -> VoidResult {
       unsafe {
          ffi::glTexImage2D(
             ffi::GL_TEXTURE_2D,
@@ -160,7 +160,7 @@ impl Texture {
    }
 
    #[inline]
-   pub fn update(&self, width: u32, height: u32) -> Result<(), RuntimeError> {
+   pub fn update(&self, width: u32, height: u32) -> VoidResult {
       unsafe {
          ffi::glTexSubImage2D(
             ffi::GL_TEXTURE_2D,
@@ -215,7 +215,7 @@ impl Framebuffer {
    }
 
    #[inline]
-   pub fn bind(&self) -> Result<(), RuntimeError> {
+   pub fn bind(&self) -> VoidResult {
       unsafe {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name)
       };
@@ -224,7 +224,7 @@ impl Framebuffer {
    }
 
    #[inline]
-   pub fn unbind(&self) -> Result<(), RuntimeError> {
+   pub fn unbind(&self) -> VoidResult {
       unsafe {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0)
       };
@@ -233,7 +233,7 @@ impl Framebuffer {
    }
 
    #[inline]
-   pub fn attach_texture(&self, texture: &Texture) -> Result<(), RuntimeError> {
+   pub fn attach_texture(&self, texture: &Texture) -> VoidResult {
       unsafe {
          ffi::glFramebufferTexture2D(
             ffi::GL_READ_FRAMEBUFFER,
@@ -248,7 +248,7 @@ impl Framebuffer {
    }
 
    #[inline]
-   pub fn blit(&self, width: u32, height: u32) -> Result<(), RuntimeError> {
+   pub fn blit(&self, width: u32, height: u32) -> VoidResult {
       unsafe {
          ffi::glBlitFramebuffer(
             0, 0, width as ffi::GLint, height as ffi::GLint,
@@ -292,7 +292,7 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn bind(&self) -> Result<(), RuntimeError> {
+   pub fn bind(&self) -> VoidResult {
       unsafe {
          ffi::glBindBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, self.name)
       };
@@ -301,7 +301,7 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn unbind(&self) -> Result<(), RuntimeError> {
+   pub fn unbind(&self) -> VoidResult {
       unsafe {
          ffi::glBindBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, 0)
       };
@@ -310,7 +310,7 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn init_data(&mut self, size: usize) -> Result<(), RuntimeError> {
+   pub fn init_data(&mut self, size: usize) -> VoidResult {
       self.size = size as ffi::GLsizeiptr;
       unsafe {
          ffi::glBufferData(
@@ -325,7 +325,7 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn map(&mut self) -> Result<(), RuntimeError> {
+   pub fn map(&mut self) -> VoidResult {
       self.ptr = unsafe {
          ffi::glMapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, ffi::GL_WRITE_ONLY)
       };
@@ -334,7 +334,7 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn map_range(&mut self) -> Result<(), RuntimeError> {
+   pub fn map_range(&mut self) -> VoidResult {
       self.ptr = unsafe {
          ffi::glMapBufferRange(
             ffi::GL_PIXEL_UNPACK_BUFFER, 0, self.size,
@@ -346,7 +346,7 @@ impl Buffer {
    }
 
    #[inline]
-   pub fn unmap(&self) -> Result<(), RuntimeError> {
+   pub fn unmap(&self) -> VoidResult {
       unsafe {
          ffi::glUnmapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER)
       };
@@ -379,7 +379,7 @@ impl Shader {
    }
 
    #[inline]
-   pub fn shader_source(&self, string: &str) -> Result<(), RuntimeError> {
+   pub fn shader_source(&self, string: &str) -> VoidResult {
       let cstring = CString::new(string).unwrap().as_ptr();
 
       unsafe {
@@ -390,7 +390,7 @@ impl Shader {
    }
 
    #[inline]
-   pub fn compile(&self) -> Result<(), RuntimeError> {
+   pub fn compile(&self) -> VoidResult {
       unsafe {
          ffi::glCompileShader(self.name)
       };
@@ -434,7 +434,7 @@ impl Program {
    }
 
    #[inline]
-   pub fn attach_shader(&self, shader: &Shader) -> Result<(), RuntimeError> {
+   pub fn attach_shader(&self, shader: &Shader) -> VoidResult {
       unsafe {
          ffi::glAttachShader(self.name, shader.name)
       };
@@ -443,7 +443,7 @@ impl Program {
    }
 
    #[inline]
-   pub fn link(&self) -> Result<(), RuntimeError> {
+   pub fn link(&self) -> VoidResult {
       unsafe {
          ffi::glLinkProgram(self.name)
       };
@@ -452,7 +452,7 @@ impl Program {
    }
 
    #[inline]
-   pub fn use_(&self) -> Result<(), RuntimeError> {
+   pub fn use_(&self) -> VoidResult {
       unsafe {
          ffi::glUseProgram(self.name)
       };

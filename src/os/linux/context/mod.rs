@@ -1,7 +1,7 @@
 pub mod egl;
 pub mod glx;
 
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 
 use sys::x11;
 use sys::xcb;
@@ -16,7 +16,7 @@ pub trait Context {
       window: &xcb::Window
    ) -> Result<Self, RuntimeError> where Self: Sized;
 
-   fn swap_buffers(&self) -> Result<(), RuntimeError>;
+   fn swap_buffers(&self) -> VoidResult;
 }
 
 pub fn create_context(

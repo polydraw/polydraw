@@ -2,7 +2,7 @@ use std::ptr;
 use std::rc::Rc;
 use std::ffi::CString;
 
-use error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind, VoidResult};
 
 use super::ffi;
 use super::connection::Connection;
@@ -70,7 +70,7 @@ impl Window {
       })
    }
 
-   pub fn map(&self) -> Result<(), RuntimeError> {
+   pub fn map(&self) -> VoidResult {
       let cookie = unsafe {
          ffi::xcb_map_window_checked(self.connection.ptr, self.window_id.id)
       };
@@ -88,7 +88,7 @@ impl Window {
       Ok(())
    }
 
-   pub fn position(&self, x: i32, y: i32) -> Result<(), RuntimeError> {
+   pub fn position(&self, x: i32, y: i32) -> VoidResult {
       let value_mask = ffi::XCB_CONFIG_WINDOW_X | ffi::XCB_CONFIG_WINDOW_Y;
       let value_list = [x as ffi::c_uint, y as ffi::c_uint, 0];
 
@@ -150,7 +150,7 @@ impl Window {
       Ok((protocols_atom, delete_window_atom))
    }
 
-   pub fn set_title(&self, title: &str) -> Result<(), RuntimeError> {
+   pub fn set_title(&self, title: &str) -> VoidResult {
       let c_title = CString::new(title).unwrap();
 
       let cookie = unsafe {

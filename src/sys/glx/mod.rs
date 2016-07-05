@@ -10,7 +10,7 @@ use std::mem;
 use std::ptr;
 use std::ffi::CString;
 
-use error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind, VoidResult};
 
 use super::xcb::ffi::xcb_window_t;
 use super::x11::ffi::Display as X11Display;
@@ -212,7 +212,7 @@ pub fn make_current(
    display: &Display,
    rendering_area: ffi::GLXWindow,
    context: &Context,
-) -> Result<(), RuntimeError> {
+) -> VoidResult {
 
    let made_current = unsafe {
       ffi::glXMakeContextCurrent(
@@ -236,7 +236,7 @@ pub fn make_current(
 pub fn swap_buffers(
    display: &Display,
    rendering_area: ffi::GLXWindow,
-) -> Result<(), RuntimeError> {
+) -> VoidResult {
 
    unsafe {
       ffi::glXSwapBuffers(display.ptr, rendering_area)

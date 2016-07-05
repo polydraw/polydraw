@@ -1,4 +1,4 @@
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 
 use sys::x11;
 use sys::xcb;
@@ -41,14 +41,14 @@ impl Context for EglContext {
    }
 
    #[inline]
-   fn swap_buffers(&self) -> Result<(), RuntimeError> {
+   fn swap_buffers(&self) -> VoidResult {
       self.display.swap_buffers(&self.surface)
    }
 }
 
 impl EglContext {
    #[inline]
-   pub fn bind() -> Result<(), RuntimeError> {
+   pub fn bind() -> VoidResult {
       egl::bind_api(egl::API::OpenGL)
    }
 
@@ -89,7 +89,7 @@ impl EglContext {
    }
 
    #[inline]
-   pub fn init_gl() -> Result<(), RuntimeError> {
+   pub fn init_gl() -> VoidResult {
       gl::load(&egl::Loader::new());
 
       try!(gl::reset_pixelstore_alignment());

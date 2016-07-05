@@ -1,4 +1,4 @@
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 
 use sys::wgl;
 
@@ -42,7 +42,7 @@ impl WindowsApplication {
    }
 
    #[inline]
-   pub fn swap_buffers(&self) -> Result<(), RuntimeError> {
+   pub fn swap_buffers(&self) -> VoidResult {
       wgl::swap_buffers(&self.window.device_context);
       Ok(())
    }

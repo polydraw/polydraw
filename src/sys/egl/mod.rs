@@ -7,7 +7,7 @@ use std::ptr;
 use std::ffi::CString;
 use std::iter::Iterator;
 
-use error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind, VoidResult};
 
 use super::x11::ffi::Display as X11Display;
 use super::xcb::ffi::xcb_window_t;
@@ -138,7 +138,7 @@ fn egl_result<T>(value: T) -> Result<T, RuntimeError> {
    }
 }
 
-pub fn bind_api(api: API) -> Result<(), RuntimeError> {
+pub fn bind_api(api: API) -> VoidResult {
    let result = unsafe {
       ffi::eglBindAPI(api.into())
    };
@@ -400,7 +400,7 @@ impl Display {
       draw: &Surface,
       read: &Surface,
       context: &Context,
-   ) -> Result<(), RuntimeError> {
+   ) -> VoidResult {
 
       let made_current = unsafe {
          ffi::eglMakeCurrent(
@@ -417,7 +417,7 @@ impl Display {
       }
    }
 
-   pub fn query_context(&self, context: &Context) -> Result<(), RuntimeError> {
+   pub fn query_context(&self, context: &Context) -> VoidResult {
 
       let mut render_buffer: ffi::EGLint = unsafe { mem::uninitialized() };
 
@@ -441,7 +441,7 @@ impl Display {
       egl_result(())
    }
 
-   pub fn swap_buffers(&self, surface: &Surface) -> Result<(), RuntimeError> {
+   pub fn swap_buffers(&self, surface: &Surface) -> VoidResult {
 
       let result = unsafe {
          ffi::eglSwapBuffers(self.ptr, surface.ptr)
@@ -453,7 +453,7 @@ impl Display {
       }
    }
 
-   pub fn swap_interval(&self, interval: ffi::c_int) -> Result<(), RuntimeError> {
+   pub fn swap_interval(&self, interval: ffi::c_int) -> VoidResult {
 
       let result = unsafe {
          ffi::eglSwapInterval(self.ptr, interval)

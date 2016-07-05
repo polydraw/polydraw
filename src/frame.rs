@@ -1,6 +1,6 @@
 use std::ptr;
 
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 use draw::RGB;
 use sys::gl::{Texture, Framebuffer, Buffer};
 use renderer::Renderer;
@@ -34,7 +34,7 @@ impl Frame {
    }
 
    #[inline]
-   pub fn resize(&mut self, width: u32, height: u32) -> Result<(), RuntimeError> {
+   pub fn resize(&mut self, width: u32, height: u32) -> VoidResult {
       self.width = width;
       self.height = height;
 
@@ -42,7 +42,7 @@ impl Frame {
    }
 
    #[inline]
-   pub fn render(&mut self, renderer: &mut Renderer) -> Result<(), RuntimeError> {
+   pub fn render(&mut self, renderer: &mut Renderer) -> VoidResult {
       try!(self.gl_context.pre_render());
 
       renderer.render(self);
@@ -102,22 +102,19 @@ impl FrameGLContext {
    }
 
    #[inline]
-   pub fn resize(&mut self, width: u32, height: u32) -> Result<(), RuntimeError> {
+   pub fn resize(&mut self, width: u32, height: u32) -> VoidResult {
       try!(self.buffer.init_data((width * height * 4) as usize));
 
       self.texture.resize(width, height)
    }
 
    #[inline]
-   pub fn pre_render(&mut self) -> Result<(), RuntimeError> {
+   pub fn pre_render(&mut self) -> VoidResult {
       self.buffer.map()
    }
 
    #[inline]
-   pub fn post_render(
-      &mut self, width: u32, height: u32
-   ) -> Result<(), RuntimeError> {
-
+   pub fn post_render(&mut self, width: u32, height: u32) -> VoidResult {
       try!(self.buffer.unmap());
 
       try!(self.texture.update(width, height));

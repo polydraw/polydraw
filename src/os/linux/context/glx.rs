@@ -1,4 +1,4 @@
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 
 use sys::x11;
 use sys::xcb;
@@ -41,7 +41,7 @@ impl Context for GlxContext {
    }
 
    #[inline]
-   fn swap_buffers(&self) -> Result<(), RuntimeError> {
+   fn swap_buffers(&self) -> VoidResult {
       glx::swap_buffers(&self.display, self.rendering_area)
    }
 }
@@ -65,7 +65,7 @@ impl GlxContext {
    }
 
    #[inline]
-   pub fn init_gl() -> Result<(), RuntimeError> {
+   pub fn init_gl() -> VoidResult {
       gl::load(&glx::Loader::new());
 
       try!(gl::reset_pixelstore_alignment());

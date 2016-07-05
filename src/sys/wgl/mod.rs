@@ -7,14 +7,14 @@ use std::mem;
 use std::ptr;
 use std::ffi::CString;
 
-use error::{RuntimeError, ErrorKind};
+use error::{RuntimeError, ErrorKind, VoidResult};
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
 use super::win32;
 
 pub fn init_pixel_format(
    device_context: &win32::DeviceContext,
-) -> Result<(), RuntimeError> {
+) -> VoidResult {
    let mut pfd = ffi::PIXELFORMATDESCRIPTOR {
       nSize: mem::size_of::<ffi::PIXELFORMATDESCRIPTOR>() as ffi::WORD,
       nVersion: 1,
@@ -130,7 +130,7 @@ pub fn swap_buffers(device_context: &win32::DeviceContext) {
    };
 }
 
-pub fn swap_interval(interval: ffi::c_int) -> Result<(), RuntimeError> {
+pub fn swap_interval(interval: ffi::c_int) -> VoidResult {
    let result = unsafe {
       ffi::wglSwapIntervalEXT(interval)
    };

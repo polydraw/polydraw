@@ -36,3 +36,5 @@ impl From<NulError> for RuntimeError {
       )
    }
 }
+
+pub type VoidResult = Result<(), RuntimeError>;

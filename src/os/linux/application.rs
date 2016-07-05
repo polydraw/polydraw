@@ -1,4 +1,4 @@
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 
 use super::display::LinuxDisplay;
 use super::window::{LinuxWindow, PollEventsIterator};
@@ -43,7 +43,7 @@ impl LinuxApplication {
    }
 
    #[inline]
-   pub fn swap_buffers(&self) -> Result<(), RuntimeError> {
+   pub fn swap_buffers(&self) -> VoidResult {
       self.context.swap_buffers()
    }
 }
