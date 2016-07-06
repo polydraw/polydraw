@@ -37,7 +37,7 @@ impl WglContext {
    }
 
    #[inline]
-   fn create_gpu_frame(
+   pub fn create_gpu_frame(
       &self, width: u32, height: u32
    ) -> Result<Box<GPUFrame>, RuntimeError> {
 
