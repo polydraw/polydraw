@@ -10,7 +10,7 @@ use super::wgl_context::WglContext;
 pub struct WindowsApplication {
    display: WindowsDisplay,
    window: WindowsWindow,
-   #[allow(dead_code)] wgl: WglContext,
+   wgl: WglContext,
 }
 
 impl WindowsApplication {
