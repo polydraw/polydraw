@@ -1,4 +1,5 @@
 use error::{RuntimeError, VoidResult};
+use frame::GPUFrame;
 
 use sys::wgl;
 
@@ -29,6 +30,13 @@ impl WindowsApplication {
          window: window,
          wgl: wgl,
       })
+   }
+
+   #[inline]
+   pub fn create_gpu_frame(
+      &self, width: u32, height: u32
+   ) -> Result<Box<GPUFrame>, RuntimeError> {
+      self.wgl.create_gpu_frame(width, height)
    }
 
    #[inline]

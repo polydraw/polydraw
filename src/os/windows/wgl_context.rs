@@ -1,4 +1,5 @@
 use error::RuntimeError;
+use frame::GPUFrame;
 
 use sys::win32;
 use sys::wgl;
@@ -33,5 +34,16 @@ impl WglContext {
       try!(gl::enable_framebuffer_srgb());
 
       Ok(())
+   }
+
+   #[inline]
+   fn create_gpu_frame(
+      &self, width: u32, height: u32
+   ) -> Result<Box<GPUFrame>, RuntimeError> {
+
+      match gl::gl_frame::GLFrame::new(width, height) {
+         Ok(gpu_frame) => Ok(Box::new(gpu_frame)),
+         Err(e) => Err(e)
+      }
    }
 }

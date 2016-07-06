@@ -18,7 +18,9 @@ impl<'a> EventLoop<'a> {
    pub fn run(&self, renderer: &mut Renderer, width: u32, height: u32) -> VoidResult {
       renderer.init(width, height);
 
-      let mut frame = try!(Frame::new(width, height));
+      let gpu_frame = try!(self.os_application.create_gpu_frame(width, height));
+
+      let mut frame = try!(Frame::new(width, height, gpu_frame));
 
       let mut quit = false;
 

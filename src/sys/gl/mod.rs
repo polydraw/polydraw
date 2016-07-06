@@ -1,4 +1,5 @@
 pub mod ffi;
+pub mod gl_frame;
 
 use std::mem;
 use std::ptr;

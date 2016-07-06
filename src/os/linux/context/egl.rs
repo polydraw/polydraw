@@ -1,4 +1,5 @@
 use error::{RuntimeError, VoidResult};
+use frame::GPUFrame;
 
 use sys::x11;
 use sys::xcb;
@@ -38,6 +39,17 @@ impl Context for EglContext {
          context: context,
          surface: surface,
       })
+   }
+
+   #[inline]
+   fn create_gpu_frame(
+      &self, width: u32, height: u32
+   ) -> Result<Box<GPUFrame>, RuntimeError> {
+
+      match gl::gl_frame::GLFrame::new(width, height) {
+         Ok(gpu_frame) => Ok(Box::new(gpu_frame)),
+         Err(e) => Err(e)
+      }
    }
 
    #[inline]

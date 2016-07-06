@@ -1,4 +1,5 @@
 use error::{RuntimeError, VoidResult};
+use frame::GPUFrame;
 
 use super::display::LinuxDisplay;
 use super::window::{LinuxWindow, PollEventsIterator};
@@ -33,6 +34,14 @@ impl LinuxApplication {
       })
    }
 
+   #[inline]
+   pub fn create_gpu_frame(
+      &self, width: u32, height: u32
+   ) -> Result<Box<GPUFrame>, RuntimeError> {
+      self.context.create_gpu_frame(width, height)
+   }
+
+   #[inline]
    pub fn screen_size(&self) -> (u32, u32) {
       self.display.screen_size()
    }

@@ -2,6 +2,7 @@ pub mod egl;
 pub mod glx;
 
 use error::{RuntimeError, VoidResult};
+use frame::GPUFrame;
 
 use sys::x11;
 use sys::xcb;
@@ -17,6 +18,8 @@ pub trait Context {
    ) -> Result<Self, RuntimeError> where Self: Sized;
 
    fn swap_buffers(&self) -> VoidResult;
+
+   fn create_gpu_frame(&self, width: u32, height: u32) -> Result<Box<GPUFrame>, RuntimeError>;
 }
 
 pub fn create_context(
