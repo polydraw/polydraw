@@ -57,6 +57,7 @@ impl Into<ffi::EGLenum> for API {
    }
 }
 
+#[derive(Clone)]
 pub struct Config {
    pub ptr: ffi::EGLConfig
 }
@@ -188,61 +189,81 @@ impl Display {
    }
 
    pub fn choose_config(&self) -> Result<Config, RuntimeError> {
-      let config_attribs = [
-         ffi::EGL_COLOR_BUFFER_TYPE,    ffi::EGL_RGB_BUFFER,
-         ffi::EGL_BUFFER_SIZE,          32,
-         ffi::EGL_RED_SIZE,             8,
-         ffi::EGL_GREEN_SIZE,           8,
-         ffi::EGL_BLUE_SIZE,            8,
-         ffi::EGL_ALPHA_SIZE,           8,
+      let configs = try!(self.configs());
 
-         ffi::EGL_DEPTH_SIZE,           0,
-         ffi::EGL_STENCIL_SIZE,         0,
+      let mut best_index = 0;
+      let mut best_rating = 0;
 
-         ffi::EGL_SAMPLE_BUFFERS,       0,
-         ffi::EGL_SAMPLES,              0,
+      for (index, config) in configs.iter().enumerate() {
+         if try!(self.attr(&config, ffi::EGL_COLOR_BUFFER_TYPE)) != ffi::EGL_RGB_BUFFER {
+            continue;
+         }
 
-         ffi::EGL_SURFACE_TYPE,         ffi::EGL_WINDOW_BIT,
-         ffi::EGL_RENDERABLE_TYPE,      ffi::EGL_OPENGL_BIT,
+         if try!(self.attr(&config, ffi::EGL_RED_SIZE)) != 8 {
+            continue;
+         }
 
-         ffi::EGL_NONE
-      ];
+         if try!(self.attr(&config, ffi::EGL_GREEN_SIZE)) != 8 {
+            continue;
+         }
 
-      let mut num_config: ffi::EGLint = unsafe {
-         mem::uninitialized()
-      };
+         if try!(self.attr(&config, ffi::EGL_BLUE_SIZE)) != 8 {
+            continue;
+         }
 
-      let mut configs: [ffi::EGLConfig; 64] = unsafe {
-         mem::uninitialized()
-      };
+         if try!(self.attr(&config, ffi::EGL_SURFACE_TYPE)) & ffi::EGL_WINDOW_BIT == 0 {
+            continue;
+         }
 
-      let result = unsafe {
-         ffi::eglChooseConfig(
-            self.ptr,
-            config_attribs.as_ptr() as *const _,
-            configs.as_mut_ptr() as *mut *mut _,
-            64,
-            &mut num_config
-         )
-      };
+         if try!(self.attr(&config, ffi::EGL_RENDERABLE_TYPE)) & ffi::EGL_OPENGL_BIT == 0 {
+            continue;
+         }
 
-      if result != ffi::EGL_TRUE {
-         return egl_error("Choosing EGL config failed");
+         let mut rating = 0;
+
+         if try!(self.attr(&config, ffi::EGL_CONFIG_CAVEAT)) != ffi::EGL_SLOW_CONFIG {
+            rating += 0b0100_0000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_BUFFER_SIZE)) == 32 {
+            rating += 0b0010_0000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_ALPHA_SIZE)) == 8 {
+            rating += 0b0001_0000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_DEPTH_SIZE)) == 0 {
+            rating += 0b0000_1000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_STENCIL_SIZE)) == 0 {
+            rating += 0b0000_0100;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_SAMPLE_BUFFERS)) == 0 {
+            rating += 0b0000_0010;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_SAMPLES)) == 0 {
+            rating += 0b0000_0001;
+         }
+
+         if rating > best_rating {
+            best_rating = rating;
+            best_index = index;
+         }
       }
 
-      if num_config == 0 {
+      if best_rating == 0 {
          return egl_error("Failed to find suitable EGLConfig");
       }
 
-      egl_result(Config {
-         ptr: configs[0]
-      })
+      Ok(configs[best_index].clone())
    }
 
-   pub fn config_attrib(
-      &self,
-      config: &Config,
-      attribute: ffi::EGLint
+   pub fn attr(
+      &self, config: &Config, attribute: ffi::EGLint
    ) -> Result<ffi::EGLint, RuntimeError> {
 
       let mut value: ffi::EGLint = unsafe { mem::uninitialized() };
@@ -295,55 +316,51 @@ impl Display {
 
       let configs = config_ptrs.iter().map(|&ptr| Config {ptr: ptr}).collect();
 
-      for config in &configs {
-         self.print_config(config);
-      }
-
-      Ok(configs)
+      egl_result(configs)
    }
 
    pub fn print_config(&self, config: &Config) {
       println!("-------------------------");
 
-      self.pattr(config, "EGL_CONFIG_ID", ffi::EGL_CONFIG_ID);
-      self.pattr(config, "EGL_COLOR_BUFFER_TYPE", ffi::EGL_COLOR_BUFFER_TYPE);
-      self.pattr(config, "EGL_RENDERABLE_TYPE", ffi::EGL_RENDERABLE_TYPE);
-      self.pattr(config, "EGL_SURFACE_TYPE", ffi::EGL_SURFACE_TYPE);
-      self.pattr(config, "EGL_TRANSPARENT_TYPE", ffi::EGL_TRANSPARENT_TYPE);
-      self.pattr(config, "EGL_NATIVE_VISUAL_TYPE", ffi::EGL_NATIVE_VISUAL_TYPE);
-      self.pattr(config, "EGL_NATIVE_VISUAL_ID", ffi::EGL_NATIVE_VISUAL_ID);
-      self.pattr(config, "EGL_BUFFER_SIZE", ffi::EGL_BUFFER_SIZE);
-      self.pattr(config, "EGL_LUMINANCE_SIZE", ffi::EGL_LUMINANCE_SIZE);
-      self.pattr(config, "EGL_DEPTH_SIZE", ffi::EGL_DEPTH_SIZE);
-      self.pattr(config, "EGL_STENCIL_SIZE", ffi::EGL_STENCIL_SIZE);
-      self.pattr(config, "EGL_RED_SIZE", ffi::EGL_RED_SIZE);
-      self.pattr(config, "EGL_GREEN_SIZE", ffi::EGL_GREEN_SIZE);
-      self.pattr(config, "EGL_BLUE_SIZE", ffi::EGL_BLUE_SIZE);
-      self.pattr(config, "EGL_ALPHA_SIZE", ffi::EGL_ALPHA_SIZE);
-      self.pattr(config, "EGL_ALPHA_MASK_SIZE", ffi::EGL_ALPHA_MASK_SIZE);
-      self.pattr(config, "EGL_BIND_TO_TEXTURE_RGB", ffi::EGL_BIND_TO_TEXTURE_RGB);
-      self.pattr(config, "EGL_BIND_TO_TEXTURE_RGBA", ffi::EGL_BIND_TO_TEXTURE_RGBA);
-      self.pattr(config, "EGL_CONFIG_CAVEAT", ffi::EGL_CONFIG_CAVEAT);
-      self.pattr(config, "EGL_CONFORMANT", ffi::EGL_CONFORMANT);
-      self.pattr(config, "EGL_LEVEL", ffi::EGL_LEVEL);
-      self.pattr(config, "EGL_MAX_PBUFFER_WIDTH", ffi::EGL_MAX_PBUFFER_WIDTH);
-      self.pattr(config, "EGL_MAX_PBUFFER_HEIGHT", ffi::EGL_MAX_PBUFFER_HEIGHT);
-      self.pattr(config, "EGL_MAX_PBUFFER_PIXELS", ffi::EGL_MAX_PBUFFER_PIXELS);
-      self.pattr(config, "EGL_MAX_SWAP_INTERVAL", ffi::EGL_MAX_SWAP_INTERVAL);
-      self.pattr(config, "EGL_MIN_SWAP_INTERVAL", ffi::EGL_MIN_SWAP_INTERVAL);
-      self.pattr(config, "EGL_NATIVE_RENDERABLE", ffi::EGL_NATIVE_RENDERABLE);
-      self.pattr(config, "EGL_SAMPLE_BUFFERS", ffi::EGL_SAMPLE_BUFFERS);
-      self.pattr(config, "EGL_SAMPLES", ffi::EGL_SAMPLES);
-      self.pattr(config, "EGL_TRANSPARENT_RED_VALUE", ffi::EGL_TRANSPARENT_RED_VALUE);
-      self.pattr(config, "EGL_TRANSPARENT_GREEN_VALUE", ffi::EGL_TRANSPARENT_GREEN_VALUE);
-      self.pattr(config, "EGL_TRANSPARENT_BLUE_VALUE", ffi::EGL_TRANSPARENT_BLUE_VALUE);
+      self.print_attr(config, "EGL_CONFIG_ID", ffi::EGL_CONFIG_ID);
+      self.print_attr(config, "EGL_COLOR_BUFFER_TYPE", ffi::EGL_COLOR_BUFFER_TYPE);
+      self.print_attr(config, "EGL_RENDERABLE_TYPE", ffi::EGL_RENDERABLE_TYPE);
+      self.print_attr(config, "EGL_SURFACE_TYPE", ffi::EGL_SURFACE_TYPE);
+      self.print_attr(config, "EGL_TRANSPARENT_TYPE", ffi::EGL_TRANSPARENT_TYPE);
+      self.print_attr(config, "EGL_NATIVE_VISUAL_TYPE", ffi::EGL_NATIVE_VISUAL_TYPE);
+      self.print_attr(config, "EGL_NATIVE_VISUAL_ID", ffi::EGL_NATIVE_VISUAL_ID);
+      self.print_attr(config, "EGL_BUFFER_SIZE", ffi::EGL_BUFFER_SIZE);
+      self.print_attr(config, "EGL_LUMINANCE_SIZE", ffi::EGL_LUMINANCE_SIZE);
+      self.print_attr(config, "EGL_DEPTH_SIZE", ffi::EGL_DEPTH_SIZE);
+      self.print_attr(config, "EGL_STENCIL_SIZE", ffi::EGL_STENCIL_SIZE);
+      self.print_attr(config, "EGL_RED_SIZE", ffi::EGL_RED_SIZE);
+      self.print_attr(config, "EGL_GREEN_SIZE", ffi::EGL_GREEN_SIZE);
+      self.print_attr(config, "EGL_BLUE_SIZE", ffi::EGL_BLUE_SIZE);
+      self.print_attr(config, "EGL_ALPHA_SIZE", ffi::EGL_ALPHA_SIZE);
+      self.print_attr(config, "EGL_ALPHA_MASK_SIZE", ffi::EGL_ALPHA_MASK_SIZE);
+      self.print_attr(config, "EGL_BIND_TO_TEXTURE_RGB", ffi::EGL_BIND_TO_TEXTURE_RGB);
+      self.print_attr(config, "EGL_BIND_TO_TEXTURE_RGBA", ffi::EGL_BIND_TO_TEXTURE_RGBA);
+      self.print_attr(config, "EGL_CONFIG_CAVEAT", ffi::EGL_CONFIG_CAVEAT);
+      self.print_attr(config, "EGL_CONFORMANT", ffi::EGL_CONFORMANT);
+      self.print_attr(config, "EGL_LEVEL", ffi::EGL_LEVEL);
+      self.print_attr(config, "EGL_MAX_PBUFFER_WIDTH", ffi::EGL_MAX_PBUFFER_WIDTH);
+      self.print_attr(config, "EGL_MAX_PBUFFER_HEIGHT", ffi::EGL_MAX_PBUFFER_HEIGHT);
+      self.print_attr(config, "EGL_MAX_PBUFFER_PIXELS", ffi::EGL_MAX_PBUFFER_PIXELS);
+      self.print_attr(config, "EGL_MAX_SWAP_INTERVAL", ffi::EGL_MAX_SWAP_INTERVAL);
+      self.print_attr(config, "EGL_MIN_SWAP_INTERVAL", ffi::EGL_MIN_SWAP_INTERVAL);
+      self.print_attr(config, "EGL_NATIVE_RENDERABLE", ffi::EGL_NATIVE_RENDERABLE);
+      self.print_attr(config, "EGL_SAMPLE_BUFFERS", ffi::EGL_SAMPLE_BUFFERS);
+      self.print_attr(config, "EGL_SAMPLES", ffi::EGL_SAMPLES);
+      self.print_attr(config, "EGL_TRANSPARENT_RED_VALUE", ffi::EGL_TRANSPARENT_RED_VALUE);
+      self.print_attr(config, "EGL_TRANSPARENT_GREEN_VALUE", ffi::EGL_TRANSPARENT_GREEN_VALUE);
+      self.print_attr(config, "EGL_TRANSPARENT_BLUE_VALUE", ffi::EGL_TRANSPARENT_BLUE_VALUE);
 
       println!("");
    }
 
-   pub fn pattr(&self, config: &Config, name: &str, attribute: ffi::EGLenum) {
+   pub fn print_attr(&self, config: &Config, name: &str, attribute: ffi::EGLint) {
       println!(
-         "{}: {}", name, self.config_attrib(config, attribute as ffi::EGLint).unwrap()
+         "{}: {}", name, self.attr(config, attribute).unwrap()
       );
    }
 
@@ -375,7 +392,7 @@ impl Display {
 
       let surface_attribs = [
          ffi::EGL_RENDER_BUFFER, ffi::EGL_BACK_BUFFER,
-         ffi::EGL_NONE
+         ffi::EGL_NONE as ffi::EGLenum
       ];
 
       let surface = unsafe {
