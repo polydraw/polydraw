@@ -41,7 +41,7 @@ impl WglContext {
       &self, width: u32, height: u32
    ) -> Result<Box<GPUFrame>, RuntimeError> {
 
-      match gl::gl_frame::GLFrame::new(width, height) {
+      match gl::frame::buffer::BufferFrame::new(width, height) {
          Ok(gpu_frame) => Ok(Box::new(gpu_frame)),
          Err(e) => Err(e)
       }
