@@ -391,6 +391,10 @@ pub unsafe fn glVertexAttribPointer(index: GLuint, size: GLint, _type: GLenum, n
    mem::transmute::<_, extern "system" fn(GLuint, GLint, GLenum, GLboolean, GLsizei, *const c_void) -> ()>(glVertexAttribPointerPtr)(index, size, _type, normalized, stride, pointer)
 }
 
+#[inline]
+pub fn has_gen_buffers() -> bool {
+   unsafe { glGenBuffersPtr != NULL_PTR }
+}
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGenFramebuffersPtr = loadfn!(loader, "glGenFramebuffers");

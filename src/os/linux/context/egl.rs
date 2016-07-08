@@ -45,11 +45,7 @@ impl Context for EglContext {
    fn create_gpu_frame(
       &self, width: u32, height: u32
    ) -> Result<Box<GPUFrame>, RuntimeError> {
-
-      match gl::frame::buffer::BufferFrame::new(width, height) {
-         Ok(gpu_frame) => Ok(Box::new(gpu_frame)),
-         Err(e) => Err(e)
-      }
+      gl::frame::create_gpu_frame(width, height)
    }
 
    #[inline]
