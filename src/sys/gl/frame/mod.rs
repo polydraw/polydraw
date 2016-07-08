@@ -3,7 +3,6 @@ pub mod quad;
 
 use error::RuntimeError;
 use frame::GPUFrame;
-use sys::utils::fn_ptr::NULL_PTR;
 
 use super::ffi;
 
