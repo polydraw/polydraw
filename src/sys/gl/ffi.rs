@@ -21,7 +21,11 @@ pub type GLclampf = c_float;
 pub type GLintptr = ptrdiff_t;
 pub type GLsizeiptr = ptrdiff_t;
 pub type GLboolean = c_uchar;
+pub type GLfloat = c_float;
 pub type GLdouble = c_double;
+
+pub const GL_TRUE:                              GLboolean = 1;
+pub const GL_FALSE:                             GLboolean = 0;
 
 pub const GL_BYTE:                              GLenum = 0x1400;
 pub const GL_UNSIGNED_BYTE:                     GLenum = 0x1401;
@@ -491,5 +495,11 @@ extern "C" {
       count: GLsizei,
       _type: GLenum,
       indices: *const GLvoid
+   ) -> ();
+
+   pub fn glDrawArrays(
+      mode: GLenum,
+      first: GLint,
+      count: GLsizei
    ) -> ();
 }

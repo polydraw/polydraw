@@ -1,5 +1,5 @@
 pub mod ffi;
-pub mod gl_frame;
+pub mod frame;
 
 use std::mem;
 use std::ptr;
@@ -72,6 +72,61 @@ pub fn reset_pixelstore_alignment() -> VoidResult {
 pub fn enable_framebuffer_srgb() -> VoidResult {
    unsafe {
       ffi::glEnable(ffi::GL_FRAMEBUFFER_SRGB);
+   }
+
+   gl_result(())
+}
+
+#[inline]
+pub fn viewport(width: u32, height: u32) -> VoidResult {
+   unsafe {
+      ffi::glViewport(0, 0, width as ffi::GLsizei, height as ffi::GLsizei)
+   }
+
+   gl_result(())
+}
+
+#[inline]
+pub fn vertex_attrib_pointer(
+   index: ffi::GLuint, size: ffi::GLint, buffer: &[ffi::GLfloat]
+) -> VoidResult {
+
+   unsafe {
+      ffi::glVertexAttribPointer(
+         index,
+         size,
+         ffi::GL_FLOAT,
+         ffi::GL_FALSE,
+         0,
+         buffer.as_ptr() as *const ffi::GLvoid
+      )
+   }
+
+   gl_result(())
+}
+
+#[inline]
+pub fn enable_vertex_attrib_array(index: ffi::GLuint) -> VoidResult {
+   unsafe {
+      ffi::glEnableVertexAttribArray(index)
+   }
+
+   gl_result(())
+}
+
+#[inline]
+pub fn uniform_value_1i(location: ffi::GLint, value: ffi::GLint) -> VoidResult {
+   unsafe {
+      ffi::glUniform1i(location, value)
+   }
+
+   gl_result(())
+}
+
+#[inline]
+pub fn draw_arrays(count: ffi::GLsizei) -> VoidResult {
+   unsafe {
+      ffi::glDrawArrays(ffi::GL_TRIANGLE_STRIP, 0, count)
    }
 
    gl_result(())
@@ -161,7 +216,7 @@ impl Texture {
    }
 
    #[inline]
-   pub fn update(&self, width: u32, height: u32) -> VoidResult {
+   pub fn null_update(&self, width: u32, height: u32) -> VoidResult {
       unsafe {
          ffi::glTexSubImage2D(
             ffi::GL_TEXTURE_2D,
@@ -170,6 +225,23 @@ impl Texture {
             ffi::GL_RGBA,
             ffi::GL_UNSIGNED_BYTE,
             ptr::null()
+         );
+      }
+
+      gl_result(())
+   }
+
+
+   #[inline]
+   pub fn update(&self, width: u32, height: u32, data: &[u8]) -> VoidResult {
+      unsafe {
+         ffi::glTexSubImage2D(
+            ffi::GL_TEXTURE_2D,
+            0,
+            0, 0, width as ffi::GLsizei, height as ffi::GLsizei,
+            ffi::GL_RGBA,
+            ffi::GL_UNSIGNED_BYTE,
+            data.as_ptr() as *const ffi::GLvoid
          );
       }
 
@@ -407,7 +479,7 @@ impl Shader {
          ffi::glGetShaderiv(self.name, ffi::GL_COMPILE_STATUS, &mut compiled);
       };
 
-      gl_result(compiled == 1)
+      gl_result(compiled == ffi::GL_TRUE as ffi::GLint)
    }
 }
 
@@ -453,7 +525,7 @@ impl Program {
    }
 
    #[inline]
-   pub fn use_(&self) -> VoidResult {
+   pub fn use_program(&self) -> VoidResult {
       unsafe {
          ffi::glUseProgram(self.name)
       };
@@ -469,7 +541,29 @@ impl Program {
          ffi::glGetProgramiv(self.name, ffi::GL_LINK_STATUS, &mut linked);
       };
 
-      gl_result(linked == 1)
+      gl_result(linked == ffi::GL_TRUE as ffi::GLint)
+   }
+
+   #[inline]
+   pub fn get_attrib_location(&self, attrib_name: &str) -> Result<ffi::GLint, RuntimeError> {
+      let cname = CString::new(attrib_name).unwrap().as_ptr();
+
+      let result = unsafe {
+         ffi::glGetAttribLocation(self.name, cname)
+      };
+
+      gl_result(result)
+   }
+
+   #[inline]
+   pub fn get_uniform_location(&self, variable_name: &str) -> Result<ffi::GLint, RuntimeError> {
+      let cname = CString::new(variable_name).unwrap().as_ptr();
+
+      let result = unsafe {
+         ffi::glGetUniformLocation(self.name, cname)
+      };
+
+      gl_result(result)
    }
 }
 

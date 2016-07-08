@@ -4,16 +4,16 @@ use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 use draw::RGB;
 
-use super::{Texture, Framebuffer, Buffer};
+use super::super::{Texture, Framebuffer, Buffer};
 
 
-pub struct GLFrame {
+pub struct BufferFrame {
    pub texture: Texture,
    pub framebuffer: Framebuffer,
    pub buffer: Buffer,
 }
 
-impl GPUFrame for GLFrame {
+impl GPUFrame for BufferFrame {
    #[inline]
    fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
       let texture = try!(Texture::new(width, height));
@@ -26,7 +26,7 @@ impl GPUFrame for GLFrame {
       try!(buffer.bind());
       try!(buffer.init_data((width * height * 4) as usize));
 
-      Ok(GLFrame {
+      Ok(BufferFrame {
          texture: texture,
          framebuffer: framebuffer,
          buffer: buffer,
@@ -73,7 +73,7 @@ impl GPUFrame for GLFrame {
    fn post_render(&mut self, width: u32, height: u32) -> VoidResult {
       try!(self.buffer.unmap());
 
-      try!(self.texture.update(width, height));
+      try!(self.texture.null_update(width, height));
 
       self.framebuffer.blit(width, height)
    }
