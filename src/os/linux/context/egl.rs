@@ -91,7 +91,8 @@ impl EglContext {
          context
       ));
 
-      try!(display.swap_interval(0));
+      // TODO
+      // try!(display.swap_interval(0));
 
       Ok(surface)
    }
