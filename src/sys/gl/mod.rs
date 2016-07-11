@@ -140,53 +140,36 @@ pub struct Texture {
 
 impl Texture {
    pub fn new(width: u32, height: u32) -> Result<Self, RuntimeError> {
+      let name = try!(Self::gen_texture());
+
+      let texture = Texture {
+         name: name,
+      };
+
+      try!(texture.bind());
+
+      try!(texture.tex_parameter(ffi::GL_TEXTURE_WRAP_S, ffi::GL_CLAMP_TO_EDGE));
+
+      try!(texture.tex_parameter(ffi::GL_TEXTURE_WRAP_T, ffi::GL_CLAMP_TO_EDGE));
+
+      try!(texture.tex_parameter(ffi::GL_TEXTURE_MIN_FILTER, ffi::GL_NEAREST));
+
+      try!(texture.tex_parameter(ffi::GL_TEXTURE_MAG_FILTER, ffi::GL_NEAREST));
+
+      try!(texture.resize(width, height));
+
+      Ok(texture)
+   }
+
+   #[inline]
+   pub fn gen_texture() -> Result<ffi::GLuint, RuntimeError> {
       let mut name: ffi::GLuint = unsafe { mem::uninitialized() };
 
       unsafe {
          ffi::glGenTextures(1, &mut name);
-
-         ffi::glBindTexture(ffi::GL_TEXTURE_2D, name);
-
-         ffi::glTexParameteri(
-            ffi::GL_TEXTURE_2D,
-            ffi::GL_TEXTURE_WRAP_S,
-            ffi::GL_CLAMP_TO_EDGE as ffi::GLint
-         );
-
-         ffi::glTexParameteri(
-            ffi::GL_TEXTURE_2D,
-            ffi::GL_TEXTURE_WRAP_T,
-            ffi::GL_CLAMP_TO_EDGE as ffi::GLint
-         );
-
-         ffi::glTexParameteri(
-            ffi::GL_TEXTURE_2D,
-            ffi::GL_TEXTURE_MIN_FILTER,
-            ffi::GL_NEAREST as ffi::GLint
-         );
-
-         ffi::glTexParameteri(
-            ffi::GL_TEXTURE_2D,
-            ffi::GL_TEXTURE_MAG_FILTER,
-            ffi::GL_NEAREST as ffi::GLint
-         );
-
-         ffi::glTexImage2D(
-            ffi::GL_TEXTURE_2D,
-            0,
-            ffi::GL_RGBA8 as ffi::GLint,
-            width as ffi::GLsizei,
-            height as ffi::GLsizei,
-            0,
-            ffi::GL_RGBA,
-            ffi::GL_UNSIGNED_BYTE,
-            ptr::null()
-         );
       }
 
-      gl_result("glGenTextures", Texture {
-         name: name,
-      })
+      gl_result("glGenTextures", name)
    }
 
    #[inline]
@@ -196,6 +179,19 @@ impl Texture {
       }
 
       gl_result("glBindTexture", ())
+   }
+
+   #[inline]
+   pub fn tex_parameter(&self, pname: ffi::GLenum, param: ffi::GLenum) -> VoidResult {
+      unsafe {
+         ffi::glTexParameteri(
+            ffi::GL_TEXTURE_2D,
+            pname,
+            param as ffi::GLint
+         );
+      }
+
+      gl_result(&format!("glTexParameteri(0x{:X}, 0x{:X})", pname, param), ())
    }
 
    #[inline]
