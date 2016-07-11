@@ -57,7 +57,13 @@ impl Context for EglContext {
 impl EglContext {
    #[inline]
    pub fn bind() -> VoidResult {
-      egl::bind_api(egl::API::OpenGL)
+      egl::bind_api(
+         if gl::GLES2 {
+            egl::API::OpenGLES
+         } else {
+            egl::API::OpenGL
+         }
+      )
    }
 
    #[inline]

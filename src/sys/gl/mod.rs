@@ -9,6 +9,8 @@ use error::{RuntimeError, ErrorKind, VoidResult};
 
 use super::utils::fn_ptr::FnPtrLoader;
 
+pub const GLES2: bool = cfg!(any(all(target_arch="arm", not(feature="gl")), feature="gles2"));
+
 #[inline]
 pub fn load<T: FnPtrLoader>(loader: &T) {
    unsafe {

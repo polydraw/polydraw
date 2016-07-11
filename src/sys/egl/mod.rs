@@ -15,6 +15,8 @@ use super::xcb::ffi::xcb_window_t;
 use super::x11;
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
+use super::gl;
+
 pub type EGLNativeDisplayType = *mut X11Display;
 pub type EGLNativeWindowType = xcb_window_t;
 
@@ -194,6 +196,12 @@ impl Display {
       let mut best_index = 0;
       let mut best_rating = 0;
 
+      let renderable_bit = if gl::GLES2 {
+         ffi::EGL_OPENGL_ES2_BIT
+      } else {
+         ffi::EGL_OPENGL_BIT
+      };
+
       for (index, config) in configs.iter().enumerate() {
          if try!(self.attr(&config, ffi::EGL_COLOR_BUFFER_TYPE)) != ffi::EGL_RGB_BUFFER {
             continue;
@@ -215,7 +223,7 @@ impl Display {
             continue;
          }
 
-         if try!(self.attr(&config, ffi::EGL_RENDERABLE_TYPE)) & ffi::EGL_OPENGL_BIT == 0 {
+         if try!(self.attr(&config, ffi::EGL_RENDERABLE_TYPE)) & renderable_bit == 0 {
             continue;
          }
 
@@ -365,7 +373,11 @@ impl Display {
    }
 
    pub fn create_context(&self, config: &Config) -> Result<Context, RuntimeError> {
-      let context_attribs = [ffi::EGL_NONE];
+      let context_attribs = if gl::GLES2 {
+         [ffi::EGL_CONTEXT_CLIENT_VERSION as ffi::EGLint, 2, ffi::EGL_NONE]
+      } else {
+         [ffi::EGL_NONE, ffi::EGL_NONE, ffi::EGL_NONE]
+      };
 
       let context = unsafe {
          ffi::eglCreateContext(

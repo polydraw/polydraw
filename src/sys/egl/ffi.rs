@@ -90,6 +90,8 @@ pub const EGL_TEXTURE_FORMAT:               EGLenum = 0x3080;
 pub const EGL_TEXTURE_TARGET:               EGLenum = 0x3081;
 pub const EGL_MIPMAP_TEXTURE:               EGLenum = 0x3082;
 pub const EGL_MIPMAP_LEVEL:                 EGLenum = 0x3083;
+pub const EGL_BACK_BUFFER:                  EGLenum = 0x3084;
+pub const EGL_SINGLE_BUFFER:                EGLenum = 0x3085;
 pub const EGL_RENDER_BUFFER:                EGLenum = 0x3086;
 pub const EGL_VG_COLORSPACE:                EGLenum = 0x3087;
 pub const EGL_VG_ALPHA_FORMAT:              EGLenum = 0x3088;
@@ -97,10 +99,8 @@ pub const EGL_HORIZONTAL_RESOLUTION:        EGLenum = 0x3090;
 pub const EGL_VERTICAL_RESOLUTION:          EGLenum = 0x3091;
 pub const EGL_PIXEL_ASPECT_RATIO:           EGLenum = 0x3092;
 pub const EGL_SWAP_BEHAVIOR:                EGLenum = 0x3093;
+pub const EGL_CONTEXT_CLIENT_VERSION:       EGLenum = 0x3098;
 pub const EGL_MULTISAMPLE_RESOLVE:          EGLenum = 0x3099;
-
-pub const EGL_BACK_BUFFER:                  EGLenum = 0x3084;
-pub const EGL_SINGLE_BUFFER:                EGLenum = 0x3085;
 
 pub const EGL_OPENGL_ES_API:                EGLenum = 0x30A0;
 pub const EGL_OPENVG_API:                   EGLenum = 0x30A1;

@@ -24,8 +24,8 @@ pub type GLboolean = c_uchar;
 pub type GLfloat = c_float;
 pub type GLdouble = c_double;
 
-pub const GL_TRUE:                              GLboolean = 1;
-pub const GL_FALSE:                             GLboolean = 0;
+pub const GL_TRUE:                           GLboolean = 1;
+pub const GL_FALSE:                          GLboolean = 0;
 
 pub const GL_BYTE:                              GLenum = 0x1400;
 pub const GL_UNSIGNED_BYTE:                     GLenum = 0x1401;
@@ -219,7 +219,6 @@ pub const GL_DYNAMIC_STORAGE_BIT:               GLenum = 0x0100;
 pub const GL_CLIENT_STORAGE_BIT:                GLenum = 0x0200;
 
 pub const GL_FRAMEBUFFER_SRGB:                  GLenum = 0x8DB9;
-
 
 static mut glGenFramebuffersPtr:                 FnPtr = NULL_PTR;
 static mut glDeleteFramebuffersPtr:              FnPtr = NULL_PTR;
@@ -429,7 +428,8 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    true
 }
 
-#[cfg_attr(target_os="linux", link(name="GL"))]
+#[cfg_attr(all(target_os="linux", not(any(all(target_arch="arm", not(feature="gl")), feature="gles2"))), link(name="GL"))]
+#[cfg_attr(all(target_os="linux", any(all(target_arch="arm", not(feature="gl")), feature="gles2")), link(name="GLESv2"))]
 #[cfg_attr(target_os="windows", link(name="opengl32"))]
 extern "C" {
    pub fn glGetError() -> GLenum;
