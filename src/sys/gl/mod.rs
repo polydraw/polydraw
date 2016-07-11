@@ -17,45 +17,45 @@ pub fn load<T: FnPtrLoader>(loader: &T) {
 }
 
 #[inline]
-fn gl_error<T>(message: &str) -> Result<T, RuntimeError> {
+fn gl_error<T>(function: &str, message: &str) -> Result<T, RuntimeError> {
    Err(
       RuntimeError::new(
          ErrorKind::GL,
-         message.to_string()
+         format!("{}: {}", function, message)
       )
    )
 }
 
 #[inline]
-fn gl_result<T>(value: T) -> Result<T, RuntimeError> {
+fn gl_result<T>(function: &str, value: T) -> Result<T, RuntimeError> {
    let result = unsafe {
       ffi::glGetError()
    };
 
    match result {
       ffi::GL_NO_ERROR => Ok(value),
-      ffi::GL_INVALID_ENUM => gl_error(
+      ffi::GL_INVALID_ENUM => gl_error(function,
          "An unacceptable value is specified for an enumerated argument"
       ),
-      ffi::GL_INVALID_VALUE => gl_error(
+      ffi::GL_INVALID_VALUE => gl_error(function,
          "A numeric argument is out of range"
       ),
-      ffi::GL_INVALID_OPERATION => gl_error(
+      ffi::GL_INVALID_OPERATION => gl_error(function,
          "The specified operation is not allowed in the current state"
       ),
-      ffi::GL_INVALID_FRAMEBUFFER_OPERATION => gl_error(
+      ffi::GL_INVALID_FRAMEBUFFER_OPERATION => gl_error(function,
          "The framebuffer object is not complete"
       ),
-      ffi::GL_OUT_OF_MEMORY => gl_error(
+      ffi::GL_OUT_OF_MEMORY => gl_error(function,
          "There is not enough memory left to execute the command"
       ),
-      ffi::GL_STACK_UNDERFLOW => gl_error(
+      ffi::GL_STACK_UNDERFLOW => gl_error(function,
          "Performing an operation that would cause an internal stack to underflow"
       ),
-      ffi::GL_STACK_OVERFLOW => gl_error(
+      ffi::GL_STACK_OVERFLOW => gl_error(function,
          "Performing an operation that would cause an internal stack to overflow"
       ),
-      _ => gl_error("Unknown OpenGL error")
+      _ => gl_error(function, "Unknown OpenGL error")
    }
 }
 
@@ -65,7 +65,7 @@ pub fn reset_pixelstore_alignment() -> VoidResult {
       ffi::glPixelStorei(ffi::GL_UNPACK_ALIGNMENT, 1);
    }
 
-   gl_result(())
+   gl_result("glPixelStorei(GL_UNPACK_ALIGNMENT)", ())
 }
 
 #[inline]
@@ -74,7 +74,7 @@ pub fn enable_framebuffer_srgb() -> VoidResult {
       ffi::glEnable(ffi::GL_FRAMEBUFFER_SRGB);
    }
 
-   gl_result(())
+   gl_result("glEnable(GL_FRAMEBUFFER_SRGB)", ())
 }
 
 #[inline]
@@ -83,7 +83,7 @@ pub fn viewport(width: u32, height: u32) -> VoidResult {
       ffi::glViewport(0, 0, width as ffi::GLsizei, height as ffi::GLsizei)
    }
 
-   gl_result(())
+   gl_result("glViewport", ())
 }
 
 #[inline]
@@ -102,7 +102,7 @@ pub fn vertex_attrib_pointer(
       )
    }
 
-   gl_result(())
+   gl_result("glVertexAttribPointer", ())
 }
 
 #[inline]
@@ -111,7 +111,7 @@ pub fn enable_vertex_attrib_array(index: ffi::GLuint) -> VoidResult {
       ffi::glEnableVertexAttribArray(index)
    }
 
-   gl_result(())
+   gl_result("glEnableVertexAttribArray", ())
 }
 
 #[inline]
@@ -120,7 +120,7 @@ pub fn uniform_value_1i(location: ffi::GLint, value: ffi::GLint) -> VoidResult {
       ffi::glUniform1i(location, value)
    }
 
-   gl_result(())
+   gl_result("glUniform1i", ())
 }
 
 #[inline]
@@ -129,7 +129,7 @@ pub fn draw_arrays(count: ffi::GLsizei) -> VoidResult {
       ffi::glDrawArrays(ffi::GL_TRIANGLE_STRIP, 0, count)
    }
 
-   gl_result(())
+   gl_result("glDrawArrays", ())
 }
 
 pub struct Texture {
@@ -182,7 +182,7 @@ impl Texture {
          );
       }
 
-      gl_result(Texture {
+      gl_result("glGenTextures", Texture {
          name: name,
       })
    }
@@ -193,7 +193,7 @@ impl Texture {
          ffi::glBindTexture(ffi::GL_TEXTURE_2D, self.name);
       }
 
-      gl_result(())
+      gl_result("glBindTexture", ())
    }
 
    #[inline]
@@ -212,7 +212,7 @@ impl Texture {
          );
       }
 
-      gl_result(())
+      gl_result("glTexImage2D", ())
    }
 
    #[inline]
@@ -228,7 +228,7 @@ impl Texture {
          );
       }
 
-      gl_result(())
+      gl_result("glTexSubImage2D(NULL)", ())
    }
 
 
@@ -245,7 +245,7 @@ impl Texture {
          );
       }
 
-      gl_result(())
+      gl_result("glTexSubImage2D", ())
    }
 }
 
@@ -284,7 +284,7 @@ impl Framebuffer {
          ffi::glGenFramebuffers(1, &mut name)
       };
 
-      gl_result(name)
+      gl_result("glGenFramebuffers", name)
    }
 
    #[inline]
@@ -293,7 +293,7 @@ impl Framebuffer {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, self.name)
       };
 
-      gl_result(())
+      gl_result("glBindFramebuffer(name)", ())
    }
 
    #[inline]
@@ -302,7 +302,7 @@ impl Framebuffer {
          ffi::glBindFramebuffer(ffi::GL_READ_FRAMEBUFFER, 0)
       };
 
-      gl_result(())
+      gl_result("glBindFramebuffer(0)", ())
    }
 
    #[inline]
@@ -317,7 +317,7 @@ impl Framebuffer {
          )
       };
 
-      gl_result(())
+      gl_result("glFramebufferTexture2D", ())
    }
 
    #[inline]
@@ -331,7 +331,7 @@ impl Framebuffer {
          )
       };
 
-      gl_result(())
+      gl_result("glBlitFramebuffer", ())
    }
 }
 
@@ -357,7 +357,7 @@ impl Buffer {
          ffi::glGenBuffers(1, &mut name)
       };
 
-      gl_result(Buffer {
+      gl_result("glGenBuffers", Buffer {
          name: name,
          ptr: ptr::null_mut(),
          size: 0,
@@ -370,7 +370,7 @@ impl Buffer {
          ffi::glBindBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, self.name)
       };
 
-      gl_result(())
+      gl_result("glBindBuffer(name)", ())
    }
 
    #[inline]
@@ -379,7 +379,7 @@ impl Buffer {
          ffi::glBindBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, 0)
       };
 
-      gl_result(())
+      gl_result("glBindBuffer(0)", ())
    }
 
    #[inline]
@@ -394,7 +394,7 @@ impl Buffer {
          )
       };
 
-      gl_result(())
+      gl_result("glBufferData", ())
    }
 
    #[inline]
@@ -403,7 +403,7 @@ impl Buffer {
          ffi::glMapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER, ffi::GL_WRITE_ONLY)
       };
 
-      gl_result(())
+      gl_result("glMapBuffer", ())
    }
 
    #[inline]
@@ -415,7 +415,7 @@ impl Buffer {
          )
       };
 
-      gl_result(())
+      gl_result("glMapBufferRange", ())
    }
 
    #[inline]
@@ -424,7 +424,7 @@ impl Buffer {
          ffi::glUnmapBuffer(ffi::GL_PIXEL_UNPACK_BUFFER)
       };
 
-      gl_result(())
+      gl_result("glUnmapBuffer", ())
    }
 }
 
@@ -446,7 +446,7 @@ impl Shader {
          ffi::glCreateShader(shader_type)
       };
 
-      gl_result(Shader {
+      gl_result("glCreateShader", Shader {
          name: name,
       })
    }
@@ -459,7 +459,7 @@ impl Shader {
          ffi::glShaderSource(self.name, 1, [cstring.as_ptr()].as_ptr(), ptr::null())
       };
 
-      gl_result(())
+      gl_result("glShaderSource", ())
    }
 
    #[inline]
@@ -469,7 +469,7 @@ impl Shader {
       };
 
       if !try!(self.is_compiled()) {
-         return gl_error("Shader not compiled")
+         return gl_error("glCompileShader", "Shader not compiled")
       }
 
       Ok(())
@@ -483,7 +483,7 @@ impl Shader {
          ffi::glGetShaderiv(self.name, ffi::GL_COMPILE_STATUS, &mut compiled);
       };
 
-      gl_result(compiled == ffi::GL_TRUE as ffi::GLint)
+      gl_result("glGetShaderiv", compiled == ffi::GL_TRUE as ffi::GLint)
    }
 }
 
@@ -505,7 +505,7 @@ impl Program {
          ffi::glCreateProgram()
       };
 
-      gl_result(Program {
+      gl_result("glCreateProgram", Program {
          name: name,
       })
    }
@@ -516,7 +516,7 @@ impl Program {
          ffi::glAttachShader(self.name, shader.name)
       };
 
-      gl_result(())
+      gl_result("glAttachShader", ())
    }
 
    #[inline]
@@ -526,7 +526,7 @@ impl Program {
       };
 
       if !try!(self.is_linked()) {
-         return gl_error("Program not linked")
+         return gl_error("glLinkProgram", "Program not linked")
       }
 
       Ok(())
@@ -538,7 +538,7 @@ impl Program {
          ffi::glUseProgram(self.name)
       };
 
-      gl_result(())
+      gl_result("glUseProgram", ())
    }
 
    #[inline]
@@ -549,7 +549,7 @@ impl Program {
          ffi::glGetProgramiv(self.name, ffi::GL_LINK_STATUS, &mut linked);
       };
 
-      gl_result(linked == ffi::GL_TRUE as ffi::GLint)
+      gl_result("glGetProgramiv", linked == ffi::GL_TRUE as ffi::GLint)
    }
 
    #[inline]
@@ -560,7 +560,7 @@ impl Program {
          ffi::glGetAttribLocation(self.name, cname.as_ptr())
       };
 
-      gl_result(result)
+      gl_result("glGetAttribLocation", result)
    }
 
    #[inline]
@@ -571,7 +571,7 @@ impl Program {
          ffi::glGetUniformLocation(self.name, cname.as_ptr())
       };
 
-      gl_result(result)
+      gl_result("glGetUniformLocation", result)
    }
 }
 
