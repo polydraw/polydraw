@@ -151,7 +151,7 @@ impl Window {
    }
 
    pub fn set_title(&self, title: &str) -> VoidResult {
-      let c_title = CString::new(title).unwrap();
+      let c_title = try!(CString::new(title));
 
       let cookie = unsafe {
          ffi::xcb_change_property_checked(
