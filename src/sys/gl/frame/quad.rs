@@ -32,11 +32,7 @@ impl GPUFrame for QuadFrame {
       try!(texture.bind());
       try!(framebuffer.bind());
 
-      let program = try!(Self::create_program());
-
-      let vertex_attrib = try!(program.get_attrib_location("vertex"));
-      let tex_coord_attrib = try!(program.get_attrib_location("texCoord"));
-      let tex_sampler_uniform = try!(program.get_uniform_location("texSampler"));
+      let (program, vertex_attrib, tex_coord_attrib, tex_sampler_uniform) = try!(Self::create_program());
 
       Ok(QuadFrame {
          texture: texture,
@@ -128,7 +124,7 @@ impl QuadFrame {
          .collect::<Vec<_>>()
    }
 
-   fn create_program() -> Result<Program, RuntimeError> {
+   fn create_program() -> Result<(Program, ffi::GLint, ffi::GLint, ffi::GLint), RuntimeError> {
       let vertex_src = "
          attribute vec4 vertex;
          attribute vec2 texCoord;
@@ -171,6 +167,12 @@ impl QuadFrame {
 
       try!(program.link());
 
-      Ok(program)
+      let vertex_attrib = try!(program.get_attrib_location("vertex"));
+
+      let tex_coord_attrib = try!(program.get_attrib_location("texCoord"));
+
+      let tex_sampler_uniform = try!(program.get_uniform_location("texSampler"));
+
+      Ok((program, vertex_attrib, tex_coord_attrib, tex_sampler_uniform))
    }
 }
