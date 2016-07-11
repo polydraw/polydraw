@@ -453,10 +453,10 @@ impl Shader {
 
    #[inline]
    pub fn shader_source(&self, string: &str) -> VoidResult {
-      let cstring = try!(CString::new(string)).as_ptr();
+      let cstring = try!(CString::new(string));
 
       unsafe {
-         ffi::glShaderSource(self.name, 1, &cstring, ptr::null())
+         ffi::glShaderSource(self.name, 1, [cstring.as_ptr()].as_ptr(), ptr::null())
       };
 
       gl_result(())
@@ -554,10 +554,10 @@ impl Program {
 
    #[inline]
    pub fn get_attrib_location(&self, attrib_name: &str) -> Result<ffi::GLint, RuntimeError> {
-      let cname = try!(CString::new(attrib_name)).as_ptr();
+      let cname = try!(CString::new(attrib_name));
 
       let result = unsafe {
-         ffi::glGetAttribLocation(self.name, cname)
+         ffi::glGetAttribLocation(self.name, cname.as_ptr())
       };
 
       gl_result(result)
@@ -565,10 +565,10 @@ impl Program {
 
    #[inline]
    pub fn get_uniform_location(&self, variable_name: &str) -> Result<ffi::GLint, RuntimeError> {
-      let cname = try!(CString::new(variable_name)).as_ptr();
+      let cname = try!(CString::new(variable_name));
 
       let result = unsafe {
-         ffi::glGetUniformLocation(self.name, cname)
+         ffi::glGetUniformLocation(self.name, cname.as_ptr())
       };
 
       gl_result(result)

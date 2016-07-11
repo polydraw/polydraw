@@ -155,10 +155,10 @@ impl Loader {
 
 impl FnPtrLoader for Loader {
    fn get_proc_addr(&self, name: &str) -> FnPtr {
-      let cname = CString::new(name).unwrap().as_ptr();
+      let cname = CString::new(name).unwrap();
 
       let addr = unsafe {
-         ffi::wglGetProcAddress(cname)
+         ffi::wglGetProcAddress(cname.as_ptr())
       };
 
       addr
