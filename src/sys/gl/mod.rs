@@ -468,7 +468,11 @@ impl Shader {
          ffi::glCompileShader(self.name)
       };
 
-      gl_result(())
+      if !try!(self.is_compiled()) {
+         return gl_error("Shader not compiled")
+      }
+
+      Ok(())
    }
 
    #[inline]
@@ -521,7 +525,11 @@ impl Program {
          ffi::glLinkProgram(self.name)
       };
 
-      gl_result(())
+      if !try!(self.is_linked()) {
+         return gl_error("Program not linked")
+      }
+
+      Ok(())
    }
 
    #[inline]
