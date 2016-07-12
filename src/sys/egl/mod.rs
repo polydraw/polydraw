@@ -267,6 +267,10 @@ impl Display {
          return egl_error("Failed to find suitable EGLConfig");
       }
 
+      if cfg!(debug_assertions) {
+         self.print_config(&configs[best_index]);
+      }
+
       Ok(configs[best_index].clone())
    }
 
@@ -328,7 +332,7 @@ impl Display {
    }
 
    pub fn print_config(&self, config: &Config) {
-      println!("-------------------------");
+      println!("");
 
       self.print_attr(config, "EGL_CONFIG_ID", ffi::EGL_CONFIG_ID);
       self.print_attr(config, "EGL_COLOR_BUFFER_TYPE", ffi::EGL_COLOR_BUFFER_TYPE);
