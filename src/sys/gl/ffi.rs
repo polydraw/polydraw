@@ -220,6 +220,45 @@ pub const GL_CLIENT_STORAGE_BIT:                GLenum = 0x0200;
 
 pub const GL_FRAMEBUFFER_SRGB:                  GLenum = 0x8DB9;
 
+pub const GL_DEBUG_OUTPUT_SYNCHRONOUS:          GLenum = 0x8242;
+pub const GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH:  GLenum = 0x8243;
+pub const GL_DEBUG_CALLBACK_FUNCTION:           GLenum = 0x8244;
+pub const GL_DEBUG_CALLBACK_USER_PARAM:         GLenum = 0x8245;
+pub const GL_DEBUG_SOURCE_API:                  GLenum = 0x8246;
+pub const GL_DEBUG_SOURCE_WINDOW_SYSTEM:        GLenum = 0x8247;
+pub const GL_DEBUG_SOURCE_SHADER_COMPILER:      GLenum = 0x8248;
+pub const GL_DEBUG_SOURCE_THIRD_PARTY:          GLenum = 0x8249;
+pub const GL_DEBUG_SOURCE_APPLICATION:          GLenum = 0x824A;
+pub const GL_DEBUG_SOURCE_OTHER:                GLenum = 0x824B;
+pub const GL_DEBUG_TYPE_ERROR:                  GLenum = 0x824C;
+pub const GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:    GLenum = 0x824D;
+pub const GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:     GLenum = 0x824E;
+pub const GL_DEBUG_TYPE_PORTABILITY:            GLenum = 0x824F;
+pub const GL_DEBUG_TYPE_PERFORMANCE:            GLenum = 0x8250;
+pub const GL_DEBUG_TYPE_OTHER:                  GLenum = 0x8251;
+pub const GL_DEBUG_TYPE_MARKER:                 GLenum = 0x8268;
+pub const GL_DEBUG_TYPE_PUSH_GROUP:             GLenum = 0x8269;
+pub const GL_DEBUG_TYPE_POP_GROUP:              GLenum = 0x826A;
+pub const GL_DEBUG_SEVERITY_NOTIFICATION:       GLenum = 0x826B;
+pub const GL_MAX_DEBUG_GROUP_STACK_DEPTH:       GLenum = 0x826C;
+pub const GL_DEBUG_GROUP_STACK_DEPTH:           GLenum = 0x826D;
+pub const GL_BUFFER:                            GLenum = 0x82E0;
+pub const GL_SHADER:                            GLenum = 0x82E1;
+pub const GL_PROGRAM:                           GLenum = 0x82E2;
+pub const GL_QUERY:                             GLenum = 0x82E3;
+pub const GL_PROGRAM_PIPELINE:                  GLenum = 0x82E4;
+pub const GL_SAMPLER:                           GLenum = 0x82E6;
+pub const GL_DISPLAY_LIST:                      GLenum = 0x82E7;
+pub const GL_MAX_LABEL_LENGTH:                  GLenum = 0x82E8;
+pub const GL_MAX_DEBUG_MESSAGE_LENGTH:          GLenum = 0x9143;
+pub const GL_MAX_DEBUG_LOGGED_MESSAGES:         GLenum = 0x9144;
+pub const GL_DEBUG_LOGGED_MESSAGES:             GLenum = 0x9145;
+pub const GL_DEBUG_SEVERITY_HIGH:               GLenum = 0x9146;
+pub const GL_DEBUG_SEVERITY_MEDIUM:             GLenum = 0x9147;
+pub const GL_DEBUG_SEVERITY_LOW:                GLenum = 0x9148;
+pub const GL_DEBUG_OUTPUT:                      GLenum = 0x92E0;
+pub const GL_CONTEXT_FLAG_DEBUG_BIT:            GLenum = 0x00000002;
+
 static mut glGenFramebuffersPtr:                 FnPtr = NULL_PTR;
 static mut glDeleteFramebuffersPtr:              FnPtr = NULL_PTR;
 static mut glBindFramebufferPtr:                 FnPtr = NULL_PTR;
@@ -248,6 +287,8 @@ static mut glVertexAttribPointerPtr:             FnPtr = NULL_PTR;
 static mut glUniform1iPtr:                       FnPtr = NULL_PTR;
 static mut glEnableVertexAttribArrayPtr:         FnPtr = NULL_PTR;
 static mut glGetUniformLocationPtr:              FnPtr = NULL_PTR;
+static mut glDebugMessageControlPtr:             FnPtr = NULL_PTR;
+static mut glGetDebugMessageLogPtr:              FnPtr = NULL_PTR;
 
 #[inline]
 pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
@@ -308,7 +349,6 @@ pub unsafe fn glUnmapBuffer(target: GLenum) -> GLboolean {
 pub unsafe fn glMapBufferRange(target: GLenum, offset: GLintptr, length: GLsizeiptr, access: GLbitfield) -> *mut c_void {
    mem::transmute::<_, extern "system" fn(GLenum, GLintptr, GLsizeiptr, GLbitfield) -> *mut c_void>(glMapBufferRangePtr)(target, offset, length, access)
 }
-
 
 #[inline]
 pub unsafe fn glCreateShader(shader_type: GLenum) -> GLuint {
@@ -390,6 +430,14 @@ pub unsafe fn glVertexAttribPointer(index: GLuint, size: GLint, _type: GLenum, n
    mem::transmute::<_, extern "system" fn(GLuint, GLint, GLenum, GLboolean, GLsizei, *const c_void) -> ()>(glVertexAttribPointerPtr)(index, size, _type, normalized, stride, pointer)
 }
 
+pub unsafe fn glDebugMessageControl(source: GLenum, type_: GLenum, severity: GLenum, count: GLsizei, ids: *const GLuint, enabled: GLboolean) -> () {
+   mem::transmute::<_, extern "system" fn(GLenum, GLenum, GLenum, GLsizei, *const GLuint, GLboolean) -> ()>(glDebugMessageControlPtr)(source, type_, severity, count, ids, enabled)
+}
+
+pub unsafe fn glGetDebugMessageLog(count: GLuint, bufSize: GLsizei, sources: *mut GLenum, types: *mut GLenum, ids: *mut GLuint, severities: *mut GLenum, lengths: *mut GLsizei, messageLog: *mut GLchar) -> GLuint {
+   mem::transmute::<_, extern "system" fn(GLuint, GLsizei, *mut GLenum, *mut GLenum, *mut GLuint, *mut GLenum, *mut GLsizei, *mut GLchar) -> GLuint>(glGetDebugMessageLogPtr)(count, bufSize, sources, types, ids, severities, lengths, messageLog)
+}
+
 #[inline]
 pub fn has_gen_buffers() -> bool {
    unsafe { glGenBuffersPtr != NULL_PTR }
@@ -424,6 +472,10 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glUniform1iPtr = loader.load("glUniform1i");
    glEnableVertexAttribArrayPtr = loader.load("glEnableVertexAttribArray");
    glGetUniformLocationPtr = loader.load("glGetUniformLocation");
+   glDebugMessageControlPtr = loader.loadlist(&[
+      "glDebugMessageControl", "glDebugMessageControlARB", "glDebugMessageControlKHR"]);
+   glGetDebugMessageLogPtr = loader.loadlist(&[
+      "glGetDebugMessageLog", "glGetDebugMessageLogARB", "glGetDebugMessageLogKHR"]);
 
    true
 }
@@ -455,6 +507,8 @@ extern "C" {
    pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
 
    pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
+
+   pub fn glGetIntegerv(pname: GLenum, data: *mut GLint) -> ();
 
    pub fn glClearColor(
       red: GLclampf,
