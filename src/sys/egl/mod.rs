@@ -373,11 +373,23 @@ impl Display {
    }
 
    pub fn create_context(&self, config: &Config) -> Result<Context, RuntimeError> {
-      let context_attribs = if gl::GLES2 {
-         [ffi::EGL_CONTEXT_CLIENT_VERSION as ffi::EGLint, 2, ffi::EGL_NONE]
-      } else {
-         [ffi::EGL_NONE, ffi::EGL_NONE, ffi::EGL_NONE]
-      };
+      let mut context_attribs = Vec::new();
+
+      if gl::GLES2 {
+         context_attribs.extend_from_slice(&[
+            ffi::EGL_CONTEXT_CLIENT_VERSION as ffi::EGLint,
+            2
+         ])
+      }
+
+      if gl::has_debug_functions() {
+         context_attribs.extend_from_slice(&[
+            ffi::EGL_CONTEXT_FLAGS_KHR as ffi::EGLint,
+            ffi::EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR
+         ])
+      }
+
+      context_attribs.push(ffi::EGL_NONE);
 
       let context = unsafe {
          ffi::eglCreateContext(

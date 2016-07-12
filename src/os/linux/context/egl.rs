@@ -105,10 +105,6 @@ impl EglContext {
 
    #[inline]
    pub fn init_gl() -> VoidResult {
-      gl::load(&egl::Loader::new());
-
-      try!(gl::reset_pixelstore_alignment());
-
-      Ok(())
+      gl::initialize(&egl::Loader::new())
    }
 }

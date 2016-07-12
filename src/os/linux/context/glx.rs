@@ -74,10 +74,6 @@ impl GlxContext {
 
    #[inline]
    pub fn init_gl() -> VoidResult {
-      gl::load(&glx::Loader::new());
-
-      try!(gl::reset_pixelstore_alignment());
-
-      Ok(())
+      gl::initialize(&glx::Loader::new())
    }
 }

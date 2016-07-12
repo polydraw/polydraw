@@ -290,6 +290,9 @@ static mut glGetUniformLocationPtr:              FnPtr = NULL_PTR;
 static mut glDebugMessageControlPtr:             FnPtr = NULL_PTR;
 static mut glGetDebugMessageLogPtr:              FnPtr = NULL_PTR;
 
+pub static mut BUFFER_FNS_LOADED:                 bool = false;
+pub static mut DEBUG_FNS_LOADED:                  bool = false;
+
 #[inline]
 pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
    mem::transmute::<_, extern "system" fn(GLsizei, *mut GLuint) -> ()>(glGenFramebuffersPtr)(n, framebuffers)
@@ -438,11 +441,6 @@ pub unsafe fn glGetDebugMessageLog(count: GLuint, bufSize: GLsizei, sources: *mu
    mem::transmute::<_, extern "system" fn(GLuint, GLsizei, *mut GLenum, *mut GLenum, *mut GLuint, *mut GLenum, *mut GLsizei, *mut GLchar) -> GLuint>(glGetDebugMessageLogPtr)(count, bufSize, sources, types, ids, severities, lengths, messageLog)
 }
 
-#[inline]
-pub fn has_gen_buffers() -> bool {
-   unsafe { glGenBuffersPtr != NULL_PTR }
-}
-
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGenFramebuffersPtr = loader.load("glGenFramebuffers");
    glDeleteFramebuffersPtr = loader.load("glDeleteFramebuffers");
@@ -476,6 +474,15 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
       "glDebugMessageControl", "glDebugMessageControlARB", "glDebugMessageControlKHR"]);
    glGetDebugMessageLogPtr = loader.loadlist(&[
       "glGetDebugMessageLog", "glGetDebugMessageLogARB", "glGetDebugMessageLogKHR"]);
+
+   BUFFER_FNS_LOADED =
+      glGenBuffersPtr != NULL_PTR &&
+      glMapBufferPtr != NULL_PTR &&
+      glBlitFramebufferPtr != NULL_PTR;
+
+   DEBUG_FNS_LOADED =
+      glDebugMessageControlPtr != NULL_PTR &&
+      glGetDebugMessageLogPtr != NULL_PTR;
 
    true
 }

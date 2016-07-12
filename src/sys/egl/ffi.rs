@@ -106,6 +106,8 @@ pub const EGL_OPENGL_ES_API:                EGLenum = 0x30A0;
 pub const EGL_OPENVG_API:                   EGLenum = 0x30A1;
 pub const EGL_OPENGL_API:                   EGLenum = 0x30A2;
 
+pub const EGL_CONTEXT_FLAGS_KHR:            EGLenum = 0x30FC;
+
 pub const EGL_PBUFFER_BIT:                  EGLint = 0x0001;
 pub const EGL_PIXMAP_BIT:                   EGLint = 0x0002;
 pub const EGL_WINDOW_BIT:                   EGLint = 0x0004;
@@ -118,6 +120,10 @@ pub const EGL_OPENGL_ES_BIT:                EGLint = 0x0001;
 pub const EGL_OPENVG_BIT:                   EGLint = 0x0002;
 pub const EGL_OPENGL_ES2_BIT:               EGLint = 0x0004;
 pub const EGL_OPENGL_BIT:                   EGLint = 0x0008;
+
+pub const EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR:               EGLint = 0x00000001;
+pub const EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR:  EGLint = 0x00000002;
+pub const EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR:       EGLint = 0x00000004;
 
 pub type __eglMustCastToProperFunctionPointerType =
 //   Option<extern "C" fn() -> ()>;

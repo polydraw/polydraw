@@ -1,4 +1,4 @@
-use error::RuntimeError;
+use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
 use sys::win32;
@@ -25,12 +25,12 @@ impl WglContext {
    }
 
    #[inline]
-   pub fn init_gl() -> Result<(), RuntimeError> {
+   pub fn init_gl() -> VoidResult {
       let loader = wgl::Loader::new();
-      gl::load(&loader);
-      wgl::load(&loader);
 
-      try!(gl::reset_pixelstore_alignment());
+      try!(gl::initialize(&loader));
+
+      wgl::load(&loader);
 
       Ok(())
    }
