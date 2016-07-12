@@ -359,7 +359,7 @@ impl Texture {
          ffi::glTexImage2D(
             ffi::GL_TEXTURE_2D,
             0,
-            ffi::GL_RGBA8 as ffi::GLint,
+            ffi::GL_RGBA as ffi::GLint,
             width as ffi::GLsizei,
             height as ffi::GLsizei,
             0,
