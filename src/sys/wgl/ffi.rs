@@ -66,7 +66,7 @@ pub unsafe fn wglSwapIntervalEXT(interval: c_int) -> BOOL {
 }
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
-   wglSwapIntervalEXTPtr = loadfn!(loader, "wglSwapIntervalEXT");
+   wglSwapIntervalEXTPtr = loader.load("wglSwapIntervalEXT");
 
    true
 }

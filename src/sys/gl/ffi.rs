@@ -396,34 +396,34 @@ pub fn has_gen_buffers() -> bool {
 }
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
-   glGenFramebuffersPtr = loadfn!(loader, "glGenFramebuffers");
-   glDeleteFramebuffersPtr = loadfn!(loader, "glDeleteFramebuffers");
-   glBindFramebufferPtr = loadfn!(loader, "glBindFramebuffer");
-   glFramebufferTexture2DPtr = loadfn!(loader, "glFramebufferTexture2D");
-   glBlitFramebufferPtr = loadfn!(loader, "glBlitFramebuffer");
-   glGenBuffersPtr = loadfn!(loader, "glGenBuffers");
-   glDeleteBuffersPtr = loadfn!(loader, "glDeleteBuffers");
-   glBindBufferPtr = loadfn!(loader, "glBindBuffer");
-   glBufferDataPtr = loadfn!(loader, "glBufferData");
-   glMapBufferPtr = loadfn!(loader, "glMapBuffer");
-   glUnmapBufferPtr = loadfn!(loader, "glUnmapBuffer");
-   glMapBufferRangePtr = loadfn!(loader, "glMapBufferRange");
-   glCreateShaderPtr = loadfn!(loader, "glCreateShader");
-   glShaderSourcePtr = loadfn!(loader, "glShaderSource");
-   glCompileShaderPtr = loadfn!(loader, "glCompileShader");
-   glGetShaderivPtr = loadfn!(loader, "glGetShaderiv");
-   glDeleteShaderPtr = loadfn!(loader, "glDeleteShader");
-   glCreateProgramPtr = loadfn!(loader, "glCreateProgram");
-   glAttachShaderPtr = loadfn!(loader, "glAttachShader");
-   glLinkProgramPtr = loadfn!(loader, "glLinkProgram");
-   glUseProgramPtr = loadfn!(loader, "glUseProgram");
-   glGetProgramivPtr = loadfn!(loader, "glGetProgramiv");
-   glDeleteProgramPtr = loadfn!(loader, "glDeleteProgram");
-   glGetAttribLocationPtr = loadfn!(loader, "glGetAttribLocation");
-   glVertexAttribPointerPtr = loadfn!(loader, "glVertexAttribPointer");
-   glUniform1iPtr = loadfn!(loader, "glUniform1i");
-   glEnableVertexAttribArrayPtr = loadfn!(loader, "glEnableVertexAttribArray");
-   glGetUniformLocationPtr = loadfn!(loader, "glGetUniformLocation");
+   glGenFramebuffersPtr = loader.load("glGenFramebuffers");
+   glDeleteFramebuffersPtr = loader.load("glDeleteFramebuffers");
+   glBindFramebufferPtr = loader.load("glBindFramebuffer");
+   glFramebufferTexture2DPtr = loader.load("glFramebufferTexture2D");
+   glBlitFramebufferPtr = loader.load("glBlitFramebuffer");
+   glGenBuffersPtr = loader.load("glGenBuffers");
+   glDeleteBuffersPtr = loader.load("glDeleteBuffers");
+   glBindBufferPtr = loader.load("glBindBuffer");
+   glBufferDataPtr = loader.load("glBufferData");
+   glMapBufferPtr = loader.load("glMapBuffer");
+   glUnmapBufferPtr = loader.load("glUnmapBuffer");
+   glMapBufferRangePtr = loader.load("glMapBufferRange");
+   glCreateShaderPtr = loader.load("glCreateShader");
+   glShaderSourcePtr = loader.load("glShaderSource");
+   glCompileShaderPtr = loader.load("glCompileShader");
+   glGetShaderivPtr = loader.load("glGetShaderiv");
+   glDeleteShaderPtr = loader.load("glDeleteShader");
+   glCreateProgramPtr = loader.load("glCreateProgram");
+   glAttachShaderPtr = loader.load("glAttachShader");
+   glLinkProgramPtr = loader.load("glLinkProgram");
+   glUseProgramPtr = loader.load("glUseProgram");
+   glGetProgramivPtr = loader.load("glGetProgramiv");
+   glDeleteProgramPtr = loader.load("glDeleteProgram");
+   glGetAttribLocationPtr = loader.load("glGetAttribLocation");
+   glVertexAttribPointerPtr = loader.load("glVertexAttribPointer");
+   glUniform1iPtr = loader.load("glUniform1i");
+   glEnableVertexAttribArrayPtr = loader.load("glEnableVertexAttribArray");
+   glGetUniformLocationPtr = loader.load("glGetUniformLocation");
 
    true
 }
