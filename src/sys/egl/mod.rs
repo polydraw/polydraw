@@ -207,18 +207,6 @@ impl Display {
             continue;
          }
 
-         if try!(self.attr(&config, ffi::EGL_RED_SIZE)) != 8 {
-            continue;
-         }
-
-         if try!(self.attr(&config, ffi::EGL_GREEN_SIZE)) != 8 {
-            continue;
-         }
-
-         if try!(self.attr(&config, ffi::EGL_BLUE_SIZE)) != 8 {
-            continue;
-         }
-
          if try!(self.attr(&config, ffi::EGL_SURFACE_TYPE)) & ffi::EGL_WINDOW_BIT == 0 {
             continue;
          }
@@ -230,31 +218,43 @@ impl Display {
          let mut rating = 0;
 
          if try!(self.attr(&config, ffi::EGL_CONFIG_CAVEAT)) != ffi::EGL_SLOW_CONFIG {
-            rating += 0b0100_0000;
+            rating += 0b_0000_0010_0000_0000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_RED_SIZE)) == 8 {
+            rating += 0b_0000_0001_0000_0000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_GREEN_SIZE)) == 8 {
+            rating += 0b_0000_0000_1000_0000;
+         }
+
+         if try!(self.attr(&config, ffi::EGL_BLUE_SIZE)) == 8 {
+            rating += 0b_0000_0000_0100_0000;
          }
 
          if try!(self.attr(&config, ffi::EGL_BUFFER_SIZE)) == 32 {
-            rating += 0b0010_0000;
+            rating += 0b_0000_0000_0010_0000;
          }
 
          if try!(self.attr(&config, ffi::EGL_ALPHA_SIZE)) == 8 {
-            rating += 0b0001_0000;
+            rating += 0b_0000_0000_0001_0000;
          }
 
          if try!(self.attr(&config, ffi::EGL_DEPTH_SIZE)) == 0 {
-            rating += 0b0000_1000;
+            rating += 0b_0000_0000_0000_1000;
          }
 
          if try!(self.attr(&config, ffi::EGL_STENCIL_SIZE)) == 0 {
-            rating += 0b0000_0100;
+            rating += 0b_0000_0000_0000_0100;
          }
 
          if try!(self.attr(&config, ffi::EGL_SAMPLE_BUFFERS)) == 0 {
-            rating += 0b0000_0010;
+            rating += 0b_0000_0000_0000_0010;
          }
 
          if try!(self.attr(&config, ffi::EGL_SAMPLES)) == 0 {
-            rating += 0b0000_0001;
+            rating += 0b_0000_0000_0000_0001;
          }
 
          if rating > best_rating {
