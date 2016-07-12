@@ -6,14 +6,13 @@ use draw::RGB;
 
 use super::super::ffi;
 use super::super::{
-   Texture, Framebuffer, Shader, Program, viewport, vertex_attrib_pointer,
+   Texture, Shader, Program, viewport, vertex_attrib_pointer,
    enable_vertex_attrib_array, uniform_value_1i, draw_arrays,
 };
 
 
 pub struct QuadFrame {
    pub texture: Texture,
-   pub framebuffer: Framebuffer,
    pub program: Program,
    pub vertex_attrib: ffi::GLint,
    pub tex_coord_attrib: ffi::GLint,
@@ -27,16 +26,13 @@ impl GPUFrame for QuadFrame {
       let data = Self::create_data(width, height);
 
       let texture = try!(Texture::new(width, height));
-      let framebuffer = try!(Framebuffer::new(&texture));
 
       try!(texture.bind());
-      try!(framebuffer.bind());
 
       let (program, vertex_attrib, tex_coord_attrib, tex_sampler_uniform) = try!(Self::create_program());
 
       Ok(QuadFrame {
          texture: texture,
-         framebuffer: framebuffer,
          data: data,
          program: program,
          vertex_attrib: vertex_attrib,
