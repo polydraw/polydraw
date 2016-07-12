@@ -217,6 +217,10 @@ impl Display {
 
          let mut rating = 0;
 
+         if try!(self.attr(&config, ffi::EGL_CONFIG_CAVEAT)) != ffi::EGL_NON_CONFORMANT_CONFIG {
+            rating += 0b_0000_0100_0000_0000;
+         }
+
          if try!(self.attr(&config, ffi::EGL_CONFIG_CAVEAT)) != ffi::EGL_SLOW_CONFIG {
             rating += 0b_0000_0010_0000_0000;
          }
