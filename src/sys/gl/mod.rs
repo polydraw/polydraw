@@ -26,12 +26,9 @@ pub fn has_debug_functions() -> bool {
 pub fn initialize<T: FnPtrLoader>(loader: &T) -> VoidResult {
    load(loader);
 
-   try!(reset_pixelstore_alignment());
+   initialize_debug_messages();
 
-   if has_debug_functions() {
-      try!(enable_debug_output());
-      try!(enable_debug_output_synchronous());
-   }
+   try!(reset_pixelstore_alignment());
 
    Ok(())
 }
@@ -93,7 +90,9 @@ fn gl_result<T>(function: &str, value: T) -> Result<T, RuntimeError> {
 }
 
 #[inline]
-fn clear_gl_errors() {
+fn clear_gl_errors() -> bool {
+   let mut had_error = false;
+
    loop {
       let result = unsafe {
          ffi::glGetError()
@@ -102,7 +101,11 @@ fn clear_gl_errors() {
       if result == ffi::GL_NO_ERROR {
          break;
       }
+
+      had_error = true;
    }
+
+   had_error
 }
 
 #[inline]
@@ -176,6 +179,29 @@ pub fn draw_arrays(count: ffi::GLsizei) -> VoidResult {
    }
 
    gl_result("glDrawArrays", ())
+}
+
+#[inline]
+fn initialize_debug_messages() {
+   if has_debug_functions() {
+      let mut enabled = true;
+
+      match enable_debug_output() {
+         Ok(_) => {
+            match enable_debug_output_synchronous() {
+               Ok(_) => {},
+               Err(_) => enabled = false
+            }
+         },
+         Err(_) => enabled = false
+      };
+
+      if !enabled {
+         unsafe {
+            ffi::DEBUG_FNS_LOADED = false
+         };
+      }
+   }
 }
 
 #[inline]

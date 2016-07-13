@@ -470,8 +470,6 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glUniform1iPtr = loader.load("glUniform1i");
    glEnableVertexAttribArrayPtr = loader.load("glEnableVertexAttribArray");
    glGetUniformLocationPtr = loader.load("glGetUniformLocation");
-   glDebugMessageControlPtr = loader.loadlist(&[
-      "glDebugMessageControl", "glDebugMessageControlARB", "glDebugMessageControlKHR"]);
    glGetDebugMessageLogPtr = loader.loadlist(&[
       "glGetDebugMessageLog", "glGetDebugMessageLogARB", "glGetDebugMessageLogKHR"]);
 
@@ -480,9 +478,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
       glMapBufferPtr != NULL_PTR &&
       glBlitFramebufferPtr != NULL_PTR;
 
-   DEBUG_FNS_LOADED =
-      glDebugMessageControlPtr != NULL_PTR &&
-      glGetDebugMessageLogPtr != NULL_PTR;
+   DEBUG_FNS_LOADED = glGetDebugMessageLogPtr != NULL_PTR;
 
    true
 }
