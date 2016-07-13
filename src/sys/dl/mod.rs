@@ -5,7 +5,7 @@ use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
 
-use super::utils::fn_ptr::FnPtr;
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
 pub struct Library {
    pub handle: *mut ffi::c_void
@@ -30,8 +30,10 @@ impl Library {
          handle: handle,
       })
    }
+}
 
-   pub fn get(&self, name: &str) -> FnPtr {
+impl FnPtrLoader for Library {
+   fn load(&self, name: &str) -> FnPtr {
       let cname = CString::new(name).unwrap();
 
       unsafe {

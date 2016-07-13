@@ -1,10 +1,15 @@
 #![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
 
 use super::{EGLNativeDisplayType, EGLNativeWindowType};
+
+use std::mem;
 
 pub use libc::{
    c_char, c_int, c_uint, c_void
 };
+
+use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
 
 pub type khronos_int32_t = c_int;
 
@@ -129,85 +134,106 @@ pub type __eglMustCastToProperFunctionPointerType =
 //   Option<extern "C" fn() -> ()>;
    *const c_void;
 
-#[link(name="EGL")]
-extern "C" {
-   pub fn eglGetError() -> EGLint;
+static mut eglGetErrorPtr:                       FnPtr = NULL_PTR;
+static mut eglBindAPIPtr:                        FnPtr = NULL_PTR;
+static mut eglGetDisplayPtr:                     FnPtr = NULL_PTR;
+static mut eglInitializePtr:                     FnPtr = NULL_PTR;
+static mut eglGetConfigsPtr:                     FnPtr = NULL_PTR;
+static mut eglChooseConfigPtr:                   FnPtr = NULL_PTR;
+static mut eglGetConfigAttribPtr:                FnPtr = NULL_PTR;
+static mut eglGetProcAddressPtr:                 FnPtr = NULL_PTR;
+static mut eglCreateContextPtr:                  FnPtr = NULL_PTR;
+static mut eglCreateWindowSurfacePtr:            FnPtr = NULL_PTR;
+static mut eglMakeCurrentPtr:                    FnPtr = NULL_PTR;
+static mut eglQueryContextPtr:                   FnPtr = NULL_PTR;
+static mut eglSwapBuffersPtr:                    FnPtr = NULL_PTR;
+static mut eglSwapIntervalPtr:                   FnPtr = NULL_PTR;
 
-   pub fn eglBindAPI(
-      api: EGLenum
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglGetError() -> EGLint {
+   mem::transmute::<_, extern "system" fn() -> EGLint>(eglGetErrorPtr)()
+}
 
-   pub fn eglGetDisplay(
-      display_id: EGLNativeDisplayType
-   ) -> EGLDisplay;
+#[inline]
+pub unsafe fn eglBindAPI(api: EGLenum) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLenum) -> EGLBoolean>(eglBindAPIPtr)(api)
+}
 
-   pub fn eglInitialize(
-      display: EGLDisplay,
-      major: *mut EGLint,
-      minor: *mut EGLint
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglGetDisplay(display_id: EGLNativeDisplayType) -> EGLDisplay {
+   mem::transmute::<_, extern "system" fn(EGLNativeDisplayType) -> EGLDisplay>(eglGetDisplayPtr)(display_id)
+}
 
-   pub fn eglGetConfigs(
-      display: EGLDisplay ,
-      configs: *mut EGLConfig,
-      config_size: EGLint,
-      num_config: *mut EGLint
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglInitialize(display: EGLDisplay, major: *mut EGLint, minor: *mut EGLint) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, *mut EGLint, *mut EGLint) -> EGLBoolean>(eglInitializePtr)(display, major, minor)
+}
 
-   pub fn eglChooseConfig(
-      display: EGLDisplay,
-      attrib_list: *const EGLint,
-      configs: *mut EGLConfig,
-      config_size: EGLint,
-      num_config: *mut EGLint
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglGetConfigs(display: EGLDisplay, configs: *mut EGLConfig, config_size: EGLint, num_config: *mut EGLint) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, *mut EGLConfig, EGLint, *mut EGLint) -> EGLBoolean>(eglGetConfigsPtr)(display, configs, config_size, num_config)
+}
 
-   pub fn eglGetConfigAttrib(
-      display: EGLDisplay,
-      config: EGLConfig,
-      attribute: EGLint,
-      value: *mut EGLint
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglChooseConfig(display: EGLDisplay, attrib_list: *const EGLint, configs: *mut EGLConfig, config_size: EGLint, num_config: *mut EGLint) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, *const EGLint, *mut EGLConfig, EGLint, *mut EGLint) -> EGLBoolean>(eglChooseConfigPtr)(display, attrib_list, configs, config_size, num_config)
+}
 
-   pub fn eglGetProcAddress(
-      procname: *const c_char
-   ) -> __eglMustCastToProperFunctionPointerType;
+#[inline]
+pub unsafe fn eglGetConfigAttrib(display: EGLDisplay, config: EGLConfig, attribute: EGLint, value: *mut EGLint) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLConfig, EGLint, *mut EGLint) -> EGLBoolean>(eglGetConfigAttribPtr)(display, config, attribute, value)
+}
 
-   pub fn eglCreateContext(
-      display: EGLDisplay,
-      config: EGLConfig,
-      share_context: EGLContext,
-      attrib_list: *const EGLint
-   ) -> EGLContext;
+#[inline]
+pub unsafe fn eglGetProcAddress(procname: *const c_char) -> __eglMustCastToProperFunctionPointerType {
+   mem::transmute::<_, extern "system" fn(*const c_char) -> __eglMustCastToProperFunctionPointerType>(eglGetProcAddressPtr)(procname)
+}
 
-   pub fn eglCreateWindowSurface(
-      display: EGLDisplay,
-      config: EGLConfig,
-      win: EGLNativeWindowType,
-      attrib_list: *const EGLint
-   ) -> EGLSurface;
+#[inline]
+pub unsafe fn eglCreateContext(display: EGLDisplay, config: EGLConfig, share_context: EGLContext, attrib_list: *const EGLint) -> EGLContext {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLConfig, EGLContext, *const EGLint) -> EGLContext>(eglCreateContextPtr)(display, config, share_context, attrib_list)
+}
 
-   pub fn eglMakeCurrent(
-      display: EGLDisplay,
-      draw: EGLSurface,
-      read: EGLSurface,
-      ctx: EGLContext
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglCreateWindowSurface(display: EGLDisplay, config: EGLConfig, win: EGLNativeWindowType, attrib_list: *const EGLint) -> EGLSurface {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLConfig, EGLNativeWindowType, *const EGLint) -> EGLSurface>(eglCreateWindowSurfacePtr)(display, config, win, attrib_list)
+}
 
-   pub fn eglQueryContext(
-      display: EGLDisplay,
-      ctx: EGLContext,
-      attribute: EGLint,
-      value: *mut EGLint
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglMakeCurrent(display: EGLDisplay, draw: EGLSurface, read: EGLSurface, ctx: EGLContext) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLSurface, EGLSurface, EGLContext) -> EGLBoolean>(eglMakeCurrentPtr)(display, draw, read, ctx)
+}
 
-   pub fn eglSwapBuffers(
-      display: EGLDisplay,
-      surface: EGLSurface
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglQueryContext(display: EGLDisplay, ctx: EGLContext, attribute: EGLint, value: *mut EGLint) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLContext, EGLint, *mut EGLint) -> EGLBoolean>(eglQueryContextPtr)(display, ctx, attribute, value)
+}
 
-   pub fn eglSwapInterval(
-      display: EGLDisplay,
-      interval: EGLint
-   ) -> EGLBoolean;
+#[inline]
+pub unsafe fn eglSwapBuffers(display: EGLDisplay, surface: EGLSurface) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLSurface) -> EGLBoolean>(eglSwapBuffersPtr)(display, surface)
+}
+
+#[inline]
+pub unsafe fn eglSwapInterval(display: EGLDisplay, interval: EGLint) -> EGLBoolean {
+   mem::transmute::<_, extern "system" fn(EGLDisplay, EGLint) -> EGLBoolean>(eglSwapIntervalPtr)(display, interval)
+}
+
+pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+   eglGetErrorPtr = loader.load("eglGetError");
+   eglBindAPIPtr = loader.load("eglBindAPI");
+   eglGetDisplayPtr = loader.load("eglGetDisplay");
+   eglInitializePtr = loader.load("eglInitialize");
+   eglGetConfigsPtr = loader.load("eglGetConfigs");
+   eglChooseConfigPtr = loader.load("eglChooseConfig");
+   eglGetConfigAttribPtr = loader.load("eglGetConfigAttrib");
+   eglGetProcAddressPtr = loader.load("eglGetProcAddress");
+   eglCreateContextPtr = loader.load("eglCreateContext");
+   eglCreateWindowSurfacePtr = loader.load("eglCreateWindowSurface");
+   eglMakeCurrentPtr = loader.load("eglMakeCurrent");
+   eglQueryContextPtr = loader.load("eglQueryContext");
+   eglSwapBuffersPtr = loader.load("eglSwapBuffers");
+   eglSwapIntervalPtr = loader.load("eglSwapInterval");
+
+   true
 }

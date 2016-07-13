@@ -78,6 +78,15 @@ pub struct Version {
 }
 
 #[inline]
+pub fn initialize<T: FnPtrLoader>(loader: &T) -> VoidResult {
+   unsafe {
+      ffi::load_functions(loader)
+   };
+
+   Ok(())
+}
+
+#[inline]
 fn egl_error<T>(message: &str) -> Result<T, RuntimeError> {
    Err(
       RuntimeError::new(

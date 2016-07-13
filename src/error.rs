@@ -9,6 +9,7 @@ pub struct RuntimeError {
 #[derive(Clone, Debug)]
 pub enum ErrorKind {
    InvalidInput,
+   DL,
    Xlib,
    XCB,
    GL,

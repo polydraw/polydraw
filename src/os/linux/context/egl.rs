@@ -1,6 +1,7 @@
 use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
+use sys::dl;
 use sys::x11;
 use sys::xcb;
 use sys::egl;
@@ -9,6 +10,7 @@ use sys::gl;
 use super::Context;
 
 pub struct EglContext {
+   pub library: dl::Library,
    pub display: egl::Display,
    pub version: egl::Version,
    pub config: egl::Config,
@@ -18,6 +20,10 @@ pub struct EglContext {
 
 impl Context for EglContext {
    fn new(x11_display: &x11::Display, _: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
+      let library = try!(dl::Library::new("libEGL.so"));
+
+      try!(egl::initialize(&library));
+
       try!(Self::bind());
 
       let display = try!(egl::Display::from_native(x11_display));
@@ -33,6 +39,7 @@ impl Context for EglContext {
       try!(Self::init_gl());
 
       Ok(EglContext {
+         library: library,
          display: display,
          version: version,
          config: config,
