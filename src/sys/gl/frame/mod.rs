@@ -4,14 +4,14 @@ pub mod quad;
 use error::RuntimeError;
 use frame::GPUFrame;
 
-use super::has_buffer_functions;
+use super::{has_buffer_functions, GLES2};
 
 #[inline]
 pub fn create_gpu_frame(
    width: u32, height: u32
 ) -> Result<Box<GPUFrame>, RuntimeError> {
 
-   if has_buffer_functions() {
+   if has_buffer_functions() && !GLES2 {
       create_buffer_frame(width, height)
    } else {
       create_quad_frame(width, height)
