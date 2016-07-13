@@ -41,6 +41,8 @@ fn load<T: FnPtrLoader>(loader: &T) {
    unsafe {
       ffi::load_functions(loader)
    };
+
+   clear_gl_errors();
 }
 
 #[inline]
@@ -87,6 +89,19 @@ fn gl_result<T>(function: &str, value: T) -> Result<T, RuntimeError> {
          "Performing an operation that would cause an internal stack to overflow"
       ),
       _ => gl_error(function, "Unknown OpenGL error")
+   }
+}
+
+#[inline]
+fn clear_gl_errors() {
+   loop {
+      let result = unsafe {
+         ffi::glGetError()
+      };
+
+      if result == ffi::GL_NO_ERROR {
+         break;
+      }
    }
 }
 
