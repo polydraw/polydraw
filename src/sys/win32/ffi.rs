@@ -46,6 +46,8 @@ pub type LPCH = *mut CHAR;
 
 pub type ATOM = u16;
 
+pub type FARPROC = *const c_void;
+
 pub type WNDPROC = Option<unsafe extern "system" fn(HWND, c_uint, WPARAM, LPARAM) -> LRESULT>;
 
 pub const TRUE:                       BOOL = 1;
@@ -350,7 +352,29 @@ pub fn GET_Y_LPARAM(dwValue: LPARAM) -> c_int {
 
 #[link(name = "kernel32")]
 extern "system" {
+   pub fn SetLastError(dwErrCode: DWORD);
+
    pub fn GetModuleHandleW(lpModuleName: LPCWSTR) -> HMODULE;
+
+   pub fn LoadLibraryW(lpFileName: LPCWSTR) -> HMODULE;
+
+   pub fn GetProcAddress(hModule: HMODULE, lpProcName: LPCSTR) -> FARPROC;
+
+   pub fn FreeLibrary(hLibModule: HMODULE) -> BOOL;
+
+   pub fn SetErrorMode(uMode: c_uint) -> c_uint;
+
+   pub fn GetModuleHandleExW(
+      dwFlags: DWORD,
+      lpModuleName: LPCWSTR,
+      phModule: *mut HMODULE,
+   ) -> BOOL;
+
+   pub fn GetModuleFileNameW(
+      hModule: HMODULE,
+      lpFilename: LPWSTR,
+      nSize: DWORD,
+   ) -> DWORD;
 }
 
 #[link(name = "user32")]
