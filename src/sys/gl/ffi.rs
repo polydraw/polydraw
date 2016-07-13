@@ -425,7 +425,7 @@ pub unsafe fn glEnableVertexAttribArray(index: GLuint) {
 
 #[inline]
 pub unsafe fn glUniform1i(location: GLint, v0: GLint) {
-   mem::transmute::<_, extern "system" fn(GLint, v0: GLint) -> ()>(glUniform1iPtr)(location, v0)
+   mem::transmute::<_, extern "system" fn(GLint, GLint) -> ()>(glUniform1iPtr)(location, v0)
 }
 
 #[inline]
