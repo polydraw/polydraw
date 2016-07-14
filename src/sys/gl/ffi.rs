@@ -259,6 +259,25 @@ pub const GL_DEBUG_SEVERITY_LOW:                GLenum = 0x9148;
 pub const GL_DEBUG_OUTPUT:                      GLenum = 0x92E0;
 pub const GL_CONTEXT_FLAG_DEBUG_BIT:            GLenum = 0x00000002;
 
+static mut glGetErrorPtr:                        FnPtr = NULL_PTR;
+static mut glClearPtr:                           FnPtr = NULL_PTR;
+static mut glFlushPtr:                           FnPtr = NULL_PTR;
+static mut glFinishPtr:                          FnPtr = NULL_PTR;
+static mut glDisablePtr:                         FnPtr = NULL_PTR;
+static mut glEnablePtr:                          FnPtr = NULL_PTR;
+static mut glPixelStoreiPtr:                     FnPtr = NULL_PTR;
+static mut glGenTexturesPtr:                     FnPtr = NULL_PTR;
+static mut glDeleteTexturesPtr:                  FnPtr = NULL_PTR;
+static mut glActiveTexturePtr:                   FnPtr = NULL_PTR;
+static mut glBindTexturePtr:                     FnPtr = NULL_PTR;
+static mut glTexParameteriPtr:                   FnPtr = NULL_PTR;
+static mut glGetIntegervPtr:                     FnPtr = NULL_PTR;
+static mut glClearColorPtr:                      FnPtr = NULL_PTR;
+static mut glTexImage2DPtr:                      FnPtr = NULL_PTR;
+static mut glTexSubImage2DPtr:                   FnPtr = NULL_PTR;
+static mut glViewportPtr:                        FnPtr = NULL_PTR;
+static mut glDrawElementsPtr:                    FnPtr = NULL_PTR;
+static mut glDrawArraysPtr:                      FnPtr = NULL_PTR;
 static mut glGenFramebuffersPtr:                 FnPtr = NULL_PTR;
 static mut glDeleteFramebuffersPtr:              FnPtr = NULL_PTR;
 static mut glBindFramebufferPtr:                 FnPtr = NULL_PTR;
@@ -433,7 +452,7 @@ pub unsafe fn glVertexAttribPointer(index: GLuint, size: GLint, _type: GLenum, n
    mem::transmute::<_, extern "system" fn(GLuint, GLint, GLenum, GLboolean, GLsizei, *const c_void) -> ()>(glVertexAttribPointerPtr)(index, size, _type, normalized, stride, pointer)
 }
 
-pub unsafe fn glDebugMessageControl(source: GLenum, type_: GLenum, severity: GLenum, count: GLsizei, ids: *const GLuint, enabled: GLboolean) -> () {
+pub unsafe fn glDebugMessageControl(source: GLenum, type_: GLenum, severity: GLenum, count: GLsizei, ids: *const GLuint, enabled: GLboolean) {
    mem::transmute::<_, extern "system" fn(GLenum, GLenum, GLenum, GLsizei, *const GLuint, GLboolean) -> ()>(glDebugMessageControlPtr)(source, type_, severity, count, ids, enabled)
 }
 
@@ -442,6 +461,25 @@ pub unsafe fn glGetDebugMessageLog(count: GLuint, bufSize: GLsizei, sources: *mu
 }
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+   glGetErrorPtr = loader.load("glGetError");
+   glClearPtr = loader.load("glClear");
+   glFlushPtr = loader.load("glFlush");
+   glFinishPtr = loader.load("glFinish");
+   glDisablePtr = loader.load("glDisable");
+   glEnablePtr = loader.load("glEnable");
+   glPixelStoreiPtr = loader.load("glPixelStorei");
+   glGenTexturesPtr = loader.load("glGenTextures");
+   glDeleteTexturesPtr = loader.load("glDeleteTextures");
+   glActiveTexturePtr = loader.load("glActiveTexture");
+   glBindTexturePtr = loader.load("glBindTexture");
+   glTexParameteriPtr = loader.load("glTexParameteri");
+   glGetIntegervPtr = loader.load("glGetIntegerv");
+   glClearColorPtr = loader.load("glClearColor");
+   glTexImage2DPtr = loader.load("glTexImage2D");
+   glTexSubImage2DPtr = loader.load("glTexSubImage2D");
+   glViewportPtr = loader.load("glViewport");
+   glDrawElementsPtr = loader.load("glDrawElements");
+   glDrawArraysPtr = loader.load("glDrawArrays");
    glGenFramebuffersPtr = loader.load("glGenFramebuffers");
    glDeleteFramebuffersPtr = loader.load("glDeleteFramebuffers");
    glBindFramebufferPtr = loader.load("glBindFramebuffer");
@@ -483,84 +521,97 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    true
 }
 
-#[cfg_attr(all(target_os="linux", not(any(all(target_arch="arm", not(feature="gl")), feature="gles2"))), link(name="GL"))]
-#[cfg_attr(all(target_os="linux", any(all(target_arch="arm", not(feature="gl")), feature="gles2")), link(name="GLESv2"))]
-#[cfg_attr(target_os="windows", link(name="opengl32"))]
-extern "C" {
-   pub fn glGetError() -> GLenum;
+#[inline]
+pub unsafe fn glGetError() -> GLenum {
+   mem::transmute::<_, extern "system" fn() -> GLenum>(glGetErrorPtr)()
+}
 
-   pub fn glClear(mask: GLbitfield) -> ();
+#[inline]
+pub unsafe fn glClear(mask: GLbitfield) {
+   mem::transmute::<_, extern "system" fn(GLbitfield) -> ()>(glClearPtr)(mask)
+}
 
-   pub fn glFlush() -> ();
+#[inline]
+pub unsafe fn glFlush() {
+   mem::transmute::<_, extern "system" fn() -> ()>(glFlushPtr)()
+}
 
-   pub fn glFinish() -> ();
+#[inline]
+pub unsafe fn glFinish() {
+   mem::transmute::<_, extern "system" fn() -> ()>(glFinishPtr)()
+}
 
-   pub fn glDisable(cap: GLenum) -> ();
+#[inline]
+pub unsafe fn glDisable(cap: GLenum) {
+   mem::transmute::<_, extern "system" fn(GLenum) -> ()>(glDisablePtr)(cap)
+}
 
-   pub fn glEnable(cap: GLenum) -> ();
+#[inline]
+pub unsafe fn glEnable(cap: GLenum) {
+   mem::transmute::<_, extern "system" fn(GLenum) -> ()>(glEnablePtr)(cap)
+}
 
-   pub fn glPixelStorei(pname: GLenum, param: GLint) -> ();
+#[inline]
+pub unsafe fn glPixelStorei(pname: GLenum, param: GLint) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLint) -> ()>(glPixelStoreiPtr)(pname, param)
+}
 
-   pub fn glGenTextures(n: GLsizei, textures: *mut GLuint) -> ();
+#[inline]
+pub unsafe fn glGenTextures(n: GLsizei, textures: *mut GLuint) {
+   mem::transmute::<_, extern "system" fn(GLsizei, *mut GLuint) -> ()>(glGenTexturesPtr)(n, textures)
+}
 
-   pub fn glDeleteTextures(n: GLsizei, textures: *const GLuint) -> ();
+#[inline]
+pub unsafe fn glDeleteTextures(n: GLsizei, textures: *const GLuint) {
+   mem::transmute::<_, extern "system" fn(GLsizei, *const GLuint) -> ()>(glDeleteTexturesPtr)(n, textures)
+}
 
-   pub fn glActiveTexture(texture: GLenum) -> ();
+#[inline]
+pub unsafe fn glActiveTexture(texture: GLenum) {
+   mem::transmute::<_, extern "system" fn(GLenum) -> ()>(glActiveTexturePtr)(texture)
+}
 
-   pub fn glBindTexture(target: GLenum, texture: GLuint) -> ();
+#[inline]
+pub unsafe fn glBindTexture(target: GLenum, texture: GLuint) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLuint) -> ()>(glBindTexturePtr)(target, texture)
+}
 
-   pub fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) -> ();
+#[inline]
+pub unsafe fn glTexParameteri(target: GLenum, pname: GLenum, param: GLint) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLenum, GLint)>(glTexParameteriPtr)(target, pname, param)
+}
 
-   pub fn glGetIntegerv(pname: GLenum, data: *mut GLint) -> ();
+#[inline]
+pub unsafe fn glGetIntegerv(pname: GLenum, data: *mut GLint) {
+   mem::transmute::<_, extern "system" fn(GLenum, *mut GLint)>(glGetIntegervPtr)(pname, data)
+}
 
-   pub fn glClearColor(
-      red: GLclampf,
-      green: GLclampf,
-      blue: GLclampf,
-      alpha: GLclampf
-   ) -> ();
+#[inline]
+pub unsafe fn glClearColor(red: GLclampf, green: GLclampf, blue: GLclampf, alpha: GLclampf) {
+   mem::transmute::<_, extern "system" fn(GLclampf, GLclampf, GLclampf, GLclampf) -> ()>(glClearColorPtr)(red, green, blue, alpha)
+}
 
-   pub fn glTexImage2D(
-      target: GLenum,
-      level: GLint,
-      internalFormat: GLint,
-      width: GLsizei,
-      height: GLsizei,
-      border: GLint,
-      format: GLenum,
-      _type: GLenum,
-      pixels: *const GLvoid
-   ) -> ();
+#[inline]
+pub unsafe fn glTexImage2D(target: GLenum, level: GLint, internalFormat: GLint, width: GLsizei, height: GLsizei, border: GLint, format: GLenum, _type: GLenum, pixels: *const GLvoid) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, *const GLvoid) -> ()>(glTexImage2DPtr)(target, level, internalFormat, width, height, border, format, _type, pixels)
+}
 
-   pub fn glTexSubImage2D(
-      target: GLenum,
-      level: GLint,
-      xoffset: GLint,
-      yoffset: GLint,
-      width: GLsizei,
-      height: GLsizei,
-      format: GLenum,
-      _type: GLenum,
-      pixels: *const GLvoid
-   ) -> ();
+#[inline]
+pub unsafe fn glTexSubImage2D(target: GLenum, level: GLint, xoffset: GLint, yoffset: GLint, width: GLsizei, height: GLsizei, format: GLenum, _type: GLenum, pixels: *const GLvoid) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, *const GLvoid) -> ()>(glTexSubImage2DPtr)(target, level, xoffset, yoffset, width, height, format, _type, pixels)
+}
 
-   pub fn glViewport(
-      x: GLint,
-      y: GLint,
-      width: GLsizei,
-      height: GLsizei
-   ) -> ();
+#[inline]
+pub unsafe fn glViewport(x: GLint, y: GLint, width: GLsizei, height: GLsizei) {
+   mem::transmute::<_, extern "system" fn(GLint, GLint, GLsizei, GLsizei) -> ()>(glViewportPtr)(x, y, width, height)
+}
 
-   pub fn glDrawElements(
-      mode: GLenum,
-      count: GLsizei,
-      _type: GLenum,
-      indices: *const GLvoid
-   ) -> ();
+#[inline]
+pub unsafe fn glDrawElements(mode: GLenum, count: GLsizei, _type: GLenum, indices: *const GLvoid) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLsizei, GLenum, *const GLvoid) -> ()>(glDrawElementsPtr)(mode, count, _type, indices)
+}
 
-   pub fn glDrawArrays(
-      mode: GLenum,
-      first: GLint,
-      count: GLsizei
-   ) -> ();
+#[inline]
+pub unsafe fn glDrawArrays(mode: GLenum, first: GLint, count: GLsizei) {
+   mem::transmute::<_, extern "system" fn(GLenum, GLint, GLsizei) -> ()>(glDrawArraysPtr)(mode, first, count)
 }
