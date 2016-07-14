@@ -58,14 +58,54 @@ impl Default for PIXELFORMATDESCRIPTOR {
    fn default() -> Self { unsafe { mem::zeroed() } }
 }
 
-static mut wglSwapIntervalEXTPtr: FnPtr = NULL_PTR;
+static mut wglSwapIntervalEXTPtr:            FnPtr = NULL_PTR;
+static mut wglCreateContextPtr:              FnPtr = NULL_PTR;
+static mut wglMakeCurrentPtr:                FnPtr = NULL_PTR;
+static mut wglDeleteContextPtr:              FnPtr = NULL_PTR;
+static mut wglGetCurrentContextPtr:          FnPtr = NULL_PTR;
+static mut wglGetProcAddressPtr:             FnPtr = NULL_PTR;
 
 #[inline]
 pub unsafe fn wglSwapIntervalEXT(interval: c_int) -> BOOL {
    mem::transmute::<_, extern "system" fn(c_int) -> BOOL>(wglSwapIntervalEXTPtr)(interval)
 }
 
+#[inline]
+pub unsafe fn wglCreateContext(hdc: HDC) -> HGLRC {
+   mem::transmute::<_, extern "system" fn(HDC) -> HGLRC>(wglCreateContextPtr)(hdc)
+}
+
+#[inline]
+pub unsafe fn wglMakeCurrent(hdc: HDC, rc: HGLRC) -> BOOL {
+   mem::transmute::<_, extern "system" fn(HDC, HGLRC) -> BOOL>(wglMakeCurrentPtr)(hdc, rc)
+}
+
+#[inline]
+pub unsafe fn wglDeleteContext(rc: HGLRC) -> BOOL {
+   mem::transmute::<_, extern "system" fn(HGLRC) -> BOOL>(wglDeleteContextPtr)(rc)
+}
+
+#[inline]
+pub unsafe fn wglGetCurrentContext() -> HGLRC {
+   mem::transmute::<_, extern "system" fn() -> HGLRC>(wglGetCurrentContextPtr)()
+}
+
+#[inline]
+pub unsafe fn wglGetProcAddress(name: *const c_char) -> *const c_void {
+   mem::transmute::<_, extern "system" fn(*const c_char) -> *const c_void>(wglGetProcAddressPtr)(name)
+}
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+   wglGetProcAddressPtr = loader.load("wglGetProcAddress");
+   wglCreateContextPtr = loader.load("wglCreateContext");
+   wglMakeCurrentPtr = loader.load("wglMakeCurrent");
+   wglDeleteContextPtr = loader.load("wglDeleteContext");
+   wglGetCurrentContextPtr = loader.load("wglGetCurrentContext");
+
+   true
+}
+
+pub unsafe fn load_extra_functions<T: FnPtrLoader>(loader: &T) -> bool {
    wglSwapIntervalEXTPtr = loader.load("wglSwapIntervalEXT");
 
    true
@@ -80,17 +120,4 @@ extern "C" {
    pub fn SetPixelFormat(hdc: HDC, iPixelFormat: c_int, ppfd: *const PIXELFORMATDESCRIPTOR) -> BOOL;
 
    pub fn SwapBuffers(rc: HDC) -> BOOL;
-}
-
-#[link(name="opengl32")]
-extern "C" {
-   pub fn wglCreateContext(hdc: HDC) -> HGLRC;
-
-   pub fn wglMakeCurrent(hdc: HDC, rc: HGLRC) -> BOOL;
-
-   pub fn wglDeleteContext(rc: HGLRC) -> BOOL;
-
-   pub fn wglGetCurrentContext() -> HGLRC;
-
-   pub fn wglGetProcAddress(name: *const c_char) -> *const c_void;
 }

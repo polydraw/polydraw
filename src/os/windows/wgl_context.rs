@@ -6,11 +6,16 @@ use sys::wgl;
 use sys::gl;
 
 pub struct WglContext {
+   pub library: win32::Library,
    pub context: wgl::Context,
 }
 
 impl WglContext {
    pub fn new(device_context: &win32::DeviceContext) -> Result<Self, RuntimeError> {
+      let library = try!(win32::Library::new("opengl32.dll"));
+
+      wgl::initialize(&library);
+
       try!(wgl::init_pixel_format(device_context));
 
       let context = try!(wgl::Context::create(device_context));
@@ -20,6 +25,7 @@ impl WglContext {
       try!(wgl::swap_interval(0));
 
       Ok(WglContext {
+         library: library,
          context: context,
       })
    }
@@ -28,9 +34,9 @@ impl WglContext {
    pub fn init_gl() -> VoidResult {
       let loader = wgl::Loader::new();
 
-      try!(gl::initialize(&loader));
+      wgl::load_extra_functions(&loader);
 
-      wgl::load(&loader);
+      try!(gl::initialize(&loader));
 
       Ok(())
    }

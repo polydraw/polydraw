@@ -12,6 +12,20 @@ use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
 use super::win32;
 
+#[inline]
+pub fn initialize<T: FnPtrLoader>(loader: &T) {
+   unsafe {
+      ffi::load_functions(loader)
+   };
+}
+
+#[inline]
+pub fn load_extra_functions<T: FnPtrLoader>(loader: &T) {
+   unsafe {
+      ffi::load_extra_functions(loader)
+   };
+}
+
 pub fn init_pixel_format(
    device_context: &win32::DeviceContext,
 ) -> VoidResult {
@@ -163,11 +177,4 @@ impl FnPtrLoader for Loader {
 
       addr
    }
-}
-
-#[inline]
-pub fn load<T: FnPtrLoader>(loader: &T) {
-   unsafe {
-      ffi::load_functions(loader)
-   };
 }
