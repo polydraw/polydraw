@@ -10,6 +10,7 @@ pub struct RuntimeError {
 pub enum ErrorKind {
    InvalidInput,
    DL,
+   Win32,
    Xlib,
    XCB,
    GL,

@@ -1,11 +1,16 @@
 #![cfg(target_os = "windows")]
 
 pub mod ffi;
+use std::ffi::CString;
 
 use std::ptr;
 use std::mem;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
+
+use error::{RuntimeError, ErrorKind};
+
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
 fn to_utf16_os(s: &str) -> Vec<u16> {
    let mut v: Vec<_> = OsStr::new(s).encode_wide().collect();
@@ -225,5 +230,46 @@ impl Default for Cursor {
       Cursor {
          hcursor: hcursor
       }
+   }
+}
+
+pub struct Library {
+   pub handle: ffi::HMODULE
+}
+
+impl Library {
+   pub fn new(name: &str) -> Result<Self, RuntimeError> {
+      let handle = unsafe {
+         ffi::LoadLibraryW(to_utf16_os(name).as_ptr())
+      };
+
+      if handle.is_null() {
+         return Err(RuntimeError::new(
+            ErrorKind::Win32,
+            format!("Loading dynamic library failed {}", name).to_string()
+         ));
+      }
+
+      Ok(Library {
+         handle: handle,
+      })
+   }
+}
+
+impl FnPtrLoader for Library {
+   fn load(&self, name: &str) -> FnPtr {
+      let cname = CString::new(name).unwrap();
+
+      unsafe {
+         ffi::GetProcAddress(self.handle, cname.as_ptr())
+      }
+   }
+}
+
+impl Drop for Library {
+   fn drop(&mut self) {
+      unsafe {
+         ffi::FreeLibrary(self.handle)
+      };
    }
 }
