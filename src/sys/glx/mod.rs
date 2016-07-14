@@ -60,6 +60,15 @@ pub struct Version {
    pub minor: c_int,
 }
 
+#[inline]
+pub fn load_functions<T: FnPtrLoader>(loader: &T) -> VoidResult {
+   unsafe {
+      ffi::load_functions(loader)
+   };
+
+   Ok(())
+}
+
 pub fn initialize(display: &Display) -> Result<Version, RuntimeError> {
    let mut major: c_int = unsafe {
       mem::uninitialized()

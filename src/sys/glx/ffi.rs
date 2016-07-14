@@ -1,4 +1,7 @@
 #![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
+use std::mem;
 
 pub use libc::{
    c_char, c_uchar, c_int, c_void,
@@ -9,6 +12,7 @@ use super::GLXNativeWindowType;
 pub use sys::gl::ffi::GLubyte;
 pub use sys::x11::ffi::{XID, Display, XVisualInfo};
 
+use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
 
 pub type GLXDrawable = XID;
 pub type GLXWindow = XID;
@@ -73,75 +77,92 @@ pub type __glXMustCastToProperFunctionPointerType =
 //   Option<extern "C" fn(procname: *const GLubyte) -> ()>
    *const c_void;
 
+static mut glXQueryVersionPtr:                                FnPtr = NULL_PTR;
+static mut glXGetProcAddressPtr:                              FnPtr = NULL_PTR;
+static mut glXGetVisualFromFBConfigPtr:                       FnPtr = NULL_PTR;
+static mut glXChooseFBConfigPtr:                              FnPtr = NULL_PTR;
+static mut glXGetFBConfigAttribPtr:                           FnPtr = NULL_PTR;
+static mut glXGetCurrentContextPtr:                           FnPtr = NULL_PTR;
+static mut glXCreateNewContextPtr:                            FnPtr = NULL_PTR;
+static mut glXSwapBuffersPtr:                                 FnPtr = NULL_PTR;
+static mut glXDestroyContextPtr:                              FnPtr = NULL_PTR;
+static mut glXMakeCurrentPtr:                                 FnPtr = NULL_PTR;
+static mut glXCreateWindowPtr:                                FnPtr = NULL_PTR;
+static mut glXMakeContextCurrentPtr:                          FnPtr = NULL_PTR;
 
-#[link(name="GL")]
-extern "C" {
-   pub fn glXQueryVersion(
-      display: *mut Display,
-      major: *mut c_int,
-      minor: *mut c_int
-   ) -> c_int;
+#[inline]
+pub unsafe fn glXQueryVersion(display: *mut Display, major: *mut c_int, minor: *mut c_int) -> c_int {
+   mem::transmute::<_, extern "system" fn(*mut Display, *mut c_int, *mut c_int) -> c_int>(glXQueryVersionPtr)(display, major, minor)
+}
 
-   pub fn glXGetProcAddress(
-      procname: *const c_char
-   ) -> __glXMustCastToProperFunctionPointerType;
+#[inline]
+pub unsafe fn glXGetProcAddress(procname: *const c_char) -> __glXMustCastToProperFunctionPointerType {
+   mem::transmute::<_, extern "system" fn(*const c_char) -> __glXMustCastToProperFunctionPointerType>(glXGetProcAddressPtr)(procname)
+}
 
-   pub fn glXGetVisualFromFBConfig(
-      display: *mut Display,
-      config: GLXFBConfig
-   ) -> *mut XVisualInfo;
+#[inline]
+pub unsafe fn glXGetVisualFromFBConfig(display: *mut Display, config: GLXFBConfig) -> *mut XVisualInfo {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXFBConfig) -> *mut XVisualInfo>(glXGetVisualFromFBConfigPtr)(display, config)
+}
 
-   pub fn glXChooseFBConfig(
-      display: *mut Display,
-      screen: c_int,
-      attribList: *const c_int,
-      nitems: *mut c_int
-   ) -> *mut GLXFBConfig;
+#[inline]
+pub unsafe fn glXChooseFBConfig(display: *mut Display, screen: c_int, attribList: *const c_int, nitems: *mut c_int) -> *mut GLXFBConfig {
+   mem::transmute::<_, extern "system" fn(*mut Display, c_int, *const c_int, *mut c_int) -> *mut GLXFBConfig>(glXChooseFBConfigPtr)(display, screen, attribList, nitems)
+}
 
-   pub fn glXGetFBConfigAttrib(
-      display: *mut Display,
-      config: GLXFBConfig,
-      attribute: c_int,
-      value: *mut c_int
-   ) -> c_int;
+#[inline]
+pub unsafe fn glXGetFBConfigAttrib(display: *mut Display, config: GLXFBConfig, attribute: c_int, value: *mut c_int) -> c_int {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXFBConfig, c_int, *mut c_int) -> c_int>(glXGetFBConfigAttribPtr)(display, config, attribute, value)
+}
 
-   pub fn glXGetCurrentContext() -> GLXContext;
+#[inline]
+pub unsafe fn glXGetCurrentContext() -> GLXContext {
+   mem::transmute::<_, extern "system" fn() -> GLXContext>(glXGetCurrentContextPtr)()
+}
 
-   pub fn glXCreateNewContext(
-      display: *mut Display,
-      config: GLXFBConfig,
-      renderType: c_int,
-      shareList: GLXContext,
-      direct: c_int
-   ) -> GLXContext;
+#[inline]
+pub unsafe fn glXCreateNewContext(display: *mut Display, config: GLXFBConfig, renderType: c_int, shareList: GLXContext, direct: c_int) -> GLXContext {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXFBConfig, c_int, GLXContext, c_int) -> GLXContext>(glXCreateNewContextPtr)(display, config, renderType, shareList, direct)
+}
 
-   pub fn glXSwapBuffers(
-      display: *mut Display,
-      drawable: GLXDrawable
-   ) -> ();
+#[inline]
+pub unsafe fn glXSwapBuffers(display: *mut Display, drawable: GLXDrawable) {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXDrawable) -> ()>(glXSwapBuffersPtr)(display, drawable)
+}
 
-   pub fn glXDestroyContext(
-      display: *mut Display,
-      ctx: GLXContext
-   ) -> ();
+#[inline]
+pub unsafe fn glXDestroyContext(display: *mut Display, ctx: GLXContext) {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXContext) -> ()>(glXDestroyContextPtr)(display, ctx)
+}
 
-   pub fn glXMakeCurrent(
-      display: *mut Display,
-      drawable: GLXDrawable,
-      ctx: GLXContext
-   ) -> c_int;
+#[inline]
+pub unsafe fn glXMakeCurrent(display: *mut Display, drawable: GLXDrawable, ctx: GLXContext) -> c_int {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXDrawable, GLXContext) -> c_int>(glXMakeCurrentPtr)(display, drawable, ctx)
+}
 
-   pub fn glXCreateWindow(
-      display: *mut Display,
-      config: GLXFBConfig,
-      window: GLXNativeWindowType,
-      attrib_list: *const c_int
-   ) -> GLXWindow;
+#[inline]
+pub unsafe fn glXCreateWindow(display: *mut Display, config: GLXFBConfig, window: GLXNativeWindowType, attrib_list: *const c_int) -> GLXWindow {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXFBConfig, GLXNativeWindowType, *const c_int) -> GLXWindow>(glXCreateWindowPtr)(display, config, window, attrib_list)
+}
 
-   pub fn glXMakeContextCurrent(
-      display: *mut Display,
-      draw: GLXDrawable,
-      read: GLXDrawable,
-      ctx: GLXContext
-   ) -> Bool;
+#[inline]
+pub unsafe fn glXMakeContextCurrent(display: *mut Display, draw: GLXDrawable, read: GLXDrawable, ctx: GLXContext) -> Bool {
+   mem::transmute::<_, extern "system" fn(*mut Display, GLXDrawable, GLXDrawable, GLXContext) -> Bool>(glXMakeContextCurrentPtr)(display, draw, read, ctx)
+}
+
+pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+   glXQueryVersionPtr = loader.load("glXQueryVersion");
+   glXGetProcAddressPtr = loader.load("glXGetProcAddress");
+   glXGetVisualFromFBConfigPtr = loader.load("glXGetVisualFromFBConfig");
+   glXChooseFBConfigPtr = loader.load("glXChooseFBConfig");
+   glXGetFBConfigAttribPtr = loader.load("glXGetFBConfigAttrib");
+   glXGetCurrentContextPtr = loader.load("glXGetCurrentContext");
+   glXCreateNewContextPtr = loader.load("glXCreateNewContext");
+   glXSwapBuffersPtr = loader.load("glXSwapBuffers");
+   glXDestroyContextPtr = loader.load("glXDestroyContext");
+   glXMakeCurrentPtr = loader.load("glXMakeCurrent");
+   glXCreateWindowPtr = loader.load("glXCreateWindow");
+   glXMakeContextCurrentPtr = loader.load("glXMakeContextCurrent");
+
+   true
 }

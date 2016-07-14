@@ -1,6 +1,7 @@
 use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
+use sys::dl;
 use sys::x11;
 use sys::xcb;
 use sys::glx;
@@ -9,6 +10,7 @@ use sys::gl;
 use super::Context;
 
 pub struct GlxContext {
+   pub library: dl::Library,
    pub display: glx::Display,
    pub version: glx::Version,
    pub config: glx::Config,
@@ -18,6 +20,16 @@ pub struct GlxContext {
 
 impl Context for GlxContext {
    fn new(x11_display: &x11::Display, screen_id: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
+      let library_name = if gl::GLES2 {
+         "libGLESv2.so"
+      } else {
+         "libGL.so"
+      };
+
+      let library = try!(dl::Library::new(library_name));
+
+      try!(glx::load_functions(&library));
+
       let display = glx::Display{
          ptr: x11_display.ptr,
       };
@@ -33,6 +45,7 @@ impl Context for GlxContext {
       try!(Self::init_gl());
 
       Ok(GlxContext {
+         library: library,
          display: display,
          version: version,
          config: config,
