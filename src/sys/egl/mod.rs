@@ -20,16 +20,26 @@ use super::gl;
 pub type EGLNativeDisplayType = *mut X11Display;
 pub type EGLNativeWindowType = xcb_window_t;
 
-pub struct Loader;
+pub struct Loader {
+   library_loader: Box<FnPtrLoader>,
+}
 
 impl Loader {
-   pub fn new() -> Self {
-      Loader
+   pub fn new(library_loader: Box<FnPtrLoader>) -> Self {
+      Loader {
+         library_loader: library_loader
+      }
    }
 }
 
 impl FnPtrLoader for Loader {
    fn load(&self, name: &str) -> FnPtr {
+      let lib_addr = self.library_loader.load(name);
+
+      if !lib_addr.is_null() {
+         return lib_addr;
+      }
+
       let cname = CString::new(name).unwrap();
 
       let addr = unsafe {

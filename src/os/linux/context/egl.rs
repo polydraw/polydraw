@@ -10,7 +10,7 @@ use sys::gl;
 use super::Context;
 
 pub struct EglContext {
-   pub library: dl::Library,
+   pub loader: egl::Loader,
    pub display: egl::Display,
    pub version: egl::Version,
    pub config: egl::Config,
@@ -24,6 +24,8 @@ impl Context for EglContext {
 
       try!(egl::initialize(&library));
 
+      let loader = egl::Loader::new(Box::new(library));
+
       try!(Self::bind());
 
       let display = try!(egl::Display::from_native(x11_display));
@@ -36,10 +38,10 @@ impl Context for EglContext {
 
       let surface = try!(Self::init_surface(&display, &config, &context, window));
 
-      try!(Self::init_gl());
+      try!(Self::init_gl(&loader));
 
       Ok(EglContext {
-         library: library,
+         loader: loader,
          display: display,
          version: version,
          config: config,
@@ -111,7 +113,7 @@ impl EglContext {
    }
 
    #[inline]
-   pub fn init_gl() -> VoidResult {
-      gl::initialize(&egl::Loader::new())
+   pub fn init_gl(loader: &egl::Loader) -> VoidResult {
+      gl::initialize(loader)
    }
 }
