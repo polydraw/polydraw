@@ -14,12 +14,22 @@ pub const GLES2: bool = cfg!(any(all(target_arch="arm", not(feature="gl")), feat
 
 #[inline]
 pub fn has_buffer_functions() -> bool {
-   unsafe { ffi::BUFFER_FNS_LOADED }
+   unsafe { ffi::BUFFER_FUNCTIONS_LOADED }
+}
+
+#[inline]
+pub fn has_quad_functions() -> bool {
+   unsafe { ffi::QUAD_FUNCTIONS_LOADED }
+}
+
+#[inline]
+pub fn has_pixel_functions() -> bool {
+   unsafe { ffi::PIXEL_FUNCTIONS_LOADED }
 }
 
 #[inline]
 pub fn has_debug_functions() -> bool {
-   cfg!(debug_assertions) && unsafe { ffi::DEBUG_FNS_LOADED }
+   cfg!(debug_assertions) && unsafe { ffi::DEBUG_FUNCTIONS_LOADED }
 }
 
 #[inline]
@@ -222,7 +232,7 @@ fn initialize_debug_messages() {
 
       if !enabled {
          unsafe {
-            ffi::DEBUG_FNS_LOADED = false
+            ffi::DEBUG_FUNCTIONS_LOADED = false
          };
       }
    }

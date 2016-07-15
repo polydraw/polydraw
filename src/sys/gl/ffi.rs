@@ -310,8 +310,10 @@ static mut glDebugMessageControlPtr:             FnPtr = NULL_PTR;
 static mut glGetDebugMessageLogPtr:              FnPtr = NULL_PTR;
 static mut glDrawPixelsPtr:                      FnPtr = NULL_PTR;
 
-pub static mut BUFFER_FNS_LOADED:                 bool = false;
-pub static mut DEBUG_FNS_LOADED:                  bool = false;
+pub static mut BUFFER_FUNCTIONS_LOADED:           bool = false;
+pub static mut QUAD_FUNCTIONS_LOADED:             bool = false;
+pub static mut PIXEL_FUNCTIONS_LOADED:            bool = false;
+pub static mut DEBUG_FUNCTIONS_LOADED:            bool = false;
 
 #[inline]
 pub unsafe fn glGenFramebuffers(n: GLsizei, framebuffers: *mut GLuint) {
@@ -612,12 +614,67 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGetDebugMessageLogPtr = loader.load_any(&[
       "glGetDebugMessageLog", "glGetDebugMessageLogARB", "glGetDebugMessageLogKHR"]);
 
-   BUFFER_FNS_LOADED =
-      glGenBuffersPtr != NULL_PTR &&
-      glMapBufferPtr != NULL_PTR &&
-      glBlitFramebufferPtr != NULL_PTR;
+   BUFFER_FUNCTIONS_LOADED = are_buffer_functions_loaded();
 
-   DEBUG_FNS_LOADED = glGetDebugMessageLogPtr != NULL_PTR;
+   QUAD_FUNCTIONS_LOADED = are_quad_functions_loaded();
+
+   PIXEL_FUNCTIONS_LOADED = are_pixel_functions_loaded();
+
+   DEBUG_FUNCTIONS_LOADED = are_debug_functions_loaded();
 
    true
+}
+
+unsafe fn are_buffer_functions_loaded() -> bool {
+   glGenTexturesPtr != NULL_PTR &&
+   glBindTexturePtr != NULL_PTR &&
+   glTexParameteriPtr != NULL_PTR &&
+   glTexImage2DPtr != NULL_PTR &&
+   glTexSubImage2DPtr != NULL_PTR &&
+   glDeleteTexturesPtr != NULL_PTR &&
+   glGenFramebuffersPtr != NULL_PTR &&
+   glBindFramebufferPtr != NULL_PTR &&
+   glFramebufferTexture2DPtr != NULL_PTR &&
+   glBlitFramebufferPtr != NULL_PTR &&
+   glDeleteFramebuffersPtr != NULL_PTR &&
+   glGenBuffersPtr != NULL_PTR &&
+   glBindBufferPtr != NULL_PTR &&
+   glBufferDataPtr != NULL_PTR &&
+   glMapBufferPtr != NULL_PTR &&
+   glUnmapBufferPtr != NULL_PTR &&
+   glDeleteBuffersPtr != NULL_PTR
+}
+
+unsafe fn are_quad_functions_loaded() -> bool {
+   glGenTexturesPtr != NULL_PTR &&
+   glBindTexturePtr != NULL_PTR &&
+   glTexParameteriPtr != NULL_PTR &&
+   glTexImage2DPtr != NULL_PTR &&
+   glTexSubImage2DPtr != NULL_PTR &&
+   glDeleteTexturesPtr != NULL_PTR &&
+   glVertexAttribPointerPtr != NULL_PTR &&
+   glEnableVertexAttribArrayPtr != NULL_PTR &&
+   glDrawArraysPtr != NULL_PTR &&
+   glCreateShaderPtr != NULL_PTR &&
+   glShaderSourcePtr != NULL_PTR &&
+   glCompileShaderPtr != NULL_PTR &&
+   glGetShaderivPtr != NULL_PTR &&
+   glDeleteShaderPtr != NULL_PTR &&
+   glCreateProgramPtr != NULL_PTR &&
+   glAttachShaderPtr != NULL_PTR &&
+   glLinkProgramPtr != NULL_PTR &&
+   glUseProgramPtr != NULL_PTR &&
+   glGetProgramivPtr != NULL_PTR &&
+   glGetAttribLocationPtr != NULL_PTR &&
+   glGetUniformLocationPtr != NULL_PTR &&
+   glDeleteProgramPtr != NULL_PTR
+}
+
+unsafe fn are_pixel_functions_loaded() -> bool {
+   glClearPtr != NULL_PTR &&
+   glDrawPixelsPtr != NULL_PTR
+}
+
+unsafe fn are_debug_functions_loaded() -> bool {
+   glGetDebugMessageLogPtr != NULL_PTR
 }
