@@ -308,6 +308,7 @@ static mut glEnableVertexAttribArrayPtr:         FnPtr = NULL_PTR;
 static mut glGetUniformLocationPtr:              FnPtr = NULL_PTR;
 static mut glDebugMessageControlPtr:             FnPtr = NULL_PTR;
 static mut glGetDebugMessageLogPtr:              FnPtr = NULL_PTR;
+static mut glDrawPixelsPtr:                      FnPtr = NULL_PTR;
 
 pub static mut BUFFER_FNS_LOADED:                 bool = false;
 pub static mut DEBUG_FNS_LOADED:                  bool = false;
@@ -460,6 +461,10 @@ pub unsafe fn glGetDebugMessageLog(count: GLuint, bufSize: GLsizei, sources: *mu
    mem::transmute::<_, extern "system" fn(GLuint, GLsizei, *mut GLenum, *mut GLenum, *mut GLuint, *mut GLenum, *mut GLsizei, *mut GLchar) -> GLuint>(glGetDebugMessageLogPtr)(count, bufSize, sources, types, ids, severities, lengths, messageLog)
 }
 
+pub unsafe fn glDrawPixels(width: GLsizei, height: GLsizei, format: GLenum, type_: GLenum, data: *const GLvoid) {
+   mem::transmute::<_, extern "system" fn(GLsizei, GLsizei, GLenum, GLenum, *const GLvoid) -> ()>(glDrawPixelsPtr)(width, height, format, type_, data)
+}
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glGetErrorPtr = loader.load("glGetError");
    glClearPtr = loader.load("glClear");
@@ -508,6 +513,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glUniform1iPtr = loader.load("glUniform1i");
    glEnableVertexAttribArrayPtr = loader.load("glEnableVertexAttribArray");
    glGetUniformLocationPtr = loader.load("glGetUniformLocation");
+   glDrawPixelsPtr = loader.load("glDrawPixels");
    glGetDebugMessageLogPtr = loader.load_any(&[
       "glGetDebugMessageLog", "glGetDebugMessageLogARB", "glGetDebugMessageLogKHR"]);
 

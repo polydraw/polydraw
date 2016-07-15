@@ -1,5 +1,6 @@
 pub mod buffer;
 pub mod quad;
+pub mod draw_pixels;
 
 use error::RuntimeError;
 use frame::GPUFrame;
@@ -35,6 +36,18 @@ fn create_quad_frame(
 ) -> Result<Box<GPUFrame>, RuntimeError> {
 
    match quad::QuadFrame::new(width, height) {
+      Ok(gpu_frame) => Ok(Box::new(gpu_frame)),
+      Err(e) => Err(e)
+   }
+}
+
+#[allow(dead_code)]
+#[inline]
+fn create_pixel_frame(
+   width: u32, height: u32
+) -> Result<Box<GPUFrame>, RuntimeError> {
+
+   match draw_pixels::DrawPixelsFrame::new(width, height) {
       Ok(gpu_frame) => Ok(Box::new(gpu_frame)),
       Err(e) => Err(e)
    }

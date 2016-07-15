@@ -182,6 +182,30 @@ pub fn draw_arrays(count: ffi::GLsizei) -> VoidResult {
 }
 
 #[inline]
+pub fn draw_pixels(width: u32, height: u32, data: &[u8]) -> VoidResult {
+   unsafe {
+      ffi::glDrawPixels(
+         width as ffi::GLsizei,
+         height as ffi::GLsizei,
+         ffi::GL_RGBA,
+         ffi::GL_UNSIGNED_BYTE,
+         data.as_ptr() as *const ffi::GLvoid
+      )
+   }
+
+   gl_result("glDrawPixels", ())
+}
+
+#[inline]
+pub fn clear() -> VoidResult {
+   unsafe {
+      ffi::glClear(ffi::GL_COLOR_BUFFER_BIT);
+   }
+
+   gl_result("glClear", ())
+}
+
+#[inline]
 fn initialize_debug_messages() {
    if has_debug_functions() {
       let mut enabled = true;
