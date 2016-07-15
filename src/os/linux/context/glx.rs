@@ -22,14 +22,14 @@ pub struct GlxContext {
 
 impl Context for GlxContext {
    fn new(x11_display: &x11::Display, screen_id: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
-      let library_name = if gl::GLES2 {
-         "libGLESv2.so"
+      let library_names = if gl::GLES2 {
+         vec!["libGLESv2.so", "libGLESv2.so.2", "libGLESv2.so.3"]
       } else {
-         "libGL.so"
+         vec!["libGL.so", "libGL.so.1"]
       };
 
       let library = Box::new(
-         try!(dl::Library::open(library_name))
+         try!(dl::Library::open_any(&library_names))
       );
 
       try!(glx::load_functions(&library));
