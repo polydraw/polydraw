@@ -7,10 +7,12 @@ use sys::xcb;
 use sys::glx;
 use sys::gl;
 
+use sys::utils::fn_ptr::FnPtrLibrary;
+
 use super::Context;
 
 pub struct GlxContext {
-   pub library: dl::Library,
+   pub library: Box<FnPtrLibrary>,
    pub display: glx::Display,
    pub version: glx::Version,
    pub config: glx::Config,
@@ -26,7 +28,9 @@ impl Context for GlxContext {
          "libGL.so"
       };
 
-      let library = try!(dl::Library::new(library_name));
+      let library = Box::new(
+         try!(dl::Library::open(library_name))
+      );
 
       try!(glx::load_functions(&library));
 

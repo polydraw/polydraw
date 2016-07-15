@@ -150,7 +150,7 @@ pub unsafe fn glXMakeContextCurrent(display: *mut Display, draw: GLXDrawable, re
    mem::transmute::<_, extern "system" fn(*mut Display, GLXDrawable, GLXDrawable, GLXContext) -> Bool>(glXMakeContextCurrentPtr)(display, draw, read, ctx)
 }
 
-pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+pub unsafe fn load_functions<T: FnPtrLoader>(loader: &Box<T>) -> bool {
    glXQueryVersionPtr = loader.load("glXQueryVersion");
    glXGetProcAddressPtr = loader.load("glXGetProcAddress");
    glXGetVisualFromFBConfigPtr = loader.load("glXGetVisualFromFBConfig");

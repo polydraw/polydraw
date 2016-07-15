@@ -88,7 +88,7 @@ pub struct Version {
 }
 
 #[inline]
-pub fn initialize<T: FnPtrLoader>(loader: &T) -> VoidResult {
+pub fn initialize<T: FnPtrLoader>(loader: &Box<T>) -> VoidResult {
    unsafe {
       ffi::load_functions(loader)
    };

@@ -508,7 +508,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    glUniform1iPtr = loader.load("glUniform1i");
    glEnableVertexAttribArrayPtr = loader.load("glEnableVertexAttribArray");
    glGetUniformLocationPtr = loader.load("glGetUniformLocation");
-   glGetDebugMessageLogPtr = loader.loadlist(&[
+   glGetDebugMessageLogPtr = loader.load_any(&[
       "glGetDebugMessageLog", "glGetDebugMessageLogARB", "glGetDebugMessageLogKHR"]);
 
    BUFFER_FNS_LOADED =

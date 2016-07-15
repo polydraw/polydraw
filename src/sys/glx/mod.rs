@@ -61,7 +61,7 @@ pub struct Version {
 }
 
 #[inline]
-pub fn load_functions<T: FnPtrLoader>(loader: &T) -> VoidResult {
+pub fn load_functions<T: FnPtrLoader>(loader: &Box<T>) -> VoidResult {
    unsafe {
       ffi::load_functions(loader)
    };

@@ -5,14 +5,14 @@ use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
 
-use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr, FnPtrLibrary};
 
 pub struct Library {
    pub handle: *mut ffi::c_void
 }
 
-impl Library {
-   pub fn new(name: &str) -> Result<Self, RuntimeError> {
+impl FnPtrLibrary for Library {
+   fn open(name: &str) -> Result<Self, RuntimeError> {
       let cname = try!(CString::new(name));
 
       let handle = unsafe {
@@ -22,7 +22,7 @@ impl Library {
       if handle.is_null() {
          return Err(RuntimeError::new(
             ErrorKind::DL,
-            format!("Loading dynamic library failed {}", name).to_string()
+            format!("Opening dynamic library failed {}", name).to_string()
          ));
       }
 
