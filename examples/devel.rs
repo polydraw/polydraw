@@ -12,8 +12,8 @@ fn main() {
    let poly_a = Poly::new(
       vec![
          Point::new(1100, 400),
-         Point::new(500, 700),
          Point::new(200, 200),
+         Point::new(500, 700),
       ],
       RGB::new(34, 78, 29),
    );
@@ -21,9 +21,9 @@ fn main() {
    let poly_b = Poly::new(
       vec![
          Point::new(100, 500),
-         Point::new(700, 100),
-         Point::new(900, 200),
          Point::new(900, 700),
+         Point::new(900, 200),
+         Point::new(700, 100),
       ],
       RGB::new(128, 59, 89),
    );
