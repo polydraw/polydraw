@@ -36,7 +36,7 @@ impl<'a> EventLoop<'a> {
                },
 
                Event::MouseMoved(x, y) => {
-                  renderer.mouse_moved(x, new_height as i32 - y - 1);
+                  renderer.mouse_moved(x, y);
                },
 
                Event::Quit => {
