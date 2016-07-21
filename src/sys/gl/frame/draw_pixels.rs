@@ -34,7 +34,7 @@ impl GPUFrame for DrawPixelsFrame {
          return;
       }
 
-      let i = 4 * (x + y * width as i32) as usize;
+      let i = 4 * (x + (height as i32 - y - 1) * width as i32) as usize;
       self.data[i    ] = color.r;
       self.data[i + 1] = color.g;
       self.data[i + 2] = color.b;

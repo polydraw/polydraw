@@ -48,7 +48,7 @@ impl GPUFrame for BufferFrame {
          return;
       }
 
-      let i = 4 * (x + y * width as i32) as isize;
+      let i = 4 * (x + (height as i32 - y - 1) * width as i32) as isize;
       let p = self.buffer.ptr as *mut u8;
       unsafe {
          *p.offset(i) = color.r;
