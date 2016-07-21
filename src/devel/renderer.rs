@@ -24,7 +24,11 @@ impl DevelRenderer {
       }
    }
 
-   fn resize(&mut self, width: u32, height: u32) {
+   fn check_resize(&mut self, width: u32, height: u32) {
+      if self.rendered.len() == (width * height) as usize {
+         return;
+      }
+
       self.aliased.resize((width * height) as usize * (SUBDIVISIONS * SUBDIVISIONS) as usize, RGB::new(0, 0, 0));
       self.rendered.resize((width * height) as usize, RGB::new(0, 0, 0));
    }
@@ -129,10 +133,12 @@ impl DevelRenderer {
 impl Renderer for DevelRenderer {
    #[inline]
    fn init(&mut self, width: u32, height: u32) {
-      self.resize(width, height);
+      self.check_resize(width, height);
    }
 
    fn render(&mut self, frame: &mut Frame) {
+      self.check_resize(frame.width, frame.height);
+
       self.clear();
 
       self.render_aliased(frame);
