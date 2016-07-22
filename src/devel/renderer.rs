@@ -8,7 +8,6 @@ use super::Scene;
 pub struct DevelRenderer {
    scene: Scene,
    aliased: Vec<RGB>,
-//   rendered: Vec<RGB>,
 }
 
 pub const SUBDIVISIONS: usize = 3;
@@ -20,7 +19,6 @@ impl DevelRenderer {
          scene: scene,
 
          aliased: vec!(),
-//         rendered: vec!(),
       }
    }
 
@@ -30,7 +28,6 @@ impl DevelRenderer {
       }
 
       self.aliased.resize((width * height) as usize * SUBDIVISIONS * SUBDIVISIONS, RGB::new(0, 0, 0));
-//      self.rendered.resize((width * height) as usize, RGB::new(0, 0, 0));
    }
 
    #[inline]
@@ -96,8 +93,6 @@ impl DevelRenderer {
    fn downsample(&mut self, frame: &mut Frame) {
       let aliased: &mut Vec<RGB> = self.aliased.as_mut();
 
-//      let rendered: &mut Vec<RGB> = self.rendered.as_mut();
-
       let (width, height) = (frame.width as usize, frame.height as usize);
 
       for y in 0..height {
@@ -105,8 +100,6 @@ impl DevelRenderer {
             let color = calc_pixel_color(aliased, width, x, y);
 
             frame.put_pixel(x as i32, y as i32, &color);
-
-//            rendered[y * width + x] = color;
          }
       }
    }
