@@ -1,3 +1,5 @@
+use std::ptr;
+
 use geom::point::Point;
 use renderer::Renderer;
 use frame::Frame;
@@ -32,10 +34,11 @@ impl DevelRenderer {
 
    #[inline]
    fn clear(&mut self) {
-      let mut aliased: &mut Vec<RGB> = self.aliased.as_mut();
+      let len = self.aliased.len();
+      let vp = self.aliased.as_mut_ptr();
 
-      for i in 0..aliased.len() {
-         aliased[i] = RGB::default();
+      unsafe {
+         ptr::write_bytes(vp, 0, len);
       }
    }
 
