@@ -8,10 +8,10 @@ use super::Scene;
 pub struct DevelRenderer {
    scene: Scene,
    aliased: Vec<RGB>,
-   rendered: Vec<RGB>,
+//   rendered: Vec<RGB>,
 }
 
-const SUBDIVISIONS: i64 = 3;
+const SUBDIVISIONS: usize = 3;
 
 impl DevelRenderer {
    #[inline]
@@ -20,17 +20,17 @@ impl DevelRenderer {
          scene: scene,
 
          aliased: vec!(),
-         rendered: vec!(),
+//         rendered: vec!(),
       }
    }
 
    fn check_resize(&mut self, width: u32, height: u32) {
-      if self.rendered.len() == (width * height) as usize {
+      if self.aliased.len() == (width * height) as usize * SUBDIVISIONS * SUBDIVISIONS {
          return;
       }
 
-      self.aliased.resize((width * height) as usize * (SUBDIVISIONS * SUBDIVISIONS) as usize, RGB::new(0, 0, 0));
-      self.rendered.resize((width * height) as usize, RGB::new(0, 0, 0));
+      self.aliased.resize((width * height) as usize * SUBDIVISIONS * SUBDIVISIONS, RGB::new(0, 0, 0));
+//      self.rendered.resize((width * height) as usize, RGB::new(0, 0, 0));
    }
 
    #[inline]
@@ -83,7 +83,7 @@ impl DevelRenderer {
             }
 
             for x in left_x..right_x {
-               aliased[y as usize * frame.width as usize * SUBDIVISIONS as usize + x as usize] = poly.color;
+               aliased[y as usize * frame.width as usize * SUBDIVISIONS + x as usize] = poly.color;
             }
 
             left_x = left_advancer.advance();
@@ -96,34 +96,17 @@ impl DevelRenderer {
    fn downsample(&mut self, frame: &mut Frame) {
       let aliased: &mut Vec<RGB> = self.aliased.as_mut();
 
-      let rendered: &mut Vec<RGB> = self.rendered.as_mut();
+//      let rendered: &mut Vec<RGB> = self.rendered.as_mut();
 
-      let divisor = (SUBDIVISIONS * SUBDIVISIONS) as u16;
+      let (width, height) = (frame.width as usize, frame.height as usize);
 
-      for y in 0..frame.height as usize {
-         for x in 0..frame.width as usize {
-            let mut r: u16 = 0;
-            let mut g: u16 = 0;
-            let mut b: u16 = 0;
-            for box_y in 0..SUBDIVISIONS as usize {
-               for box_x in 0..SUBDIVISIONS as usize {
-                  let pos = (box_y + y * SUBDIVISIONS as usize * frame.width as usize * SUBDIVISIONS as usize) + box_x + x * SUBDIVISIONS as usize;
-                  let color = &aliased[pos];
-                  r += color.r as u16;
-                  g += color.g as u16;
-                  b += color.b as u16;
-               }
-            }
-
-            r /= divisor;
-            g /= divisor;
-            b /= divisor;
-
-            let color = RGB::new(r as u8, g as u8, b as u8);
+      for y in 0..height {
+         for x in 0..width {
+            let color = calc_pixel_color(aliased, width, x, y);
 
             frame.put_pixel(x as i32, y as i32, &color);
 
-            rendered[y * frame.width as usize + x] = color;
+//            rendered[y * width + x] = color;
          }
       }
    }
@@ -136,6 +119,7 @@ impl Renderer for DevelRenderer {
       self.check_resize(width, height);
    }
 
+   #[inline]
    fn render(&mut self, frame: &mut Frame) {
       self.check_resize(frame.width, frame.height);
 
@@ -171,6 +155,7 @@ struct YAxisAdvancer {
 }
 
 impl YAxisAdvancer {
+   #[inline]
    fn new(edge: &Edge) -> Self {
       let dx = edge.p2.x - edge.p1.x;
       let dy = edge.p2.y - edge.p1.y;
@@ -184,13 +169,14 @@ impl YAxisAdvancer {
       }
    }
 
+   #[inline]
    fn advance(&mut self) -> i64 {
       self.f64x += self.delta;
       self.f64x.round() as i64
    }
 }
 
-
+#[inline]
 fn get_left_right_edges(points: &Vec<Point>) -> (Vec<Edge>, Vec<Edge>){
    let (min_i, max_i) = find_min_max_y_index(points);
 
@@ -200,6 +186,7 @@ fn get_left_right_edges(points: &Vec<Point>) -> (Vec<Edge>, Vec<Edge>){
    (left, right)
 }
 
+#[inline]
 fn get_left_edges(points: &Vec<Point>, min_i: usize, max_i: usize) -> Vec<Edge> {
    let mut edges = Vec::new();
 
@@ -225,6 +212,7 @@ fn get_left_edges(points: &Vec<Point>, min_i: usize, max_i: usize) -> Vec<Edge> 
    edges
 }
 
+#[inline]
 fn get_right_edges(points: &Vec<Point>, min_i: usize, max_i: usize) -> Vec<Edge> {
    let mut edges = Vec::new();
 
@@ -250,6 +238,7 @@ fn get_right_edges(points: &Vec<Point>, min_i: usize, max_i: usize) -> Vec<Edge>
    edges
 }
 
+#[inline]
 fn find_min_max_y_index(points: &Vec<Point>) -> (usize, usize) {
    let (first, rest) = points.split_first().unwrap();
 
@@ -271,3 +260,26 @@ fn find_min_max_y_index(points: &Vec<Point>) -> (usize, usize) {
    (min_i, max_i)
 }
 
+#[inline]
+fn calc_pixel_color(aliased: &mut Vec<RGB>, width: usize, x: usize, y: usize) -> RGB {
+   let mut r: u16 = 0;
+   let mut g: u16 = 0;
+   let mut b: u16 = 0;
+   for box_y in 0..SUBDIVISIONS {
+      for box_x in 0..SUBDIVISIONS {
+         let pos = (box_y + y * SUBDIVISIONS) * width * SUBDIVISIONS + box_x + x * SUBDIVISIONS;
+         let color = &aliased[pos];
+         r += color.r as u16;
+         g += color.g as u16;
+         b += color.b as u16;
+      }
+   }
+
+   let divisor = (SUBDIVISIONS * SUBDIVISIONS) as u16;
+
+   r /= divisor;
+   g /= divisor;
+   b /= divisor;
+
+   RGB::new(r as u8, g as u8, b as u8)
+}
