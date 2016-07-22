@@ -11,7 +11,7 @@ pub struct DevelRenderer {
 //   rendered: Vec<RGB>,
 }
 
-const SUBDIVISIONS: usize = 3;
+pub const SUBDIVISIONS: usize = 3;
 
 impl DevelRenderer {
    #[inline]

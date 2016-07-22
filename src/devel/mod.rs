@@ -5,4 +5,4 @@ pub mod ppm;
 
 pub use self::poly::Poly;
 pub use self::scene::Scene;
-pub use self::renderer::DevelRenderer;
+pub use self::renderer::{DevelRenderer, SUBDIVISIONS};
