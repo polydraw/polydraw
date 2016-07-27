@@ -36,8 +36,26 @@ fn main() {
       RGB::new(128, 59, 89),
    );
 
+   let poly_c = Poly::new_with_holes(
+      multiply_points(vec![
+         Point::new(240, 150),
+         Point::new(120, 450),
+         Point::new(510, 690),
+         Point::new(570, 240),
+      ]),
+      vec![
+         multiply_points(vec![
+            Point::new(300, 330),
+            Point::new(420, 600),
+            Point::new(480, 120),
+         ]),
+      ],
+      RGB::new(215, 12, 96),
+   );
+
    scene.push(poly_a);
    scene.push(poly_b);
+   scene.push(poly_c);
 
    let mut renderer = DevelRenderer::new(scene);
 
