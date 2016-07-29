@@ -4,8 +4,10 @@ use geom::point::Point;
 use renderer::Renderer;
 use frame::Frame;
 use draw::RGB;
+use raster::create_default_vec;
 
 use super::Scene;
+use super::Poly;
 
 pub struct DevelRenderer {
    scene: Scene,
@@ -47,47 +49,110 @@ impl DevelRenderer {
       let mut aliased: &mut Vec<RGB> = self.aliased.as_mut();
 
       for poly in &self.scene.polys {
-         let points = &poly.points;
+         let edges = get_poly_edges(poly);
 
-         let (left, right) = get_left_right_edges(points);
+         let mut sorted_y = create_default_vec(edges.len());
 
-         let mut left_i = 0;
-         let mut right_i = 0;
+         sorted_edges(&edges, &mut sorted_y);
 
-         let mut left_edge = left[left_i];
-         let mut right_edge = right[right_i];
+         let mut advancers = Vec::new();
 
-         let mut left_x = left_edge.p1.x;
-         let mut right_x = right_edge.p1.x;
+         for edge in &*edges {
+            let advancer = YAxisAdvancer::new(edge);
+            advancers.push(advancer);
+         }
 
-         let left_last_i = left.len() - 1;
-         let right_last_i = right.len() - 1;
+         let mut y = edges[sorted_y[0]].p1.y;
 
-         let mut left_advancer = YAxisAdvancer::new(&left_edge);
-         let mut right_advancer = YAxisAdvancer::new(&right_edge);
+         for i in 0..sorted_y.len() {
+            let edge_index: usize = sorted_y[i];
 
-         let min_y = left_edge.p1.y;
-         let max_y = left[left_last_i].p2.y;
-
-         for y in min_y..max_y + 1 {
-            if left_edge.p2.y == y && left_i != left_last_i {
-               left_i += 1;
-               left_edge = left[left_i];
-               left_advancer = YAxisAdvancer::new(&left_edge);
+            if edges[edge_index].p1.y != y {
+               break;
             }
 
-            if right_edge.p2.y == y && right_i != right_last_i  {
-               right_i += 1;
-               right_edge = right[right_i];
-               right_advancer = YAxisAdvancer::new(&right_edge);
+            let x = edges[edge_index].p1.x;
+
+            aliased[y as usize * frame.width as usize * SUBDIVISIONS + x as usize] = poly.color;
+         }
+
+         let mut next_y_index = 0;
+
+         let mut active = Vec::new();
+
+         let mut sorted_end_y = create_default_vec(sorted_y.len());
+
+         for i in 0..sorted_y.len() {
+            sorted_end_y[i] = i;
+         }
+
+         loop {
+            let mut removed = 0;
+
+            loop {
+               if removed == active.len() {
+                  break;
+               }
+
+               let edge_index: usize = active[removed];
+
+               if edges[edge_index].p2.y != y {
+                  break;
+               }
+
+               removed += 1;
             }
 
-            for x in left_x..right_x {
-               aliased[y as usize * frame.width as usize * SUBDIVISIONS + x as usize] = poly.color;
+            if removed != 0 {
+               active.drain(0..removed);
             }
 
-            left_x = left_advancer.advance();
-            right_x = right_advancer.advance();
+            loop {
+               if next_y_index >= sorted_y.len() {
+                  break;
+               }
+
+               let edge_index = sorted_y[next_y_index];
+
+               if edges[edge_index].p1.y != y {
+                  break;
+               }
+
+               active.push(edge_index);
+
+               active.sort_by(|a, b| {
+                  edges[*a].p2.y.cmp(&edges[*b].p2.y)
+               });
+
+               next_y_index += 1;
+            }
+
+            if active.len() == 0 {
+               break;
+            }
+
+            y += 1;
+
+            let mut xs = Vec::new();
+
+            for i in 0..active.len() {
+               let edge_index = active[i];
+               xs.push(
+                  advancers[edge_index].advance()
+               );
+            }
+
+            xs.sort();
+
+            assert!(xs.len() % 2 == 0);
+
+            for i in 0..xs.len() / 2 {
+               let left_x = xs[i * 2];
+               let right_x = xs[i * 2 + 1];
+               for x in left_x..right_x {
+                  aliased[y as usize * frame.width as usize * SUBDIVISIONS + x as usize] = poly.color;
+               }
+            }
          }
       }
    }
@@ -173,90 +238,6 @@ impl YAxisAdvancer {
 }
 
 #[inline]
-fn get_left_right_edges(points: &Vec<Point>) -> (Vec<Edge>, Vec<Edge>){
-   let (min_i, max_i) = find_min_max_y_index(points);
-
-   let left = get_left_edges(points, min_i, max_i);
-   let right = get_right_edges(points, min_i, max_i);
-
-   (left, right)
-}
-
-#[inline]
-fn get_left_edges(points: &Vec<Point>, min_i: usize, max_i: usize) -> Vec<Edge> {
-   let mut edges = Vec::new();
-
-   let mut curr_i = min_i;
-   let mut prev_i = curr_i;
-
-   loop {
-      curr_i += 1;
-
-      if curr_i == points.len() {
-         curr_i = 0;
-      }
-
-      edges.push(Edge::new(points[prev_i], points[curr_i]));
-
-      prev_i = curr_i;
-
-      if curr_i == max_i {
-         break;
-      }
-   }
-
-   edges
-}
-
-#[inline]
-fn get_right_edges(points: &Vec<Point>, min_i: usize, max_i: usize) -> Vec<Edge> {
-   let mut edges = Vec::new();
-
-   let mut curr_i = min_i;
-   let mut prev_i = curr_i;
-
-   loop {
-      if curr_i == 0 {
-         curr_i = points.len() - 1;
-      } else {
-         curr_i -= 1;
-      }
-
-      edges.push(Edge::new(points[prev_i], points[curr_i]));
-
-      prev_i = curr_i;
-
-      if curr_i == max_i {
-         break;
-      }
-   }
-
-   edges
-}
-
-#[inline]
-fn find_min_max_y_index(points: &Vec<Point>) -> (usize, usize) {
-   let (first, rest) = points.split_first().unwrap();
-
-   let mut min_y = first.y;
-   let mut max_y = min_y;
-   let mut min_i = 0;
-   let mut max_i = 0;
-
-   for (i, point) in rest.iter().enumerate() {
-      if point.y < min_y {
-         min_i = i + 1;
-         min_y = point.y;
-      } else if point.y > max_y {
-         max_i = i + 1;
-         max_y = point.y;
-      }
-   }
-
-   (min_i, max_i)
-}
-
-#[inline]
 fn calc_pixel_color(aliased: &mut Vec<RGB>, width: usize, x: usize, y: usize) -> RGB {
    let mut r: u16 = 0;
    let mut g: u16 = 0;
@@ -279,3 +260,57 @@ fn calc_pixel_color(aliased: &mut Vec<RGB>, width: usize, x: usize, y: usize) ->
 
    RGB::new(r as u8, g as u8, b as u8)
 }
+
+fn get_poly_edges(poly: &Poly) -> Vec<Edge> {
+   let mut edges = Vec::new();
+
+   fill_edges_from_points(&mut edges, &poly.points);
+
+   for points in &poly.holes {
+      fill_edges_from_points(&mut edges, points);
+   }
+
+   edges
+}
+
+#[inline]
+fn fill_edges_from_points(edges: &mut Vec<Edge>, points: &Vec<Point>) {
+   if points.len() < 2 {
+      return;
+   }
+
+   for slice in points.windows(2) {
+      match to_renderable_edge(slice[0], slice[1]) {
+         Some(edge) => edges.push(edge),
+         _ => {}
+      }
+   }
+
+   match to_renderable_edge(points[points.len() - 1], points[0]) {
+      Some(edge) => edges.push(edge),
+      _ => {}
+   }
+}
+
+#[inline]
+fn to_renderable_edge(p1: Point, p2: Point) -> Option<Edge> {
+   if p1.y == p2.y {
+      None
+   } else if p2.y > p1.y {
+      Some(Edge::new(p1, p2))
+   } else {
+      Some(Edge::new(p2, p1))
+   }
+}
+
+#[inline]
+fn sorted_edges(edges: &Vec<Edge>, sorted: &mut Vec<usize>) {
+   for i in 0..edges.len() {
+      sorted[i] = i;
+   }
+
+   sorted.sort_by(|a, b| {
+      edges[*a].p1.y.cmp(&edges[*b].p1.y)
+   });
+}
+

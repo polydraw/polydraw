@@ -38,16 +38,16 @@ fn main() {
 
    let poly_c = Poly::new_with_holes(
       multiply_points(vec![
-         Point::new(240, 150),
+         Point::new(270, 120),
          Point::new(120, 450),
          Point::new(510, 690),
          Point::new(570, 240),
       ]),
       vec![
          multiply_points(vec![
-            Point::new(300, 330),
-            Point::new(420, 600),
-            Point::new(480, 120),
+            Point::new(300, 180),
+            Point::new(420, 620),
+            Point::new(480, 420),
          ]),
       ],
       RGB::new(215, 12, 96),
