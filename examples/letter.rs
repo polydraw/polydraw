@@ -7,7 +7,7 @@ use polydraw::draw::RGB;
 
 
 fn letter_poly() -> Poly {
-   let a_outer = [
+   let data = [vec![
       (409, 596),
       (529, 232),
       (566, 222),
@@ -166,9 +166,8 @@ fn letter_poly() -> Poly {
       (142, 129),
       (109, 142),
       (109, 596),
-   ];
-
-   let a_inner = [
+   ],
+   vec![
       (1001, 1418),
       (952, 1435),
       (926, 1443),
@@ -216,18 +215,20 @@ fn letter_poly() -> Poly {
       (802, 998),
       (840, 998),
       (1005, 998),
-   ];
+   ]];
 
-   let outer = points_from_coords(&a_outer);
+   let outer = points_from_coords(&data[0]);
 
-   let inner = points_from_coords(&a_inner);
+   let mut inner = Vec::new();
+
+   for inner_data in &data[1..] {
+      inner.push(
+         points_from_coords(inner_data)
+      );
+   }
 
    let poly = Poly::new_with_holes(
-      outer,
-      vec![
-         inner,
-      ],
-      RGB::new(255, 255, 255),
+      outer, inner, RGB::new(255, 255, 255),
    );
 
    poly
