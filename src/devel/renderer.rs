@@ -13,6 +13,9 @@ use super::Poly;
 pub struct DevelRenderer {
    scene: Scene,
    aliased: Vec<RGB>,
+   advancers: Vec<YAxisAdvancer>,
+   active: Vec<usize>,
+   xs: Vec<i64>,
 }
 
 pub const SUBDIVISIONS: usize = 3;
@@ -23,7 +26,13 @@ impl DevelRenderer {
       DevelRenderer {
          scene: scene,
 
-         aliased: vec!(),
+         aliased: Vec::new(),
+
+         advancers: Vec::new(),
+
+         active: Vec::new(),
+
+         xs: Vec::new(),
       }
    }
 
@@ -47,8 +56,6 @@ impl DevelRenderer {
 
    #[inline]
    fn render_aliased(&mut self, frame: &mut Frame) {
-      let mut aliased: &mut Vec<RGB> = self.aliased.as_mut();
-
       let aliased_width = frame.width as i64 * SUBDIVISIONS as i64;
       let aliased_height = frame.height as i64 * SUBDIVISIONS as i64;
 
@@ -59,11 +66,9 @@ impl DevelRenderer {
 
          sorted_edges(&edges, &mut sorted_y);
 
-         let mut advancers = Vec::new();
-
          for edge in &*edges {
             let advancer = YAxisAdvancer::new(edge);
-            advancers.push(advancer);
+            self.advancers.push(advancer);
          }
 
          let mut y = edges[sorted_y[0]].p1.y;
@@ -79,14 +84,12 @@ impl DevelRenderer {
                let x = edges[edge_index].p1.x;
 
                if x >= 0 && x < aliased_width {
-                  aliased[y as usize * aliased_width as usize + x as usize] = poly.color;
+                  self.aliased[y as usize * aliased_width as usize + x as usize] = poly.color;
                }
             }
          }
 
          let mut next_y_index = 0;
-
-         let mut active = Vec::new();
 
          let mut sorted_end_y = create_default_vec(sorted_y.len());
 
@@ -98,11 +101,11 @@ impl DevelRenderer {
             let mut removed = 0;
 
             loop {
-               if removed == active.len() {
+               if removed == self.active.len() {
                   break;
                }
 
-               let edge_index: usize = active[removed];
+               let edge_index: usize = self.active[removed];
 
                if edges[edge_index].p2.y != y {
                   break;
@@ -112,7 +115,7 @@ impl DevelRenderer {
             }
 
             if removed != 0 {
-               active.drain(0..removed);
+               self.active.drain(0..removed);
             }
 
             loop {
@@ -126,27 +129,27 @@ impl DevelRenderer {
                   break;
                }
 
-               active.push(edge_index);
+               self.active.push(edge_index);
 
-               active.sort_by(|a, b| {
+               self.active.sort_by(|a, b| {
                   edges[*a].p2.y.cmp(&edges[*b].p2.y)
                });
 
                next_y_index += 1;
             }
 
-            if active.len() == 0 {
+            if self.active.len() == 0 {
                break;
             }
 
             y += 1;
 
-            let mut xs = Vec::new();
+            self.xs.truncate(0);
 
-            for i in 0..active.len() {
-               let edge_index = active[i];
-               xs.push(
-                  advancers[edge_index].advance()
+            for i in 0..self.active.len() {
+               let edge_index = self.active[i];
+               self.xs.push(
+                  self.advancers[edge_index].advance()
                );
             }
 
@@ -158,23 +161,26 @@ impl DevelRenderer {
                break;
             }
 
-            xs.sort();
+            self.xs.sort();
 
-            assert!(xs.len() % 2 == 0);
+            assert!(self.xs.len() % 2 == 0);
 
-            for i in 0..xs.len() / 2 {
-               let left_x = max(xs[i * 2], 0);
-               let right_x = min(xs[i * 2 + 1], aliased_width);
+            for i in 0..self.xs.len() / 2 {
+               let left_x = max(self.xs[i * 2], 0);
+               let right_x = min(self.xs[i * 2 + 1], aliased_width);
 
                if left_x >= aliased_width || right_x < 0 {
                   continue;
                }
 
                for x in left_x..right_x {
-                  aliased[y as usize * aliased_width as usize + x as usize] = poly.color;
+                  self.aliased[y as usize * aliased_width as usize + x as usize] = poly.color;
                }
             }
          }
+
+         self.advancers.truncate(0);
+         self.active.truncate(0);
       }
    }
 
