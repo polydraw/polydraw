@@ -1,4 +1,5 @@
 use std::ptr;
+use std::cmp::{min, max};
 
 use geom::point::Point;
 use renderer::Renderer;
@@ -48,6 +49,9 @@ impl DevelRenderer {
    fn render_aliased(&mut self, frame: &mut Frame) {
       let mut aliased: &mut Vec<RGB> = self.aliased.as_mut();
 
+      let aliased_width = frame.width as i64 * SUBDIVISIONS as i64;
+      let aliased_height = frame.height as i64 * SUBDIVISIONS as i64;
+
       for poly in &self.scene.polys {
          let edges = get_poly_edges(poly);
 
@@ -64,16 +68,20 @@ impl DevelRenderer {
 
          let mut y = edges[sorted_y[0]].p1.y;
 
-         for i in 0..sorted_y.len() {
-            let edge_index: usize = sorted_y[i];
+         if y >= 0 && y < aliased_height {
+            for i in 0..sorted_y.len() {
+               let edge_index: usize = sorted_y[i];
 
-            if edges[edge_index].p1.y != y {
-               break;
+               if edges[edge_index].p1.y != y {
+                  break;
+               }
+
+               let x = edges[edge_index].p1.x;
+
+               if x >= 0 && x < aliased_width {
+                  aliased[y as usize * aliased_width as usize + x as usize] = poly.color;
+               }
             }
-
-            let x = edges[edge_index].p1.x;
-
-            aliased[y as usize * frame.width as usize * SUBDIVISIONS + x as usize] = poly.color;
          }
 
          let mut next_y_index = 0;
@@ -142,15 +150,28 @@ impl DevelRenderer {
                );
             }
 
+            if y < 0 {
+               continue;
+            }
+
+            if y >= aliased_height {
+               break;
+            }
+
             xs.sort();
 
             assert!(xs.len() % 2 == 0);
 
             for i in 0..xs.len() / 2 {
-               let left_x = xs[i * 2];
-               let right_x = xs[i * 2 + 1];
+               let left_x = max(xs[i * 2], 0);
+               let right_x = min(xs[i * 2 + 1], aliased_width);
+
+               if left_x >= aliased_width || right_x < 0 {
+                  continue;
+               }
+
                for x in left_x..right_x {
-                  aliased[y as usize * frame.width as usize * SUBDIVISIONS + x as usize] = poly.color;
+                  aliased[y as usize * aliased_width as usize + x as usize] = poly.color;
                }
             }
          }
