@@ -1,6 +1,6 @@
 extern crate polydraw;
 
-use polydraw::Application;
+use polydraw::{Renderer, Application, Frame};
 use polydraw::devel::{Scene, Poly, DevelRenderer};
 use polydraw::geom::point::Point;
 use polydraw::draw::RGB;
@@ -145,28 +145,55 @@ fn _points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
    points
 }
 
-fn main() {
-   let mut scene = Scene::new();
+struct NodeRenderer {
+   renderer: DevelRenderer,
+}
 
-   let source = vec![vec![
-      (90, 1200),
-      (261, 1735),
-      (1443, 410),
-      (493, 174),
-   ]];
+impl NodeRenderer {
+   #[inline]
+   pub fn new() -> Self {
+      NodeRenderer {
+         renderer: DevelRenderer::new(Scene::new()),
+      }
+   }
+}
 
-   let add = AddNode::new(NONE, NONE, NONE, NONE);
-
-   let destination = add.process(
-      &Data::Poly(source), &Data::Point((957, 223)), &NONE, &NONE
-   );
-
-   match destination {
-      Data::Poly(data) => scene.push(_poly_from_data(&data)),
-      _ => {}
+impl Renderer for NodeRenderer {
+   #[inline]
+   fn init(&mut self, width: u32, height: u32) {
+      self.renderer.init(width, height);
    }
 
-   let mut renderer = DevelRenderer::new(scene);
+   #[inline]
+   fn render(&mut self, frame: &mut Frame) {
+      let mut scene = Scene::new();
+
+      let source = vec![vec![
+         (90, 1200),
+         (261, 1735),
+         (1443, 410),
+         (493, 174),
+      ]];
+
+      let add = AddNode::new(NONE, NONE, NONE, NONE);
+
+      let destination = add.process(
+         &Data::Poly(source), &Data::Point((957, 223)), &NONE, &NONE
+      );
+
+      match destination {
+         Data::Poly(data) => scene.push(_poly_from_data(&data)),
+         _ => {}
+      }
+
+      self.renderer.set_scene(scene);
+
+      self.renderer.render(frame);
+   }
+}
+
+fn main() {
+   let mut renderer = NodeRenderer::new();
 
    Application::new()
       .renderer(&mut renderer)

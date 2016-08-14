@@ -36,6 +36,12 @@ impl DevelRenderer {
       }
    }
 
+   #[inline]
+   pub fn set_scene(&mut self, scene: Scene) {
+      self.scene = scene;
+   }
+
+   #[inline]
    fn check_resize(&mut self, width: u32, height: u32) {
       if self.aliased.len() == (width * height) as usize * SUBDIVISIONS * SUBDIVISIONS {
          return;
