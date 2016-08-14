@@ -26,18 +26,15 @@ trait Node {
    fn process(&self, arg1: &Data, arg2: &Data, arg3: &Data, arg4: &Data) -> Data;
 }
 
-struct Add {
+struct AddNode {
    init1: Data,
    init2: Data,
 }
 
-impl Add {
-}
-
-impl Node for Add {
+impl Node for AddNode {
    #[inline]
    fn new(init1: Data, init2: Data, _: Data, _: Data) -> Self {
-      Add {
+      AddNode {
          init1: init1,
          init2: init2,
       }
@@ -45,62 +42,68 @@ impl Node for Add {
 
    #[inline]
    fn process(&self, arg1: &Data, arg2: &Data, _: &Data, _: &Data) -> Data {
-      let val1 = actual(arg1, &self.init1);
-      let val2 = actual(arg2, &self.init2);
+      let in1 = actual(arg1, &self.init1);
+      let in2 = actual(arg2, &self.init2);
 
-      match val1 {
-         &Data::I64(ref left) => match val2 {
-            &Data::I64(ref right) => add_i64_i64(left, right),
-            &Data::F64(ref right) => Data::F64(*left as f64 + *right),
-            &Data::Point(ref right) => add_point_i64(right, left),
-            _ => Data::None
-         },
-         &Data::F64(ref left) => match val2 {
-            &Data::I64(ref right) => Data::F64(*left + *right as f64),
-            &Data::F64(ref right) => Data::F64(*left + *right),
-            _ => Data::None
-         },
-         &Data::Poly(ref left) => match val2 {
-            &Data::Point(ref right) => add_poly_point(left, right),
-            _ => Data::None
-         },
-         &Data::Point(ref left) => match val2 {
-            &Data::Poly(ref right) => add_poly_point(right, left),
-            _ => Data::None
-         },
+      match (in1, in2) {
+         (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
+
+         (&Data::F64(ref v1), &Data::I64(ref v2)) => <(f64, i64)>::add(v1, v2),
+         (&Data::I64(ref v1), &Data::F64(ref v2)) => <(f64, i64)>::add(v2, v1),
+
+         (&Data::Point(ref v1), &Data::I64(ref v2)) => <(TPoint, i64)>::add(v1, v2),
+         (&Data::I64(ref v1), &Data::Point(ref v2)) => <(TPoint, i64)>::add(v2, v1),
+
+         (&Data::Poly(ref v1), &Data::Point(ref v2)) => <(TPoly, TPoint)>::add(v1, v2),
+         (&Data::Point(ref v1), &Data::Poly(ref v2)) => <(TPoly, TPoint)>::add(v2, v1),
+
          _ => Data::None
       }
    }
 }
 
-#[inline]
-fn add_i64_i64(left: &i64, right: &i64) -> Data {
-   Data::I64(*left + *right)
+trait Add<T1, T2> {
+   fn add(v1: &T1, v2: &T2) -> Data;
 }
 
-#[inline]
-fn add_point_i64(left: &TPoint, right: &i64) -> Data {
-   Data::Point((left.0 + *right, left.1 + *right))
+impl Add<i64, i64> for (i64, i64) {
+   #[inline]
+   fn add(v1: &i64, v2: &i64) -> Data {
+      Data::I64(*v1 + *v2)
+   }
 }
 
-#[inline]
-fn add_poly_point(left: &TPoly, right: &TPoint) -> Data {
-   let mut group = Vec::with_capacity(left.len());
+impl Add<f64, i64> for (f64, i64) {
+   #[inline]
+   fn add(v1: &f64, v2: &i64) -> Data {
+      Data::F64(*v1 + *v2 as f64)
+   }
+}
 
-   let (add_x, add_y) = *right;
+impl Add<TPoint, i64> for (TPoint, i64) {
+   #[inline]
+   fn add(v1: &TPoint, v2: &i64) -> Data {
+      Data::Point((v1.0 + *v2, v1.1 + *v2))
+   }
+}
 
-   for src in left {
-      let mut contour = Vec::with_capacity(src.len());
+impl Add<TPoly, TPoint> for (TPoly, TPoint) {
+   #[inline]
+   fn add(v1: &TPoly, v2: &TPoint) -> Data {
+      let mut outer = Vec::with_capacity(v1.len());
 
-      for point in src {
-         let (x, y) = *point;
-         contour.push((x + add_x, y + add_y));
+      for src in v1 {
+         let mut inner = Vec::with_capacity(src.len());
+
+         for tuple in src {
+            inner.push((tuple.0 + v2.0, tuple.1 + v2.1));
+         }
+
+         outer.push(inner);
       }
 
-      group.push(contour);
+      Data::Poly(outer)
    }
-
-   Data::Poly(group)
 }
 
 #[inline]
@@ -151,7 +154,7 @@ fn main() {
       (493, 174),
    ]];
 
-   let add = Add::new(Data::None, Data::None, Data::None, Data::None);
+   let add = AddNode::new(Data::None, Data::None, Data::None, Data::None);
 
    let destination = add.process(
       &Data::Poly(source), &Data::Point((957, 223)), &Data::None, &Data::None
