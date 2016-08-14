@@ -19,6 +19,7 @@ enum Data {
    Poly(TPoly),
 }
 
+const NONE: Data = Data::None;
 
 trait Node {
    fn new(init1: Data, init2: Data, init3: Data, init4: Data) -> Self;
@@ -57,7 +58,7 @@ impl Node for AddNode {
          (&Data::Poly(ref v1), &Data::Point(ref v2)) => <(TPoly, TPoint)>::add(v1, v2),
          (&Data::Point(ref v1), &Data::Poly(ref v2)) => <(TPoly, TPoint)>::add(v2, v1),
 
-         _ => Data::None
+         _ => NONE
       }
    }
 }
@@ -154,10 +155,10 @@ fn main() {
       (493, 174),
    ]];
 
-   let add = AddNode::new(Data::None, Data::None, Data::None, Data::None);
+   let add = AddNode::new(NONE, NONE, NONE, NONE);
 
    let destination = add.process(
-      &Data::Poly(source), &Data::Point((957, 223)), &Data::None, &Data::None
+      &Data::Poly(source), &Data::Point((957, 223)), &NONE, &NONE
    );
 
    match destination {
