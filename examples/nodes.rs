@@ -1,9 +1,45 @@
 extern crate polydraw;
+extern crate toml;
 
 use polydraw::{Renderer, Application, Frame};
 use polydraw::devel::{Scene, Poly, DevelRenderer};
 use polydraw::geom::point::Point;
 use polydraw::draw::RGB;
+
+
+const NODE_DEFS: &'static str = r#"
+
+   [frame]
+   type = "frame"
+
+   [poly-points]
+   type = "[(i64, i64)]"
+   value = [ [0, 0], [90, 1200], [261, 1735], [1443, 410] ]
+
+   [translate-point]
+   type = "pair"
+   in-1 = "frame"
+   in-2 = { type = "i64", value = 0 }
+
+   [add-operator]
+   type = "add"
+   in-1 = "poly-points"
+   in-2 = "translate-point"
+
+   [poly]
+   type = "poly"
+   in-1 = "add-operator"
+   in-2 = { type = "(u8, u8, u8)", value = [0, 127, 255] }
+
+   [layer]
+   type = "layer"
+   in-1 = "poly"
+
+   [doc]
+   type = "doc"
+   in-1 = "layer"
+
+"#;
 
 
 type TPoint = (i64, i64);
@@ -147,6 +183,7 @@ fn _points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
 
 struct NodeRenderer {
    renderer: DevelRenderer,
+   frame: i64,
 }
 
 impl NodeRenderer {
@@ -154,6 +191,19 @@ impl NodeRenderer {
    pub fn new() -> Self {
       NodeRenderer {
          renderer: DevelRenderer::new(Scene::new()),
+         frame: 0,
+      }
+   }
+
+   #[inline]
+   pub fn parse_nodes(&mut self) {
+      let mut parser = toml::Parser::new(NODE_DEFS);
+
+      match parser.parse() {
+          Some(value) => println!("toml parsed: {:?}", value),
+          None => {
+              println!("parse errors: {:?}", parser.errors);
+          }
       }
    }
 }
@@ -161,6 +211,8 @@ impl NodeRenderer {
 impl Renderer for NodeRenderer {
    #[inline]
    fn init(&mut self, width: u32, height: u32) {
+      self.parse_nodes();
+
       self.renderer.init(width, height);
    }
 
@@ -178,7 +230,7 @@ impl Renderer for NodeRenderer {
       let add = AddNode::new(NONE, NONE, NONE, NONE);
 
       let destination = add.process(
-         &Data::Poly(source), &Data::Point((957, 223)), &NONE, &NONE
+         &Data::Poly(source), &Data::Point((self.frame, 0)), &NONE, &NONE
       );
 
       match destination {
@@ -189,6 +241,8 @@ impl Renderer for NodeRenderer {
       self.renderer.set_scene(scene);
 
       self.renderer.render(frame);
+
+      self.frame += 1;
    }
 }
 
