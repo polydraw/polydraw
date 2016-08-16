@@ -60,7 +60,7 @@ enum Data {
 const NONE: Data = Data::None;
 
 trait Node {
-   fn process(&self, arg1: &Data, arg2: &Data, arg3: &Data, arg4: &Data) -> Data;
+   fn process(&self, args: &[&Data]) -> Data;
 }
 
 struct AddNode {
@@ -80,9 +80,9 @@ impl AddNode {
 
 impl Node for AddNode {
    #[inline]
-   fn process(&self, arg1: &Data, arg2: &Data, _: &Data, _: &Data) -> Data {
-      let in1 = actual(arg1, &self.first);
-      let in2 = actual(arg2, &self.second);
+   fn process(&self, args: &[&Data]) -> Data {
+      let in1 = in_value(args, 0, &self.first);
+      let in2 = in_value(args, 1, &self.second);
 
       match (in1, in2) {
          (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
@@ -146,10 +146,13 @@ impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
 }
 
 #[inline]
-fn actual<'a>(passed: &'a Data, initial: &'a Data) -> &'a Data {
-   match passed {
-      &Data::None => initial,
-      _ => passed
+fn in_value<'a>(args: &'a[&'a Data], index: usize, initial: &'a Data) -> &'a Data {
+   match args.get(index) {
+      Some(passed) => match *passed {
+         &Data::None => initial,
+         _ => *passed
+      },
+      None => initial
    }
 }
 
@@ -234,7 +237,7 @@ impl Renderer for NodeRenderer {
       let add = AddNode::new(NONE, NONE);
 
       let destination = add.process(
-         &Data::VVI64I64(source), &Data::I64I64((self.frame, 0)), &NONE, &NONE
+         &[&Data::VVI64I64(source), &Data::I64I64((self.frame, 0))]
       );
 
       match destination {
