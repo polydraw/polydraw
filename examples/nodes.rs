@@ -157,14 +157,14 @@ fn in_value<'a>(args: &'a[&'a Data], index: usize, initial: &'a Data) -> &'a Dat
 }
 
 #[inline]
-fn _poly_from_data(data: &VVI64I64) -> Poly {
-   let outer = _points_from_coords(&data[0]);
+fn poly_from_data(data: &VVI64I64) -> Poly {
+   let outer = points_from_coords(&data[0]);
 
    let mut inner = Vec::new();
 
    for inner_data in &data[1..] {
       inner.push(
-         _points_from_coords(inner_data)
+         points_from_coords(inner_data)
       );
    }
 
@@ -176,7 +176,7 @@ fn _poly_from_data(data: &VVI64I64) -> Poly {
 }
 
 #[inline]
-fn _points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
+fn points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
    let mut points = Vec::new();
 
    for &(x, y) in coords.iter() {
@@ -199,26 +199,13 @@ impl NodeRenderer {
          frame: 0,
       }
    }
-
-   #[inline]
-   pub fn parse_nodes(&mut self) {
-      let mut parser = toml::Parser::new(NODE_DEFS);
-
-      match parser.parse() {
-         Some(value) => {
-            println!("toml parsed: {:?}", value);
-         },
-         None => {
-            println!("parse errors: {:?}", parser.errors);
-         }
-      }
-   }
 }
 
 impl Renderer for NodeRenderer {
    #[inline]
    fn init(&mut self, width: u32, height: u32) {
-      self.parse_nodes();
+      let mut parser = NodeParser::new();
+      parser.parse(NODE_DEFS);
 
       self.renderer.init(width, height);
    }
@@ -241,7 +228,7 @@ impl Renderer for NodeRenderer {
       );
 
       match destination {
-         Data::VVI64I64(data) => scene.push(_poly_from_data(&data)),
+         Data::VVI64I64(data) => scene.push(poly_from_data(&data)),
          _ => {}
       }
 
@@ -250,6 +237,40 @@ impl Renderer for NodeRenderer {
       self.renderer.render(frame);
 
       self.frame += 1;
+   }
+}
+
+struct NodeParser;
+
+impl NodeParser {
+   fn new() -> Self {
+      NodeParser {}
+   }
+
+   fn parse(&mut self, node_defs: &str) {
+      let mut parser = toml::Parser::new(node_defs);
+
+      match parser.parse() {
+         Some(everything) => {
+            for (node_id, value) in everything.iter() {
+               match value {
+                  &toml::Value::Table(ref node_table) => {
+                     self.process_node(node_id, node_table);
+                  },
+                  _ => {
+                     println!("`{}` is not a table ", node_id);
+                  }
+               }
+            }
+         },
+         None => {
+            println!("parse errors: {:?}", parser.errors);
+         }
+      }
+   }
+
+   fn process_node(&mut self, node_id: &str, node_table: &toml::Table) {
+      println!("{}: {:?}", node_id, node_table);
    }
 }
 
