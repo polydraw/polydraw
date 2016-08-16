@@ -42,8 +42,8 @@ const NODE_DEFS: &'static str = r#"
 "#;
 
 
-type TPoint = (i64, i64);
-type TPoly = Vec<Vec<TPoint>>;
+type I64I64 = (i64, i64);
+type VVI64I64 = Vec<Vec<I64I64>>;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -51,8 +51,8 @@ enum Data {
    None,
    I64(i64),
    F64(f64),
-   Point(TPoint),
-   Poly(TPoly),
+   I64I64(I64I64),
+   VVI64I64(VVI64I64),
 }
 
 const NONE: Data = Data::None;
@@ -88,11 +88,11 @@ impl Node for AddNode {
          (&Data::F64(ref v1), &Data::I64(ref v2)) => <(f64, i64)>::add(v1, v2),
          (&Data::I64(ref v1), &Data::F64(ref v2)) => <(f64, i64)>::add(v2, v1),
 
-         (&Data::Point(ref v1), &Data::I64(ref v2)) => <(TPoint, i64)>::add(v1, v2),
-         (&Data::I64(ref v1), &Data::Point(ref v2)) => <(TPoint, i64)>::add(v2, v1),
+         (&Data::I64I64(ref v1), &Data::I64(ref v2)) => <(I64I64, i64)>::add(v1, v2),
+         (&Data::I64(ref v1), &Data::I64I64(ref v2)) => <(I64I64, i64)>::add(v2, v1),
 
-         (&Data::Poly(ref v1), &Data::Point(ref v2)) => <(TPoly, TPoint)>::add(v1, v2),
-         (&Data::Point(ref v1), &Data::Poly(ref v2)) => <(TPoly, TPoint)>::add(v2, v1),
+         (&Data::VVI64I64(ref v1), &Data::I64I64(ref v2)) => <(VVI64I64, I64I64)>::add(v1, v2),
+         (&Data::I64I64(ref v1), &Data::VVI64I64(ref v2)) => <(VVI64I64, I64I64)>::add(v2, v1),
 
          _ => NONE
       }
@@ -117,16 +117,16 @@ impl Add<f64, i64> for (f64, i64) {
    }
 }
 
-impl Add<TPoint, i64> for (TPoint, i64) {
+impl Add<I64I64, i64> for (I64I64, i64) {
    #[inline]
-   fn add(v1: &TPoint, v2: &i64) -> Data {
-      Data::Point((v1.0 + *v2, v1.1 + *v2))
+   fn add(v1: &I64I64, v2: &i64) -> Data {
+      Data::I64I64((v1.0 + *v2, v1.1 + *v2))
    }
 }
 
-impl Add<TPoly, TPoint> for (TPoly, TPoint) {
+impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
    #[inline]
-   fn add(v1: &TPoly, v2: &TPoint) -> Data {
+   fn add(v1: &VVI64I64, v2: &I64I64) -> Data {
       let mut outer = Vec::with_capacity(v1.len());
 
       for src in v1 {
@@ -139,7 +139,7 @@ impl Add<TPoly, TPoint> for (TPoly, TPoint) {
          outer.push(inner);
       }
 
-      Data::Poly(outer)
+      Data::VVI64I64(outer)
    }
 }
 
@@ -152,7 +152,7 @@ fn actual<'a>(passed: &'a Data, initial: &'a Data) -> &'a Data {
 }
 
 #[inline]
-fn _poly_from_data(data: &TPoly) -> Poly {
+fn _poly_from_data(data: &VVI64I64) -> Poly {
    let outer = _points_from_coords(&data[0]);
 
    let mut inner = Vec::new();
@@ -230,11 +230,11 @@ impl Renderer for NodeRenderer {
       let add = AddNode::new(NONE, NONE, NONE, NONE);
 
       let destination = add.process(
-         &Data::Poly(source), &Data::Point((self.frame, 0)), &NONE, &NONE
+         &Data::VVI64I64(source), &Data::I64I64((self.frame, 0)), &NONE, &NONE
       );
 
       match destination {
-         Data::Poly(data) => scene.push(_poly_from_data(&data)),
+         Data::VVI64I64(data) => scene.push(_poly_from_data(&data)),
          _ => {}
       }
 
