@@ -43,6 +43,7 @@ const NODE_DEFS: &'static str = r#"
 
 
 type I64I64 = (i64, i64);
+type U8U8U8 = (u8, u8, u8);
 type VVI64I64 = Vec<Vec<I64I64>>;
 
 #[derive(Debug)]
@@ -52,35 +53,36 @@ enum Data {
    I64(i64),
    F64(f64),
    I64I64(I64I64),
+   U8U8U8(U8U8U8),
    VVI64I64(VVI64I64),
 }
 
 const NONE: Data = Data::None;
 
 trait Node {
-   fn new(init1: Data, init2: Data, init3: Data, init4: Data) -> Self;
-
    fn process(&self, arg1: &Data, arg2: &Data, arg3: &Data, arg4: &Data) -> Data;
 }
 
 struct AddNode {
-   init1: Data,
-   init2: Data,
+   first: Data,
+   second: Data,
+}
+
+impl AddNode {
+   #[inline]
+   fn new(first: Data, second: Data) -> Self {
+      AddNode {
+         first: first,
+         second: second,
+      }
+   }
 }
 
 impl Node for AddNode {
    #[inline]
-   fn new(init1: Data, init2: Data, _: Data, _: Data) -> Self {
-      AddNode {
-         init1: init1,
-         init2: init2,
-      }
-   }
-
-   #[inline]
    fn process(&self, arg1: &Data, arg2: &Data, _: &Data, _: &Data) -> Data {
-      let in1 = actual(arg1, &self.init1);
-      let in2 = actual(arg2, &self.init2);
+      let in1 = actual(arg1, &self.first);
+      let in2 = actual(arg2, &self.second);
 
       match (in1, in2) {
          (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
@@ -200,10 +202,12 @@ impl NodeRenderer {
       let mut parser = toml::Parser::new(NODE_DEFS);
 
       match parser.parse() {
-          Some(value) => println!("toml parsed: {:?}", value),
-          None => {
-              println!("parse errors: {:?}", parser.errors);
-          }
+         Some(value) => {
+            println!("toml parsed: {:?}", value);
+         },
+         None => {
+            println!("parse errors: {:?}", parser.errors);
+         }
       }
    }
 }
@@ -227,7 +231,7 @@ impl Renderer for NodeRenderer {
          (493, 174),
       ]];
 
-      let add = AddNode::new(NONE, NONE, NONE, NONE);
+      let add = AddNode::new(NONE, NONE);
 
       let destination = add.process(
          &Data::VVI64I64(source), &Data::I64I64((self.frame, 0)), &NONE, &NONE
