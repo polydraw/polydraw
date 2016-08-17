@@ -14,30 +14,40 @@ const NODE_DEFS: &'static str = r#"
 
    [poly-points]
    type = "[(i64, i64)]"
-   value = [ [0, 0], [90, 1200], [261, 1735], [1443, 410] ]
+   data = [ [0, 0], [90, 1200], [261, 1735], [1443, 410] ]
 
    [translate-point]
    type = "pair"
-   in-1 = "frame"
-   in-2 = { type = "i64", value = 0 }
+   data = [
+      { from = "frame" },
+      { type = "i64", data = 0 } ]
 
    [add-operator]
    type = "add"
-   in-1 = "poly-points"
-   in-2 = "translate-point"
+   data = [
+      { from = "poly-points" },
+      { from = "translate-point" } ]
 
    [poly]
    type = "poly"
-   in-1 = "add-operator"
-   in-2 = { type = "(u8, u8, u8)", value = [0, 127, 255] }
+   data = [
+      { from = "add-operator" },
+      { type = "(u8, u8, u8)", data = [0, 127, 255] } ]
+
+   [poly-list]
+   type = "list"
+   data = [
+      { from = "poly" } ]
 
    [layer]
    type = "layer"
-   in-1 = "poly"
+   data = [
+      { from = "poly-list" } ]
 
    [doc]
    type = "doc"
-   in-1 = "layer"
+   data = [
+      { from = "layer" } ]
 
 "#;
 
@@ -255,7 +265,7 @@ impl NodeParser {
             for (node_id, value) in everything.iter() {
                match value {
                   &toml::Value::Table(ref node_table) => {
-                     self.process_node(node_id, node_table);
+                     process_node(node_id, node_table);
                   },
                   _ => {
                      println!("`{}` is not a table ", node_id);
@@ -269,10 +279,152 @@ impl NodeParser {
       }
    }
 
-   fn process_node(&mut self, node_id: &str, node_table: &toml::Table) {
-      println!("{}: {:?}", node_id, node_table);
+}
+
+fn process_node(node_id: &str, node_table: &toml::Table) {
+   let node_type = extract_node_type(node_id, node_table);
+
+   println!("TYPE: {}", node_type);
+
+   println!("{:?}", node_table);
+
+   match node_type.as_ref() {
+      "add" => create_add_node(node_id, node_table),
+      "pair" => create_pair_node(node_id, node_table),
+      _ => {
+         println!("Unknown node type {:?} for: {}", node_type, node_id);
+      }
+   }
+
+   println!("");
+}
+
+
+fn create_add_node(node_id: &str, node_table: &toml::Table) {
+   println!("ADD NODE");
+
+   let data_value = extract_data_value(node_id, node_table);
+
+   println!("DATA {:?}", data_value);
+}
+
+fn create_pair_node(node_id: &str, node_table: &toml::Table) {
+   println!("PAIR NODE");
+
+   let data_value = extract_data_value(node_id, node_table);
+
+   println!("DATA {:?}", data_value);
+
+   let defaults = to_defaults(node_id, data_value);
+
+   println!("defaults: {:?}", defaults);
+}
+
+
+fn extract_node_type<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a str {
+   match node_table.get("type") {
+      Some(type_value) => {
+         match type_value {
+            &toml::Value::String(ref node_type) => node_type,
+            _ => {
+               panic!("node type not a string: {}", node_id);
+            }
+         }
+      },
+      None => {
+         panic!("node without type: {}", node_id);
+      }
    }
 }
+
+
+fn extract_data_value<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a toml::Value {
+   match node_table.get("data") {
+      Some(data_value) => {
+         data_value
+      },
+      None => {
+         panic!("node without data: {}", node_id);
+      }
+   }
+}
+
+
+fn to_defaults(node_id: &str, data: &toml::Value) -> Vec<Data> {
+   let array = match data {
+      &toml::Value::Array(ref array) => array,
+      _ => {
+         panic!("data is not an array: {}", node_id);
+      }
+   };
+
+   let mut result = Vec::with_capacity(array.len());
+
+   for item in array.iter() {
+      let table = match item {
+         &toml::Value::Table(ref table) => table,
+         _ => {
+            panic!("value is not a table {:?}: {}", item, node_id);
+         }
+      };
+
+      println!("item: {:?}", table);
+
+      if table.get("from").is_some() {
+         // Connection from a different node
+         result.push(Data::None);
+         continue;
+      }
+
+      result.push(
+         extract_table_data(node_id, table)
+      );
+   }
+
+   result
+}
+
+
+fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
+   let type_str = match table.get("type") {
+      Some(type_data) => {
+         match type_data {
+            &toml::Value::String(ref type_str) => type_str,
+            _ => {
+               panic!("Type not a string {:?}: {}", type_data, node_id);
+            }
+         }
+      },
+      None => {
+         panic!("value table without a type {:?}: {}", table, node_id);
+      }
+   };
+
+   let data = match table.get("data") {
+      Some(data) => data,
+      None => {
+         panic!("value table without a data {:?}: {}", table, node_id);
+      }
+   };
+
+   match type_str.as_ref() {
+      "i64" => toml_to_i64(node_id, data),
+      _ => {
+         panic!("Unknown data type {}: {}", type_str, node_id);
+      }
+   }
+}
+
+
+fn toml_to_i64(node_id: &str, data: &toml::Value) -> Data {
+   match data {
+      &toml::Value::Integer(integer) => Data::I64(integer),
+      _ => {
+         panic!("Value not an integer {:?}: {}", data, node_id);
+      }
+   }
+}
+
 
 fn main() {
    let mut renderer = NodeRenderer::new();
