@@ -1,6 +1,8 @@
 extern crate polydraw;
 extern crate toml;
 
+use std::fmt;
+
 use polydraw::{Renderer, Application, Frame};
 use polydraw::devel::{Scene, Poly, DevelRenderer};
 use polydraw::geom::point::Point;
@@ -70,24 +72,27 @@ enum Data {
 
 const NONE: Data = Data::None;
 
-trait Node {
+trait Node where Self: fmt::Debug {
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> where Self: Sized;
+
    fn process(&self, args: &[&Data]) -> Data;
 }
 
+#[derive(Debug)]
 struct AddNode {
    defaults: Vec<Data>,
 }
 
-impl AddNode {
-   #[inline]
-   fn new(defaults: Vec<Data>) -> Self {
-      AddNode {
-         defaults: defaults,
-      }
-   }
-}
-
 impl Node for AddNode {
+   #[inline]
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
+      Box::new(
+         AddNode {
+            defaults: defaults,
+         }
+      )
+   }
+
    #[inline]
    fn process(&self, args: &[&Data]) -> Data {
       let in1 = in_value(args, 0, &self.defaults[0]);
@@ -155,18 +160,12 @@ impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
 }
 
 
+#[derive(Debug)]
 struct JoinNode {
    defaults: Vec<Data>,
 }
 
 impl JoinNode {
-   #[inline]
-   fn new(defaults: Vec<Data>) -> Self {
-      JoinNode {
-         defaults: defaults,
-      }
-   }
-
    #[inline]
    fn process_two(&self, args: &[&Data]) -> Data {
       let in1 = in_value(args, 0, &self.defaults[0]);
@@ -194,6 +193,15 @@ impl JoinNode {
 }
 
 impl Node for JoinNode {
+   #[inline]
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
+      Box::new(
+         JoinNode {
+            defaults: defaults,
+         }
+      )
+   }
+
    #[inline]
    fn process(&self, args: &[&Data]) -> Data {
       match self.defaults.len() {
@@ -280,7 +288,7 @@ impl Renderer for NodeRenderer {
          (493, 174),
       ]];
 
-      let add = AddNode::new(vec![NONE, NONE]);
+      let add = AddNode::new_boxed(vec![NONE, NONE]);
 
       let destination = add.process(
          &[&Data::VVI64I64(source), &Data::I64I64((self.frame, 0))]
@@ -337,9 +345,9 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
 
    println!("{:?}", node_table);
 
-   match node_type.as_ref() {
-      "add" => create_add_node(node_id, node_table),
-      "join" => create_join_node(node_id, node_table),
+   let node = match node_type.as_ref() {
+      "add" => create_node::<AddNode>(node_id, node_table),
+      "join" => create_node::<JoinNode>(node_id, node_table),
       _ => {
          println!("Unknown node type {:?} for: {}", node_type, node_id);
          println!("");
@@ -347,11 +355,13 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
       }
    };
 
+   println!("NODE {:?}", node);
+
    println!("");
 }
 
 
-fn create_add_node(node_id: &str, node_table: &toml::Table) -> Box<Node> {
+fn create_node<T: 'static + Node>(node_id: &str, node_table: &toml::Table) -> Box<Node> {
    println!("ADD NODE");
 
    let data_value = extract_data_value(node_id, node_table);
@@ -362,22 +372,7 @@ fn create_add_node(node_id: &str, node_table: &toml::Table) -> Box<Node> {
 
    println!("defaults: {:?}", defaults);
 
-   Box::new(AddNode::new(defaults))
-}
-
-
-fn create_join_node(node_id: &str, node_table: &toml::Table) -> Box<Node> {
-   println!("JOIN NODE");
-
-   let data_value = extract_data_value(node_id, node_table);
-
-   println!("DATA {:?}", data_value);
-
-   let defaults = to_defaults(node_id, data_value);
-
-   println!("defaults: {:?}", defaults);
-
-   Box::new(JoinNode::new(defaults))
+   T::new_boxed(defaults)
 }
 
 
