@@ -56,6 +56,7 @@ const NODE_DEFS: &'static str = r#"
 
 type I64I64 = (i64, i64);
 type U8U8U8 = (u8, u8, u8);
+type VI64I64 = Vec<I64I64>;
 type VVI64I64 = Vec<Vec<I64I64>>;
 
 #[derive(Debug)]
@@ -67,15 +68,22 @@ enum Data {
    F64(f64),
    I64I64(I64I64),
    U8U8U8(U8U8U8),
+   VI64I64(VI64I64),
    VVI64I64(VVI64I64),
 }
 
 const NONE: Data = Data::None;
 
 trait Node where Self: fmt::Debug {
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> where Self: Sized;
-
    fn process(&self, args: &[&Data]) -> Data;
+}
+
+trait ProcessNode: Node {
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> where Self: Sized;
+}
+
+trait DataTypeNode: Node {
+   fn new_boxed(data: Data) -> Box<Self> where Self: Sized;
 }
 
 #[derive(Debug)]
@@ -83,7 +91,7 @@ struct AddNode {
    defaults: Vec<Data>,
 }
 
-impl Node for AddNode {
+impl ProcessNode for AddNode {
    #[inline]
    fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
       Box::new(
@@ -92,7 +100,9 @@ impl Node for AddNode {
          }
       )
    }
+}
 
+impl Node for AddNode {
    #[inline]
    fn process(&self, args: &[&Data]) -> Data {
       let in1 = in_value(args, 0, &self.defaults[0]);
@@ -106,6 +116,9 @@ impl Node for AddNode {
 
          (&Data::I64I64(ref v1), &Data::I64(ref v2)) => <(I64I64, i64)>::add(v1, v2),
          (&Data::I64(ref v1), &Data::I64I64(ref v2)) => <(I64I64, i64)>::add(v2, v1),
+
+         (&Data::VI64I64(ref v1), &Data::I64I64(ref v2)) => <(VI64I64, I64I64)>::add(v1, v2),
+         (&Data::I64I64(ref v1), &Data::VI64I64(ref v2)) => <(VI64I64, I64I64)>::add(v2, v1),
 
          (&Data::VVI64I64(ref v1), &Data::I64I64(ref v2)) => <(VVI64I64, I64I64)>::add(v1, v2),
          (&Data::I64I64(ref v1), &Data::VVI64I64(ref v2)) => <(VVI64I64, I64I64)>::add(v2, v1),
@@ -137,6 +150,19 @@ impl Add<I64I64, i64> for (I64I64, i64) {
    #[inline]
    fn add(v1: &I64I64, v2: &i64) -> Data {
       Data::I64I64((v1.0 + *v2, v1.1 + *v2))
+   }
+}
+
+impl Add<VI64I64, I64I64> for (VI64I64, I64I64) {
+   #[inline]
+   fn add(v1: &VI64I64, v2: &I64I64) -> Data {
+      let mut result = Vec::with_capacity(v1.len());
+
+      for tuple in v1 {
+         result.push((tuple.0 + v2.0, tuple.1 + v2.1));
+      }
+
+      Data::VI64I64(result)
    }
 }
 
@@ -182,7 +208,7 @@ impl JoinNode {
    fn process_three(&self, args: &[&Data]) -> Data {
       let in1 = in_value(args, 0, &self.defaults[0]);
       let in2 = in_value(args, 1, &self.defaults[1]);
-      let in3 = in_value(args, 2, &self.defaults[3]);
+      let in3 = in_value(args, 2, &self.defaults[2]);
 
       match (in1, in2, in3) {
          (&Data::U8(v1), &Data::U8(v2), &Data::U8(v3)) => Data::U8U8U8((v1, v2, v3)),
@@ -192,7 +218,7 @@ impl JoinNode {
    }
 }
 
-impl Node for JoinNode {
+impl ProcessNode for JoinNode {
    #[inline]
    fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
       Box::new(
@@ -201,7 +227,9 @@ impl Node for JoinNode {
          }
       )
    }
+}
 
+impl Node for JoinNode {
    #[inline]
    fn process(&self, args: &[&Data]) -> Data {
       match self.defaults.len() {
@@ -209,6 +237,29 @@ impl Node for JoinNode {
          3 => self.process_three(args),
          _ => Data::None
       }
+   }
+}
+
+#[derive(Debug)]
+struct DataNode {
+   data: Data,
+}
+
+impl DataTypeNode for DataNode {
+   #[inline]
+   fn new_boxed(data: Data) -> Box<Self> {
+      Box::new(
+         DataNode {
+            data: data,
+         }
+      )
+   }
+}
+
+impl Node for DataNode {
+   #[inline]
+   fn process(&self, _: &[&Data]) -> Data {
+      NONE
    }
 }
 
@@ -346,8 +397,11 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
    println!("{:?}", node_table);
 
    let node = match node_type.as_ref() {
-      "add" => create_node::<AddNode>(node_id, node_table),
-      "join" => create_node::<JoinNode>(node_id, node_table),
+      "add" => create_processing_node::<AddNode>(node_id, node_table),
+      "join" => create_processing_node::<JoinNode>(node_id, node_table),
+
+      "[(i64, i64)]" => create_data_node::<DataNode>(node_id, node_table),
+
       _ => {
          println!("Unknown node type {:?} for: {}", node_type, node_id);
          println!("");
@@ -361,9 +415,7 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
 }
 
 
-fn create_node<T: 'static + Node>(node_id: &str, node_table: &toml::Table) -> Box<Node> {
-   println!("ADD NODE");
-
+fn create_processing_node<T: 'static + ProcessNode>(node_id: &str, node_table: &toml::Table) -> Box<Node> {
    let data_value = extract_data_value(node_id, node_table);
 
    println!("DATA {:?}", data_value);
@@ -373,6 +425,13 @@ fn create_node<T: 'static + Node>(node_id: &str, node_table: &toml::Table) -> Bo
    println!("defaults: {:?}", defaults);
 
    T::new_boxed(defaults)
+}
+
+
+fn create_data_node<T: 'static + DataTypeNode>(node_id: &str, node_table: &toml::Table) -> Box<Node> {
+   let data = extract_table_data(node_id, node_table);
+
+   T::new_boxed(data)
 }
 
 
@@ -464,6 +523,7 @@ fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
 
    match type_str.as_ref() {
       "i64" => toml_to_i64(node_id, data),
+      "[(i64, i64)]" => toml_to_vi64i64(node_id, data),
       _ => {
          panic!("Unknown data type {}: {}", type_str, node_id);
       }
@@ -476,6 +536,49 @@ fn toml_to_i64(node_id: &str, data: &toml::Value) -> Data {
       &toml::Value::Integer(integer) => Data::I64(integer),
       _ => {
          panic!("Value not an integer {:?}: {}", data, node_id);
+      }
+   }
+}
+
+
+fn toml_to_vi64i64(node_id: &str, data: &toml::Value) -> Data {
+   match data {
+      &toml::Value::Array(ref array) => {
+         let mut container = Vec::with_capacity(array.len());
+
+         for inner_array in array {
+            match inner_array {
+               &toml::Value::Array(ref pair) => {
+                  if pair.len() != 2 {
+                     panic!("Not a pair {:?}: {}", pair, node_id);
+                  }
+
+                  let left = match &pair[0] {
+                     &toml::Value::Integer(left) => left,
+                     _ => {
+                        panic!("Value not an integer {:?}: {}", pair[0], node_id);
+                     }
+                  };
+
+                  let right = match &pair[1] {
+                     &toml::Value::Integer(right) => right,
+                     _ => {
+                        panic!("Value not an integer {:?}: {}", pair[1], node_id);
+                     }
+                  };
+
+                  container.push((left, right));
+               },
+               _ => {
+                  panic!("Value not an array {:?}: {}", inner_array, node_id);
+               }
+            }
+         }
+
+         Data::VI64I64(container)
+      },
+      _ => {
+         panic!("Value not an array {:?}: {}", data, node_id);
       }
    }
 }
