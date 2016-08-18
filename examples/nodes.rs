@@ -53,13 +53,23 @@ const NODE_DEFS: &'static str = r#"
 
 "#;
 
+#[derive(Debug)]
+struct Layer;
+
+#[derive(Debug)]
+struct Document;
+
+type U8U8U8 = (u8, u8, u8);
 
 type I64I64 = (i64, i64);
-type U8U8U8 = (u8, u8, u8);
 type VI64I64 = Vec<I64I64>;
 type VVI64I64 = Vec<Vec<I64I64>>;
+
 type PolyBox = Box<Poly>;
 type VPolyBox = Vec<Box<Poly>>;
+
+type LayerBox = Box<Layer>;
+type DocBox = Box<Document>;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -77,6 +87,9 @@ enum Data {
 
    Poly(PolyBox),
    VPoly(VPolyBox),
+
+   Layer(LayerBox),
+   Doc(DocBox),
 }
 
 const NONE: Data = Data::None;
@@ -348,6 +361,63 @@ impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
 
 
 #[derive(Debug)]
+struct LayerNode {
+   defaults: Vec<Data>,
+}
+
+impl ProcessNode for LayerNode {
+   #[inline]
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
+      Box::new(
+         LayerNode {
+            defaults: defaults,
+         }
+      )
+   }
+}
+
+impl Node for LayerNode {
+   #[inline]
+   fn process(&self, args: &[&Data]) -> Data {
+      let polys_data = in_value(args, 0, &self.defaults[0]);
+
+      match polys_data {
+         &Data::VPoly(_) => {
+            Data::Layer(Box::new(Layer {}))
+         },
+         _ => NONE
+      }
+   }
+}
+
+
+#[derive(Debug)]
+struct DocNode {
+   list_node: ListNode,
+}
+
+impl ProcessNode for DocNode {
+   #[inline]
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
+      Box::new(
+         DocNode {
+            list_node: ListNode {
+               defaults: defaults,
+            }
+         }
+      )
+   }
+}
+
+impl Node for DocNode {
+   #[inline]
+   fn process(&self, args: &[&Data]) -> Data {
+      self.list_node.process(args)
+   }
+}
+
+
+#[derive(Debug)]
 struct DataNode {
    data: Data,
 }
@@ -508,6 +578,8 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
       "join" => create_processing_node::<JoinNode>(node_id, node_table),
       "list" => create_processing_node::<ListNode>(node_id, node_table),
       "poly" => create_processing_node::<PolyNode>(node_id, node_table),
+      "layer" => create_processing_node::<LayerNode>(node_id, node_table),
+      "doc" => create_processing_node::<DocNode>(node_id, node_table),
 
       "[(i64, i64)]" => create_data_node::<DataNode>(node_id, node_table),
 
