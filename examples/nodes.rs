@@ -58,6 +58,7 @@ type I64I64 = (i64, i64);
 type U8U8U8 = (u8, u8, u8);
 type VI64I64 = Vec<I64I64>;
 type VVI64I64 = Vec<Vec<I64I64>>;
+type PolyBox = Box<Poly>;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -70,6 +71,7 @@ enum Data {
    U8U8U8(U8U8U8),
    VI64I64(VI64I64),
    VVI64I64(VVI64I64),
+   Poly(PolyBox),
 }
 
 const NONE: Data = Data::None;
@@ -240,6 +242,59 @@ impl Node for JoinNode {
    }
 }
 
+
+#[derive(Debug)]
+struct PolyNode {
+   defaults: Vec<Data>,
+}
+
+impl ProcessNode for PolyNode {
+   #[inline]
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
+      Box::new(
+         PolyNode {
+            defaults: defaults,
+         }
+      )
+   }
+}
+
+impl Node for PolyNode {
+   #[inline]
+   fn process(&self, args: &[&Data]) -> Data {
+      let points = in_value(args, 0, &self.defaults[0]);
+      let color = in_value(args, 1, &self.defaults[1]);
+
+      match (points, color) {
+         (&Data::VI64I64(ref v1), &Data::U8U8U8(ref v2)) => <(VI64I64, U8U8U8)>::create_poly(v1, v2),
+
+         _ => NONE
+      }
+   }
+}
+
+trait PolyMake<T1, T2> {
+   fn create_poly(v1: &T1, v2: &T2) -> Data;
+}
+
+impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
+   #[inline]
+   fn create_poly(array: &VI64I64, color: &U8U8U8) -> Data {
+      let mut points = Vec::with_capacity(array.len());
+
+      for tuple in array {
+         points.push(Point::new(tuple.0, tuple.1))
+      }
+
+      let color = RGB::new(color.0, color.1, color.2);
+
+      let poly = Poly::new(points, color);
+
+      Data::Poly(Box::new(poly))
+   }
+}
+
+
 #[derive(Debug)]
 struct DataNode {
    data: Data,
@@ -399,6 +454,7 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
    let node = match node_type.as_ref() {
       "add" => create_processing_node::<AddNode>(node_id, node_table),
       "join" => create_processing_node::<JoinNode>(node_id, node_table),
+      "poly" => create_processing_node::<PolyNode>(node_id, node_table),
 
       "[(i64, i64)]" => create_data_node::<DataNode>(node_id, node_table),
 
@@ -523,6 +579,7 @@ fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
 
    match type_str.as_ref() {
       "i64" => toml_to_i64(node_id, data),
+      "(u8, u8, u8)" => toml_to_u8u8u8(node_id, data),
       "[(i64, i64)]" => toml_to_vi64i64(node_id, data),
       _ => {
          panic!("Unknown data type {}: {}", type_str, node_id);
@@ -532,10 +589,25 @@ fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
 
 
 fn toml_to_i64(node_id: &str, data: &toml::Value) -> Data {
+   Data::I64(extract_i64(node_id, data))
+}
+
+
+fn toml_to_u8u8u8(node_id: &str, data: &toml::Value) -> Data {
    match data {
-      &toml::Value::Integer(integer) => Data::I64(integer),
+      &toml::Value::Array(ref array) => {
+         if array.len() != 3 {
+            panic!("Not a triple {:?}: {}", array, node_id);
+         }
+
+         let first = extract_u8(node_id, &array[0]);
+         let second = extract_u8(node_id, &array[1]);
+         let third = extract_u8(node_id, &array[2]);
+
+         Data::U8U8U8((first, second, third))
+      },
       _ => {
-         panic!("Value not an integer {:?}: {}", data, node_id);
+         panic!("Value not an array {:?}: {}", data, node_id);
       }
    }
 }
@@ -553,19 +625,8 @@ fn toml_to_vi64i64(node_id: &str, data: &toml::Value) -> Data {
                      panic!("Not a pair {:?}: {}", pair, node_id);
                   }
 
-                  let left = match &pair[0] {
-                     &toml::Value::Integer(left) => left,
-                     _ => {
-                        panic!("Value not an integer {:?}: {}", pair[0], node_id);
-                     }
-                  };
-
-                  let right = match &pair[1] {
-                     &toml::Value::Integer(right) => right,
-                     _ => {
-                        panic!("Value not an integer {:?}: {}", pair[1], node_id);
-                     }
-                  };
+                  let left = extract_i64(node_id, &pair[0]);
+                  let right = extract_i64(node_id, &pair[1]);
 
                   container.push((left, right));
                },
@@ -583,6 +644,20 @@ fn toml_to_vi64i64(node_id: &str, data: &toml::Value) -> Data {
    }
 }
 
+
+fn extract_i64(node_id: &str, data: &toml::Value) -> i64 {
+   match data {
+      &toml::Value::Integer(value) => value,
+      _ => {
+         panic!("Not an integer {:?}: {}", data, node_id);
+      }
+   }
+}
+
+
+fn extract_u8(node_id: &str, data: &toml::Value) -> u8 {
+   extract_i64(node_id, data) as u8
+}
 
 fn main() {
    let mut renderer = NodeRenderer::new();
