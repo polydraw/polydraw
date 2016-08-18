@@ -59,6 +59,7 @@ type U8U8U8 = (u8, u8, u8);
 type VI64I64 = Vec<I64I64>;
 type VVI64I64 = Vec<Vec<I64I64>>;
 type PolyBox = Box<Poly>;
+type VPolyBox = Vec<Box<Poly>>;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -67,11 +68,15 @@ enum Data {
    U8(u8),
    I64(i64),
    F64(f64),
+
    I64I64(I64I64),
-   U8U8U8(U8U8U8),
    VI64I64(VI64I64),
    VVI64I64(VVI64I64),
+
+   U8U8U8(U8U8U8),
+
    Poly(PolyBox),
+   VPoly(VPolyBox),
 }
 
 const NONE: Data = Data::None;
@@ -238,6 +243,53 @@ impl Node for JoinNode {
          2 => self.process_two(args),
          3 => self.process_three(args),
          _ => Data::None
+      }
+   }
+}
+
+
+#[derive(Debug)]
+struct ListNode {
+   defaults: Vec<Data>,
+}
+
+impl ProcessNode for ListNode {
+   #[inline]
+   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
+      Box::new(
+         ListNode {
+            defaults: defaults,
+         }
+      )
+   }
+}
+
+impl ListNode {
+   #[inline]
+   fn create_poly_list(&self, args: &[&Data]) -> Data {
+      let mut result = Vec::with_capacity(args.len());
+
+      for i in 0..args.len() {
+         let element = in_value(args, i, &self.defaults[i]);
+
+         match element {
+            &Data::Poly(ref poly) => result.push((*poly).clone()),
+            _ => {}
+         }
+      }
+
+      Data::VPoly(result)
+   }
+}
+
+impl Node for ListNode {
+   #[inline]
+   fn process(&self, args: &[&Data]) -> Data {
+      let first = in_value(args, 0, &self.defaults[0]);
+
+      match first {
+         &Data::Poly(_) => self.create_poly_list(args),
+         _ => NONE
       }
    }
 }
@@ -454,6 +506,7 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
    let node = match node_type.as_ref() {
       "add" => create_processing_node::<AddNode>(node_id, node_table),
       "join" => create_processing_node::<JoinNode>(node_id, node_table),
+      "list" => create_processing_node::<ListNode>(node_id, node_table),
       "poly" => create_processing_node::<PolyNode>(node_id, node_table),
 
       "[(i64, i64)]" => create_data_node::<DataNode>(node_id, node_table),

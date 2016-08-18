@@ -1,7 +1,7 @@
 use geom::point::Point;
 use draw::RGB;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Poly {
    pub points: Vec<Point>,
    pub holes: Vec<Vec<Point>>,
