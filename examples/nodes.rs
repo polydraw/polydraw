@@ -17,7 +17,7 @@ const NODE_DEFS: &'static str = r#"
    data = [ [0, 0], [90, 1200], [261, 1735], [1443, 410] ]
 
    [translate-point]
-   type = "pair"
+   type = "join"
    data = [
       { from = "frame" },
       { type = "i64", data = 0 } ]
@@ -60,6 +60,7 @@ type VVI64I64 = Vec<Vec<I64I64>>;
 #[allow(dead_code)]
 enum Data {
    None,
+   U8(u8),
    I64(i64),
    F64(f64),
    I64I64(I64I64),
@@ -74,16 +75,14 @@ trait Node {
 }
 
 struct AddNode {
-   first: Data,
-   second: Data,
+   defaults: Vec<Data>,
 }
 
 impl AddNode {
    #[inline]
-   fn new(first: Data, second: Data) -> Self {
+   fn new(defaults: Vec<Data>) -> Self {
       AddNode {
-         first: first,
-         second: second,
+         defaults: defaults,
       }
    }
 }
@@ -91,8 +90,8 @@ impl AddNode {
 impl Node for AddNode {
    #[inline]
    fn process(&self, args: &[&Data]) -> Data {
-      let in1 = in_value(args, 0, &self.first);
-      let in2 = in_value(args, 1, &self.second);
+      let in1 = in_value(args, 0, &self.defaults[0]);
+      let in2 = in_value(args, 1, &self.defaults[1]);
 
       match (in1, in2) {
          (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
@@ -152,6 +151,56 @@ impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
       }
 
       Data::VVI64I64(outer)
+   }
+}
+
+
+struct JoinNode {
+   defaults: Vec<Data>,
+}
+
+impl JoinNode {
+   #[inline]
+   fn new(defaults: Vec<Data>) -> Self {
+      JoinNode {
+         defaults: defaults,
+      }
+   }
+
+   #[inline]
+   fn process_two(&self, args: &[&Data]) -> Data {
+      let in1 = in_value(args, 0, &self.defaults[0]);
+      let in2 = in_value(args, 1, &self.defaults[1]);
+
+      match (in1, in2) {
+         (&Data::I64(v1), &Data::I64(v2)) => Data::I64I64((v1, v2)),
+
+         _ => NONE
+      }
+   }
+
+   #[inline]
+   fn process_three(&self, args: &[&Data]) -> Data {
+      let in1 = in_value(args, 0, &self.defaults[0]);
+      let in2 = in_value(args, 1, &self.defaults[1]);
+      let in3 = in_value(args, 2, &self.defaults[3]);
+
+      match (in1, in2, in3) {
+         (&Data::U8(v1), &Data::U8(v2), &Data::U8(v3)) => Data::U8U8U8((v1, v2, v3)),
+
+         _ => NONE
+      }
+   }
+}
+
+impl Node for JoinNode {
+   #[inline]
+   fn process(&self, args: &[&Data]) -> Data {
+      match self.defaults.len() {
+         2 => self.process_two(args),
+         3 => self.process_three(args),
+         _ => Data::None
+      }
    }
 }
 
@@ -231,7 +280,7 @@ impl Renderer for NodeRenderer {
          (493, 174),
       ]];
 
-      let add = AddNode::new(NONE, NONE);
+      let add = AddNode::new(vec![NONE, NONE]);
 
       let destination = add.process(
          &[&Data::VVI64I64(source), &Data::I64I64((self.frame, 0))]
@@ -290,26 +339,20 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
 
    match node_type.as_ref() {
       "add" => create_add_node(node_id, node_table),
-      "pair" => create_pair_node(node_id, node_table),
+      "join" => create_join_node(node_id, node_table),
       _ => {
          println!("Unknown node type {:?} for: {}", node_type, node_id);
+         println!("");
+         return;
       }
-   }
+   };
 
    println!("");
 }
 
 
-fn create_add_node(node_id: &str, node_table: &toml::Table) {
+fn create_add_node(node_id: &str, node_table: &toml::Table) -> Box<Node> {
    println!("ADD NODE");
-
-   let data_value = extract_data_value(node_id, node_table);
-
-   println!("DATA {:?}", data_value);
-}
-
-fn create_pair_node(node_id: &str, node_table: &toml::Table) {
-   println!("PAIR NODE");
 
    let data_value = extract_data_value(node_id, node_table);
 
@@ -318,6 +361,23 @@ fn create_pair_node(node_id: &str, node_table: &toml::Table) {
    let defaults = to_defaults(node_id, data_value);
 
    println!("defaults: {:?}", defaults);
+
+   Box::new(AddNode::new(defaults))
+}
+
+
+fn create_join_node(node_id: &str, node_table: &toml::Table) -> Box<Node> {
+   println!("JOIN NODE");
+
+   let data_value = extract_data_value(node_id, node_table);
+
+   println!("DATA {:?}", data_value);
+
+   let defaults = to_defaults(node_id, data_value);
+
+   println!("defaults: {:?}", defaults);
+
+   Box::new(JoinNode::new(defaults))
 }
 
 
