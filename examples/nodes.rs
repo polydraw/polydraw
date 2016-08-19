@@ -2,6 +2,7 @@ extern crate polydraw;
 extern crate toml;
 
 use std::fmt;
+use std::collections::HashMap;
 
 use polydraw::{Renderer, Application, Frame};
 use polydraw::devel::{Scene, Poly, DevelRenderer};
@@ -10,9 +11,6 @@ use polydraw::draw::RGB;
 
 
 const NODE_DEFS: &'static str = r#"
-
-   [frame]
-   type = "frame"
 
    [poly-points]
    type = "[(i64, i64)]"
@@ -499,8 +497,7 @@ impl NodeRenderer {
 impl Renderer for NodeRenderer {
    #[inline]
    fn init(&mut self, width: u32, height: u32) {
-      let mut parser = NodeParser::new();
-      parser.parse(NODE_DEFS);
+      parse(NODE_DEFS);
 
       self.renderer.init(width, height);
    }
@@ -535,38 +532,37 @@ impl Renderer for NodeRenderer {
    }
 }
 
-struct NodeParser;
+fn parse(node_defs: &str) {
+   let mut parser = toml::Parser::new(node_defs);
 
-impl NodeParser {
-   fn new() -> Self {
-      NodeParser {}
-   }
+   match parser.parse() {
+      Some(all_tables) => {
+         let mut index_map = HashMap::new();
+         index_map.insert("frame", 0);
 
-   fn parse(&mut self, node_defs: &str) {
-      let mut parser = toml::Parser::new(node_defs);
+         for (index, node_id) in all_tables.keys().enumerate() {
+            println!("NODE {} {}", index, node_id);
+            index_map.insert(node_id.as_str(), index + 1);
+         }
 
-      match parser.parse() {
-         Some(everything) => {
-            for (node_id, value) in everything.iter() {
-               match value {
-                  &toml::Value::Table(ref node_table) => {
-                     process_node(node_id, node_table);
-                  },
-                  _ => {
-                     println!("`{}` is not a table ", node_id);
-                  }
+         for (node_id, value) in all_tables.iter() {
+            match value {
+               &toml::Value::Table(ref node_table) => {
+                  process_node(node_id, node_table, &index_map);
+               },
+               _ => {
+                  println!("`{}` is not a table ", node_id);
                }
             }
-         },
-         None => {
-            println!("parse errors: {:?}", parser.errors);
          }
+      },
+      None => {
+         println!("parse errors: {:?}", parser.errors);
       }
    }
-
 }
 
-fn process_node(node_id: &str, node_table: &toml::Table) {
+fn process_node(node_id: &str, node_table: &toml::Table, index_map: &HashMap<&str, usize>) {
    let node_type = extract_node_type(node_id, node_table);
 
    println!("TYPE: {}", node_type);
@@ -574,12 +570,13 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
    println!("{:?}", node_table);
 
    let node = match node_type.as_ref() {
-      "add" => create_processing_node::<AddNode>(node_id, node_table),
-      "join" => create_processing_node::<JoinNode>(node_id, node_table),
-      "list" => create_processing_node::<ListNode>(node_id, node_table),
-      "poly" => create_processing_node::<PolyNode>(node_id, node_table),
-      "layer" => create_processing_node::<LayerNode>(node_id, node_table),
-      "doc" => create_processing_node::<DocNode>(node_id, node_table),
+      "add" => create_processing_node::<AddNode>(node_id, node_table, index_map),
+      "join" => create_processing_node::<JoinNode>(node_id, node_table, index_map),
+      "list" => create_processing_node::<ListNode>(node_id, node_table, index_map),
+
+      "poly" => create_processing_node::<PolyNode>(node_id, node_table, index_map),
+      "layer" => create_processing_node::<LayerNode>(node_id, node_table, index_map),
+      "doc" => create_processing_node::<DocNode>(node_id, node_table, index_map),
 
       "[(i64, i64)]" => create_data_node::<DataNode>(node_id, node_table),
 
@@ -596,14 +593,18 @@ fn process_node(node_id: &str, node_table: &toml::Table) {
 }
 
 
-fn create_processing_node<T: 'static + ProcessNode>(node_id: &str, node_table: &toml::Table) -> Box<Node> {
+fn create_processing_node<T: 'static + ProcessNode>(
+   node_id: &str, node_table: &toml::Table, index_map: &HashMap<&str, usize>
+) -> Box<Node> {
+
    let data_value = extract_data_value(node_id, node_table);
 
    println!("DATA {:?}", data_value);
 
-   let defaults = to_defaults(node_id, data_value);
+   let (defaults, inlets) = to_defaults(node_id, data_value, index_map);
 
    println!("defaults: {:?}", defaults);
+   println!("inlets: {:?}", inlets);
 
    T::new_boxed(defaults)
 }
@@ -645,7 +646,12 @@ fn extract_data_value<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a tom
 }
 
 
-fn to_defaults(node_id: &str, data: &toml::Value) -> Vec<Data> {
+fn to_defaults(
+   node_id: &str,
+   data: &toml::Value,
+   index_map: &HashMap<&str, usize>
+) -> (Vec<Data>, Vec<Option<usize>>) {
+
    let array = match data {
       &toml::Value::Array(ref array) => array,
       _ => {
@@ -653,7 +659,8 @@ fn to_defaults(node_id: &str, data: &toml::Value) -> Vec<Data> {
       }
    };
 
-   let mut result = Vec::with_capacity(array.len());
+   let mut defaults = Vec::with_capacity(array.len());
+   let mut inlets = Vec::with_capacity(array.len());
 
    for item in array.iter() {
       let table = match item {
@@ -665,18 +672,41 @@ fn to_defaults(node_id: &str, data: &toml::Value) -> Vec<Data> {
 
       println!("item: {:?}", table);
 
-      if table.get("from").is_some() {
-         // Connection from a different node
-         result.push(Data::None);
-         continue;
-      }
+      match table.get("from") {
+         Some(from) => {
 
-      result.push(
-         extract_table_data(node_id, table)
-      );
+            let in_id = match from {
+               &toml::Value::String(ref in_id) => in_id,
+               _ => {
+                  panic!("From is not a string {:?}: {}", from, node_id);
+               }
+            };
+
+            let index = match index_map.get::<str>(in_id) {
+               Some(index) => index,
+               _ => {
+                  panic!("Unrecognized ID {:?}: {}", in_id, node_id);
+               }
+            };
+
+            println!("IN ID {:?}", index);
+
+            inlets.push(Some(*index));
+
+            defaults.push(Data::None);
+
+         },
+         None => {
+            defaults.push(
+               extract_table_data(node_id, table)
+            );
+
+            inlets.push(None);
+         }
+      }
    }
 
-   result
+   (defaults, inlets)
 }
 
 
