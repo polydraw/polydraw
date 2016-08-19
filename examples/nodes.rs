@@ -51,6 +51,8 @@ const NODE_DEFS: &'static str = r#"
 
 "#;
 
+const NODE_INDEX_OFFSET: usize = 2;
+
 #[derive(Debug)]
 struct Layer;
 
@@ -93,38 +95,67 @@ enum Data {
 const NONE: Data = Data::None;
 
 trait Node where Self: fmt::Debug {
-   fn process(&self, args: &[&Data]) -> Data;
+   fn new(core: ProcessCore) -> Self where Self: Sized;
+
+   fn process(&self, data: &[Data]) -> Data;
 }
 
-trait ProcessNode: Node {
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> where Self: Sized;
+#[derive(Debug)]
+struct ProcessCore {
+   defaults: Vec<Data>,
+   inlets: Vec<Option<usize>>,
 }
 
-trait DataTypeNode: Node {
-   fn new_boxed(data: Data) -> Box<Self> where Self: Sized;
+impl ProcessCore {
+   #[inline]
+   fn new(defaults: Vec<Data>, inlets: Vec<Option<usize>>) -> Self {
+      ProcessCore {
+         defaults: defaults,
+         inlets: inlets,
+      }
+   }
+
+   #[inline]
+   fn input<'a>(&'a self, data: &'a[Data], index: usize) -> &'a Data {
+      match self.inlets.get(index) {
+         Some(option) => match *option {
+            Some(data_index) => return &data[data_index],
+            None => {}
+         },
+         None => {}
+      }
+
+      match self.defaults.get(index) {
+         Some(ref value) => value,
+         None => &data[0]
+      }
+   }
+
+   #[inline]
+   fn len(&self) -> usize {
+      assert!(self.defaults.len() == self.inlets.len());
+
+      self.defaults.len()
+   }
 }
 
 #[derive(Debug)]
 struct AddNode {
-   defaults: Vec<Data>,
-}
-
-impl ProcessNode for AddNode {
-   #[inline]
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
-      Box::new(
-         AddNode {
-            defaults: defaults,
-         }
-      )
-   }
+   core: ProcessCore,
 }
 
 impl Node for AddNode {
    #[inline]
-   fn process(&self, args: &[&Data]) -> Data {
-      let in1 = in_value(args, 0, &self.defaults[0]);
-      let in2 = in_value(args, 1, &self.defaults[1]);
+   fn new(core: ProcessCore) -> Self {
+      AddNode {
+         core: core
+      }
+   }
+
+   #[inline]
+   fn process(&self, data: &[Data]) -> Data {
+      let in1 = self.core.input(data, 0);
+      let in2 = self.core.input(data, 1);
 
       match (in1, in2) {
          (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
@@ -206,14 +237,14 @@ impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
 
 #[derive(Debug)]
 struct JoinNode {
-   defaults: Vec<Data>,
+   core: ProcessCore,
 }
 
 impl JoinNode {
    #[inline]
-   fn process_two(&self, args: &[&Data]) -> Data {
-      let in1 = in_value(args, 0, &self.defaults[0]);
-      let in2 = in_value(args, 1, &self.defaults[1]);
+   fn process_two(&self, data: &[Data]) -> Data {
+      let in1 = self.core.input(data, 0);
+      let in2 = self.core.input(data, 1);
 
       match (in1, in2) {
          (&Data::I64(v1), &Data::I64(v2)) => Data::I64I64((v1, v2)),
@@ -223,10 +254,10 @@ impl JoinNode {
    }
 
    #[inline]
-   fn process_three(&self, args: &[&Data]) -> Data {
-      let in1 = in_value(args, 0, &self.defaults[0]);
-      let in2 = in_value(args, 1, &self.defaults[1]);
-      let in3 = in_value(args, 2, &self.defaults[2]);
+   fn process_three(&self, data: &[Data]) -> Data {
+      let in1 = self.core.input(data, 0);
+      let in2 = self.core.input(data, 1);
+      let in3 = self.core.input(data, 2);
 
       match (in1, in2, in3) {
          (&Data::U8(v1), &Data::U8(v2), &Data::U8(v3)) => Data::U8U8U8((v1, v2, v3)),
@@ -236,23 +267,19 @@ impl JoinNode {
    }
 }
 
-impl ProcessNode for JoinNode {
-   #[inline]
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
-      Box::new(
-         JoinNode {
-            defaults: defaults,
-         }
-      )
-   }
-}
-
 impl Node for JoinNode {
    #[inline]
-   fn process(&self, args: &[&Data]) -> Data {
-      match self.defaults.len() {
-         2 => self.process_two(args),
-         3 => self.process_three(args),
+   fn new(core: ProcessCore) -> Self {
+      JoinNode {
+         core: core
+      }
+   }
+
+   #[inline]
+   fn process(&self, data: &[Data]) -> Data {
+      match self.core.len() {
+         2 => self.process_two(data),
+         3 => self.process_three(data),
          _ => Data::None
       }
    }
@@ -261,29 +288,18 @@ impl Node for JoinNode {
 
 #[derive(Debug)]
 struct ListNode {
-   defaults: Vec<Data>,
-}
-
-impl ProcessNode for ListNode {
-   #[inline]
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
-      Box::new(
-         ListNode {
-            defaults: defaults,
-         }
-      )
-   }
+   core: ProcessCore,
 }
 
 impl ListNode {
    #[inline]
-   fn create_poly_list(&self, args: &[&Data]) -> Data {
-      let mut result = Vec::with_capacity(args.len());
+   fn create_poly_list(&self, data: &[Data]) -> Data {
+      let mut result = Vec::with_capacity(self.core.len());
 
-      for i in 0..args.len() {
-         let element = in_value(args, i, &self.defaults[i]);
+      for i in 0..self.core.len() {
+         let input = self.core.input(data, i);
 
-         match element {
+         match input {
             &Data::Poly(ref poly) => result.push((*poly).clone()),
             _ => {}
          }
@@ -295,11 +311,18 @@ impl ListNode {
 
 impl Node for ListNode {
    #[inline]
-   fn process(&self, args: &[&Data]) -> Data {
-      let first = in_value(args, 0, &self.defaults[0]);
+   fn new(core: ProcessCore) -> Self {
+      ListNode {
+         core: core
+      }
+   }
 
-      match first {
-         &Data::Poly(_) => self.create_poly_list(args),
+   #[inline]
+   fn process(&self, data: &[Data]) -> Data {
+      let in1 = self.core.input(data, 0);
+
+      match in1 {
+         &Data::Poly(_) => self.create_poly_list(data),
          _ => NONE
       }
    }
@@ -308,25 +331,21 @@ impl Node for ListNode {
 
 #[derive(Debug)]
 struct PolyNode {
-   defaults: Vec<Data>,
-}
-
-impl ProcessNode for PolyNode {
-   #[inline]
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
-      Box::new(
-         PolyNode {
-            defaults: defaults,
-         }
-      )
-   }
+   core: ProcessCore,
 }
 
 impl Node for PolyNode {
    #[inline]
-   fn process(&self, args: &[&Data]) -> Data {
-      let points = in_value(args, 0, &self.defaults[0]);
-      let color = in_value(args, 1, &self.defaults[1]);
+   fn new(core: ProcessCore) -> Self {
+      PolyNode {
+         core: core
+      }
+   }
+
+   #[inline]
+   fn process(&self, data: &[Data]) -> Data {
+      let points = self.core.input(data, 0);
+      let color = self.core.input(data, 1);
 
       match (points, color) {
          (&Data::VI64I64(ref v1), &Data::U8U8U8(ref v2)) => <(VI64I64, U8U8U8)>::create_poly(v1, v2),
@@ -360,24 +379,20 @@ impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
 
 #[derive(Debug)]
 struct LayerNode {
-   defaults: Vec<Data>,
-}
-
-impl ProcessNode for LayerNode {
-   #[inline]
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
-      Box::new(
-         LayerNode {
-            defaults: defaults,
-         }
-      )
-   }
+   core: ProcessCore,
 }
 
 impl Node for LayerNode {
    #[inline]
-   fn process(&self, args: &[&Data]) -> Data {
-      let polys_data = in_value(args, 0, &self.defaults[0]);
+   fn new(core: ProcessCore) -> Self {
+      LayerNode {
+         core: core
+      }
+   }
+
+   #[inline]
+   fn process(&self, data: &[Data]) -> Data {
+      let polys_data = self.core.input(data, 0);
 
       match polys_data {
          &Data::VPoly(_) => {
@@ -394,60 +409,20 @@ struct DocNode {
    list_node: ListNode,
 }
 
-impl ProcessNode for DocNode {
-   #[inline]
-   fn new_boxed(defaults: Vec<Data>) -> Box<Self> {
-      Box::new(
-         DocNode {
-            list_node: ListNode {
-               defaults: defaults,
-            }
-         }
-      )
-   }
-}
-
 impl Node for DocNode {
    #[inline]
-   fn process(&self, args: &[&Data]) -> Data {
-      self.list_node.process(args)
+   fn new(core: ProcessCore) -> Self {
+      DocNode {
+         list_node: ListNode::new(core)
+      }
    }
-}
 
-
-#[derive(Debug)]
-struct DataNode {
-   data: Data,
-}
-
-impl DataTypeNode for DataNode {
    #[inline]
-   fn new_boxed(data: Data) -> Box<Self> {
-      Box::new(
-         DataNode {
-            data: data,
-         }
-      )
+   fn process(&self, data: &[Data]) -> Data {
+      self.list_node.process(data)
    }
 }
 
-impl Node for DataNode {
-   #[inline]
-   fn process(&self, _: &[&Data]) -> Data {
-      NONE
-   }
-}
-
-#[inline]
-fn in_value<'a>(args: &'a[&'a Data], index: usize, initial: &'a Data) -> &'a Data {
-   match args.get(index) {
-      Some(passed) => match *passed {
-         &Data::None => initial,
-         _ => *passed
-      },
-      None => initial
-   }
-}
 
 #[inline]
 fn poly_from_data(data: &VVI64I64) -> Poly {
@@ -513,11 +488,18 @@ impl Renderer for NodeRenderer {
          (493, 174),
       ]];
 
-      let add = AddNode::new_boxed(vec![NONE, NONE]);
+      let state = [
+         Data::None,
+         Data::I64(self.frame),
+         Data::VVI64I64(source),
+         Data::I64I64((self.frame, 0))
+      ];
 
-      let destination = add.process(
-         &[&Data::VVI64I64(source), &Data::I64I64((self.frame, 0))]
+      let add = AddNode::new(
+         ProcessCore::new(vec![NONE, NONE], vec![Some(2), Some(3)])
       );
+
+      let destination = add.process(&state);
 
       match destination {
          Data::VVI64I64(data) => scene.push(poly_from_data(&data)),
@@ -538,17 +520,30 @@ fn parse(node_defs: &str) {
    match parser.parse() {
       Some(all_tables) => {
          let mut index_map = HashMap::new();
-         index_map.insert("frame", 0);
 
-         for (index, node_id) in all_tables.keys().enumerate() {
+         // Data::None at index 0, frame number at index 1
+         index_map.insert("frame", 1);
+
+         for (i, node_id) in all_tables.keys().enumerate() {
+            let index = i + NODE_INDEX_OFFSET;
             println!("NODE {} {}", index, node_id);
-            index_map.insert(node_id.as_str(), index + 1);
+            index_map.insert(node_id.as_str(), index + 2);
          }
 
-         for (node_id, value) in all_tables.iter() {
+         println!("");
+
+         let data_len = all_tables.len() + NODE_INDEX_OFFSET;
+
+         let mut state = Vec::with_capacity(data_len);
+         for i in 0..data_len {
+            state.push(Data::None);
+         }
+
+         for (i, (node_id, value)) in all_tables.iter().enumerate() {
             match value {
                &toml::Value::Table(ref node_table) => {
-                  process_node(node_id, node_table, &index_map);
+                  let index = i + NODE_INDEX_OFFSET;
+                  let node = create_node(node_id, index, node_table, &index_map, &mut state);
                },
                _ => {
                   println!("`{}` is not a table ", node_id);
@@ -562,40 +557,41 @@ fn parse(node_defs: &str) {
    }
 }
 
-fn process_node(node_id: &str, node_table: &toml::Table, index_map: &HashMap<&str, usize>) {
+fn create_node(
+   node_id: &str,
+   node_index: usize,
+   node_table: &toml::Table,
+   index_map: &HashMap<&str, usize>,
+   state: &mut Vec<Data>,
+) -> Option<Box<Node>> {
+
    let node_type = extract_node_type(node_id, node_table);
 
    println!("TYPE: {}", node_type);
 
    println!("{:?}", node_table);
 
-   let node = match node_type.as_ref() {
-      "add" => create_processing_node::<AddNode>(node_id, node_table, index_map),
-      "join" => create_processing_node::<JoinNode>(node_id, node_table, index_map),
-      "list" => create_processing_node::<ListNode>(node_id, node_table, index_map),
+   match node_type.as_ref() {
+      "add" => return create_processing_node::<AddNode>(node_id, node_table, index_map),
+      "join" => return create_processing_node::<JoinNode>(node_id, node_table, index_map),
+      "list" => return create_processing_node::<ListNode>(node_id, node_table, index_map),
 
-      "poly" => create_processing_node::<PolyNode>(node_id, node_table, index_map),
-      "layer" => create_processing_node::<LayerNode>(node_id, node_table, index_map),
-      "doc" => create_processing_node::<DocNode>(node_id, node_table, index_map),
+      "poly" => return create_processing_node::<PolyNode>(node_id, node_table, index_map),
+      "layer" => return create_processing_node::<LayerNode>(node_id, node_table, index_map),
+      "doc" => return create_processing_node::<DocNode>(node_id, node_table, index_map),
+      _ => {},
+   }
 
-      "[(i64, i64)]" => create_data_node::<DataNode>(node_id, node_table),
+   let data = extract_table_data(node_id, node_table);
+   state[node_index] = data;
 
-      _ => {
-         println!("Unknown node type {:?} for: {}", node_type, node_id);
-         println!("");
-         return;
-      }
-   };
-
-   println!("NODE {:?}", node);
-
-   println!("");
+   None
 }
 
 
-fn create_processing_node<T: 'static + ProcessNode>(
+fn create_processing_node<T: 'static + Node>(
    node_id: &str, node_table: &toml::Table, index_map: &HashMap<&str, usize>
-) -> Box<Node> {
+) -> Option<Box<Node>> {
 
    let data_value = extract_data_value(node_id, node_table);
 
@@ -606,14 +602,13 @@ fn create_processing_node<T: 'static + ProcessNode>(
    println!("defaults: {:?}", defaults);
    println!("inlets: {:?}", inlets);
 
-   T::new_boxed(defaults)
-}
+   let core = ProcessCore::new(defaults, inlets);
 
-
-fn create_data_node<T: 'static + DataTypeNode>(node_id: &str, node_table: &toml::Table) -> Box<Node> {
-   let data = extract_table_data(node_id, node_table);
-
-   T::new_boxed(data)
+   Some(
+      Box::new(
+         T::new(core)
+      )
+   )
 }
 
 
