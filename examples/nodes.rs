@@ -44,8 +44,8 @@ const NODE_DEFS: &'static str = r#"
    data = [
       { from = "poly-list" } ]
 
-   [doc]
-   type = "doc"
+   [artboard]
+   type = "artboard"
    data = [
       { from = "layer" } ]
 
@@ -57,7 +57,7 @@ const NODE_INDEX_OFFSET: usize = 2;
 struct Layer;
 
 #[derive(Debug)]
-struct Document;
+struct Artboard;
 
 type U8U8U8 = (u8, u8, u8);
 
@@ -69,10 +69,9 @@ type PolyBox = Box<Poly>;
 type VPolyBox = Vec<Box<Poly>>;
 
 type LayerBox = Box<Layer>;
-type DocBox = Box<Document>;
+type ArtboardBox = Box<Artboard>;
 
 #[derive(Debug)]
-#[allow(dead_code)]
 enum Data {
    None,
    U8(u8),
@@ -89,29 +88,45 @@ enum Data {
    VPoly(VPolyBox),
 
    Layer(LayerBox),
-   Doc(DocBox),
+   Artboard(ArtboardBox),
 }
 
 const NONE: Data = Data::None;
 
-trait Node where Self: fmt::Debug {
-   fn new(core: ProcessCore) -> Self where Self: Sized;
-
-   fn process(&self, data: &[Data]) -> Data;
+/*
+#[derive(Debug)]
+enum Operator {
+   Add,
+   Join,
+   List,
+   Poly,
+   Layer,
+   Artboard,
 }
+*/
 
 #[derive(Debug)]
-struct ProcessCore {
-   defaults: Vec<Data>,
-   inlets: Vec<Option<usize>>,
+struct Node {
+   pub operator: Box<Operator>,
+   pub consts: Vec<Data>,
+   pub inlets: Vec<Option<usize>>,
+   pub index: usize,
 }
 
-impl ProcessCore {
+impl Node {
    #[inline]
-   fn new(defaults: Vec<Data>, inlets: Vec<Option<usize>>) -> Self {
-      ProcessCore {
-         defaults: defaults,
+   fn new(
+      operator: Box<Operator>,
+      consts: Vec<Data>,
+      inlets: Vec<Option<usize>>,
+      index: usize,
+   ) -> Self {
+
+      Node {
+         operator: operator,
+         consts: consts,
          inlets: inlets,
+         index: index,
       }
    }
 
@@ -125,7 +140,7 @@ impl ProcessCore {
          None => {}
       }
 
-      match self.defaults.get(index) {
+      match self.consts.get(index) {
          Some(ref value) => value,
          None => &data[0]
       }
@@ -133,29 +148,45 @@ impl ProcessCore {
 
    #[inline]
    fn len(&self) -> usize {
-      assert!(self.defaults.len() == self.inlets.len());
+      assert!(self.consts.len() == self.inlets.len());
 
-      self.defaults.len()
+      self.consts.len()
    }
-}
 
-#[derive(Debug)]
-struct AddNode {
-   core: ProcessCore,
-}
-
-impl Node for AddNode {
-   #[inline]
-   fn new(core: ProcessCore) -> Self {
-      AddNode {
-         core: core
+   pub fn connections(&self) -> Vec<(usize, usize)> {
+      for inlet in &self.inlets {
+         println!("{:?}", inlet);
       }
+
+      Vec::new()
    }
 
    #[inline]
    fn process(&self, data: &[Data]) -> Data {
-      let in1 = self.core.input(data, 0);
-      let in2 = self.core.input(data, 1);
+      self.operator.process(&self, data)
+   }
+}
+
+
+trait Operator where Self: fmt::Debug {
+   fn new() -> Self where Self: Sized;
+
+   fn process(&self, node: &Node, data: &[Data]) -> Data;
+}
+
+#[derive(Debug)]
+struct AddOp { }
+
+impl Operator for AddOp {
+   #[inline]
+   fn new() -> Self {
+      AddOp { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, data: &[Data]) -> Data {
+      let in1 = node.input(data, 0);
+      let in2 = node.input(data, 1);
 
       match (in1, in2) {
          (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
@@ -236,15 +267,13 @@ impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
 
 
 #[derive(Debug)]
-struct JoinNode {
-   core: ProcessCore,
-}
+struct JoinOp { }
 
-impl JoinNode {
+impl JoinOp {
    #[inline]
-   fn process_two(&self, data: &[Data]) -> Data {
-      let in1 = self.core.input(data, 0);
-      let in2 = self.core.input(data, 1);
+   fn process_two(&self, node: &Node, data: &[Data]) -> Data {
+      let in1 = node.input(data, 0);
+      let in2 = node.input(data, 1);
 
       match (in1, in2) {
          (&Data::I64(v1), &Data::I64(v2)) => Data::I64I64((v1, v2)),
@@ -254,10 +283,10 @@ impl JoinNode {
    }
 
    #[inline]
-   fn process_three(&self, data: &[Data]) -> Data {
-      let in1 = self.core.input(data, 0);
-      let in2 = self.core.input(data, 1);
-      let in3 = self.core.input(data, 2);
+   fn process_three(&self, node: &Node, data: &[Data]) -> Data {
+      let in1 = node.input(data, 0);
+      let in2 = node.input(data, 1);
+      let in3 = node.input(data, 2);
 
       match (in1, in2, in3) {
          (&Data::U8(v1), &Data::U8(v2), &Data::U8(v3)) => Data::U8U8U8((v1, v2, v3)),
@@ -267,19 +296,17 @@ impl JoinNode {
    }
 }
 
-impl Node for JoinNode {
+impl Operator for JoinOp {
    #[inline]
-   fn new(core: ProcessCore) -> Self {
-      JoinNode {
-         core: core
-      }
+   fn new() -> Self {
+      JoinOp { }
    }
 
    #[inline]
-   fn process(&self, data: &[Data]) -> Data {
-      match self.core.len() {
-         2 => self.process_two(data),
-         3 => self.process_three(data),
+   fn process(&self, node: &Node, data: &[Data]) -> Data {
+      match node.len() {
+         2 => self.process_two(node, data),
+         3 => self.process_three(node, data),
          _ => Data::None
       }
    }
@@ -287,17 +314,15 @@ impl Node for JoinNode {
 
 
 #[derive(Debug)]
-struct ListNode {
-   core: ProcessCore,
-}
+struct ListOp { }
 
-impl ListNode {
+impl ListOp {
    #[inline]
-   fn create_poly_list(&self, data: &[Data]) -> Data {
-      let mut result = Vec::with_capacity(self.core.len());
+   fn create_poly_list(&self, node: &Node, data: &[Data]) -> Data {
+      let mut result = Vec::with_capacity(node.len());
 
-      for i in 0..self.core.len() {
-         let input = self.core.input(data, i);
+      for i in 0..node.len() {
+         let input = node.input(data, i);
 
          match input {
             &Data::Poly(ref poly) => result.push((*poly).clone()),
@@ -309,20 +334,18 @@ impl ListNode {
    }
 }
 
-impl Node for ListNode {
+impl Operator for ListOp {
    #[inline]
-   fn new(core: ProcessCore) -> Self {
-      ListNode {
-         core: core
-      }
+   fn new() -> Self {
+      ListOp { }
    }
 
    #[inline]
-   fn process(&self, data: &[Data]) -> Data {
-      let in1 = self.core.input(data, 0);
+   fn process(&self, node: &Node, data: &[Data]) -> Data {
+      let in1 = node.input(data, 0);
 
       match in1 {
-         &Data::Poly(_) => self.create_poly_list(data),
+         &Data::Poly(_) => self.create_poly_list(node, data),
          _ => NONE
       }
    }
@@ -330,22 +353,18 @@ impl Node for ListNode {
 
 
 #[derive(Debug)]
-struct PolyNode {
-   core: ProcessCore,
-}
+struct PolyOp { }
 
-impl Node for PolyNode {
+impl Operator for PolyOp {
    #[inline]
-   fn new(core: ProcessCore) -> Self {
-      PolyNode {
-         core: core
-      }
+   fn new() -> Self {
+      PolyOp { }
    }
 
    #[inline]
-   fn process(&self, data: &[Data]) -> Data {
-      let points = self.core.input(data, 0);
-      let color = self.core.input(data, 1);
+   fn process(&self, node: &Node, data: &[Data]) -> Data {
+      let points = node.input(data, 0);
+      let color = node.input(data, 1);
 
       match (points, color) {
          (&Data::VI64I64(ref v1), &Data::U8U8U8(ref v2)) => <(VI64I64, U8U8U8)>::create_poly(v1, v2),
@@ -378,21 +397,17 @@ impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
 
 
 #[derive(Debug)]
-struct LayerNode {
-   core: ProcessCore,
-}
+struct LayerOp { }
 
-impl Node for LayerNode {
+impl Operator for LayerOp {
    #[inline]
-   fn new(core: ProcessCore) -> Self {
-      LayerNode {
-         core: core
-      }
+   fn new() -> Self {
+      LayerOp { }
    }
 
    #[inline]
-   fn process(&self, data: &[Data]) -> Data {
-      let polys_data = self.core.input(data, 0);
+   fn process(&self, node: &Node, data: &[Data]) -> Data {
+      let polys_data = node.input(data, 0);
 
       match polys_data {
          &Data::VPoly(_) => {
@@ -405,21 +420,21 @@ impl Node for LayerNode {
 
 
 #[derive(Debug)]
-struct DocNode {
-   list_node: ListNode,
+struct ArtboardOp {
+   list_node: ListOp,
 }
 
-impl Node for DocNode {
+impl Operator for ArtboardOp {
    #[inline]
-   fn new(core: ProcessCore) -> Self {
-      DocNode {
-         list_node: ListNode::new(core)
+   fn new() -> Self {
+      ArtboardOp {
+         list_node: ListOp::new()
       }
    }
 
    #[inline]
-   fn process(&self, data: &[Data]) -> Data {
-      self.list_node.process(data)
+   fn process(&self, node: &Node, data: &[Data]) -> Data {
+      self.list_node.process(node, data)
    }
 }
 
@@ -492,11 +507,15 @@ impl Renderer for NodeRenderer {
          Data::None,
          Data::I64(self.frame),
          Data::VVI64I64(source),
-         Data::I64I64((self.frame, 0))
+         Data::I64I64((self.frame, 0)),
+         Data::None,
       ];
 
-      let add = AddNode::new(
-         ProcessCore::new(vec![NONE, NONE], vec![Some(2), Some(3)])
+      let add = Node::new(
+         Box::new(AddOp::new()),
+         vec![NONE, NONE],
+         vec![Some(2), Some(3)],
+         4
       );
 
       let destination = add.process(&state);
@@ -535,21 +554,34 @@ fn parse(node_defs: &str) {
          let data_len = all_tables.len() + NODE_INDEX_OFFSET;
 
          let mut state = Vec::with_capacity(data_len);
-         for i in 0..data_len {
+         for _ in 0..data_len {
             state.push(Data::None);
          }
+
+         let mut nodes = Vec::new();
 
          for (i, (node_id, value)) in all_tables.iter().enumerate() {
             match value {
                &toml::Value::Table(ref node_table) => {
                   let index = i + NODE_INDEX_OFFSET;
-                  let node = create_node(node_id, index, node_table, &index_map, &mut state);
+                  let node = process_node_table(
+                     node_id, index, node_table, &index_map, &mut state
+                  );
+
+                  match node {
+                     Some(node) => nodes.push(node),
+                     None => {}
+                  }
                },
                _ => {
                   println!("`{}` is not a table ", node_id);
                }
             }
          }
+
+         println!("STATE {:?}", state);
+
+         println!("NODES {:?}", nodes);
       },
       None => {
          println!("parse errors: {:?}", parser.errors);
@@ -557,13 +589,13 @@ fn parse(node_defs: &str) {
    }
 }
 
-fn create_node(
+fn process_node_table(
    node_id: &str,
    node_index: usize,
    node_table: &toml::Table,
    index_map: &HashMap<&str, usize>,
    state: &mut Vec<Data>,
-) -> Option<Box<Node>> {
+) -> Option<Node> {
 
    let node_type = extract_node_type(node_id, node_table);
 
@@ -572,13 +604,13 @@ fn create_node(
    println!("{:?}", node_table);
 
    match node_type.as_ref() {
-      "add" => return create_processing_node::<AddNode>(node_id, node_table, index_map),
-      "join" => return create_processing_node::<JoinNode>(node_id, node_table, index_map),
-      "list" => return create_processing_node::<ListNode>(node_id, node_table, index_map),
+      "add" => return create_node::<AddOp>(node_id, node_index, node_table, index_map),
+      "join" => return create_node::<JoinOp>(node_id, node_index, node_table, index_map),
+      "list" => return create_node::<ListOp>(node_id, node_index, node_table, index_map),
 
-      "poly" => return create_processing_node::<PolyNode>(node_id, node_table, index_map),
-      "layer" => return create_processing_node::<LayerNode>(node_id, node_table, index_map),
-      "doc" => return create_processing_node::<DocNode>(node_id, node_table, index_map),
+      "poly" => return create_node::<PolyOp>(node_id, node_index, node_table, index_map),
+      "layer" => return create_node::<LayerOp>(node_id, node_index, node_table, index_map),
+      "artboard" => return create_node::<ArtboardOp>(node_id, node_index, node_table, index_map),
       _ => {},
    }
 
@@ -589,25 +621,22 @@ fn create_node(
 }
 
 
-fn create_processing_node<T: 'static + Node>(
-   node_id: &str, node_table: &toml::Table, index_map: &HashMap<&str, usize>
-) -> Option<Box<Node>> {
-
+fn create_node<T: 'static + Operator>(
+   node_id: &str, node_index: usize, node_table: &toml::Table, index_map: &HashMap<&str, usize>
+) -> Option<Node> {
    let data_value = extract_data_value(node_id, node_table);
 
    println!("DATA {:?}", data_value);
 
-   let (defaults, inlets) = to_defaults(node_id, data_value, index_map);
+   let (consts, inlets) = to_defaults(node_id, data_value, index_map);
 
-   println!("defaults: {:?}", defaults);
+   println!("consts: {:?}", consts);
    println!("inlets: {:?}", inlets);
 
-   let core = ProcessCore::new(defaults, inlets);
+   let operator = Box::new(T::new());
 
    Some(
-      Box::new(
-         T::new(core)
-      )
+      Node::new(operator, consts, inlets, node_index)
    )
 }
 
@@ -654,7 +683,7 @@ fn to_defaults(
       }
    };
 
-   let mut defaults = Vec::with_capacity(array.len());
+   let mut consts = Vec::with_capacity(array.len());
    let mut inlets = Vec::with_capacity(array.len());
 
    for item in array.iter() {
@@ -688,11 +717,11 @@ fn to_defaults(
 
             inlets.push(Some(*index));
 
-            defaults.push(Data::None);
+            consts.push(Data::None);
 
          },
          None => {
-            defaults.push(
+            consts.push(
                extract_table_data(node_id, table)
             );
 
@@ -701,7 +730,7 @@ fn to_defaults(
       }
    }
 
-   (defaults, inlets)
+   (consts, inlets)
 }
 
 
