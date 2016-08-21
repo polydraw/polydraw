@@ -556,12 +556,7 @@ fn parse(node_defs: &str) {
 
          println!("");
 
-         let data_len = all_tables.len() + NODE_INDEX_OFFSET;
-
-         let mut state = Vec::with_capacity(data_len);
-         for _ in 0..data_len {
-            state.push(Data::None);
-         }
+         let mut state = create_state(all_tables.len());
 
          let mut nodes = Vec::new();
 
@@ -601,6 +596,18 @@ fn parse(node_defs: &str) {
          println!("parse errors: {:?}", parser.errors);
       }
    }
+}
+
+fn create_state(nodes_len: usize) -> Vec<Data> {
+   let data_len = nodes_len + NODE_INDEX_OFFSET;
+
+   let mut state = Vec::with_capacity(data_len);
+
+   for _ in 0..data_len {
+      state.push(Data::None);
+   }
+
+   state
 }
 
 fn execution_sort(mut nodes: Vec<Node>) -> Vec<Node> {
