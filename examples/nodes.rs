@@ -2,7 +2,8 @@ extern crate polydraw;
 extern crate toml;
 
 use std::fmt;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::iter::repeat;
 
 use polydraw::{Renderer, Application, Frame};
 use polydraw::devel::{Scene, Poly, DevelRenderer};
@@ -56,9 +57,6 @@ const NODE_INDEX_OFFSET: usize = 2;
 #[derive(Debug)]
 struct Layer;
 
-#[derive(Debug)]
-struct Artboard;
-
 type U8U8U8 = (u8, u8, u8);
 
 type I64I64 = (i64, i64);
@@ -69,7 +67,6 @@ type PolyBox = Box<Poly>;
 type VPolyBox = Vec<Box<Poly>>;
 
 type LayerBox = Box<Layer>;
-type ArtboardBox = Box<Artboard>;
 
 #[derive(Debug)]
 enum Data {
@@ -88,22 +85,9 @@ enum Data {
    VPoly(VPolyBox),
 
    Layer(LayerBox),
-   Artboard(ArtboardBox),
 }
 
 const NONE: Data = Data::None;
-
-/*
-#[derive(Debug)]
-enum Operator {
-   Add,
-   Join,
-   List,
-   Poly,
-   Layer,
-   Artboard,
-}
-*/
 
 #[derive(Debug)]
 struct Node {
@@ -153,17 +137,21 @@ impl Node {
       self.consts.len()
    }
 
-   pub fn connections(&self) -> Vec<(usize, usize)> {
-      for inlet in &self.inlets {
-         println!("{:?}", inlet);
-      }
-
-      Vec::new()
-   }
-
    #[inline]
    fn process(&self, data: &[Data]) -> Data {
       self.operator.process(&self, data)
+   }
+}
+
+impl Default for Node {
+   #[inline]
+   fn default() -> Node {
+      Node::new(
+         Box::new(NoneOp::new()),
+         vec![],
+         vec![],
+         0
+      )
    }
 }
 
@@ -173,6 +161,23 @@ trait Operator where Self: fmt::Debug {
 
    fn process(&self, node: &Node, data: &[Data]) -> Data;
 }
+
+
+#[derive(Debug)]
+struct NoneOp { }
+
+impl Operator for NoneOp {
+   #[inline]
+   fn new() -> Self {
+      NoneOp { }
+   }
+
+   #[inline]
+   fn process(&self, _: &Node, _: &[Data]) -> Data {
+      NONE
+   }
+}
+
 
 #[derive(Debug)]
 struct AddOp { }
@@ -546,7 +551,7 @@ fn parse(node_defs: &str) {
          for (i, node_id) in all_tables.keys().enumerate() {
             let index = i + NODE_INDEX_OFFSET;
             println!("NODE {} {}", index, node_id);
-            index_map.insert(node_id.as_str(), index + 2);
+            index_map.insert(node_id.as_str(), index);
          }
 
          println!("");
@@ -579,15 +584,135 @@ fn parse(node_defs: &str) {
             }
          }
 
+
          println!("STATE {:?}", state);
 
-         println!("NODES {:?}", nodes);
+         println!("");
+
+         let nodes = execution_sort(nodes);
+
+         for (i, node) in nodes.iter().enumerate() {
+            println!("[{} / {}] {:?}", node.index, i, node);
+         }
+
+         println!("");
       },
       None => {
          println!("parse errors: {:?}", parser.errors);
       }
    }
 }
+
+fn execution_sort(mut nodes: Vec<Node>) -> Vec<Node> {
+   let len = nodes.len();
+
+   let ordering = topological_ordering(&nodes);
+
+   let mut positions: Vec<usize> = repeat(0).take(len).collect();
+
+   for (position, order) in ordering.iter().enumerate() {
+      positions[*order] = position;
+   }
+
+   let mut result = default_node_vec(len);
+
+   for j in 0..len {
+      let i = len - j - 1;
+
+      let node = nodes.pop().unwrap();
+
+      result[positions[i]] = node;
+   }
+
+   result
+}
+
+fn default_node_vec(len: usize) -> Vec<Node> {
+   let mut nodes = Vec::with_capacity(len);
+
+   for _ in 0..len {
+      nodes.push(Node::default());
+   }
+
+   nodes
+}
+
+
+fn topological_ordering(nodes: &Vec<Node>) -> Vec<usize> {
+   let connections = connections_map(&nodes);
+
+   let mut ordering = Vec::new();
+
+   let mut to_visit = Vec::new();
+
+   let mut processed = HashSet::new();
+
+   for root in 0..nodes.len() {
+      if !processed.contains(&root) {
+
+         to_visit.push((false, root));
+      }
+
+      while let Some((parent, current)) = to_visit.pop() {
+         if processed.contains(&current) {
+            break;
+         }
+
+         if parent {
+            ordering.push(current);
+            processed.insert(current);
+         } else {
+            to_visit.push((true, current));
+
+            for child in connections[current].iter() {
+               if !processed.contains(child) {
+                  to_visit.push((false, *child));
+               }
+            }
+         }
+      }
+   }
+
+   ordering.reverse();
+
+   ordering
+}
+
+fn connections_map(nodes: &Vec<Node>) -> Vec<Vec<usize>> {
+   let positions = positions_map(nodes);
+
+   let mut connections: Vec<Vec<usize>> = repeat(Vec::new()).take(nodes.len()).collect();
+
+   for (i, node) in nodes.iter().enumerate() {
+      for inlet in &node.inlets {
+         match inlet {
+            &Some(in_index) => {
+               match positions.get(&in_index) {
+                  Some(node_index) => {
+                     connections[*node_index].push(i);
+                  },
+                  _ => {}
+               }
+            },
+            _ => {}
+         }
+      }
+   }
+
+   connections
+}
+
+
+fn positions_map(nodes: &Vec<Node>) -> HashMap<usize, usize> {
+   let mut positions = HashMap::new();
+
+   for (i, node) in nodes.iter().enumerate() {
+      positions.insert(node.index, i);
+   }
+
+   positions
+}
+
 
 fn process_node_table(
    node_id: &str,
