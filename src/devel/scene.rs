@@ -1,7 +1,7 @@
 use super::Poly;
 
 pub struct Scene {
-   pub polys: Vec<Poly>,
+   pub polys: Vec<Box<Poly>>,
 }
 
 impl Scene {
@@ -13,7 +13,7 @@ impl Scene {
    }
 
    #[inline]
-   pub fn push(&mut self, poly: Poly) {
+   pub fn push(&mut self, poly: Box<Poly>) {
       self.polys.push(poly);
    }
 }

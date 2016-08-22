@@ -53,9 +53,9 @@ fn main() {
       RGB::new(215, 12, 96),
    );
 
-   scene.push(poly_a);
-   scene.push(poly_b);
-   scene.push(poly_c);
+   scene.push(Box::new(poly_a));
+   scene.push(Box::new(poly_b));
+   scene.push(Box::new(poly_c));
 
    let mut renderer = DevelRenderer::new(scene);
 

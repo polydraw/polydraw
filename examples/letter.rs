@@ -247,7 +247,7 @@ fn points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
 fn main() {
    let mut scene = Scene::new();
 
-   scene.push(letter_poly());
+   scene.push(Box::new(letter_poly()));
 
    let mut renderer = DevelRenderer::new(scene);
 

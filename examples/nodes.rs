@@ -54,8 +54,21 @@ const NODE_DEFS: &'static str = r#"
 
 const NODE_INDEX_OFFSET: usize = 2;
 
-#[derive(Debug)]
-struct Layer;
+
+#[derive(Debug, Clone)]
+pub struct Layer {
+   pub polys: Vec<Box<Poly>>,
+}
+
+impl Layer {
+   #[inline]
+   pub fn new(polys: Vec<Box<Poly>>) -> Self {
+      Layer {
+         polys: polys,
+      }
+   }
+}
+
 
 type U8U8U8 = (u8, u8, u8);
 
@@ -67,7 +80,9 @@ type PolyBox = Box<Poly>;
 type VPolyBox = Vec<Box<Poly>>;
 
 type LayerBox = Box<Layer>;
+type VLayerBox = Vec<Box<Layer>>;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 enum Data {
    None,
@@ -85,6 +100,7 @@ enum Data {
    VPoly(VPolyBox),
 
    Layer(LayerBox),
+   VLayer(VLayerBox),
 }
 
 const NONE: Data = Data::None;
@@ -94,7 +110,7 @@ struct Node {
    pub operator: Box<Operator>,
    pub consts: Vec<Data>,
    pub inlets: Vec<Option<usize>>,
-   pub index: usize,
+   pub slot: usize,
 }
 
 impl Node {
@@ -103,28 +119,26 @@ impl Node {
       operator: Box<Operator>,
       consts: Vec<Data>,
       inlets: Vec<Option<usize>>,
-      index: usize,
+      slot: usize,
    ) -> Self {
 
       Node {
          operator: operator,
          consts: consts,
          inlets: inlets,
-         index: index,
+         slot: slot,
       }
    }
 
    #[inline]
-   fn input<'a>(&'a self, data: &'a[Data], index: usize) -> &'a Data {
-      match self.inlets.get(index) {
-         Some(option) => match *option {
-            Some(data_index) => return &data[data_index],
-            None => {}
-         },
-         None => {}
+   fn input<'a>(&'a self, data: &'a[Data], slot: usize) -> &'a Data {
+      if let Some(option) = self.inlets.get(slot) {
+         if let Some(data_index) = *option {
+            return &data[data_index];
+         }
       }
 
-      match self.consts.get(index) {
+      match self.consts.get(slot) {
          Some(ref value) => value,
          None => &data[0]
       }
@@ -138,8 +152,9 @@ impl Node {
    }
 
    #[inline]
-   fn process(&self, data: &[Data]) -> Data {
-      self.operator.process(&self, data)
+   fn process(&self, state: &mut [Data]) {
+      let data = self.operator.process(&self, state);
+      state[self.slot] = data;
    }
 }
 
@@ -329,13 +344,27 @@ impl ListOp {
       for i in 0..node.len() {
          let input = node.input(data, i);
 
-         match input {
-            &Data::Poly(ref poly) => result.push((*poly).clone()),
-            _ => {}
+         if let &Data::Poly(ref poly) = input {
+            result.push((*poly).clone());
          }
       }
 
       Data::VPoly(result)
+   }
+
+   #[inline]
+   fn create_layer_list(&self, node: &Node, data: &[Data]) -> Data {
+      let mut result = Vec::with_capacity(node.len());
+
+      for i in 0..node.len() {
+         let input = node.input(data, i);
+
+         if let &Data::Layer(ref layer) = input {
+            result.push((*layer).clone());
+         }
+      }
+
+      Data::VLayer(result)
    }
 }
 
@@ -351,6 +380,7 @@ impl Operator for ListOp {
 
       match in1 {
          &Data::Poly(_) => self.create_poly_list(node, data),
+         &Data::Layer(_) => self.create_layer_list(node, data),
          _ => NONE
       }
    }
@@ -415,8 +445,19 @@ impl Operator for LayerOp {
       let polys_data = node.input(data, 0);
 
       match polys_data {
-         &Data::VPoly(_) => {
-            Data::Layer(Box::new(Layer {}))
+         &Data::VPoly(ref poly_vec) => {
+            let mut polys = Vec::with_capacity(poly_vec.len());
+
+            for poly in poly_vec {
+               let cloned = (*poly).clone();
+               polys.push(cloned);
+            }
+
+            Data::Layer(
+               Box::new(
+                  Layer::new(polys)
+               )
+            )
          },
          _ => NONE
       }
@@ -444,47 +485,24 @@ impl Operator for ArtboardOp {
 }
 
 
-#[inline]
-fn poly_from_data(data: &VVI64I64) -> Poly {
-   let outer = points_from_coords(&data[0]);
-
-   let mut inner = Vec::new();
-
-   for inner_data in &data[1..] {
-      inner.push(
-         points_from_coords(inner_data)
-      );
-   }
-
-   let poly = Poly::new_with_holes(
-      outer, inner, RGB::new(81, 180, 200),
-   );
-
-   poly
-}
-
-#[inline]
-fn points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
-   let mut points = Vec::new();
-
-   for &(x, y) in coords.iter() {
-      points.push(Point::new(x + 120, y + 120))
-   }
-
-   points
-}
-
 struct NodeRenderer {
    renderer: DevelRenderer,
    frame: i64,
+   nodes: Vec<Node>,
+   state: Vec<Data>,
+   artboard_slot: usize,
 }
 
 impl NodeRenderer {
    #[inline]
    pub fn new() -> Self {
+      let (nodes, state, artboard_slot) = parse(NODE_DEFS);
       NodeRenderer {
          renderer: DevelRenderer::new(Scene::new()),
          frame: 0,
+         nodes: nodes,
+         state: state,
+         artboard_slot: artboard_slot,
       }
    }
 }
@@ -492,42 +510,25 @@ impl NodeRenderer {
 impl Renderer for NodeRenderer {
    #[inline]
    fn init(&mut self, width: u32, height: u32) {
-      parse(NODE_DEFS);
-
       self.renderer.init(width, height);
    }
 
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
+      self.state[1] = Data::I64(self.frame);
+
+      for node in &self.nodes {
+         node.process(&mut self.state);
+      }
+
       let mut scene = Scene::new();
 
-      let source = vec![vec![
-         (90, 1200),
-         (261, 1735),
-         (1443, 410),
-         (493, 174),
-      ]];
-
-      let state = [
-         Data::None,
-         Data::I64(self.frame),
-         Data::VVI64I64(source),
-         Data::I64I64((self.frame, 0)),
-         Data::None,
-      ];
-
-      let add = Node::new(
-         Box::new(AddOp::new()),
-         vec![NONE, NONE],
-         vec![Some(2), Some(3)],
-         4
-      );
-
-      let destination = add.process(&state);
-
-      match destination {
-         Data::VVI64I64(data) => scene.push(poly_from_data(&data)),
-         _ => {}
+      if let Data::VLayer(ref artboard) = self.state[self.artboard_slot] {
+         for layer in artboard {
+            for poly in &layer.polys {
+               scene.push(poly.clone());
+            }
+         }
       }
 
       self.renderer.set_scene(scene);
@@ -538,64 +539,53 @@ impl Renderer for NodeRenderer {
    }
 }
 
-fn parse(node_defs: &str) {
+
+fn parse(node_defs: &str) -> (Vec<Node>, Vec<Data>, usize) {
    let mut parser = toml::Parser::new(node_defs);
 
-   match parser.parse() {
-      Some(all_tables) => {
-         let mut index_map = HashMap::new();
+   if let Some(all_tables) = parser.parse() {
+      let mut slot_map = HashMap::new();
 
-         // Data::None at index 0, frame number at index 1
-         index_map.insert("frame", 1);
+      // Data::None at slot 0, frame number at slot 1
+      slot_map.insert("frame", 1);
 
-         for (i, node_id) in all_tables.keys().enumerate() {
-            let index = i + NODE_INDEX_OFFSET;
-            println!("NODE {} {}", index, node_id);
-            index_map.insert(node_id.as_str(), index);
-         }
-
-         println!("");
-
-         let mut state = create_state(all_tables.len());
-
-         let mut nodes = Vec::new();
-
-         for (i, (node_id, value)) in all_tables.iter().enumerate() {
-            match value {
-               &toml::Value::Table(ref node_table) => {
-                  let index = i + NODE_INDEX_OFFSET;
-                  let node = process_node_table(
-                     node_id, index, node_table, &index_map, &mut state
-                  );
-
-                  match node {
-                     Some(node) => nodes.push(node),
-                     None => {}
-                  }
-               },
-               _ => {
-                  println!("`{}` is not a table ", node_id);
-               }
-            }
-         }
-
-
-         println!("STATE {:?}", state);
-
-         println!("");
-
-         let nodes = execution_sort(nodes);
-
-         for (i, node) in nodes.iter().enumerate() {
-            println!("[{} / {}] {:?}", node.index, i, node);
-         }
-
-         println!("");
-      },
-      None => {
-         println!("parse errors: {:?}", parser.errors);
+      for (i, node_id) in all_tables.keys().enumerate() {
+         let slot = i + NODE_INDEX_OFFSET;
+         slot_map.insert(node_id.as_str(), slot);
       }
+
+      let mut state = create_state(all_tables.len());
+
+      let mut nodes = Vec::new();
+
+      let mut artboard_slot = 0;
+
+      for (i, (node_id, value)) in all_tables.iter().enumerate() {
+         if let &toml::Value::Table(ref node_table) = value {
+            let slot = i + NODE_INDEX_OFFSET;
+
+            let result = process_node_table(
+               node_id, slot, node_table, &slot_map, &mut state
+            );
+
+            if let Some((node, is_final)) = result {
+               if is_final {
+                  artboard_slot = node.slot;
+               }
+
+               nodes.push(node);
+            }
+         } else {
+            panic!("`{}` is not a table ", node_id);
+         }
+      }
+
+      let nodes = execution_sort(nodes);
+
+      return (nodes, state, artboard_slot);
    }
+
+   panic!("parse errors: {:?}", parser.errors);
 }
 
 fn create_state(nodes_len: usize) -> Vec<Data> {
@@ -692,16 +682,10 @@ fn connections_map(nodes: &Vec<Node>) -> Vec<Vec<usize>> {
 
    for (i, node) in nodes.iter().enumerate() {
       for inlet in &node.inlets {
-         match inlet {
-            &Some(in_index) => {
-               match positions.get(&in_index) {
-                  Some(node_index) => {
-                     connections[*node_index].push(i);
-                  },
-                  _ => {}
-               }
-            },
-            _ => {}
+         if let &Some(in_index) = inlet {
+            if let Some(node_index) = positions.get(&in_index) {
+               connections[*node_index].push(i);
+            }
          }
       }
    }
@@ -714,7 +698,7 @@ fn positions_map(nodes: &Vec<Node>) -> HashMap<usize, usize> {
    let mut positions = HashMap::new();
 
    for (i, node) in nodes.iter().enumerate() {
-      positions.insert(node.index, i);
+      positions.insert(node.slot, i);
    }
 
    positions
@@ -725,67 +709,70 @@ fn process_node_table(
    node_id: &str,
    node_index: usize,
    node_table: &toml::Table,
-   index_map: &HashMap<&str, usize>,
+   slot_map: &HashMap<&str, usize>,
    state: &mut Vec<Data>,
-) -> Option<Node> {
+) -> Option<(Node, bool)> {
 
    let node_type = extract_node_type(node_id, node_table);
 
-   println!("TYPE: {}", node_type);
+   let operator = match node_type.as_ref() {
+      "add" => create_operator::<AddOp>(),
+      "join" => create_operator::<JoinOp>(),
+      "list" => create_operator::<ListOp>(),
 
-   println!("{:?}", node_table);
+      "poly" => create_operator::<PolyOp>(),
+      "layer" => create_operator::<LayerOp>(),
+      "artboard" => create_operator::<ArtboardOp>(),
 
-   match node_type.as_ref() {
-      "add" => return create_node::<AddOp>(node_id, node_index, node_table, index_map),
-      "join" => return create_node::<JoinOp>(node_id, node_index, node_table, index_map),
-      "list" => return create_node::<ListOp>(node_id, node_index, node_table, index_map),
+      _ => None,
+   };
 
-      "poly" => return create_node::<PolyOp>(node_id, node_index, node_table, index_map),
-      "layer" => return create_node::<LayerOp>(node_id, node_index, node_table, index_map),
-      "artboard" => return create_node::<ArtboardOp>(node_id, node_index, node_table, index_map),
-      _ => {},
+   if let Some(operator) = operator {
+      let node = create_node(node_id, node_index, node_table, slot_map, operator);
+
+      let is_final = node_type == "artboard";
+
+      Some((node, is_final))
+   } else {
+      let data = extract_table_data(node_id, node_table);
+      state[node_index] = data;
+
+      None
    }
-
-   let data = extract_table_data(node_id, node_table);
-   state[node_index] = data;
-
-   None
 }
 
 
-fn create_node<T: 'static + Operator>(
-   node_id: &str, node_index: usize, node_table: &toml::Table, index_map: &HashMap<&str, usize>
-) -> Option<Node> {
+fn create_operator<T: 'static + Operator>() -> Option<Box<Operator>> {
+   Some(Box::new(T::new()))
+}
+
+
+fn create_node(
+   node_id: &str,
+   node_index: usize,
+   node_table: &toml::Table,
+   slot_map: &HashMap<&str, usize>,
+   operator: Box<Operator>,
+) -> Node {
+
    let data_value = extract_data_value(node_id, node_table);
 
-   println!("DATA {:?}", data_value);
+   let (consts, inlets) = to_defaults(node_id, data_value, slot_map);
 
-   let (consts, inlets) = to_defaults(node_id, data_value, index_map);
-
-   println!("consts: {:?}", consts);
-   println!("inlets: {:?}", inlets);
-
-   let operator = Box::new(T::new());
-
-   Some(
-      Node::new(operator, consts, inlets, node_index)
-   )
+   Node::new(operator, consts, inlets, node_index)
 }
 
 
 fn extract_node_type<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a str {
-   match node_table.get("type") {
-      Some(type_value) => {
-         match type_value {
-            &toml::Value::String(ref node_type) => node_type,
-            _ => {
-               panic!("node type not a string: {}", node_id);
-            }
+   if let Some(type_value) = node_table.get("type") {
+      match type_value {
+         &toml::Value::String(ref node_type) => node_type,
+         _ => {
+            panic!("node type not a string: {}", node_id);
          }
-      },
-      None => {
-         panic!("node without type: {}", node_id);
       }
+   } else {
+      panic!("node without type: {}", node_id);
    }
 }
 
@@ -805,7 +792,7 @@ fn extract_data_value<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a tom
 fn to_defaults(
    node_id: &str,
    data: &toml::Value,
-   index_map: &HashMap<&str, usize>
+   slot_map: &HashMap<&str, usize>
 ) -> (Vec<Data>, Vec<Option<usize>>) {
 
    let array = match data {
@@ -826,8 +813,6 @@ fn to_defaults(
          }
       };
 
-      println!("item: {:?}", table);
-
       match table.get("from") {
          Some(from) => {
 
@@ -838,16 +823,14 @@ fn to_defaults(
                }
             };
 
-            let index = match index_map.get::<str>(in_id) {
-               Some(index) => index,
+            let slot = match slot_map.get::<str>(in_id) {
+               Some(slot) => slot,
                _ => {
                   panic!("Unrecognized ID {:?}: {}", in_id, node_id);
                }
             };
 
-            println!("IN ID {:?}", index);
-
-            inlets.push(Some(*index));
+            inlets.push(Some(*slot));
 
             consts.push(Data::None);
 
