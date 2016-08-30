@@ -53,7 +53,7 @@ const NODE_DEFS: &'static str = r#"
 
 "#;
 
-const NODE_INDEX_OFFSET: usize = 2;
+const NODE_INDEX_OFFSET: usize = 1;
 
 
 #[derive(Debug, Clone)]
@@ -531,7 +531,7 @@ impl Renderer for NodeRenderer {
 
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
-      self.state[1][0] = Data::I64(self.frame);
+      self.state[0][0] = Data::I64(self.frame);
 
       for node in &self.nodes {
          node.process(&mut self.state);
@@ -562,8 +562,8 @@ fn parse(node_defs: &str) -> (Vec<Node>, Vec<Vec<Data>>, usize) {
    if let Some(all_tables) = parser.parse() {
       let mut slot_map = HashMap::new();
 
-      // Data::None at slot 0, frame number at slot 1
-      slot_map.insert("frame", 1);
+      // Data::frame number at slot 0
+      slot_map.insert("frame", 0);
 
       for (i, node_id) in all_tables.keys().enumerate() {
          let slot = i + NODE_INDEX_OFFSET;
@@ -614,8 +614,6 @@ fn create_state(nodes_len: usize) -> Vec<Vec<Data>> {
    for _ in 0..data_len {
       state.push(Vec::new());
    }
-
-   state[0].push(Data::None);
 
    state
 }
