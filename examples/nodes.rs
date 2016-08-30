@@ -4,6 +4,7 @@ extern crate toml;
 use std::fmt;
 use std::collections::{HashMap, HashSet};
 use std::iter::repeat;
+use std::mem::replace;
 
 use polydraw::{Renderer, Application, Frame};
 use polydraw::devel::{Scene, Poly, DevelRenderer};
@@ -83,7 +84,7 @@ type LayerBox = Box<Layer>;
 type VLayerBox = Vec<Box<Layer>>;
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Data {
    None,
    U8(u8),
@@ -109,7 +110,7 @@ const NONE: Data = Data::None;
 struct Node {
    pub operator: Box<Operator>,
    pub consts: Vec<Data>,
-   pub inlets: Vec<Option<usize>>,
+   pub inlets: Vec<Option<(usize, usize)>>,
    pub slot: usize,
 }
 
@@ -118,7 +119,7 @@ impl Node {
    fn new(
       operator: Box<Operator>,
       consts: Vec<Data>,
-      inlets: Vec<Option<usize>>,
+      inlets: Vec<Option<(usize, usize)>>,
       slot: usize,
    ) -> Self {
 
@@ -131,16 +132,17 @@ impl Node {
    }
 
    #[inline]
-   fn input<'a>(&'a self, data: &'a[Data], slot: usize) -> &'a Data {
+   fn input(&self, state: &mut [Vec<Data>], slot: usize) -> Data {
       if let Some(option) = self.inlets.get(slot) {
-         if let Some(data_index) = *option {
-            return &data[data_index];
+         if let Some((data_index, slot_index)) = *option {
+            let value = replace(&mut state[data_index][slot_index], Data::None);
+            return value;
          }
       }
 
       match self.consts.get(slot) {
-         Some(ref value) => value,
-         None => &data[0]
+         Some(ref value) => (*value).clone(),
+         None => Data::None
       }
    }
 
@@ -152,9 +154,16 @@ impl Node {
    }
 
    #[inline]
-   fn process(&self, state: &mut [Data]) {
+   fn process(&self, state: &mut [Vec<Data>]) {
       let data = self.operator.process(&self, state);
-      state[self.slot] = data;
+
+      let mut slots = &mut state[self.slot];
+
+      for index in 1..slots.len() {
+         slots[index] = data.clone();
+      }
+
+      slots[0] = data;
    }
 }
 
@@ -174,7 +183,7 @@ impl Default for Node {
 trait Operator where Self: fmt::Debug {
    fn new() -> Self where Self: Sized;
 
-   fn process(&self, node: &Node, data: &[Data]) -> Data;
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data;
 }
 
 
@@ -188,8 +197,24 @@ impl Operator for NoneOp {
    }
 
    #[inline]
-   fn process(&self, _: &Node, _: &[Data]) -> Data {
+   fn process(&self, _: &Node, _: &mut [Vec<Data>]) -> Data {
       NONE
+   }
+}
+
+
+#[derive(Debug)]
+struct DataOp { }
+
+impl Operator for DataOp {
+   #[inline]
+   fn new() -> Self {
+      DataOp { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      node.input(state, 0)
    }
 }
 
@@ -204,24 +229,24 @@ impl Operator for AddOp {
    }
 
    #[inline]
-   fn process(&self, node: &Node, data: &[Data]) -> Data {
-      let in1 = node.input(data, 0);
-      let in2 = node.input(data, 1);
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (&Data::I64(ref v1), &Data::I64(ref v2)) => <(i64, i64)>::add(v1, v2),
+         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::add(v1, v2),
 
-         (&Data::F64(ref v1), &Data::I64(ref v2)) => <(f64, i64)>::add(v1, v2),
-         (&Data::I64(ref v1), &Data::F64(ref v2)) => <(f64, i64)>::add(v2, v1),
+         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::add(v1, v2),
+         (Data::I64(v1), Data::F64(v2)) => <(f64, i64)>::add(v2, v1),
 
-         (&Data::I64I64(ref v1), &Data::I64(ref v2)) => <(I64I64, i64)>::add(v1, v2),
-         (&Data::I64(ref v1), &Data::I64I64(ref v2)) => <(I64I64, i64)>::add(v2, v1),
+         (Data::I64I64(v1), Data::I64(v2)) => <(I64I64, i64)>::add(v1, v2),
+         (Data::I64(v1), Data::I64I64(v2)) => <(I64I64, i64)>::add(v2, v1),
 
-         (&Data::VI64I64(ref v1), &Data::I64I64(ref v2)) => <(VI64I64, I64I64)>::add(v1, v2),
-         (&Data::I64I64(ref v1), &Data::VI64I64(ref v2)) => <(VI64I64, I64I64)>::add(v2, v1),
+         (Data::VI64I64(v1), Data::I64I64(v2)) => <(VI64I64, I64I64)>::add(v1, v2),
+         (Data::I64I64(v1), Data::VI64I64(v2)) => <(VI64I64, I64I64)>::add(v2, v1),
 
-         (&Data::VVI64I64(ref v1), &Data::I64I64(ref v2)) => <(VVI64I64, I64I64)>::add(v1, v2),
-         (&Data::I64I64(ref v1), &Data::VVI64I64(ref v2)) => <(VVI64I64, I64I64)>::add(v2, v1),
+         (Data::VVI64I64(v1), Data::I64I64(v2)) => <(VVI64I64, I64I64)>::add(v1, v2),
+         (Data::I64I64(v1), Data::VVI64I64(v2)) => <(VVI64I64, I64I64)>::add(v2, v1),
 
          _ => NONE
       }
@@ -229,59 +254,56 @@ impl Operator for AddOp {
 }
 
 trait Add<T1, T2> {
-   fn add(v1: &T1, v2: &T2) -> Data;
+   fn add(v1: T1, v2: T2) -> Data;
 }
 
 impl Add<i64, i64> for (i64, i64) {
    #[inline]
-   fn add(v1: &i64, v2: &i64) -> Data {
-      Data::I64(*v1 + *v2)
+   fn add(v1: i64, v2: i64) -> Data {
+      Data::I64(v1 + v2)
    }
 }
 
 impl Add<f64, i64> for (f64, i64) {
    #[inline]
-   fn add(v1: &f64, v2: &i64) -> Data {
-      Data::F64(*v1 + *v2 as f64)
+   fn add(v1: f64, v2: i64) -> Data {
+      Data::F64(v1 + v2 as f64)
    }
 }
 
 impl Add<I64I64, i64> for (I64I64, i64) {
    #[inline]
-   fn add(v1: &I64I64, v2: &i64) -> Data {
-      Data::I64I64((v1.0 + *v2, v1.1 + *v2))
+   fn add(mut v1: I64I64, v2: i64) -> Data {
+      v1.0 += v2;
+      v1.1 += v2;
+
+      Data::I64I64(v1)
    }
 }
 
 impl Add<VI64I64, I64I64> for (VI64I64, I64I64) {
    #[inline]
-   fn add(v1: &VI64I64, v2: &I64I64) -> Data {
-      let mut result = Vec::with_capacity(v1.len());
-
-      for tuple in v1 {
-         result.push((tuple.0 + v2.0, tuple.1 + v2.1));
+   fn add(mut v1: VI64I64, v2: I64I64) -> Data {
+      for tuple in &mut v1 {
+         tuple.0 += v2.0;
+         tuple.1 += v2.1;
       }
 
-      Data::VI64I64(result)
+      Data::VI64I64(v1)
    }
 }
 
 impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
    #[inline]
-   fn add(v1: &VVI64I64, v2: &I64I64) -> Data {
-      let mut outer = Vec::with_capacity(v1.len());
-
-      for src in v1 {
-         let mut inner = Vec::with_capacity(src.len());
-
-         for tuple in src {
-            inner.push((tuple.0 + v2.0, tuple.1 + v2.1));
+   fn add(mut v1: VVI64I64, v2: I64I64) -> Data {
+      for src in &mut v1 {
+         for tuple in src.iter_mut() {
+            tuple.0 += v2.0;
+            tuple.1 += v2.1;
          }
-
-         outer.push(inner);
       }
 
-      Data::VVI64I64(outer)
+      Data::VVI64I64(v1)
    }
 }
 
@@ -291,26 +313,24 @@ struct JoinOp { }
 
 impl JoinOp {
    #[inline]
-   fn process_two(&self, node: &Node, data: &[Data]) -> Data {
-      let in1 = node.input(data, 0);
-      let in2 = node.input(data, 1);
+   fn process_two(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (&Data::I64(v1), &Data::I64(v2)) => Data::I64I64((v1, v2)),
-
+         (Data::I64(v1), Data::I64(v2)) => Data::I64I64((v1, v2)),
          _ => NONE
       }
    }
 
    #[inline]
-   fn process_three(&self, node: &Node, data: &[Data]) -> Data {
-      let in1 = node.input(data, 0);
-      let in2 = node.input(data, 1);
-      let in3 = node.input(data, 2);
+   fn process_three(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+      let in3 = node.input(state, 2);
 
       match (in1, in2, in3) {
-         (&Data::U8(v1), &Data::U8(v2), &Data::U8(v3)) => Data::U8U8U8((v1, v2, v3)),
-
+         (Data::U8(v1), Data::U8(v2), Data::U8(v3)) => Data::U8U8U8((v1, v2, v3)),
          _ => NONE
       }
    }
@@ -323,10 +343,10 @@ impl Operator for JoinOp {
    }
 
    #[inline]
-   fn process(&self, node: &Node, data: &[Data]) -> Data {
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
       match node.len() {
-         2 => self.process_two(node, data),
-         3 => self.process_three(node, data),
+         2 => self.process_two(node, state),
+         3 => self.process_three(node, state),
          _ => Data::None
       }
    }
@@ -338,14 +358,16 @@ struct ListOp { }
 
 impl ListOp {
    #[inline]
-   fn create_poly_list(&self, node: &Node, data: &[Data]) -> Data {
+   fn create_poly_list(&self, node: &Node, state: &mut [Vec<Data>], poly: Box<Poly>) -> Data {
       let mut result = Vec::with_capacity(node.len());
 
-      for i in 0..node.len() {
-         let input = node.input(data, i);
+      result.push(poly);
 
-         if let &Data::Poly(ref poly) = input {
-            result.push((*poly).clone());
+      for i in 1..node.len() {
+         let input = node.input(state, i);
+
+         if let Data::Poly(poly) = input {
+            result.push(poly);
          }
       }
 
@@ -353,14 +375,16 @@ impl ListOp {
    }
 
    #[inline]
-   fn create_layer_list(&self, node: &Node, data: &[Data]) -> Data {
+   fn create_layer_list(&self, node: &Node, state: &mut [Vec<Data>], layer: Box<Layer>) -> Data {
       let mut result = Vec::with_capacity(node.len());
 
-      for i in 0..node.len() {
-         let input = node.input(data, i);
+      result.push(layer);
 
-         if let &Data::Layer(ref layer) = input {
-            result.push((*layer).clone());
+      for i in 1..node.len() {
+         let input = node.input(state, i);
+
+         if let Data::Layer(layer) = input {
+            result.push(layer);
          }
       }
 
@@ -375,12 +399,12 @@ impl Operator for ListOp {
    }
 
    #[inline]
-   fn process(&self, node: &Node, data: &[Data]) -> Data {
-      let in1 = node.input(data, 0);
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let first = node.input(state, 0);
 
-      match in1 {
-         &Data::Poly(_) => self.create_poly_list(node, data),
-         &Data::Layer(_) => self.create_layer_list(node, data),
+      match first {
+         Data::Poly(poly) => self.create_poly_list(node, state, poly),
+         Data::Layer(layer) => self.create_layer_list(node, state, layer),
          _ => NONE
       }
    }
@@ -397,25 +421,24 @@ impl Operator for PolyOp {
    }
 
    #[inline]
-   fn process(&self, node: &Node, data: &[Data]) -> Data {
-      let points = node.input(data, 0);
-      let color = node.input(data, 1);
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let points = node.input(state, 0);
+      let color = node.input(state, 1);
 
       match (points, color) {
-         (&Data::VI64I64(ref v1), &Data::U8U8U8(ref v2)) => <(VI64I64, U8U8U8)>::create_poly(v1, v2),
-
+         (Data::VI64I64(v1), Data::U8U8U8(v2)) => <(VI64I64, U8U8U8)>::create_poly(v1, v2),
          _ => NONE
       }
    }
 }
 
 trait PolyMake<T1, T2> {
-   fn create_poly(v1: &T1, v2: &T2) -> Data;
+   fn create_poly(v1: T1, v2: T2) -> Data;
 }
 
 impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
    #[inline]
-   fn create_poly(array: &VI64I64, color: &U8U8U8) -> Data {
+   fn create_poly(array: VI64I64, color: U8U8U8) -> Data {
       let mut points = Vec::with_capacity(array.len());
 
       for tuple in array {
@@ -441,18 +464,11 @@ impl Operator for LayerOp {
    }
 
    #[inline]
-   fn process(&self, node: &Node, data: &[Data]) -> Data {
-      let polys_data = node.input(data, 0);
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let polys_data = node.input(state, 0);
 
       match polys_data {
-         &Data::VPoly(ref poly_vec) => {
-            let mut polys = Vec::with_capacity(poly_vec.len());
-
-            for poly in poly_vec {
-               let cloned = (*poly).clone();
-               polys.push(cloned);
-            }
-
+         Data::VPoly(polys) => {
             Data::Layer(
                Box::new(
                   Layer::new(polys)
@@ -479,8 +495,8 @@ impl Operator for ArtboardOp {
    }
 
    #[inline]
-   fn process(&self, node: &Node, data: &[Data]) -> Data {
-      self.list_node.process(node, data)
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      self.list_node.process(node, state)
    }
 }
 
@@ -489,7 +505,7 @@ struct NodeRenderer {
    renderer: DevelRenderer,
    frame: i64,
    nodes: Vec<Node>,
-   state: Vec<Data>,
+   state: Vec<Vec<Data>>,
    artboard_slot: usize,
 }
 
@@ -515,7 +531,7 @@ impl Renderer for NodeRenderer {
 
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
-      self.state[1] = Data::I64(self.frame);
+      self.state[1][0] = Data::I64(self.frame);
 
       for node in &self.nodes {
          node.process(&mut self.state);
@@ -523,7 +539,7 @@ impl Renderer for NodeRenderer {
 
       let mut scene = Scene::new();
 
-      if let Data::VLayer(ref artboard) = self.state[self.artboard_slot] {
+      if let Data::VLayer(ref artboard) = self.state[self.artboard_slot][0] {
          for layer in artboard {
             for poly in &layer.polys {
                scene.push(poly.clone());
@@ -540,7 +556,7 @@ impl Renderer for NodeRenderer {
 }
 
 
-fn parse(node_defs: &str) -> (Vec<Node>, Vec<Data>, usize) {
+fn parse(node_defs: &str) -> (Vec<Node>, Vec<Vec<Data>>, usize) {
    let mut parser = toml::Parser::new(node_defs);
 
    if let Some(all_tables) = parser.parse() {
@@ -582,20 +598,24 @@ fn parse(node_defs: &str) -> (Vec<Node>, Vec<Data>, usize) {
 
       let nodes = execution_sort(nodes);
 
+      state[artboard_slot].push(Data::None);
+
       return (nodes, state, artboard_slot);
    }
 
    panic!("parse errors: {:?}", parser.errors);
 }
 
-fn create_state(nodes_len: usize) -> Vec<Data> {
+fn create_state(nodes_len: usize) -> Vec<Vec<Data>> {
    let data_len = nodes_len + NODE_INDEX_OFFSET;
 
    let mut state = Vec::with_capacity(data_len);
 
    for _ in 0..data_len {
-      state.push(Data::None);
+      state.push(Vec::new());
    }
+
+   state[0].push(Data::None);
 
    state
 }
@@ -682,7 +702,7 @@ fn connections_map(nodes: &Vec<Node>) -> Vec<Vec<usize>> {
 
    for (i, node) in nodes.iter().enumerate() {
       for inlet in &node.inlets {
-         if let &Some(in_index) = inlet {
+         if let &Some((in_index, _)) = inlet {
             if let Some(node_index) = positions.get(&in_index) {
                connections[*node_index].push(i);
             }
@@ -710,7 +730,7 @@ fn process_node_table(
    node_index: usize,
    node_table: &toml::Table,
    slot_map: &HashMap<&str, usize>,
-   state: &mut Vec<Data>,
+   state: &mut Vec<Vec<Data>>,
 ) -> Option<(Node, bool)> {
 
    let node_type = extract_node_type(node_id, node_table);
@@ -728,16 +748,15 @@ fn process_node_table(
    };
 
    if let Some(operator) = operator {
-      let node = create_node(node_id, node_index, node_table, slot_map, operator);
+      let node = create_node(node_id, node_index, node_table, slot_map, operator, state);
 
       let is_final = node_type == "artboard";
 
       Some((node, is_final))
    } else {
-      let data = extract_table_data(node_id, node_table);
-      state[node_index] = data;
+      let node = create_data_node(node_id, node_index, node_table);
 
-      None
+      Some((node, false))
    }
 }
 
@@ -753,11 +772,28 @@ fn create_node(
    node_table: &toml::Table,
    slot_map: &HashMap<&str, usize>,
    operator: Box<Operator>,
+   state: &mut Vec<Vec<Data>>,
 ) -> Node {
 
    let data_value = extract_data_value(node_id, node_table);
 
-   let (consts, inlets) = to_defaults(node_id, data_value, slot_map);
+   let (consts, inlets) = to_defaults(node_id, data_value, slot_map, state);
+
+   Node::new(operator, consts, inlets, node_index)
+}
+
+
+fn create_data_node(
+   node_id: &str,
+   node_index: usize,
+   node_table: &toml::Table,
+) -> Node {
+   let data = extract_table_data(node_id, node_table);
+
+   let operator = Box::new(DataOp::new());
+
+   let consts = vec![data];
+   let inlets = vec![None];
 
    Node::new(operator, consts, inlets, node_index)
 }
@@ -792,8 +828,9 @@ fn extract_data_value<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a tom
 fn to_defaults(
    node_id: &str,
    data: &toml::Value,
-   slot_map: &HashMap<&str, usize>
-) -> (Vec<Data>, Vec<Option<usize>>) {
+   slot_map: &HashMap<&str, usize>,
+   state: &mut Vec<Vec<Data>>,
+) -> (Vec<Data>, Vec<Option<(usize, usize)>>) {
 
    let array = match data {
       &toml::Value::Array(ref array) => array,
@@ -830,7 +867,11 @@ fn to_defaults(
                }
             };
 
-            inlets.push(Some(*slot));
+            let subslot = state[*slot].len();
+
+            state[*slot].push(Data::None);
+
+            inlets.push(Some((*slot, subslot)));
 
             consts.push(Data::None);
 
