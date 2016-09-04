@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::operator::{Operator, DataOp};
 use super::data::Data;
-use super::node::{Node, NodeRole};
+use super::node::{Node, NodeRole, IndexedInlet};
 
 pub const NODE_INDEX_OFFSET: usize = 1;
 
@@ -20,14 +20,6 @@ pub enum Inlet<'a> {
 #[derive(Debug)]
 enum OwnedInlet {
    Source(String),
-   Data(Data),
-   None,
-}
-
-
-#[derive(Debug)]
-pub enum IndexedInlet {
-   Slot((usize, usize)),
    Data(Data),
    None,
 }
@@ -253,7 +245,7 @@ fn connections_map(nodes: &Vec<Node>) -> Vec<Vec<usize>> {
 
    for (i, node) in nodes.iter().enumerate() {
       for inlet in &node.inlets {
-         if let &Some((in_index, _)) = inlet {
+         if let &IndexedInlet::Slot((in_index, _)) = inlet {
             if let Some(node_index) = positions.get(&in_index) {
                connections[*node_index].push(i);
             }
@@ -297,15 +289,16 @@ fn node_from_def(
       NodeDef::Data((_, data)) => {
          let operator = Box::new(DataOp::new());
 
-         let consts = vec![data];
-         let inlets = vec![None];
+         let indexed_inlets = vec![
+            IndexedInlet::Data(data)
+         ];
 
-         Node::new(operator, consts, inlets, node_index)
+         Node::new(operator, indexed_inlets, node_index)
       },
       NodeDef::Operator((_, operator, inlets)) => {
-         let (consts, sources) = node_sources(inlets, slot_map, state);
+         let indexed_inlets = node_sources(inlets, slot_map, state);
 
-         Node::new(operator, consts, sources, node_index)
+         Node::new(operator, indexed_inlets, node_index)
 
       },
       _ => panic!("")
@@ -316,10 +309,9 @@ fn node_sources(
    mut inlets: Vec<OwnedInlet>,
    slot_map: &HashMap<String, usize>,
    state: &mut Vec<Vec<Data>>,
-) -> (Vec<Data>, Vec<Option<(usize, usize)>>) {
+) -> Vec<IndexedInlet> {
 
-   let mut consts = Vec::with_capacity(inlets.len());
-   let mut sources = Vec::with_capacity(inlets.len());
+   let mut indexed_inlets = Vec::with_capacity(inlets.len());
 
    for inlet in inlets.iter_mut() {
       let extracted = replace(inlet, OwnedInlet::None);
@@ -337,24 +329,23 @@ fn node_sources(
 
             state[*slot].push(Data::None);
 
-            sources.push(Some((*slot, subslot)));
-
-            consts.push(Data::None);
+            indexed_inlets.push(
+               IndexedInlet::Slot((*slot, subslot))
+            );
          },
          OwnedInlet::Data(data) => {
-            consts.push(data);
-
-            sources.push(None);
-
+            indexed_inlets.push(
+               IndexedInlet::Data(data)
+            );
          },
          OwnedInlet::None => {
-            consts.push(Data::None);
-
-            sources.push(None);
+            indexed_inlets.push(
+               IndexedInlet::Data(Data::None)
+            );
          }
       }
    }
 
-   (consts, sources)
+   indexed_inlets
 }
 

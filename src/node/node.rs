@@ -11,11 +11,19 @@ pub enum NodeRole {
    Artboard,
 }
 
+
+#[derive(Debug)]
+pub enum IndexedInlet {
+   Slot((usize, usize)),
+   Data(Data),
+   None,
+}
+
+
 #[derive(Debug)]
 pub struct Node {
    pub operator: Box<Operator>,
-   pub consts: Vec<Data>,
-   pub inlets: Vec<Option<(usize, usize)>>,
+   pub inlets: Vec<IndexedInlet>,
    pub slot: usize,
 }
 
@@ -23,14 +31,12 @@ impl Node {
    #[inline]
    pub fn new(
       operator: Box<Operator>,
-      consts: Vec<Data>,
-      inlets: Vec<Option<(usize, usize)>>,
+      inlets: Vec<IndexedInlet>,
       slot: usize,
    ) -> Self {
 
       Node {
          operator: operator,
-         consts: consts,
          inlets: inlets,
          slot: slot,
       }
@@ -38,24 +44,19 @@ impl Node {
 
    #[inline]
    pub fn input(&self, state: &mut [Vec<Data>], slot: usize) -> Data {
-      if let Some(option) = self.inlets.get(slot) {
-         if let Some((data_index, slot_index)) = *option {
-            let value = replace(&mut state[data_index][slot_index], Data::None);
-            return value;
-         }
-      }
 
-      match self.consts.get(slot) {
-         Some(ref value) => (*value).clone(),
-         None => Data::None
+      match &self.inlets[slot] {
+         &IndexedInlet::Slot((data_index, slot_index)) => {
+            replace(&mut state[data_index][slot_index], Data::None)
+         },
+         &IndexedInlet::Data(ref value) => (*value).clone(),
+         &IndexedInlet::None => Data::None,
       }
    }
 
    #[inline]
    pub fn len(&self) -> usize {
-      assert!(self.consts.len() == self.inlets.len());
-
-      self.consts.len()
+      self.inlets.len()
    }
 
    #[inline]
@@ -82,7 +83,6 @@ impl Default for Node {
    fn default() -> Node {
       Node::new(
          Box::new(NoneOp::new()),
-         vec![],
          vec![],
          0
       )
