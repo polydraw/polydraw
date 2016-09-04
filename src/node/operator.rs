@@ -4,7 +4,7 @@ use devel::Poly;
 use geom::point::Point;
 use draw::RGB;
 
-use super::node::Node;
+use super::node::{Node, NodeRole};
 use super::data::{Data, NONE, Layer, I64I64, VI64I64, VVI64I64, U8U8U8};
 
 
@@ -12,6 +12,10 @@ pub trait Operator where Self: fmt::Debug {
    fn new() -> Self where Self: Sized;
 
    fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data;
+
+   fn role(&self) -> NodeRole {
+      NodeRole::Processor
+   }
 }
 
 
@@ -28,6 +32,10 @@ impl Operator for NoneOp {
    fn process(&self, _: &Node, _: &mut [Vec<Data>]) -> Data {
       NONE
    }
+
+   fn role(&self) -> NodeRole {
+      NodeRole::Data
+   }
 }
 
 
@@ -43,6 +51,10 @@ impl Operator for DataOp {
    #[inline]
    fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
       node.input(state, 0)
+   }
+
+   fn role(&self) -> NodeRole {
+      NodeRole::Data
    }
 }
 
@@ -325,6 +337,10 @@ impl Operator for ArtboardOp {
    #[inline]
    fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
       self.list_node.process(node, state)
+   }
+
+   fn role(&self) -> NodeRole {
+      NodeRole::Artboard
    }
 }
 

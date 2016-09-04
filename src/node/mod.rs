@@ -2,13 +2,12 @@ mod operator;
 mod data;
 mod node;
 mod renderer;
+mod builder;
 
-pub use self::node::{
-   Node, NODE_INDEX_OFFSET, create_state, execution_sort,
-};
+pub use self::builder::{NodeBuilder, Inlet};
 
 pub use self::operator::{
-   Operator, NoneOp, DataOp, AddOp, JoinOp, ListOp, PolyOp, LayerOp, ArtboardOp,
+   Operator, AddOp, JoinOp, ListOp, PolyOp, LayerOp, ArtboardOp,
 };
 
 pub use self::data::Data;
