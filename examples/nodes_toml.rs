@@ -3,8 +3,8 @@ extern crate toml;
 
 use polydraw::Application;
 use polydraw::node::{
-   NodeRenderer, Data, Operator, AddOp, JoinOp, ListOp, PolyOp, LayerOp,
-   ArtboardOp, NodeBuilder, Inlet,
+   NodeRenderer, Data, Operator, Add, Join, BuildList, BuildPoly, BuildLayer,
+   BuildArtboard, NodeBuilder, Inlet,
 };
 
 
@@ -81,13 +81,13 @@ fn process_node_table(
    let node_type = extract_node_type(node_id, node_table);
 
    match node_type.as_ref() {
-      "add" => create_operator_node::<AddOp>(builder, node_id, node_table),
-      "join" => create_operator_node::<JoinOp>(builder, node_id, node_table),
-      "list" => create_operator_node::<ListOp>(builder, node_id, node_table),
+      "add" => create_operator_node::<Add>(builder, node_id, node_table),
+      "join" => create_operator_node::<Join>(builder, node_id, node_table),
+      "list" => create_operator_node::<BuildList>(builder, node_id, node_table),
 
-      "poly" => create_operator_node::<PolyOp>(builder, node_id, node_table),
-      "layer" => create_operator_node::<LayerOp>(builder, node_id, node_table),
-      "artboard" => create_operator_node::<ArtboardOp>(builder, node_id, node_table),
+      "poly" => create_operator_node::<BuildPoly>(builder, node_id, node_table),
+      "layer" => create_operator_node::<BuildLayer>(builder, node_id, node_table),
+      "artboard" => create_operator_node::<BuildArtboard>(builder, node_id, node_table),
 
       _ => create_data_node(builder, node_id, node_table),
    }

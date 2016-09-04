@@ -2,7 +2,8 @@ extern crate polydraw;
 
 use polydraw::Application;
 use polydraw::node::{
-   NodeRenderer, Data, AddOp, JoinOp, ListOp, PolyOp, LayerOp, ArtboardOp, NodeBuilder, Inlet,
+   NodeRenderer, Data, Add, Join, BuildList, BuildPoly, BuildLayer,
+   BuildArtboard, NodeBuilder, Inlet,
 };
 
 
@@ -19,30 +20,30 @@ fn main() {
 
    builder.data("poly-points", points);
 
-   builder.operator::<JoinOp>("translate-point", vec![
+   builder.operator::<Join>("translate-point", vec![
       Inlet::Source("frame"),
       Inlet::Data(Data::I64(0)),
    ]);
 
-   builder.operator::<AddOp>("add-operator", vec![
+   builder.operator::<Add>("add-operator", vec![
       Inlet::Source("poly-points"),
       Inlet::Source("translate-point"),
    ]);
 
-   builder.operator::<PolyOp>("poly", vec![
+   builder.operator::<BuildPoly>("poly", vec![
       Inlet::Source("add-operator"),
       Inlet::Data(color),
    ]);
 
-   builder.operator::<ListOp>("poly-list", vec![
+   builder.operator::<BuildList>("poly-list", vec![
       Inlet::Source("poly"),
    ]);
 
-   builder.operator::<LayerOp>("layer", vec![
+   builder.operator::<BuildLayer>("layer", vec![
       Inlet::Source("poly-list"),
    ]);
 
-   builder.operator::<ArtboardOp>("artboard", vec![
+   builder.operator::<BuildArtboard>("artboard", vec![
       Inlet::Source("layer"),
    ]);
 

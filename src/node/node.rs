@@ -1,6 +1,6 @@
 use std::mem::replace;
 
-use super::operator::{Operator, NoneOp};
+use super::operator::{Operator, NoneOperator};
 use super::data::Data;
 
 
@@ -82,7 +82,7 @@ impl Default for Node {
    #[inline]
    fn default() -> Node {
       Node::new(
-         Box::new(NoneOp::new()),
+         Box::new(NoneOperator::new()),
          vec![],
          0
       )

@@ -2,7 +2,7 @@ use std::mem::replace;
 use std::iter::repeat;
 use std::collections::{HashMap, HashSet};
 
-use super::operator::{Operator, DataOp};
+use super::operator::{Operator, DataOperator};
 use super::data::Data;
 use super::node::{Node, NodeRole, IndexedInlet};
 
@@ -287,7 +287,7 @@ fn node_from_def(
 ) -> Node {
    match node_def {
       NodeDef::Data((_, data)) => {
-         let operator = Box::new(DataOp::new());
+         let operator = Box::new(DataOperator::new());
 
          let indexed_inlets = vec![
             IndexedInlet::Data(data)

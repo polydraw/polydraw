@@ -20,12 +20,12 @@ pub trait Operator where Self: fmt::Debug {
 
 
 #[derive(Debug)]
-pub struct NoneOp { }
+pub struct NoneOperator { }
 
-impl Operator for NoneOp {
+impl Operator for NoneOperator {
    #[inline]
    fn new() -> Self {
-      NoneOp { }
+      NoneOperator { }
    }
 
    #[inline]
@@ -40,12 +40,12 @@ impl Operator for NoneOp {
 
 
 #[derive(Debug)]
-pub struct DataOp { }
+pub struct DataOperator { }
 
-impl Operator for DataOp {
+impl Operator for DataOperator {
    #[inline]
    fn new() -> Self {
-      DataOp { }
+      DataOperator { }
    }
 
    #[inline]
@@ -60,12 +60,12 @@ impl Operator for DataOp {
 
 
 #[derive(Debug)]
-pub struct AddOp { }
+pub struct Add { }
 
-impl Operator for AddOp {
+impl Operator for Add {
    #[inline]
    fn new() -> Self {
-      AddOp { }
+      Add { }
    }
 
    #[inline]
@@ -93,25 +93,25 @@ impl Operator for AddOp {
    }
 }
 
-trait Add<T1, T2> {
+trait AddTrait<T1, T2> {
    fn add(v1: T1, v2: T2) -> Data;
 }
 
-impl Add<i64, i64> for (i64, i64) {
+impl AddTrait<i64, i64> for (i64, i64) {
    #[inline]
    fn add(v1: i64, v2: i64) -> Data {
       Data::I64(v1 + v2)
    }
 }
 
-impl Add<f64, i64> for (f64, i64) {
+impl AddTrait<f64, i64> for (f64, i64) {
    #[inline]
    fn add(v1: f64, v2: i64) -> Data {
       Data::F64(v1 + v2 as f64)
    }
 }
 
-impl Add<I64I64, i64> for (I64I64, i64) {
+impl AddTrait<I64I64, i64> for (I64I64, i64) {
    #[inline]
    fn add(mut v1: I64I64, v2: i64) -> Data {
       v1.0 += v2;
@@ -121,7 +121,7 @@ impl Add<I64I64, i64> for (I64I64, i64) {
    }
 }
 
-impl Add<VI64I64, I64I64> for (VI64I64, I64I64) {
+impl AddTrait<VI64I64, I64I64> for (VI64I64, I64I64) {
    #[inline]
    fn add(mut v1: VI64I64, v2: I64I64) -> Data {
       for tuple in &mut v1 {
@@ -133,7 +133,7 @@ impl Add<VI64I64, I64I64> for (VI64I64, I64I64) {
    }
 }
 
-impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
+impl AddTrait<VVI64I64, I64I64> for (VVI64I64, I64I64) {
    #[inline]
    fn add(mut v1: VVI64I64, v2: I64I64) -> Data {
       for src in &mut v1 {
@@ -149,9 +149,9 @@ impl Add<VVI64I64, I64I64> for (VVI64I64, I64I64) {
 
 
 #[derive(Debug)]
-pub struct JoinOp { }
+pub struct Join { }
 
-impl JoinOp {
+impl Join {
    #[inline]
    fn process_two(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
       let in1 = node.input(state, 0);
@@ -176,10 +176,10 @@ impl JoinOp {
    }
 }
 
-impl Operator for JoinOp {
+impl Operator for Join {
    #[inline]
    fn new() -> Self {
-      JoinOp { }
+      Join { }
    }
 
    #[inline]
@@ -194,9 +194,9 @@ impl Operator for JoinOp {
 
 
 #[derive(Debug)]
-pub struct ListOp { }
+pub struct BuildList { }
 
-impl ListOp {
+impl BuildList {
    #[inline]
    fn create_poly_list(&self, node: &Node, state: &mut [Vec<Data>], poly: Box<Poly>) -> Data {
       let mut result = Vec::with_capacity(node.len());
@@ -232,10 +232,10 @@ impl ListOp {
    }
 }
 
-impl Operator for ListOp {
+impl Operator for BuildList {
    #[inline]
    fn new() -> Self {
-      ListOp { }
+      BuildList { }
    }
 
    #[inline]
@@ -252,12 +252,12 @@ impl Operator for ListOp {
 
 
 #[derive(Debug)]
-pub struct PolyOp { }
+pub struct BuildPoly { }
 
-impl Operator for PolyOp {
+impl Operator for BuildPoly {
    #[inline]
    fn new() -> Self {
-      PolyOp { }
+      BuildPoly { }
    }
 
    #[inline]
@@ -266,19 +266,19 @@ impl Operator for PolyOp {
       let color = node.input(state, 1);
 
       match (points, color) {
-         (Data::VI64I64(v1), Data::U8U8U8(v2)) => <(VI64I64, U8U8U8)>::create_poly(v1, v2),
+         (Data::VI64I64(v1), Data::U8U8U8(v2)) => <(VI64I64, U8U8U8)>::build_poly(v1, v2),
          _ => NONE
       }
    }
 }
 
-trait PolyMake<T1, T2> {
-   fn create_poly(v1: T1, v2: T2) -> Data;
+trait BuildPolyTrait<T1, T2> {
+   fn build_poly(v1: T1, v2: T2) -> Data;
 }
 
-impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
+impl BuildPolyTrait<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
    #[inline]
-   fn create_poly(array: VI64I64, color: U8U8U8) -> Data {
+   fn build_poly(array: VI64I64, color: U8U8U8) -> Data {
       let mut points = Vec::with_capacity(array.len());
 
       for tuple in array {
@@ -295,12 +295,12 @@ impl PolyMake<VI64I64, U8U8U8> for (VI64I64, U8U8U8) {
 
 
 #[derive(Debug)]
-pub struct LayerOp { }
+pub struct BuildLayer { }
 
-impl Operator for LayerOp {
+impl Operator for BuildLayer {
    #[inline]
    fn new() -> Self {
-      LayerOp { }
+      BuildLayer { }
    }
 
    #[inline]
@@ -322,15 +322,15 @@ impl Operator for LayerOp {
 
 
 #[derive(Debug)]
-pub struct ArtboardOp {
-   list_node: ListOp,
+pub struct BuildArtboard {
+   list_node: BuildList,
 }
 
-impl Operator for ArtboardOp {
+impl Operator for BuildArtboard {
    #[inline]
    fn new() -> Self {
-      ArtboardOp {
-         list_node: ListOp::new()
+      BuildArtboard {
+         list_node: BuildList::new()
       }
    }
 
