@@ -65,6 +65,10 @@ impl Node {
 
       let mut slots = &mut state[self.slot];
 
+      if slots.len() == 0 {
+         return;
+      }
+
       for index in 1..slots.len() {
          slots[index] = data.clone();
       }

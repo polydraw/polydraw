@@ -216,8 +216,8 @@ fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
 
    match type_str.as_ref() {
       "i64" => toml_to_i64(node_id, data),
-      "(u8, u8, u8)" => toml_to_u8u8u8(node_id, data),
-      "[(i64, i64)]" => toml_to_vi64i64(node_id, data),
+      "(u8, u8, u8)" => toml_to_t3u8(node_id, data),
+      "[(i64, i64)]" => toml_to_vt2i64(node_id, data),
       _ => {
          panic!("Unknown data type {}: {}", type_str, node_id);
       }
@@ -230,7 +230,7 @@ fn toml_to_i64(node_id: &str, data: &toml::Value) -> Data {
 }
 
 
-fn toml_to_u8u8u8(node_id: &str, data: &toml::Value) -> Data {
+fn toml_to_t3u8(node_id: &str, data: &toml::Value) -> Data {
    match data {
       &toml::Value::Array(ref array) => {
          if array.len() != 3 {
@@ -241,7 +241,7 @@ fn toml_to_u8u8u8(node_id: &str, data: &toml::Value) -> Data {
          let second = extract_u8(node_id, &array[1]);
          let third = extract_u8(node_id, &array[2]);
 
-         Data::U8U8U8((first, second, third))
+         Data::T3U8((first, second, third))
       },
       _ => {
          panic!("Value not an array {:?}: {}", data, node_id);
@@ -250,7 +250,7 @@ fn toml_to_u8u8u8(node_id: &str, data: &toml::Value) -> Data {
 }
 
 
-fn toml_to_vi64i64(node_id: &str, data: &toml::Value) -> Data {
+fn toml_to_vt2i64(node_id: &str, data: &toml::Value) -> Data {
    match data {
       &toml::Value::Array(ref array) => {
          let mut container = Vec::with_capacity(array.len());
@@ -273,7 +273,7 @@ fn toml_to_vi64i64(node_id: &str, data: &toml::Value) -> Data {
             }
          }
 
-         Data::VI64I64(container)
+         Data::VT2I64(container)
       },
       _ => {
          panic!("Value not an array {:?}: {}", data, node_id);

@@ -15,11 +15,14 @@ impl Layer {
 }
 
 
-pub type U8U8U8 = (u8, u8, u8);
+pub type T3U8 = (u8, u8, u8);
 
-pub type I64I64 = (i64, i64);
-pub type VI64I64 = Vec<I64I64>;
-pub type VVI64I64 = Vec<Vec<I64I64>>;
+pub type T2I64 = (i64, i64);
+pub type VT2I64 = Vec<T2I64>;
+pub type VVT2I64 = Vec<Vec<T2I64>>;
+
+pub type T2T2I64 = ((i64, i64), (i64, i64));
+pub type T2T2I64Box = Box<T2T2I64>;
 
 pub type PolyBox = Box<Poly>;
 pub type VPolyBox = Vec<Box<Poly>>;
@@ -36,11 +39,12 @@ pub enum Data {
    I64(i64),
    F64(f64),
 
-   I64I64(I64I64),
-   VI64I64(VI64I64),
-   VVI64I64(VVI64I64),
+   T2I64(T2I64),
+   T2T2I64(T2T2I64Box),
+   VT2I64(VT2I64),
+   VVT2I64(VVT2I64),
 
-   U8U8U8(U8U8U8),
+   T3U8(T3U8),
 
    Poly(PolyBox),
    VPoly(VPolyBox),

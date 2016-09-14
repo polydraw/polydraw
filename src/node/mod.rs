@@ -7,7 +7,8 @@ mod builder;
 pub use self::builder::{NodeBuilder, Inlet};
 
 pub use self::operator::{
-   Operator, Add, Join, BuildList, BuildPoly, BuildLayer, BuildArtboard,
+   Operator, Add, Join, BuildList, BuildPoly, BuildLayer, BuildArtboard, BBox,
+   Rotate, Center,
 };
 
 pub use self::data::Data;
