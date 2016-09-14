@@ -150,6 +150,253 @@ impl AddTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
 
 
 #[derive(Debug)]
+pub struct Divide { }
+
+impl Operator for Divide {
+   #[inline]
+   fn new() -> Self {
+      Divide { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      match (in1, in2) {
+         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::divide(v1, v2),
+
+         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::divide(v1, v2),
+         (Data::I64(v1), Data::F64(v2)) => <(f64, i64)>::divide(v2, v1),
+
+         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::divide(v1, v2),
+         (Data::I64(v1), Data::T2I64(v2)) => <(T2I64, i64)>::divide(v2, v1),
+
+         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::divide(v1, v2),
+         (Data::T2I64(v1), Data::VT2I64(v2)) => <(VT2I64, T2I64)>::divide(v2, v1),
+
+         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::divide(v1, v2),
+         (Data::T2I64(v1), Data::VVT2I64(v2)) => <(VVT2I64, T2I64)>::divide(v2, v1),
+
+         _ => NONE
+      }
+   }
+}
+
+trait DivideTrait<T1, T2> {
+   fn divide(v1: T1, v2: T2) -> Data;
+}
+
+impl DivideTrait<i64, i64> for (i64, i64) {
+   #[inline]
+   fn divide(v1: i64, v2: i64) -> Data {
+      Data::I64(v1 - v2)
+   }
+}
+
+impl DivideTrait<f64, i64> for (f64, i64) {
+   #[inline]
+   fn divide(v1: f64, v2: i64) -> Data {
+      Data::F64(v1 - v2 as f64)
+   }
+}
+
+impl DivideTrait<T2I64, i64> for (T2I64, i64) {
+   #[inline]
+   fn divide(mut v1: T2I64, v2: i64) -> Data {
+      v1.0 -= v2;
+      v1.1 -= v2;
+
+      Data::T2I64(v1)
+   }
+}
+
+impl DivideTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+   #[inline]
+   fn divide(mut v1: VT2I64, v2: T2I64) -> Data {
+      for tuple in &mut v1 {
+         tuple.0 -= v2.0;
+         tuple.1 -= v2.1;
+      }
+
+      Data::VT2I64(v1)
+   }
+}
+
+impl DivideTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+   #[inline]
+   fn divide(mut v1: VVT2I64, v2: T2I64) -> Data {
+      for src in &mut v1 {
+         for tuple in src.iter_mut() {
+            tuple.0 -= v2.0;
+            tuple.1 -= v2.1;
+         }
+      }
+
+      Data::VVT2I64(v1)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct Multiply { }
+
+impl Operator for Multiply {
+   #[inline]
+   fn new() -> Self {
+      Multiply { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      match (in1, in2) {
+         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::multiply(v1, v2),
+
+         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::multiply(v1, v2),
+         (Data::I64(v1), Data::F64(v2)) => <(f64, i64)>::multiply(v2, v1),
+
+         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::multiply(v1, v2),
+         (Data::I64(v1), Data::T2I64(v2)) => <(T2I64, i64)>::multiply(v2, v1),
+
+         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::multiply(v1, v2),
+         (Data::T2I64(v1), Data::VT2I64(v2)) => <(VT2I64, T2I64)>::multiply(v2, v1),
+
+         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::multiply(v1, v2),
+         (Data::T2I64(v1), Data::VVT2I64(v2)) => <(VVT2I64, T2I64)>::multiply(v2, v1),
+
+         _ => NONE
+      }
+   }
+}
+
+trait MultiplyTrait<T1, T2> {
+   fn multiply(v1: T1, v2: T2) -> Data;
+}
+
+impl MultiplyTrait<i64, i64> for (i64, i64) {
+   #[inline]
+   fn multiply(v1: i64, v2: i64) -> Data {
+      Data::I64(v1 * v2)
+   }
+}
+
+impl MultiplyTrait<f64, i64> for (f64, i64) {
+   #[inline]
+   fn multiply(v1: f64, v2: i64) -> Data {
+      Data::F64(v1 * v2 as f64)
+   }
+}
+
+impl MultiplyTrait<T2I64, i64> for (T2I64, i64) {
+   #[inline]
+   fn multiply(mut v1: T2I64, v2: i64) -> Data {
+      v1.0 *= v2;
+      v1.1 *= v2;
+
+      Data::T2I64(v1)
+   }
+}
+
+impl MultiplyTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+   #[inline]
+   fn multiply(mut v1: VT2I64, v2: T2I64) -> Data {
+      for tuple in &mut v1 {
+         tuple.0 *= v2.0;
+         tuple.1 *= v2.1;
+      }
+
+      Data::VT2I64(v1)
+   }
+}
+
+impl MultiplyTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+   #[inline]
+   fn multiply(mut v1: VVT2I64, v2: T2I64) -> Data {
+      for src in &mut v1 {
+         for tuple in src.iter_mut() {
+            tuple.0 *= v2.0;
+            tuple.1 *= v2.1;
+         }
+      }
+
+      Data::VVT2I64(v1)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct Nth { }
+
+impl Operator for Nth {
+   #[inline]
+   fn new() -> Self {
+      Nth { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      match (in1, in2) {
+         (Data::T3U8(object), Data::I64(index)) => <T3U8>::nth(object, index),
+
+         (Data::T2I64(object), Data::I64(index)) => <T2I64>::nth(object, index),
+
+         (Data::T2T2I64(object), Data::I64(index)) => <T2T2I64>::nth(*object, index),
+
+//         (Data::VT2I64(object), Data::I64(index)) => <VT2I64>::nth(object, index),
+
+//         (Data::VVT2I64(object), Data::I64(index)) => <VVT2I64>::nth(object, index),
+
+         _ => NONE
+      }
+   }
+}
+
+trait NthTrait<T1> {
+   fn nth(object: T1, index: i64) -> Data;
+}
+
+impl NthTrait<T2I64> for T2I64 {
+   #[inline]
+   fn nth(object: T2I64, index: i64) -> Data {
+      match index {
+         0 => Data::I64(object.0),
+         1 => Data::I64(object.1),
+         _ => NONE,
+      }
+   }
+}
+
+impl NthTrait<T3U8> for T3U8 {
+   #[inline]
+   fn nth(object: T3U8, index: i64) -> Data {
+      match index {
+         0 => Data::U8(object.0),
+         1 => Data::U8(object.1),
+         2 => Data::U8(object.2),
+         _ => NONE,
+      }
+   }
+}
+
+impl NthTrait<T2T2I64> for T2T2I64 {
+   #[inline]
+   fn nth(object: T2T2I64, index: i64) -> Data {
+      match index {
+         0 => Data::T2I64(object.0),
+         1 => Data::T2I64(object.1),
+         _ => NONE,
+      }
+   }
+}
+
+
+#[derive(Debug)]
 pub struct Rotate { }
 
 impl Operator for Rotate {
