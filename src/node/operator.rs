@@ -61,6 +61,39 @@ impl Operator for DataOperator {
 
 
 #[derive(Debug)]
+pub struct Print { }
+
+impl Operator for Print {
+   #[inline]
+   fn new() -> Self {
+      Print { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      match (in1, in2) {
+         (Data::I64(frame), Data::I64(target)) => {
+            if frame == target {
+               for i in 2..node.len() {
+                  let input = node.input(state, i);
+
+                  println!("[{}] {:?}", i-2, input);
+               }
+            }
+         },
+
+         _ => {}
+      }
+
+      NONE
+   }
+}
+
+
+#[derive(Debug)]
 pub struct Add { }
 
 impl Operator for Add {
@@ -167,16 +200,13 @@ impl Operator for Divide {
          (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::divide(v1, v2),
 
          (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::divide(v1, v2),
-         (Data::I64(v1), Data::F64(v2)) => <(f64, i64)>::divide(v2, v1),
+         (Data::I64(v1), Data::F64(v2)) => <(i64, f64)>::divide(v1, v2),
 
          (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::divide(v1, v2),
-         (Data::I64(v1), Data::T2I64(v2)) => <(T2I64, i64)>::divide(v2, v1),
 
          (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::divide(v1, v2),
-         (Data::T2I64(v1), Data::VT2I64(v2)) => <(VT2I64, T2I64)>::divide(v2, v1),
 
          (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::divide(v1, v2),
-         (Data::T2I64(v1), Data::VVT2I64(v2)) => <(VVT2I64, T2I64)>::divide(v2, v1),
 
          _ => NONE
       }
@@ -198,6 +228,13 @@ impl DivideTrait<f64, i64> for (f64, i64) {
    #[inline]
    fn divide(v1: f64, v2: i64) -> Data {
       Data::F64(v1 - v2 as f64)
+   }
+}
+
+impl DivideTrait<i64, f64> for (i64, f64) {
+   #[inline]
+   fn divide(v1: i64, v2: f64) -> Data {
+      Data::F64(v1 as f64 - v2)
    }
 }
 
@@ -230,6 +267,99 @@ impl DivideTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
          for tuple in src.iter_mut() {
             tuple.0 -= v2.0;
             tuple.1 -= v2.1;
+         }
+      }
+
+      Data::VVT2I64(v1)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct Subtract { }
+
+impl Operator for Subtract {
+   #[inline]
+   fn new() -> Self {
+      Subtract { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      match (in1, in2) {
+         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::subtract(v1, v2),
+
+         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::subtract(v1, v2),
+         (Data::I64(v1), Data::F64(v2)) => <(i64, f64)>::subtract(v1, v2),
+
+         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::subtract(v1, v2),
+
+         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::subtract(v1, v2),
+
+         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::subtract(v1, v2),
+
+         _ => NONE
+      }
+   }
+}
+
+trait SubtractTrait<T1, T2> {
+   fn subtract(v1: T1, v2: T2) -> Data;
+}
+
+impl SubtractTrait<i64, i64> for (i64, i64) {
+   #[inline]
+   fn subtract(v1: i64, v2: i64) -> Data {
+      Data::I64(v1 / v2)
+   }
+}
+
+impl SubtractTrait<f64, i64> for (f64, i64) {
+   #[inline]
+   fn subtract(v1: f64, v2: i64) -> Data {
+      Data::F64(v1 / v2 as f64)
+   }
+}
+
+impl SubtractTrait<i64, f64> for (i64, f64) {
+   #[inline]
+   fn subtract(v1: i64, v2: f64) -> Data {
+      Data::F64(v1 as f64 / v2)
+   }
+}
+
+impl SubtractTrait<T2I64, i64> for (T2I64, i64) {
+   #[inline]
+   fn subtract(mut v1: T2I64, v2: i64) -> Data {
+      v1.0 /= v2;
+      v1.1 /= v2;
+
+      Data::T2I64(v1)
+   }
+}
+
+impl SubtractTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+   #[inline]
+   fn subtract(mut v1: VT2I64, v2: T2I64) -> Data {
+      for tuple in &mut v1 {
+         tuple.0 /= v2.0;
+         tuple.1 /= v2.1;
+      }
+
+      Data::VT2I64(v1)
+   }
+}
+
+impl SubtractTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+   #[inline]
+   fn subtract(mut v1: VVT2I64, v2: T2I64) -> Data {
+      for src in &mut v1 {
+         for tuple in src.iter_mut() {
+            tuple.0 /= v2.0;
+            tuple.1 /= v2.1;
          }
       }
 
