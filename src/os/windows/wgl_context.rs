@@ -6,7 +6,6 @@ use sys::wgl;
 use sys::gl;
 
 pub struct WglContext {
-   pub library: win32::Library,
    pub context: wgl::Context,
 }
 
@@ -20,19 +19,18 @@ impl WglContext {
 
       let context = try!(wgl::Context::create(device_context));
 
-      try!(Self::init_gl());
+      try!(Self::init_gl(library));
 
       try!(wgl::swap_interval(0));
 
       Ok(WglContext {
-         library: library,
          context: context,
       })
    }
 
    #[inline]
-   pub fn init_gl() -> VoidResult {
-      let loader = wgl::Loader::new();
+   pub fn init_gl(library: win32::Library) -> VoidResult {
+      let loader = wgl::Loader::new(Box::new(library));
 
       wgl::load_extra_functions(&loader);
 
