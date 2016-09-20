@@ -15,6 +15,7 @@ pub mod draw;
 pub mod raster;
 pub mod devel;
 pub mod node;
+pub mod lang;
 
 pub use application::Application;
 pub use renderer::Renderer;
