@@ -5,12 +5,12 @@ pub enum Token {
    Integer(i64),
    Float(f64),
    NewLine,
-   Comma,
    Assign,
    Add,
    Subtract,
    Multiply,
    Divide,
+   Not,
    ParenLeft,
    ParenRight,
    BracketLeft,
@@ -18,36 +18,74 @@ pub enum Token {
 }
 
 
-pub type TokenResult<'a> = Option<(Token, &'a str)>;
+pub type TokenResult<'a> = Option<(Token, usize)>;
 
 
-pub fn tokenize(source: &str) -> Vec<Token> {
+pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
    let mut tokens = Vec::new();
+
+   let original = source;
 
    let mut source = source;
 
-   loop {
-      source = ws(source);
+   let mut consumed = 0;
 
-      if let Some((token, rest)) = single_token(source) {
+   loop {
+      let taken = consume_whitespace(source);
+      consumed += taken;
+      source = &source[taken..];
+
+      if let Some((token, taken)) = single_token(source) {
+         consumed += taken;
+         source = &source[taken..];
          tokens.push(token);
-         source = rest;
       } else {
+         if consumed != original.len() {
+            return Err(error_string(original, consumed));
+         }
+
          break;
       }
    }
 
-   tokens
+   Ok(tokens)
 }
 
-fn ws(source: &str) -> &str {
+
+fn error_string(source: &str, consumed: usize) -> String {
+   let mut line = 1;
+   let mut column = 1;
+   let mut error_ch = ' ';
+
    for (index, ch) in source.chars().enumerate() {
-      if ch != ' ' && ch != '\t' {
-         return &source[index..];
+      if consumed == index {
+         error_ch = ch;
+         break;
+      }
+
+      if ch == '\n' {
+         line += 1;
+         column = 1;
+      } else {
+         column += 1;
       }
    }
 
-   source
+   format!(
+      "Unrecognized character '{}' at line {}, col {}",
+      error_ch, line, column
+   )
+}
+
+
+fn consume_whitespace(source: &str) -> usize {
+   for (index, ch) in source.chars().enumerate() {
+      if ch != ' ' && ch != '\t' {
+         return index;
+      }
+   }
+
+   source.len()
 }
 
 
@@ -71,7 +109,7 @@ fn extract_name(source: &str) -> TokenResult {
 
    match chars.next() {
       Some(ch) => match ch {
-         'a'...'z' | 'A' ... 'Z' => end += 1,
+         'a' ... 'z' | 'A' ... 'Z' => end += 1,
          _ => return None,
       },
       None => return None,
@@ -80,7 +118,7 @@ fn extract_name(source: &str) -> TokenResult {
    loop {
       match chars.next() {
          Some(ch) => match ch {
-            'a'...'z' | 'A' ... 'Z' | '0' ... '1' | '-' | '_' => end += 1,
+            'a' ... 'z' | 'A' ... 'Z' | '0' ... '1' | '-' | '_' => end += 1,
             _ => break,
          },
          None => break,
@@ -91,7 +129,7 @@ fn extract_name(source: &str) -> TokenResult {
       String::from(&source[0..end])
    );
 
-   Some((token, &source[end..]))
+   Some((token, end))
 }
 
 
@@ -102,12 +140,12 @@ fn extract_char_token(source: &str) -> TokenResult {
       Some(ch) => {
          let token = match ch {
             '\n' => Token::NewLine,
-            ',' => Token::Comma,
             '=' => Token::Assign,
             '+' => Token::Add,
             '-' => Token::Subtract,
             '*' => Token::Multiply,
             '/' => Token::Divide,
+            '!' => Token::Not,
             '(' => Token::ParenLeft,
             ')' => Token::ParenRight,
             '[' => Token::BracketLeft,
@@ -115,7 +153,7 @@ fn extract_char_token(source: &str) -> TokenResult {
             _ => return None,
          };
 
-         Some((token, &source[1..]))
+         Some((token, 1))
       },
       None => None,
    }
@@ -123,6 +161,8 @@ fn extract_char_token(source: &str) -> TokenResult {
 
 
 fn extract_number(source: &str) -> TokenResult {
+   let full_len = source.len();
+
    let mut end = 0;
 
    let positive = match source.chars().next() {
@@ -168,7 +208,10 @@ fn extract_number(source: &str) -> TokenResult {
             integral = -integral
          }
 
-         return Some((Token::Integer(integral), source));
+         return Some((
+            Token::Integer(integral),
+            full_len - source.len()
+         ));
       }
    }
 
@@ -196,9 +239,12 @@ fn extract_number(source: &str) -> TokenResult {
       value = -value
    }
 
-   let rest = &source[end..];
+   let source = &source[end..];
 
-   Some((Token::Float(value), rest))
+   Some((
+      Token::Float(value),
+      full_len - source.len()
+   ))
 }
 
 
