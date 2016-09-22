@@ -14,6 +14,7 @@ pub type intptr_t = isize;
 pub type cl_int = c_int;
 pub type cl_uint = c_uint;
 pub type cl_ulong = c_ulong;
+pub type cl_bool = cl_uint;
 
 pub type cl_platform_info = cl_uint;
 pub type cl_device_info = cl_uint;
@@ -40,6 +41,9 @@ pub type cl_program = *mut _cl_program;
 
 pub enum _cl_kernel { }
 pub type cl_kernel = *mut _cl_kernel;
+
+pub enum _cl_event { }
+pub type cl_event = *mut _cl_event;
 
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
@@ -230,6 +234,9 @@ static mut clCreateBufferPtr:                               FnPtr = NULL_PTR;
 static mut clCreateProgramWithSourcePtr:                    FnPtr = NULL_PTR;
 static mut clBuildProgramPtr:                               FnPtr = NULL_PTR;
 static mut clCreateKernelPtr:                               FnPtr = NULL_PTR;
+static mut clSetKernelArgPtr:                               FnPtr = NULL_PTR;
+static mut clEnqueueNDRangeKernelPtr:                       FnPtr = NULL_PTR;
+static mut clEnqueueReadBufferPtr:                          FnPtr = NULL_PTR;
 
 
 #[inline]
@@ -380,6 +387,61 @@ pub unsafe fn clCreateKernel(
    )
 }
 
+#[inline]
+pub unsafe fn clSetKernelArg(
+   kernel: cl_kernel,
+   arg_index: cl_uint,
+   arg_size: size_t,
+   arg_value: *const c_void
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_kernel, cl_uint, size_t, *const c_void
+   ) -> cl_int>(clCreateKernelPtr)(
+      kernel, arg_index, arg_size, arg_value
+   )
+}
+
+// clEnqueueTask is equivalent to calling clEnqueueNDRangeKernel with work_dim = 1,
+// global_work_offset = NULL, global_work_size[0] set to 1, and local_work_size[0] set to 1.
+
+#[inline]
+pub unsafe fn clEnqueueNDRangeKernel(
+   command_queue: cl_command_queue,
+   kernel: cl_kernel,
+   work_dim: cl_uint,
+   global_work_offset: *const size_t,
+   global_work_size: *const size_t,
+   local_work_size: *const size_t,
+   num_events_in_wait_list: cl_uint,
+   event_wait_list: *const cl_event,
+   event: *mut cl_event
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_command_queue, cl_kernel, cl_uint, *const size_t, *const size_t, *const size_t, cl_uint, *const cl_event, *mut cl_event
+   ) -> cl_int>(clEnqueueNDRangeKernelPtr)(
+      command_queue, kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event
+   )
+}
+
+#[inline]
+pub unsafe fn clEnqueueReadBuffer(
+   command_queue: cl_command_queue,
+   buffer: cl_mem,
+   blocking_read: cl_bool,
+   offset: size_t,
+   size: size_t,
+   ptr: *mut c_void,
+   num_events_in_wait_list: cl_uint,
+   event_wait_list: *const cl_event,
+   event: *mut cl_event
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_command_queue, cl_mem, cl_bool, size_t, size_t, *mut c_void, cl_uint, *const cl_event, *mut cl_event
+   ) -> cl_int>(clEnqueueReadBufferPtr)(
+      command_queue, buffer, blocking_read, offset, size, ptr, num_events_in_wait_list, event_wait_list, event
+   )
+}
+
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
@@ -392,6 +454,9 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clCreateProgramWithSourcePtr = loader.load("clCreateProgramWithSource");
    clBuildProgramPtr = loader.load("clBuildProgram");
    clCreateKernelPtr = loader.load("clCreateKernel");
+   clSetKernelArgPtr = loader.load("clSetKernelArg");
+   clEnqueueNDRangeKernelPtr = loader.load("clEnqueueNDRangeKernel");
+   clEnqueueReadBufferPtr = loader.load("clEnqueueReadBuffer");
 
    are_functions_loaded()
 }
@@ -406,5 +471,8 @@ unsafe fn are_functions_loaded() -> bool {
    clCreateBufferPtr != NULL_PTR &&
    clCreateProgramWithSourcePtr != NULL_PTR &&
    clBuildProgramPtr != NULL_PTR &&
-   clCreateKernelPtr != NULL_PTR
+   clCreateKernelPtr != NULL_PTR &&
+   clSetKernelArgPtr != NULL_PTR &&
+   clEnqueueNDRangeKernelPtr != NULL_PTR &&
+   clEnqueueReadBufferPtr != NULL_PTR
 }
