@@ -38,6 +38,9 @@ pub type cl_mem = *mut _cl_mem;
 pub enum _cl_program { }
 pub type cl_program = *mut _cl_program;
 
+pub enum _cl_kernel { }
+pub type cl_kernel = *mut _cl_kernel;
+
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
 pub const CL_DEVICE_NOT_AVAILABLE:                         cl_int = -2;
@@ -226,6 +229,7 @@ static mut clCreateCommandQueueWithPropertiesPtr:           FnPtr = NULL_PTR;
 static mut clCreateBufferPtr:                               FnPtr = NULL_PTR;
 static mut clCreateProgramWithSourcePtr:                    FnPtr = NULL_PTR;
 static mut clBuildProgramPtr:                               FnPtr = NULL_PTR;
+static mut clCreateKernelPtr:                               FnPtr = NULL_PTR;
 
 
 #[inline]
@@ -347,7 +351,8 @@ pub unsafe fn clCreateProgramWithSource(
 }
 
 
-pub fn clBuildProgram(
+#[inline]
+pub unsafe fn clBuildProgram(
    program: cl_program,
    num_devices: cl_uint,
    device_list: *const cl_device_id,
@@ -357,8 +362,21 @@ pub fn clBuildProgram(
 ) -> cl_int {
    mem::transmute::<_, extern "system" fn(
       cl_program, cl_uint, *const cl_device_id, *const c_char, Option<CL_BUILD_PROGRAM_CALLBACK>, *mut c_void
-   ) -> cl_program>(clBuildProgramPtr)(
+   ) -> cl_int>(clBuildProgramPtr)(
       program, num_devices, device_list, options, pfn_notify, user_data
+   )
+}
+
+#[inline]
+pub unsafe fn clCreateKernel(
+   program: cl_program,
+   kernel_name: *const c_char,
+   errcode_ret: *mut cl_int
+) -> cl_kernel {
+   mem::transmute::<_, extern "system" fn(
+      cl_program, *const c_char, *mut cl_int
+   ) -> cl_kernel>(clCreateKernelPtr)(
+      program, kernel_name, errcode_ret
    )
 }
 
@@ -373,6 +391,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clCreateBufferPtr = loader.load("clCreateBuffer");
    clCreateProgramWithSourcePtr = loader.load("clCreateProgramWithSource");
    clBuildProgramPtr = loader.load("clBuildProgram");
+   clCreateKernelPtr = loader.load("clCreateKernel");
 
    are_functions_loaded()
 }
@@ -386,5 +405,6 @@ unsafe fn are_functions_loaded() -> bool {
    clCreateCommandQueueWithPropertiesPtr != NULL_PTR &&
    clCreateBufferPtr != NULL_PTR &&
    clCreateProgramWithSourcePtr != NULL_PTR &&
-   clBuildProgramPtr != NULL_PTR
+   clBuildProgramPtr != NULL_PTR &&
+   clCreateKernelPtr != NULL_PTR
 }
