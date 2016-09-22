@@ -35,6 +35,9 @@ pub type cl_command_queue = *mut _cl_command_queue;
 pub enum _cl_mem { }
 pub type cl_mem = *mut _cl_mem;
 
+pub enum _cl_program { }
+pub type cl_program = *mut _cl_program;
+
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
 pub const CL_DEVICE_NOT_AVAILABLE:                         cl_int = -2;
@@ -215,7 +218,7 @@ static mut clGetDeviceInfoPtr:                              FnPtr = NULL_PTR;
 static mut clCreateContextPtr:                              FnPtr = NULL_PTR;
 static mut clCreateCommandQueueWithPropertiesPtr:           FnPtr = NULL_PTR;
 static mut clCreateBufferPtr:                               FnPtr = NULL_PTR;
-
+static mut clCreateProgramWithSourcePtr:                    FnPtr = NULL_PTR;
 
 #[inline]
 pub unsafe fn clGetPlatformIDs(
@@ -320,6 +323,22 @@ pub unsafe fn clCreateBuffer(
    )
 }
 
+#[inline]
+pub unsafe fn clCreateProgramWithSource(
+   context: cl_context,
+   count: cl_uint,
+   strings: *mut *const c_char,
+   lengths: *const size_t,
+   errcode_ret: *mut cl_int
+) -> cl_program {
+   mem::transmute::<_, extern "system" fn(
+      cl_context, cl_uint, *mut *const c_char, *const size_t, *mut cl_int
+   ) -> cl_program>(clCreateProgramWithSourcePtr)(
+      context, count, strings, lengths, errcode_ret
+   )
+}
+
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
    clGetPlatformInfoPtr = loader.load("clGetPlatformInfo");
@@ -328,6 +347,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clCreateContextPtr = loader.load("clCreateContext");
    clCreateCommandQueueWithPropertiesPtr = loader.load("clCreateCommandQueueWithProperties");
    clCreateBufferPtr = loader.load("clCreateBuffer");
+   clCreateProgramWithSourcePtr = loader.load("clCreateProgramWithSource");
 
    are_functions_loaded()
 }
@@ -339,5 +359,6 @@ unsafe fn are_functions_loaded() -> bool {
    clGetDeviceInfoPtr != NULL_PTR &&
    clCreateContextPtr != NULL_PTR &&
    clCreateCommandQueueWithPropertiesPtr != NULL_PTR &&
-   clCreateBufferPtr != NULL_PTR
+   clCreateBufferPtr != NULL_PTR &&
+   clCreateProgramWithSourcePtr != NULL_PTR
 }
