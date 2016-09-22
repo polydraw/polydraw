@@ -21,6 +21,7 @@ pub type cl_bitfield = cl_ulong;
 pub type cl_device_type = cl_bitfield;
 pub type cl_context_properties = intptr_t;
 pub type cl_queue_properties = cl_bitfield;
+pub type cl_mem_flags = cl_bitfield;
 
 pub type cl_platform_id = *mut c_void;
 pub type cl_device_id = *mut c_void;
@@ -30,6 +31,9 @@ pub type cl_context = *mut _cl_context;
 
 pub enum _cl_command_queue { }
 pub type cl_command_queue = *mut _cl_command_queue;
+
+pub enum _cl_mem { }
+pub type cl_mem = *mut _cl_mem;
 
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
@@ -182,6 +186,21 @@ pub const CL_DEVICE_PRINTF_BUFFER_SIZE:            cl_device_info = 0x1049;
 pub const CL_DEVICE_IMAGE_PITCH_ALIGNMENT:         cl_device_info = 0x104A;
 pub const CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT:  cl_device_info = 0x104B;
 
+pub const CL_MEM_READ_WRITE:                          cl_bitfield = 1 << 0;
+pub const CL_MEM_WRITE_ONLY:                          cl_bitfield = 1 << 1;
+pub const CL_MEM_READ_ONLY:                           cl_bitfield = 1 << 2;
+pub const CL_MEM_USE_HOST_PTR:                        cl_bitfield = 1 << 3;
+pub const CL_MEM_ALLOC_HOST_PTR:                      cl_bitfield = 1 << 4;
+pub const CL_MEM_COPY_HOST_PTR:                       cl_bitfield = 1 << 5;
+// RESERVED                                           cl_bitfield = 1 << 6;
+pub const CL_MEM_HOST_WRITE_ONLY:                     cl_bitfield = 1 << 7;
+pub const CL_MEM_HOST_READ_ONLY:                      cl_bitfield = 1 << 8;
+pub const CL_MEM_HOST_NO_ACCESS:                      cl_bitfield = 1 << 9;
+pub const CL_MEM_SVM_FINE_GRAIN_BUFFER:               cl_bitfield = 1 << 10;
+pub const CL_MEM_SVM_ATOMICS:                         cl_bitfield = 1 << 11;
+pub const CL_MEM_KERNEL_READ_AND_WRITE:               cl_bitfield = 1 << 12;
+
+
 pub type CL_CALLBACK = unsafe extern "C" fn(
    errinfo: *const c_char,
    private_info: *const c_void,
@@ -195,6 +214,7 @@ static mut clGetDeviceIDsPtr:                               FnPtr = NULL_PTR;
 static mut clGetDeviceInfoPtr:                              FnPtr = NULL_PTR;
 static mut clCreateContextPtr:                              FnPtr = NULL_PTR;
 static mut clCreateCommandQueueWithPropertiesPtr:           FnPtr = NULL_PTR;
+static mut clCreateBufferPtr:                               FnPtr = NULL_PTR;
 
 
 #[inline]
@@ -285,6 +305,21 @@ pub unsafe fn clCreateCommandQueueWithProperties(
    )
 }
 
+#[inline]
+pub unsafe fn clCreateBuffer(
+   context: cl_context,
+   flags: cl_mem_flags,
+   size: size_t,
+   host_ptr: *mut c_void,
+   errcode_ret: *mut cl_int
+) -> cl_mem {
+   mem::transmute::<_, extern "system" fn(
+      cl_context, cl_mem_flags, size_t, *mut c_void, *mut cl_int
+   ) -> cl_mem>(clCreateBufferPtr)(
+      context, flags, size, host_ptr, errcode_ret
+   )
+}
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
    clGetPlatformInfoPtr = loader.load("clGetPlatformInfo");
@@ -292,6 +327,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetDeviceInfoPtr = loader.load("clGetDeviceInfo");
    clCreateContextPtr = loader.load("clCreateContext");
    clCreateCommandQueueWithPropertiesPtr = loader.load("clCreateCommandQueueWithProperties");
+   clCreateBufferPtr = loader.load("clCreateBuffer");
 
    are_functions_loaded()
 }
@@ -302,5 +338,6 @@ unsafe fn are_functions_loaded() -> bool {
    clGetDeviceIDsPtr != NULL_PTR &&
    clGetDeviceInfoPtr != NULL_PTR &&
    clCreateContextPtr != NULL_PTR &&
-   clCreateCommandQueueWithPropertiesPtr != NULL_PTR
+   clCreateCommandQueueWithPropertiesPtr != NULL_PTR &&
+   clCreateBufferPtr != NULL_PTR
 }
