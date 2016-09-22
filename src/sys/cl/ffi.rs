@@ -20,12 +20,16 @@ pub type cl_device_info = cl_uint;
 pub type cl_bitfield = cl_ulong;
 pub type cl_device_type = cl_bitfield;
 pub type cl_context_properties = intptr_t;
+pub type cl_queue_properties = cl_bitfield;
 
 pub type cl_platform_id = *mut c_void;
 pub type cl_device_id = *mut c_void;
 
 pub enum _cl_context { }
 pub type cl_context = *mut _cl_context;
+
+pub enum _cl_command_queue { }
+pub type cl_command_queue = *mut _cl_command_queue;
 
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
@@ -185,16 +189,25 @@ pub type CL_CALLBACK = unsafe extern "C" fn(
    user_data: *mut c_void
 );
 
-static mut clGetPlatformIDsPtr:                    FnPtr = NULL_PTR;
-static mut clGetPlatformInfoPtr:                   FnPtr = NULL_PTR;
-static mut clGetDeviceIDsPtr:                      FnPtr = NULL_PTR;
-static mut clGetDeviceInfoPtr:                     FnPtr = NULL_PTR;
-static mut clCreateContextPtr:                     FnPtr = NULL_PTR;
+static mut clGetPlatformIDsPtr:                             FnPtr = NULL_PTR;
+static mut clGetPlatformInfoPtr:                            FnPtr = NULL_PTR;
+static mut clGetDeviceIDsPtr:                               FnPtr = NULL_PTR;
+static mut clGetDeviceInfoPtr:                              FnPtr = NULL_PTR;
+static mut clCreateContextPtr:                              FnPtr = NULL_PTR;
+static mut clCreateCommandQueueWithPropertiesPtr:           FnPtr = NULL_PTR;
 
 
 #[inline]
-pub unsafe fn clGetPlatformIDs(num_entries: cl_uint, platforms: *mut cl_platform_id, num_platforms: *mut cl_uint) -> cl_int {
-   mem::transmute::<_, extern "system" fn(cl_uint, *mut cl_platform_id, *mut cl_uint) -> cl_int>(clGetPlatformIDsPtr)(num_entries, platforms, num_platforms)
+pub unsafe fn clGetPlatformIDs(
+   num_entries: cl_uint,
+   platforms: *mut cl_platform_id,
+   num_platforms: *mut cl_uint
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_uint, *mut cl_platform_id, *mut cl_uint
+   ) -> cl_int>(clGetPlatformIDsPtr)(
+      num_entries, platforms, num_platforms
+   )
 }
 
 #[inline]
@@ -258,12 +271,27 @@ pub unsafe fn clCreateContext(
    )
 }
 
+#[inline]
+pub unsafe fn clCreateCommandQueueWithProperties(
+   context: cl_context,
+   device: cl_device_id,
+   properties: *const cl_queue_properties,
+   errcode_ret: *mut cl_int
+) -> cl_command_queue {
+   mem::transmute::<_, extern "system" fn(
+      cl_context, cl_device_id, *const cl_queue_properties, *mut cl_int
+   ) -> cl_command_queue>(clCreateCommandQueueWithPropertiesPtr)(
+      context, device, properties, errcode_ret
+   )
+}
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
    clGetPlatformInfoPtr = loader.load("clGetPlatformInfo");
    clGetDeviceIDsPtr = loader.load("clGetDeviceIDs");
    clGetDeviceInfoPtr = loader.load("clGetDeviceInfo");
    clCreateContextPtr = loader.load("clCreateContext");
+   clCreateCommandQueueWithPropertiesPtr = loader.load("clCreateCommandQueueWithProperties");
 
    are_functions_loaded()
 }
@@ -273,5 +301,6 @@ unsafe fn are_functions_loaded() -> bool {
    clGetPlatformInfoPtr != NULL_PTR &&
    clGetDeviceIDsPtr != NULL_PTR &&
    clGetDeviceInfoPtr != NULL_PTR &&
-   clCreateContextPtr != NULL_PTR
+   clCreateContextPtr != NULL_PTR &&
+   clCreateCommandQueueWithPropertiesPtr != NULL_PTR
 }
