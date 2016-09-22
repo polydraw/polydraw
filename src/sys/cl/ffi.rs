@@ -1,8 +1,15 @@
 #![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
+use std::mem;
 
 use libc::{
-   c_int, c_uint, c_ulong, c_void, size_t
+   c_char, c_int, c_uint, c_ulong, c_void, size_t
 };
+
+use sys::utils::fn_ptr::{FnPtr, NULL_PTR, FnPtrLoader};
+
+pub type intptr_t = isize;
 
 pub type cl_int = c_int;
 pub type cl_uint = c_uint;
@@ -12,9 +19,13 @@ pub type cl_platform_info = cl_uint;
 pub type cl_device_info = cl_uint;
 pub type cl_bitfield = cl_ulong;
 pub type cl_device_type = cl_bitfield;
+pub type cl_context_properties = intptr_t;
 
 pub type cl_platform_id = *mut c_void;
 pub type cl_device_id = *mut c_void;
+
+pub enum _cl_context { }
+pub type cl_context = *mut _cl_context;
 
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
@@ -167,35 +178,100 @@ pub const CL_DEVICE_PRINTF_BUFFER_SIZE:            cl_device_info = 0x1049;
 pub const CL_DEVICE_IMAGE_PITCH_ALIGNMENT:         cl_device_info = 0x104A;
 pub const CL_DEVICE_IMAGE_BASE_ADDRESS_ALIGNMENT:  cl_device_info = 0x104B;
 
-#[link(name="OpenCL")]
-extern "C" {
-   pub fn clGetPlatformIDs(
-      num_entries: cl_uint,
-      platforms: *mut cl_platform_id,
-      num_platforms: *mut cl_uint
-   ) -> cl_int;
+pub type CL_CALLBACK = unsafe extern "C" fn(
+   errinfo: *const c_char,
+   private_info: *const c_void,
+   cb: size_t,
+   user_data: *mut c_void
+);
 
-   pub fn clGetPlatformInfo(
-      platform: cl_platform_id,
-      param_name: cl_platform_info,
-      param_value_size: size_t,
-      param_value: *mut c_void,
-      param_value_size_ret: *mut size_t
-   ) -> cl_int;
+static mut clGetPlatformIDsPtr:                    FnPtr = NULL_PTR;
+static mut clGetPlatformInfoPtr:                   FnPtr = NULL_PTR;
+static mut clGetDeviceIDsPtr:                      FnPtr = NULL_PTR;
+static mut clGetDeviceInfoPtr:                     FnPtr = NULL_PTR;
+static mut clCreateContextPtr:                     FnPtr = NULL_PTR;
 
-   pub fn clGetDeviceIDs(
-      platform: cl_platform_id,
-      device_type: cl_device_type,
-      num_entries: cl_uint,
-      devices: *mut cl_device_id,
-      num_devices: *mut cl_uint
-   ) -> cl_int;
 
-   pub fn clGetDeviceInfo(
-      device: cl_device_id,
-      param_name: cl_device_info,
-      param_value_size: size_t,
-      param_value: *mut c_void,
-      param_value_size_ret: *mut size_t
-   ) -> cl_int;
+#[inline]
+pub unsafe fn clGetPlatformIDs(num_entries: cl_uint, platforms: *mut cl_platform_id, num_platforms: *mut cl_uint) -> cl_int {
+   mem::transmute::<_, extern "system" fn(cl_uint, *mut cl_platform_id, *mut cl_uint) -> cl_int>(clGetPlatformIDsPtr)(num_entries, platforms, num_platforms)
+}
+
+#[inline]
+pub unsafe fn clGetPlatformInfo(
+   platform: cl_platform_id,
+   param_name: cl_platform_info,
+   param_value_size: size_t,
+   param_value: *mut c_void,
+   param_value_size_ret: *mut size_t
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_platform_id, cl_platform_info, size_t, *mut c_void, *mut size_t
+   ) -> cl_int>(clGetPlatformInfoPtr)(
+      platform, param_name, param_value_size, param_value, param_value_size_ret
+   )
+}
+
+#[inline]
+pub unsafe fn clGetDeviceIDs(
+   platform: cl_platform_id,
+   device_type: cl_device_type,
+   num_entries: cl_uint,
+   devices: *mut cl_device_id,
+   num_devices: *mut cl_uint
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_platform_id, cl_device_type, cl_uint, *mut cl_device_id, *mut cl_uint
+   ) -> cl_int>(clGetDeviceIDsPtr)(
+      platform, device_type, num_entries, devices, num_devices
+   )
+}
+
+#[inline]
+pub unsafe fn clGetDeviceInfo(
+   device: cl_device_id,
+   param_name: cl_device_info,
+   param_value_size: size_t,
+   param_value: *mut c_void,
+   param_value_size_ret: *mut size_t
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_device_id, cl_device_info, size_t, *mut c_void, *mut size_t
+   ) -> cl_int>(clGetDeviceInfoPtr)(
+      device, param_name, param_value_size, param_value, param_value_size_ret
+   )
+}
+
+#[inline]
+pub unsafe fn clCreateContext(
+   properties: *const cl_context_properties,
+   num_devices: cl_uint,
+   devices: *const cl_device_id,
+   pfn_notify: Option<CL_CALLBACK>,
+   user_data: *mut c_void,
+   errcode_ret: *mut cl_int
+) -> cl_context {
+   mem::transmute::<_, extern "system" fn(
+      *const cl_context_properties, cl_uint, *const cl_device_id, Option<CL_CALLBACK>, *mut c_void, *mut cl_int
+   ) -> cl_context>(clCreateContextPtr)(
+      properties, num_devices, devices, pfn_notify, user_data, errcode_ret
+   )
+}
+
+pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+   clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
+   clGetPlatformInfoPtr = loader.load("clGetPlatformInfo");
+   clGetDeviceIDsPtr = loader.load("clGetDeviceIDs");
+   clGetDeviceInfoPtr = loader.load("clGetDeviceInfo");
+   clCreateContextPtr = loader.load("clCreateContext");
+
+   are_functions_loaded()
+}
+
+unsafe fn are_functions_loaded() -> bool {
+   clGetPlatformIDsPtr != NULL_PTR &&
+   clGetPlatformInfoPtr != NULL_PTR &&
+   clGetDeviceIDsPtr != NULL_PTR &&
+   clGetDeviceInfoPtr != NULL_PTR &&
+   clCreateContextPtr != NULL_PTR
 }

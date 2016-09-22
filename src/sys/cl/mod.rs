@@ -1,16 +1,21 @@
-#![cfg(target_os = "linux")]
-
 pub mod ffi;
 
 use std::ptr;
 use std::iter::repeat;
-use super::utils::string::from_cstr;
 
-use libc::{
-   c_char, c_void
-};
+use libc::{c_char, c_void};
 
 use error::{RuntimeError, ErrorKind};
+
+use super::utils::string::from_cstr;
+use super::utils::fn_ptr::FnPtrLoader;
+
+#[inline]
+pub fn load<T: FnPtrLoader>(loader: &T) {
+   unsafe {
+      ffi::load_functions(loader)
+   };
+}
 
 pub fn platforms() -> Result<Vec<Platform>, RuntimeError> {
    let mut num_platforms = 0;
