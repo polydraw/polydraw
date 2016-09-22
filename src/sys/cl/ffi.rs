@@ -204,12 +204,18 @@ pub const CL_MEM_SVM_ATOMICS:                         cl_bitfield = 1 << 11;
 pub const CL_MEM_KERNEL_READ_AND_WRITE:               cl_bitfield = 1 << 12;
 
 
-pub type CL_CALLBACK = unsafe extern "C" fn(
+pub type CL_CREATE_CONTEXT_CALLBACK = unsafe extern "C" fn(
    errinfo: *const c_char,
    private_info: *const c_void,
    cb: size_t,
    user_data: *mut c_void
 );
+
+pub type CL_BUILD_PROGRAM_CALLBACK = unsafe extern "C" fn(
+   program: cl_program,
+   user_data: *mut c_void
+);
+
 
 static mut clGetPlatformIDsPtr:                             FnPtr = NULL_PTR;
 static mut clGetPlatformInfoPtr:                            FnPtr = NULL_PTR;
@@ -219,6 +225,8 @@ static mut clCreateContextPtr:                              FnPtr = NULL_PTR;
 static mut clCreateCommandQueueWithPropertiesPtr:           FnPtr = NULL_PTR;
 static mut clCreateBufferPtr:                               FnPtr = NULL_PTR;
 static mut clCreateProgramWithSourcePtr:                    FnPtr = NULL_PTR;
+static mut clBuildProgramPtr:                               FnPtr = NULL_PTR;
+
 
 #[inline]
 pub unsafe fn clGetPlatformIDs(
@@ -283,12 +291,12 @@ pub unsafe fn clCreateContext(
    properties: *const cl_context_properties,
    num_devices: cl_uint,
    devices: *const cl_device_id,
-   pfn_notify: Option<CL_CALLBACK>,
+   pfn_notify: Option<CL_CREATE_CONTEXT_CALLBACK>,
    user_data: *mut c_void,
    errcode_ret: *mut cl_int
 ) -> cl_context {
    mem::transmute::<_, extern "system" fn(
-      *const cl_context_properties, cl_uint, *const cl_device_id, Option<CL_CALLBACK>, *mut c_void, *mut cl_int
+      *const cl_context_properties, cl_uint, *const cl_device_id, Option<CL_CREATE_CONTEXT_CALLBACK>, *mut c_void, *mut cl_int
    ) -> cl_context>(clCreateContextPtr)(
       properties, num_devices, devices, pfn_notify, user_data, errcode_ret
    )
@@ -339,6 +347,22 @@ pub unsafe fn clCreateProgramWithSource(
 }
 
 
+pub fn clBuildProgram(
+   program: cl_program,
+   num_devices: cl_uint,
+   device_list: *const cl_device_id,
+   options: *const c_char,
+   pfn_notify: Option<CL_BUILD_PROGRAM_CALLBACK>,
+   user_data: *mut c_void
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_program, cl_uint, *const cl_device_id, *const c_char, Option<CL_BUILD_PROGRAM_CALLBACK>, *mut c_void
+   ) -> cl_program>(clBuildProgramPtr)(
+      program, num_devices, device_list, options, pfn_notify, user_data
+   )
+}
+
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
    clGetPlatformInfoPtr = loader.load("clGetPlatformInfo");
@@ -348,6 +372,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clCreateCommandQueueWithPropertiesPtr = loader.load("clCreateCommandQueueWithProperties");
    clCreateBufferPtr = loader.load("clCreateBuffer");
    clCreateProgramWithSourcePtr = loader.load("clCreateProgramWithSource");
+   clBuildProgramPtr = loader.load("clBuildProgram");
 
    are_functions_loaded()
 }
@@ -360,5 +385,6 @@ unsafe fn are_functions_loaded() -> bool {
    clCreateContextPtr != NULL_PTR &&
    clCreateCommandQueueWithPropertiesPtr != NULL_PTR &&
    clCreateBufferPtr != NULL_PTR &&
-   clCreateProgramWithSourcePtr != NULL_PTR
+   clCreateProgramWithSourcePtr != NULL_PTR &&
+   clBuildProgramPtr != NULL_PTR
 }
