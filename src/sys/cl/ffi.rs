@@ -237,6 +237,13 @@ static mut clCreateKernelPtr:                               FnPtr = NULL_PTR;
 static mut clSetKernelArgPtr:                               FnPtr = NULL_PTR;
 static mut clEnqueueNDRangeKernelPtr:                       FnPtr = NULL_PTR;
 static mut clEnqueueReadBufferPtr:                          FnPtr = NULL_PTR;
+static mut clFlushPtr:                                      FnPtr = NULL_PTR;
+static mut clFinishPtr:                                     FnPtr = NULL_PTR;
+static mut clReleaseKernelPtr:                              FnPtr = NULL_PTR;
+static mut clReleaseProgramPtr:                             FnPtr = NULL_PTR;
+static mut clReleaseMemObjectPtr:                           FnPtr = NULL_PTR;
+static mut clReleaseCommandQueuePtr:                        FnPtr = NULL_PTR;
+static mut clReleaseContextPtr:                             FnPtr = NULL_PTR;
 
 
 #[inline]
@@ -443,6 +450,70 @@ pub unsafe fn clEnqueueReadBuffer(
 }
 
 
+#[inline]
+pub unsafe fn clFlush(command_queue: cl_command_queue) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_command_queue
+   ) -> cl_int>(clFlushPtr)(
+      command_queue
+   )
+}
+
+#[inline]
+pub unsafe fn clFinish(command_queue: cl_command_queue) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_command_queue
+   ) -> cl_int>(clFinishPtr)(
+      command_queue
+   )
+}
+
+#[inline]
+pub unsafe fn clReleaseKernel(kernel: cl_kernel) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_kernel
+   ) -> cl_int>(clReleaseKernelPtr)(
+      kernel
+   )
+}
+
+#[inline]
+pub unsafe fn clReleaseProgram(program: cl_program) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_program
+   ) -> cl_int>(clReleaseProgramPtr)(
+      program
+   )
+}
+
+#[inline]
+pub unsafe fn clReleaseMemObject(memobj: cl_mem) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_mem
+   ) -> cl_int>(clReleaseMemObjectPtr)(
+      memobj
+   )
+}
+
+#[inline]
+pub unsafe fn clReleaseCommandQueue(command_queue: cl_command_queue) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_command_queue
+   ) -> cl_int>(clReleaseCommandQueuePtr)(
+      command_queue
+   )
+}
+
+#[inline]
+pub unsafe fn clReleaseContext(context: cl_context) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_context
+   ) -> cl_int>(clReleaseContextPtr)(
+      context
+   )
+}
+
+
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetPlatformIDsPtr = loader.load("clGetPlatformIDs");
    clGetPlatformInfoPtr = loader.load("clGetPlatformInfo");
@@ -457,6 +528,13 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clSetKernelArgPtr = loader.load("clSetKernelArg");
    clEnqueueNDRangeKernelPtr = loader.load("clEnqueueNDRangeKernel");
    clEnqueueReadBufferPtr = loader.load("clEnqueueReadBuffer");
+   clFlushPtr = loader.load("clFlush");
+   clFinishPtr = loader.load("clFinish");
+   clReleaseKernelPtr = loader.load("clReleaseKernel");
+   clReleaseProgramPtr = loader.load("clReleaseProgram");
+   clReleaseMemObjectPtr = loader.load("clReleaseMemObject");
+   clReleaseCommandQueuePtr = loader.load("clReleaseCommandQueue");
+   clReleaseContextPtr = loader.load("clReleaseContext");
 
    are_functions_loaded()
 }
@@ -474,5 +552,12 @@ unsafe fn are_functions_loaded() -> bool {
    clCreateKernelPtr != NULL_PTR &&
    clSetKernelArgPtr != NULL_PTR &&
    clEnqueueNDRangeKernelPtr != NULL_PTR &&
-   clEnqueueReadBufferPtr != NULL_PTR
+   clEnqueueReadBufferPtr != NULL_PTR &&
+   clFlushPtr != NULL_PTR &&
+   clFinishPtr != NULL_PTR &&
+   clReleaseKernelPtr != NULL_PTR &&
+   clReleaseProgramPtr != NULL_PTR &&
+   clReleaseMemObjectPtr != NULL_PTR &&
+   clReleaseCommandQueuePtr != NULL_PTR &&
+   clReleaseContextPtr != NULL_PTR
 }
