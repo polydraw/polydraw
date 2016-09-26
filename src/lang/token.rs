@@ -48,6 +48,20 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
       }
    }
 
+   let has_new_line = match tokens.last() {
+      Some(token) => {
+         match token {
+            &Token::NewLine => true,
+            _ => false,
+         }
+      },
+      _ => false,
+   };
+
+   if !has_new_line {
+      tokens.push(Token::NewLine);
+   }
+
    Ok(tokens)
 }
 
