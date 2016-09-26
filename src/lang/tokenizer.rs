@@ -18,7 +18,7 @@ pub enum Token {
 }
 
 
-pub type TokenResult<'a> = Option<(Token, usize)>;
+pub type TokenResult = Option<(Token, usize)>;
 
 
 pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
