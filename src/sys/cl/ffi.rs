@@ -22,6 +22,7 @@ pub type cl_bitfield = cl_ulong;
 pub type cl_device_type = cl_bitfield;
 pub type cl_context_properties = intptr_t;
 pub type cl_queue_properties = cl_bitfield;
+pub type cl_command_queue_properties = cl_bitfield;
 pub type cl_mem_flags = cl_bitfield;
 
 pub type cl_platform_id = *mut c_void;
@@ -44,6 +45,9 @@ pub type cl_kernel = *mut _cl_kernel;
 
 pub enum _cl_event { }
 pub type cl_event = *mut _cl_event;
+
+pub const CL_FALSE:                                       cl_bool = 0;
+pub const CL_TRUE:                                        cl_bool = 1;
 
 pub const CL_SUCCESS:                                      cl_int = 0;
 pub const CL_DEVICE_NOT_FOUND:                             cl_int = -1;
@@ -229,12 +233,14 @@ static mut clGetPlatformInfoPtr:                            FnPtr = NULL_PTR;
 static mut clGetDeviceIDsPtr:                               FnPtr = NULL_PTR;
 static mut clGetDeviceInfoPtr:                              FnPtr = NULL_PTR;
 static mut clCreateContextPtr:                              FnPtr = NULL_PTR;
+static mut clCreateCommandQueuePtr:                         FnPtr = NULL_PTR;
 static mut clCreateCommandQueueWithPropertiesPtr:           FnPtr = NULL_PTR;
 static mut clCreateBufferPtr:                               FnPtr = NULL_PTR;
 static mut clCreateProgramWithSourcePtr:                    FnPtr = NULL_PTR;
 static mut clBuildProgramPtr:                               FnPtr = NULL_PTR;
 static mut clCreateKernelPtr:                               FnPtr = NULL_PTR;
 static mut clSetKernelArgPtr:                               FnPtr = NULL_PTR;
+static mut clEnqueueTaskPtr:                                FnPtr = NULL_PTR;
 static mut clEnqueueNDRangeKernelPtr:                       FnPtr = NULL_PTR;
 static mut clEnqueueReadBufferPtr:                          FnPtr = NULL_PTR;
 static mut clFlushPtr:                                      FnPtr = NULL_PTR;
@@ -321,6 +327,20 @@ pub unsafe fn clCreateContext(
 }
 
 #[inline]
+pub unsafe fn clCreateCommandQueue(
+   context: cl_context,
+   device: cl_device_id,
+   properties: cl_command_queue_properties,
+   errcode_ret: *mut cl_int
+) -> cl_command_queue {
+   mem::transmute::<_, extern "system" fn(
+      cl_context, cl_device_id, cl_command_queue_properties, *mut cl_int
+   ) -> cl_command_queue>(clCreateCommandQueuePtr)(
+      context, device, properties, errcode_ret
+   )
+}
+
+#[inline]
 pub unsafe fn clCreateCommandQueueWithProperties(
    context: cl_context,
    device: cl_device_id,
@@ -403,8 +423,23 @@ pub unsafe fn clSetKernelArg(
 ) -> cl_int {
    mem::transmute::<_, extern "system" fn(
       cl_kernel, cl_uint, size_t, *const c_void
-   ) -> cl_int>(clCreateKernelPtr)(
+   ) -> cl_int>(clSetKernelArgPtr)(
       kernel, arg_index, arg_size, arg_value
+   )
+}
+
+#[inline]
+pub unsafe fn clEnqueueTask(
+   command_queue: cl_command_queue,
+   kernel: cl_kernel,
+   num_events_in_wait_list: cl_uint,
+   event_wait_list: *const cl_event,
+   event: *mut cl_event
+) -> cl_int {
+   mem::transmute::<_, extern "system" fn(
+      cl_command_queue, cl_kernel, cl_uint, *const cl_event, *mut cl_event
+   ) -> cl_int>(clEnqueueTaskPtr)(
+      command_queue, kernel, num_events_in_wait_list, event_wait_list, event
    )
 }
 
@@ -520,12 +555,14 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    clGetDeviceIDsPtr = loader.load("clGetDeviceIDs");
    clGetDeviceInfoPtr = loader.load("clGetDeviceInfo");
    clCreateContextPtr = loader.load("clCreateContext");
+   clCreateCommandQueuePtr = loader.load("clCreateCommandQueue");
    clCreateCommandQueueWithPropertiesPtr = loader.load("clCreateCommandQueueWithProperties");
    clCreateBufferPtr = loader.load("clCreateBuffer");
    clCreateProgramWithSourcePtr = loader.load("clCreateProgramWithSource");
    clBuildProgramPtr = loader.load("clBuildProgram");
    clCreateKernelPtr = loader.load("clCreateKernel");
    clSetKernelArgPtr = loader.load("clSetKernelArg");
+   clEnqueueTaskPtr = loader.load("clEnqueueTask");
    clEnqueueNDRangeKernelPtr = loader.load("clEnqueueNDRangeKernel");
    clEnqueueReadBufferPtr = loader.load("clEnqueueReadBuffer");
    clFlushPtr = loader.load("clFlush");
@@ -551,6 +588,7 @@ unsafe fn are_functions_loaded() -> bool {
    clBuildProgramPtr != NULL_PTR &&
    clCreateKernelPtr != NULL_PTR &&
    clSetKernelArgPtr != NULL_PTR &&
+   clEnqueueTaskPtr != NULL_PTR &&
    clEnqueueNDRangeKernelPtr != NULL_PTR &&
    clEnqueueReadBufferPtr != NULL_PTR &&
    clFlushPtr != NULL_PTR &&
