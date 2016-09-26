@@ -1,4 +1,4 @@
-mod token;
+mod tokenizer;
 
-pub use self::token::tokenize;
+pub use self::tokenizer::tokenize;
 
