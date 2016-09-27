@@ -154,24 +154,33 @@ impl fmt::Debug for Ast {
 pub type AstResult = Option<(Ast, usize)>;
 
 
-pub fn parse(tokens: Vec<Token>) -> Option<Vec<Ast>> {
+pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
    let mut assignments = Vec::new();
 
    let mut tokens = &tokens[..];
+   let mut new_lines = 0;
 
    loop {
       let taken = consume_new_line(tokens);
+
+      new_lines += taken;
       tokens = &tokens[taken..];
 
       if let Some((ast, taken)) = parse_assignment(tokens) {
          tokens = &tokens[taken..];
          assignments.push(ast);
       } else {
-         break;
-      }
-  }
+         let taken = consume_new_line(tokens);
 
-   Some(assignments)
+         tokens = &tokens[taken..];
+
+         if tokens.len() == 0 {
+            return Ok(assignments);
+         } else {
+            return Err(format!("Parse error at line {}", new_lines + 1));
+         }
+      }
+   }
 }
 
 
@@ -195,7 +204,7 @@ fn parse_assignment(tokens: &[Token]) -> AstResult {
 
    if let Some(value) = match_value(tokens) {
       let assignment = Assignment::new(name.clone(), value);
-      Some((Ast::Assignment(assignment), next_new_line + 1))
+      Some((Ast::Assignment(assignment), next_new_line))
    } else {
       None
    }
