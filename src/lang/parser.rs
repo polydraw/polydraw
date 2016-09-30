@@ -126,7 +126,7 @@ pub type BinaryBox = Box<Binary>;
 #[derive(PartialEq, Clone)]
 pub enum Ast {
    Name(String),
-   Integer(i64),
+   Int(i64),
    Float(f64),
    Assignment(AssignmentBox),
    List(ListBox),
@@ -139,7 +139,7 @@ impl fmt::Debug for Ast {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
          &Ast::Name(ref value) => write!(f, "{}", value),
-         &Ast::Integer(ref value) => write!(f, "{}", value),
+         &Ast::Int(ref value) => write!(f, "{}", value),
          &Ast::Float(ref value) => write!(f, "{}", value),
          &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
          &Ast::List(ref value) => write!(f, "{:?}", value.contents),
@@ -289,7 +289,7 @@ fn match_single(tokens: &[Token]) -> Option<Ast> {
 
    match &tokens[0] {
       &Token::Name(ref value) => Some(Ast::Name(value.clone())),
-      &Token::Integer(ref value) => Some(Ast::Integer(*value)),
+      &Token::Int(ref value) => Some(Ast::Int(*value)),
       &Token::Float(ref value) => Some(Ast::Float(*value)),
       _ => None
    }

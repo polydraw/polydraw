@@ -2,7 +2,7 @@
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
    Name(String),
-   Integer(i64),
+   Int(i64),
    Float(f64),
    NewLine,
    Assign,
@@ -227,7 +227,7 @@ fn extract_number(source: &str) -> TokenResult {
          }
 
          return Some((
-            Token::Integer(integral),
+            Token::Int(integral),
             full_len - source.len()
          ));
       }

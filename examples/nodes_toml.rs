@@ -286,7 +286,7 @@ fn toml_to_point_list(node_id: &str, data: &toml::Value) -> Data {
 
 fn extract_i64(node_id: &str, data: &toml::Value) -> i64 {
    match data {
-      &toml::Value::Integer(value) => value,
+      &toml::Value::Int(value) => value,
       _ => {
          panic!("Not an integer {:?}: {}", data, node_id);
       }
