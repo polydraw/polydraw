@@ -42,21 +42,23 @@ pub type ListBox = Box<List>;
 
 
 #[derive(PartialEq, Clone, Debug)]
-pub struct Tuple {
-   pub contents: Vec<Ast>,
+pub struct PointDef {
+   pub x: Ast,
+   pub y: Ast,
 }
 
-impl Tuple {
-   pub fn new(contents: Vec<Ast>) -> Box<Self> {
+impl PointDef {
+   pub fn new(x: Ast, y: Ast) -> Box<Self> {
       Box::new(
-         Tuple {
-            contents: contents
+         PointDef {
+            x: x,
+            y: y,
          }
       )
    }
 }
 
-pub type TupleBox = Box<Tuple>;
+pub type PointBox = Box<PointDef>;
 
 
 #[derive(PartialEq, Clone, Debug)]
@@ -128,7 +130,7 @@ pub enum Ast {
    Float(f64),
    Assignment(AssignmentBox),
    List(ListBox),
-   Tuple(TupleBox),
+   Point(PointBox),
    Function(FunctionBox),
    Binary(BinaryBox),
 }
@@ -141,11 +143,8 @@ impl fmt::Debug for Ast {
          &Ast::Float(ref value) => write!(f, "{}", value),
          &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
          &Ast::List(ref value) => write!(f, "{:?}", value.contents),
-         &Ast::Tuple(ref value) => {
-            let tuple_fmt = format!("{:?}", value.contents);
-            write!(f, "({})", &tuple_fmt[1..tuple_fmt.len() - 1])
-         },
          &Ast::Function(ref value) => write!(f, "{}!{:?}", value.name, value.arguments),
+         &Ast::Point(ref value) => write!(f, "<{:?} {:?}>", value.x, value.y),
          &Ast::Binary(ref value) => write!(f, "({:?} {:?} {:?})", value.left, value.operator, value.right),
       }
    }
@@ -214,7 +213,9 @@ fn parse_assignment(tokens: &[Token]) -> AstResult {
 fn match_value(tokens: &[Token]) -> Option<Ast> {
    if let Some(ast) = match_list(tokens) {
       Some(ast)
-   } else if let Some(ast) = match_tuple_or_parenthesis(tokens) {
+   } else if let Some(ast) = match_parenthesis(tokens) {
+      Some(ast)
+   } else if let Some(ast) = match_point(tokens) {
       Some(ast)
    } else if let Some(ast) = match_function(tokens) {
       Some(ast)
@@ -318,7 +319,7 @@ fn match_list(tokens: &[Token]) -> Option<Ast> {
 }
 
 
-fn match_tuple_or_parenthesis(tokens: &[Token]) -> Option<Ast> {
+fn match_parenthesis(tokens: &[Token]) -> Option<Ast> {
    if tokens.len() < 3 {
       return None;
    }
@@ -335,13 +336,43 @@ fn match_tuple_or_parenthesis(tokens: &[Token]) -> Option<Ast> {
 
    if let Some(ast) = match_value(tokens) {
       Some(ast)
-   } else if let Some(contents) = match_sequence_contents(tokens) {
-      Some(Ast::Tuple(Tuple::new(contents)))
    } else {
       None
    }
 }
 
+fn match_point(tokens: &[Token]) -> Option<Ast> {
+   if tokens.len() < 4 {
+      return None;
+   }
+
+   if tokens[0] != Token::AngleBracketLeft {
+      return None;
+   }
+
+   if tokens[tokens.len() - 1] != Token::AngleBracketRight {
+      return None;
+   }
+
+   let tokens = &tokens[1..tokens.len() - 1];
+
+   if let Some(contents) = match_sequence_contents(tokens) {
+      point_def_from_contents(contents)
+   } else {
+      None
+   }
+}
+
+fn point_def_from_contents(mut contents: Vec<Ast>) -> Option<Ast> {
+   if contents.len() != 2 {
+      None
+   } else {
+      let y = contents.pop().unwrap();
+      let x = contents.pop().unwrap();
+
+      Some(Ast::Point(PointDef::new(x, y)))
+   }
+}
 
 fn match_sequence_contents(tokens: &[Token]) -> Option<Vec<Ast>> {
    let mut contents = Vec::new();
@@ -367,6 +398,19 @@ fn try_list_item(tokens: &[Token]) -> AstResult {
       return None;
    }
 
+   if let Some(end) = try_sequence(tokens, Token::AngleBracketLeft, Token::AngleBracketRight) {
+      let tokens = &tokens[1..end];
+
+      if let Some(contents) = match_sequence_contents(tokens) {
+         match point_def_from_contents(contents) {
+            Some(ast) => return Some((ast, end + 1)),
+            _ => return None,
+         }
+      }
+
+      return None;
+   }
+
    if let Some(end) = try_sequence(tokens, Token::BracketLeft, Token::BracketRight) {
       let tokens = &tokens[1..end];
 
@@ -382,10 +426,6 @@ fn try_list_item(tokens: &[Token]) -> AstResult {
 
       if let Some(ast) = match_value(tokens) {
          return Some((ast, end + 1));
-      }
-
-      if let Some(contents) = match_sequence_contents(tokens) {
-         return Some((Ast::Tuple(Tuple::new(contents)), end + 1));
       }
 
       return None;

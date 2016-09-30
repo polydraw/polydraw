@@ -15,6 +15,8 @@ pub enum Token {
    ParenRight,
    BracketLeft,
    BracketRight,
+   AngleBracketLeft,
+   AngleBracketRight,
 }
 
 
@@ -164,6 +166,8 @@ fn extract_char_token(source: &str) -> TokenResult {
             ')' => Token::ParenRight,
             '[' => Token::BracketLeft,
             ']' => Token::BracketRight,
+            '<' => Token::AngleBracketLeft,
+            '>' => Token::AngleBracketRight,
             _ => return None,
          };
 
