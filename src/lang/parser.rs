@@ -5,15 +5,15 @@ use super::tokenizer::Token;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Assignment {
-   name: String,
-   value: Ast,
+   pub node_id: String,
+   pub value: Ast,
 }
 
 impl Assignment {
-   pub fn new(name: String, value: Ast) -> Box<Self> {
+   pub fn new(node_id: String, value: Ast) -> Box<Self> {
       Box::new(
          Assignment {
-            name: name,
+            node_id: node_id,
             value: value
          }
       )
@@ -25,7 +25,7 @@ pub type AssignmentBox = Box<Assignment>;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct List {
-   contents: Vec<Ast>,
+   pub contents: Vec<Ast>,
 }
 
 impl List {
@@ -43,7 +43,7 @@ pub type ListBox = Box<List>;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Tuple {
-   contents: Vec<Ast>,
+   pub contents: Vec<Ast>,
 }
 
 impl Tuple {
@@ -61,8 +61,8 @@ pub type TupleBox = Box<Tuple>;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Function {
-   name: String,
-   arguments: Vec<Ast>,
+   pub name: String,
+   pub arguments: Vec<Ast>,
 }
 
 impl Function {
@@ -139,7 +139,7 @@ impl fmt::Debug for Ast {
          &Ast::Name(ref value) => write!(f, "{}", value),
          &Ast::Integer(ref value) => write!(f, "{}", value),
          &Ast::Float(ref value) => write!(f, "{}", value),
-         &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value.name, value.value),
+         &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
          &Ast::List(ref value) => write!(f, "{:?}", value.contents),
          &Ast::Tuple(ref value) => {
             let tuple_fmt = format!("{:?}", value.contents);

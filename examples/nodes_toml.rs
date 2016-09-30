@@ -3,19 +3,21 @@ extern crate toml;
 
 use polydraw::Application;
 use polydraw::node::{
-   NodeRenderer, Data, Operator, Add, Join, BuildList, BuildPoly, BuildLayer,
-   BuildArtboard, NodeBuilder, Inlet,
+   NodeRenderer, Data, Add, BuildPoint, BuildList, BuildPoly, BuildLayer,
+   BuildArtboard, NodeBuilder, Inlet, Operator,
 };
+use polydraw::draw::RGB;
+use polydraw::geom::point::Point;
 
 
 const NODE_DEFS: &'static str = r#"
 
    [poly-points]
-   type = "[(i64, i64)]"
+   type = "point-list"
    data = [ [0, 0], [90, 1200], [261, 1735], [1443, 410] ]
 
    [translate-point]
-   type = "join"
+   type = "point"
    data = [
       { from = "frame" },
       { type = "i64", data = 0 } ]
@@ -30,7 +32,7 @@ const NODE_DEFS: &'static str = r#"
    type = "poly"
    data = [
       { from = "add-operator" },
-      { type = "(u8, u8, u8)", data = [0, 127, 255] } ]
+      { type = "rgb", data = [0, 127, 255] } ]
 
    [poly-list]
    type = "list"
@@ -82,7 +84,7 @@ fn process_node_table(
 
    match node_type.as_ref() {
       "add" => create_operator_node::<Add>(builder, node_id, node_table),
-      "join" => create_operator_node::<Join>(builder, node_id, node_table),
+      "point" => create_operator_node::<BuildPoint>(builder, node_id, node_table),
       "list" => create_operator_node::<BuildList>(builder, node_id, node_table),
 
       "poly" => create_operator_node::<BuildPoly>(builder, node_id, node_table),
@@ -216,8 +218,8 @@ fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
 
    match type_str.as_ref() {
       "i64" => toml_to_i64(node_id, data),
-      "(u8, u8, u8)" => toml_to_t3u8(node_id, data),
-      "[(i64, i64)]" => toml_to_vt2i64(node_id, data),
+      "rgb" => toml_to_rgb(node_id, data),
+      "point-list" => toml_to_point_list(node_id, data),
       _ => {
          panic!("Unknown data type {}: {}", type_str, node_id);
       }
@@ -226,11 +228,11 @@ fn extract_table_data(node_id: &str, table: &toml::Table) -> Data {
 
 
 fn toml_to_i64(node_id: &str, data: &toml::Value) -> Data {
-   Data::I64(extract_i64(node_id, data))
+   Data::Int(extract_i64(node_id, data))
 }
 
 
-fn toml_to_t3u8(node_id: &str, data: &toml::Value) -> Data {
+fn toml_to_rgb(node_id: &str, data: &toml::Value) -> Data {
    match data {
       &toml::Value::Array(ref array) => {
          if array.len() != 3 {
@@ -241,7 +243,7 @@ fn toml_to_t3u8(node_id: &str, data: &toml::Value) -> Data {
          let second = extract_u8(node_id, &array[1]);
          let third = extract_u8(node_id, &array[2]);
 
-         Data::T3U8((first, second, third))
+         Data::Rgb(RGB::new(first, second, third))
       },
       _ => {
          panic!("Value not an array {:?}: {}", data, node_id);
@@ -250,7 +252,7 @@ fn toml_to_t3u8(node_id: &str, data: &toml::Value) -> Data {
 }
 
 
-fn toml_to_vt2i64(node_id: &str, data: &toml::Value) -> Data {
+fn toml_to_point_list(node_id: &str, data: &toml::Value) -> Data {
    match data {
       &toml::Value::Array(ref array) => {
          let mut container = Vec::with_capacity(array.len());
@@ -265,7 +267,7 @@ fn toml_to_vt2i64(node_id: &str, data: &toml::Value) -> Data {
                   let left = extract_i64(node_id, &pair[0]);
                   let right = extract_i64(node_id, &pair[1]);
 
-                  container.push((left, right));
+                  container.push(Point::new(left, right));
                },
                _ => {
                   panic!("Value not an array {:?}: {}", inner_array, node_id);
@@ -273,7 +275,7 @@ fn toml_to_vt2i64(node_id: &str, data: &toml::Value) -> Data {
             }
          }
 
-         Data::VT2I64(container)
+         Data::PointList(Box::new(container))
       },
       _ => {
          panic!("Value not an array {:?}: {}", data, node_id);

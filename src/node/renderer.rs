@@ -34,7 +34,7 @@ impl Renderer for NodeRenderer {
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
       for frame_state in self.node_scene.state[0].iter_mut() {
-         *frame_state = Data::I64(self.frame);
+         *frame_state = Data::Int(self.frame);
       }
 
       for node in &self.node_scene.nodes {
@@ -43,10 +43,10 @@ impl Renderer for NodeRenderer {
 
       let mut scene = Scene::new();
 
-      if let Data::VLayer(ref artboard) = self.node_scene.state[self.node_scene.artboard_slot][0] {
-         for layer in artboard {
+      if let Data::LayerList(ref artboard) = self.node_scene.state[self.node_scene.artboard_slot][0] {
+         for layer in artboard.iter() {
             for poly in &layer.polys {
-               scene.push(poly.clone());
+               scene.push(Box::new(poly.clone()));
             }
          }
       }

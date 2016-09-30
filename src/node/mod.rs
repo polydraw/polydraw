@@ -7,10 +7,10 @@ mod builder;
 pub use self::builder::{NodeBuilder, Inlet};
 
 pub use self::operator::{
-   Operator, Add, Join, BuildList, BuildPoly, BuildLayer, BuildArtboard, BBox,
-   Rotate, Center, Nth, Multiply, Divide, Print,
+   Operator, Add, BuildPoint, BuildList, BuildPoly, BuildLayer, BuildArtboard,
+   BuildBBox, Rotate, Center, Nth, Multiply, Divide, Print,
 };
 
-pub use self::data::Data;
+pub use self::data::{Data, DataType};
 
 pub use self::renderer::NodeRenderer;

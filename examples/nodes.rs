@@ -1,42 +1,47 @@
 extern crate polydraw;
 
 use polydraw::Application;
+use polydraw::draw::RGB;
+use polydraw::geom::point::Point;
 use polydraw::node::{
-   NodeRenderer, Data, Add, Join, BuildList, BuildPoly, BuildLayer,
-   BuildArtboard, NodeBuilder, Inlet, Center, Rotate, Nth, Multiply, Divide,
+   NodeRenderer, Data, Add, BuildPoint, BuildList, BuildPoly, BuildLayer,
+   BuildArtboard, NodeBuilder, Inlet, Rotate, Nth, Multiply, Divide,
 };
 
 
 fn main() {
-   let points = Data::VT2I64(
-      vec![(0, 0), (90, 1200), (261, 1735), (1443, 410)]
+   let points = Data::PointList(
+      Box::new(vec![
+         Point::new(0, 0),
+         Point::new(90, 1200),
+         Point::new(261, 1735),
+         Point::new(1443, 410)
+      ])
    );
 
-   let color = Data::T3U8(
-      (0, 127, 255)
-   );
+   let color = Data::Rgb(RGB::new(0, 127, 255));
 
    let mut builder = NodeBuilder::new();
 
-   builder.data("center", Data::T2I64((1500, 600)));
+   builder.data("center", Data::Point(Point::new(1500, 600)));
 
-   builder.data("segment", Data::I64(120));
+   builder.data("segment", Data::Int(120));
 
    builder.operator::<Nth>("center-x", vec![
       Inlet::Source("center"),
-      Inlet::Data(Data::I64(0)),
+      Inlet::Data(Data::Int(0)),
    ]);
 
    builder.operator::<Nth>("center-y", vec![
       Inlet::Source("center"),
-      Inlet::Data(Data::I64(1)),
+      Inlet::Data(Data::Int(1)),
    ]);
 
    // p1 = center.x, center.y - 2 * segment
 
    builder.operator::<Multiply>("double-segment", vec![
       Inlet::Source("segment"),
-      Inlet::Data(Data::I64(2)),
+      Inlet::Data(Data::Int(2)),
    ]);
 
    builder.operator::<Divide>("p1-y", vec![
@@ -44,7 +49,7 @@ fn main() {
       Inlet::Source("double-segment"),
    ]);
 
-   builder.operator::<Join>("p1", vec![
+   builder.operator::<BuildPoint>("p1", vec![
       Inlet::Source("center-x"),
       Inlet::Source("p1-y"),
    ]);
@@ -63,9 +68,9 @@ fn main() {
       Inlet::Source("frame"),
    ]);
 
-   builder.operator::<Join>("translate-point", vec![
+   builder.operator::<BuildPoint>("translate-point", vec![
       Inlet::Source("frame"),
-      Inlet::Data(Data::I64(0)),
+      Inlet::Data(Data::Int(0)),
    ]);
 
    builder.operator::<Add>("add-operator", vec![

@@ -1,12 +1,10 @@
 use std::fmt;
 use std::i64;
 
-use devel::Poly;
-use geom::point::Point;
 use draw::RGB;
 
 use super::node::{Node, NodeRole};
-use super::data::{Data, NONE, Layer, T2I64, VT2I64, VVT2I64, T3U8, T2T2I64};
+use super::data::{Data, NONE, Layer, Point, PointList, Poly, PointListList, BBox};
 
 
 pub trait Operator where Self: fmt::Debug {
@@ -75,7 +73,7 @@ impl Operator for Print {
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::I64(frame), Data::I64(target)) => {
+         (Data::Int(frame), Data::Int(target)) => {
             if frame == target {
                for i in 2..node.len() {
                   let input = node.input(state, i);
@@ -108,19 +106,19 @@ impl Operator for Add {
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::add(v1, v2),
+         (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::add(v1, v2),
 
-         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::add(v1, v2),
-         (Data::I64(v1), Data::F64(v2)) => <(f64, i64)>::add(v2, v1),
+         (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::add(v1, v2),
+         (Data::Int(v1), Data::Float(v2)) => <(f64, i64)>::add(v2, v1),
 
-         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::add(v1, v2),
-         (Data::I64(v1), Data::T2I64(v2)) => <(T2I64, i64)>::add(v2, v1),
+         (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::add(v1, v2),
+         (Data::Int(v1), Data::Point(v2)) => <(Point, i64)>::add(v2, v1),
 
-         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::add(v1, v2),
-         (Data::T2I64(v1), Data::VT2I64(v2)) => <(VT2I64, T2I64)>::add(v2, v1),
+         (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::add(v1, v2),
+         (Data::Point(v1), Data::PointList(v2)) => <(Box<PointList>, Point)>::add(v2, v1),
 
-         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::add(v1, v2),
-         (Data::T2I64(v1), Data::VVT2I64(v2)) => <(VVT2I64, T2I64)>::add(v2, v1),
+         (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::add(v1, v2),
+         (Data::Point(v1), Data::PointListList(v2)) => <(Box<PointListList>, Point)>::add(v2, v1),
 
          _ => NONE
       }
@@ -134,50 +132,50 @@ trait AddTrait<T1, T2> {
 impl AddTrait<i64, i64> for (i64, i64) {
    #[inline]
    fn add(v1: i64, v2: i64) -> Data {
-      Data::I64(v1 + v2)
+      Data::Int(v1 + v2)
    }
 }
 
 impl AddTrait<f64, i64> for (f64, i64) {
    #[inline]
    fn add(v1: f64, v2: i64) -> Data {
-      Data::F64(v1 + v2 as f64)
+      Data::Float(v1 + v2 as f64)
    }
 }
 
-impl AddTrait<T2I64, i64> for (T2I64, i64) {
+impl AddTrait<Point, i64> for (Point, i64) {
    #[inline]
-   fn add(mut v1: T2I64, v2: i64) -> Data {
-      v1.0 += v2;
-      v1.1 += v2;
+   fn add(mut v1: Point, v2: i64) -> Data {
+      v1.x += v2;
+      v1.y += v2;
 
-      Data::T2I64(v1)
+      Data::Point(v1)
    }
 }
 
-impl AddTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+impl AddTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
    #[inline]
-   fn add(mut v1: VT2I64, v2: T2I64) -> Data {
-      for tuple in &mut v1 {
-         tuple.0 += v2.0;
-         tuple.1 += v2.1;
+   fn add(mut v1: Box<PointList>, v2: Point) -> Data {
+      for point in v1.iter_mut() {
+         point.x += v2.x;
+         point.y += v2.y;
       }
 
-      Data::VT2I64(v1)
+      Data::PointList(v1)
    }
 }
 
-impl AddTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+impl AddTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
    #[inline]
-   fn add(mut v1: VVT2I64, v2: T2I64) -> Data {
-      for src in &mut v1 {
-         for tuple in src.iter_mut() {
-            tuple.0 += v2.0;
-            tuple.1 += v2.1;
+   fn add(mut v1: Box<PointListList>, v2: Point) -> Data {
+      for src in v1.iter_mut() {
+         for point in src.iter_mut() {
+            point.x += v2.x;
+            point.y += v2.y;
          }
       }
 
-      Data::VVT2I64(v1)
+      Data::PointListList(v1)
    }
 }
 
@@ -197,16 +195,16 @@ impl Operator for Divide {
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::divide(v1, v2),
+         (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::divide(v1, v2),
 
-         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::divide(v1, v2),
-         (Data::I64(v1), Data::F64(v2)) => <(i64, f64)>::divide(v1, v2),
+         (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::divide(v1, v2),
+         (Data::Int(v1), Data::Float(v2)) => <(i64, f64)>::divide(v1, v2),
 
-         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::divide(v1, v2),
+         (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::divide(v1, v2),
 
-         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::divide(v1, v2),
+         (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::divide(v1, v2),
 
-         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::divide(v1, v2),
+         (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::divide(v1, v2),
 
          _ => NONE
       }
@@ -220,57 +218,57 @@ trait DivideTrait<T1, T2> {
 impl DivideTrait<i64, i64> for (i64, i64) {
    #[inline]
    fn divide(v1: i64, v2: i64) -> Data {
-      Data::I64(v1 - v2)
+      Data::Int(v1 - v2)
    }
 }
 
 impl DivideTrait<f64, i64> for (f64, i64) {
    #[inline]
    fn divide(v1: f64, v2: i64) -> Data {
-      Data::F64(v1 - v2 as f64)
+      Data::Float(v1 - v2 as f64)
    }
 }
 
 impl DivideTrait<i64, f64> for (i64, f64) {
    #[inline]
    fn divide(v1: i64, v2: f64) -> Data {
-      Data::F64(v1 as f64 - v2)
+      Data::Float(v1 as f64 - v2)
    }
 }
 
-impl DivideTrait<T2I64, i64> for (T2I64, i64) {
+impl DivideTrait<Point, i64> for (Point, i64) {
    #[inline]
-   fn divide(mut v1: T2I64, v2: i64) -> Data {
-      v1.0 -= v2;
-      v1.1 -= v2;
+   fn divide(mut v1: Point, v2: i64) -> Data {
+      v1.x -= v2;
+      v1.x -= v2;
 
-      Data::T2I64(v1)
+      Data::Point(v1)
    }
 }
 
-impl DivideTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+impl DivideTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
    #[inline]
-   fn divide(mut v1: VT2I64, v2: T2I64) -> Data {
-      for tuple in &mut v1 {
-         tuple.0 -= v2.0;
-         tuple.1 -= v2.1;
+   fn divide(mut v1: Box<PointList>, v2: Point) -> Data {
+      for point in v1.iter_mut() {
+         point.x -= v2.x;
+         point.y -= v2.y;
       }
 
-      Data::VT2I64(v1)
+      Data::PointList(v1)
    }
 }
 
-impl DivideTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+impl DivideTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
    #[inline]
-   fn divide(mut v1: VVT2I64, v2: T2I64) -> Data {
-      for src in &mut v1 {
-         for tuple in src.iter_mut() {
-            tuple.0 -= v2.0;
-            tuple.1 -= v2.1;
+   fn divide(mut v1: Box<PointListList>, v2: Point) -> Data {
+      for src in v1.iter_mut() {
+         for point in src.iter_mut() {
+            point.x -= v2.x;
+            point.y -= v2.y;
          }
       }
 
-      Data::VVT2I64(v1)
+      Data::PointListList(v1)
    }
 }
 
@@ -290,16 +288,16 @@ impl Operator for Subtract {
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::subtract(v1, v2),
+         (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::subtract(v1, v2),
 
-         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::subtract(v1, v2),
-         (Data::I64(v1), Data::F64(v2)) => <(i64, f64)>::subtract(v1, v2),
+         (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::subtract(v1, v2),
+         (Data::Int(v1), Data::Float(v2)) => <(i64, f64)>::subtract(v1, v2),
 
-         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::subtract(v1, v2),
+         (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::subtract(v1, v2),
 
-         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::subtract(v1, v2),
+         (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::subtract(v1, v2),
 
-         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::subtract(v1, v2),
+         (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::subtract(v1, v2),
 
          _ => NONE
       }
@@ -313,57 +311,57 @@ trait SubtractTrait<T1, T2> {
 impl SubtractTrait<i64, i64> for (i64, i64) {
    #[inline]
    fn subtract(v1: i64, v2: i64) -> Data {
-      Data::I64(v1 / v2)
+      Data::Int(v1 / v2)
    }
 }
 
 impl SubtractTrait<f64, i64> for (f64, i64) {
    #[inline]
    fn subtract(v1: f64, v2: i64) -> Data {
-      Data::F64(v1 / v2 as f64)
+      Data::Float(v1 / v2 as f64)
    }
 }
 
 impl SubtractTrait<i64, f64> for (i64, f64) {
    #[inline]
    fn subtract(v1: i64, v2: f64) -> Data {
-      Data::F64(v1 as f64 / v2)
+      Data::Float(v1 as f64 / v2)
    }
 }
 
-impl SubtractTrait<T2I64, i64> for (T2I64, i64) {
+impl SubtractTrait<Point, i64> for (Point, i64) {
    #[inline]
-   fn subtract(mut v1: T2I64, v2: i64) -> Data {
-      v1.0 /= v2;
-      v1.1 /= v2;
+   fn subtract(mut v1: Point, v2: i64) -> Data {
+      v1.x /= v2;
+      v1.y /= v2;
 
-      Data::T2I64(v1)
+      Data::Point(v1)
    }
 }
 
-impl SubtractTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+impl SubtractTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
    #[inline]
-   fn subtract(mut v1: VT2I64, v2: T2I64) -> Data {
-      for tuple in &mut v1 {
-         tuple.0 /= v2.0;
-         tuple.1 /= v2.1;
+   fn subtract(mut v1: Box<PointList>, v2: Point) -> Data {
+      for point in v1.iter_mut() {
+         point.x /= v2.x;
+         point.y /= v2.y;
       }
 
-      Data::VT2I64(v1)
+      Data::PointList(v1)
    }
 }
 
-impl SubtractTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+impl SubtractTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
    #[inline]
-   fn subtract(mut v1: VVT2I64, v2: T2I64) -> Data {
-      for src in &mut v1 {
-         for tuple in src.iter_mut() {
-            tuple.0 /= v2.0;
-            tuple.1 /= v2.1;
+   fn subtract(mut v1: Box<PointListList>, v2: Point) -> Data {
+      for src in v1.iter_mut() {
+         for point in src.iter_mut() {
+            point.x /= v2.x;
+            point.y /= v2.y;
          }
       }
 
-      Data::VVT2I64(v1)
+      Data::PointListList(v1)
    }
 }
 
@@ -383,19 +381,19 @@ impl Operator for Multiply {
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::I64(v1), Data::I64(v2)) => <(i64, i64)>::multiply(v1, v2),
+         (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::multiply(v1, v2),
 
-         (Data::F64(v1), Data::I64(v2)) => <(f64, i64)>::multiply(v1, v2),
-         (Data::I64(v1), Data::F64(v2)) => <(f64, i64)>::multiply(v2, v1),
+         (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::multiply(v1, v2),
+         (Data::Int(v1), Data::Float(v2)) => <(f64, i64)>::multiply(v2, v1),
 
-         (Data::T2I64(v1), Data::I64(v2)) => <(T2I64, i64)>::multiply(v1, v2),
-         (Data::I64(v1), Data::T2I64(v2)) => <(T2I64, i64)>::multiply(v2, v1),
+         (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::multiply(v1, v2),
+         (Data::Int(v1), Data::Point(v2)) => <(Point, i64)>::multiply(v2, v1),
 
-         (Data::VT2I64(v1), Data::T2I64(v2)) => <(VT2I64, T2I64)>::multiply(v1, v2),
-         (Data::T2I64(v1), Data::VT2I64(v2)) => <(VT2I64, T2I64)>::multiply(v2, v1),
+         (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::multiply(v1, v2),
+         (Data::Point(v1), Data::PointList(v2)) => <(Box<PointList>, Point)>::multiply(v2, v1),
 
-         (Data::VVT2I64(v1), Data::T2I64(v2)) => <(VVT2I64, T2I64)>::multiply(v1, v2),
-         (Data::T2I64(v1), Data::VVT2I64(v2)) => <(VVT2I64, T2I64)>::multiply(v2, v1),
+         (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::multiply(v1, v2),
+         (Data::Point(v1), Data::PointListList(v2)) => <(Box<PointListList>, Point)>::multiply(v2, v1),
 
          _ => NONE
       }
@@ -409,50 +407,50 @@ trait MultiplyTrait<T1, T2> {
 impl MultiplyTrait<i64, i64> for (i64, i64) {
    #[inline]
    fn multiply(v1: i64, v2: i64) -> Data {
-      Data::I64(v1 * v2)
+      Data::Int(v1 * v2)
    }
 }
 
 impl MultiplyTrait<f64, i64> for (f64, i64) {
    #[inline]
    fn multiply(v1: f64, v2: i64) -> Data {
-      Data::F64(v1 * v2 as f64)
+      Data::Float(v1 * v2 as f64)
    }
 }
 
-impl MultiplyTrait<T2I64, i64> for (T2I64, i64) {
+impl MultiplyTrait<Point, i64> for (Point, i64) {
    #[inline]
-   fn multiply(mut v1: T2I64, v2: i64) -> Data {
-      v1.0 *= v2;
-      v1.1 *= v2;
+   fn multiply(mut v1: Point, v2: i64) -> Data {
+      v1.x *= v2;
+      v1.y *= v2;
 
-      Data::T2I64(v1)
+      Data::Point(v1)
    }
 }
 
-impl MultiplyTrait<VT2I64, T2I64> for (VT2I64, T2I64) {
+impl MultiplyTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
    #[inline]
-   fn multiply(mut v1: VT2I64, v2: T2I64) -> Data {
-      for tuple in &mut v1 {
-         tuple.0 *= v2.0;
-         tuple.1 *= v2.1;
+   fn multiply(mut v1: Box<PointList>, v2: Point) -> Data {
+      for point in v1.iter_mut() {
+         point.x *= v2.x;
+         point.y *= v2.y;
       }
 
-      Data::VT2I64(v1)
+      Data::PointList(v1)
    }
 }
 
-impl MultiplyTrait<VVT2I64, T2I64> for (VVT2I64, T2I64) {
+impl MultiplyTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
    #[inline]
-   fn multiply(mut v1: VVT2I64, v2: T2I64) -> Data {
-      for src in &mut v1 {
-         for tuple in src.iter_mut() {
-            tuple.0 *= v2.0;
-            tuple.1 *= v2.1;
+   fn multiply(mut v1: Box<PointListList>, v2: Point) -> Data {
+      for src in v1.iter_mut() {
+         for point in src.iter_mut() {
+            point.x *= v2.x;
+            point.y *= v2.y;
          }
       }
 
-      Data::VVT2I64(v1)
+      Data::PointListList(v1)
    }
 }
 
@@ -472,15 +470,15 @@ impl Operator for Nth {
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::T3U8(object), Data::I64(index)) => <T3U8>::nth(object, index),
+         (Data::Rgb(object), Data::Int(index)) => <RGB>::nth(object, index),
 
-         (Data::T2I64(object), Data::I64(index)) => <T2I64>::nth(object, index),
+         (Data::Point(object), Data::Int(index)) => <Point>::nth(object, index),
 
-         (Data::T2T2I64(object), Data::I64(index)) => <T2T2I64>::nth(*object, index),
+         (Data::BBox(object), Data::Int(index)) => <Box<BBox>>::nth(object, index),
 
-//         (Data::VT2I64(object), Data::I64(index)) => <VT2I64>::nth(object, index),
+//         (Data::PointList(object), Data::Int(index)) => <PointList>::nth(object, index),
 
-//         (Data::VVT2I64(object), Data::I64(index)) => <VVT2I64>::nth(object, index),
+//         (Data::PointListList(object), Data::Int(index)) => <PointListList>::nth(object, index),
 
          _ => NONE
       }
@@ -491,40 +489,40 @@ trait NthTrait<T1> {
    fn nth(object: T1, index: i64) -> Data;
 }
 
-impl NthTrait<T2I64> for T2I64 {
+impl NthTrait<Point> for Point {
    #[inline]
-   fn nth(object: T2I64, index: i64) -> Data {
+   fn nth(object: Point, index: i64) -> Data {
       match index {
-         0 => Data::I64(object.0),
-         1 => Data::I64(object.1),
+         0 => Data::Int(object.x),
+         1 => Data::Int(object.y),
          _ => NONE,
       }
    }
 }
 
-impl NthTrait<T3U8> for T3U8 {
+impl NthTrait<RGB> for RGB {
    #[inline]
-   fn nth(object: T3U8, index: i64) -> Data {
+   fn nth(object: RGB, index: i64) -> Data {
       match index {
-         0 => Data::U8(object.0),
-         1 => Data::U8(object.1),
-         2 => Data::U8(object.2),
+         0 => Data::Int(object.r as i64),
+         1 => Data::Int(object.g as i64),
+         2 => Data::Int(object.b as i64),
          _ => NONE,
       }
    }
 }
 
-impl NthTrait<T2T2I64> for T2T2I64 {
+
+impl NthTrait<Box<BBox>> for Box<BBox> {
    #[inline]
-   fn nth(object: T2T2I64, index: i64) -> Data {
+   fn nth(object: Box<BBox>, index: i64) -> Data {
       match index {
-         0 => Data::T2I64(object.0),
-         1 => Data::T2I64(object.1),
+         0 => Data::Point(object.p1),
+         1 => Data::Point(object.p2),
          _ => NONE,
       }
    }
 }
-
 
 #[derive(Debug)]
 pub struct Rotate { }
@@ -542,23 +540,23 @@ impl Operator for Rotate {
       let in_angle = node.input(state, 2);
 
       match (in_target, in_origin, in_angle) {
-         (Data::T2I64(target), Data::T2I64(origin), Data::F64(angle)) =>
-            <(T2I64, f64)>::rotate(target, origin, angle),
+         (Data::Point(target), Data::Point(origin), Data::Float(angle)) =>
+            <(Point, f64)>::rotate(target, origin, angle),
 
-         (Data::T2I64(target), Data::T2I64(origin), Data::I64(angle)) =>
-            <(T2I64, i64)>::rotate(target, origin, angle),
+         (Data::Point(target), Data::Point(origin), Data::Int(angle)) =>
+            <(Point, i64)>::rotate(target, origin, angle),
 
-         (Data::VT2I64(target), Data::T2I64(origin), Data::F64(angle)) =>
-            <(VT2I64, f64)>::rotate(target, origin, angle),
+         (Data::PointList(target), Data::Point(origin), Data::Float(angle)) =>
+            <(Box<PointList>, f64)>::rotate(target, origin, angle),
 
-         (Data::VT2I64(target), Data::T2I64(origin), Data::I64(angle)) =>
-            <(VT2I64, i64)>::rotate(target, origin, angle),
+         (Data::PointList(target), Data::Point(origin), Data::Int(angle)) =>
+            <(Box<PointList>, i64)>::rotate(target, origin, angle),
 
-         (Data::VVT2I64(target), Data::T2I64(origin), Data::F64(angle)) =>
-            <(VVT2I64, f64)>::rotate(target, origin, angle),
+         (Data::PointListList(target), Data::Point(origin), Data::Float(angle)) =>
+            <(Box<PointListList>, f64)>::rotate(target, origin, angle),
 
-         (Data::VVT2I64(target), Data::T2I64(origin), Data::I64(angle)) =>
-            <(VVT2I64, i64)>::rotate(target, origin, angle),
+         (Data::PointListList(target), Data::Point(origin), Data::Int(angle)) =>
+            <(Box<PointListList>, i64)>::rotate(target, origin, angle),
 
          _ => NONE
       }
@@ -566,45 +564,45 @@ impl Operator for Rotate {
 }
 
 trait RotateTrait<T1, T2> {
-   fn rotate(target: T1, origin: T2I64, angle: T2) -> Data;
+   fn rotate(target: T1, origin: Point, angle: T2) -> Data;
 }
 
-impl RotateTrait<T2I64, f64> for (T2I64, f64) {
+impl RotateTrait<Point, f64> for (Point, f64) {
    #[inline]
-   fn rotate(mut target: T2I64, origin: T2I64, angle: f64) -> Data {
-      let cx = origin.0 as f64;
-      let cy = origin.1 as f64;
+   fn rotate(mut target: Point, origin: Point, angle: f64) -> Data {
+      let cx = origin.x as f64;
+      let cy = origin.y as f64;
 
       let radians = angle.to_radians();
 
       let s = radians.sin();
       let c = radians.cos();
 
-      let mut x = target.0 as f64;
-      let mut y = target.1 as f64;
+      let mut x = target.x as f64;
+      let mut y = target.y as f64;
 
       x -= cx;
       y -= cy;
 
-      target.0 = (x * c - y * s + cx) as i64;
-      target.1 = (x * s + y * c + cy) as i64;
+      target.x = (x * c - y * s + cx) as i64;
+      target.y = (x * s + y * c + cy) as i64;
 
-      Data::T2I64(target)
+      Data::Point(target)
    }
 }
 
-impl RotateTrait<T2I64, i64> for (T2I64, i64) {
+impl RotateTrait<Point, i64> for (Point, i64) {
    #[inline]
-   fn rotate(target: T2I64, origin: T2I64, angle: i64) -> Data {
-      <(T2I64, f64)>::rotate(target, origin, angle as f64)
+   fn rotate(target: Point, origin: Point, angle: i64) -> Data {
+      <(Point, f64)>::rotate(target, origin, angle as f64)
    }
 }
 
-impl RotateTrait<VT2I64, f64> for (VT2I64, f64) {
+impl RotateTrait<Box<PointList>, f64> for (Box<PointList>, f64) {
    #[inline]
-   fn rotate(mut target: VT2I64, origin: T2I64, angle: f64) -> Data {
-      let cx = origin.0 as f64;
-      let cy = origin.1 as f64;
+   fn rotate(mut target: Box<PointList>, origin: Point, angle: f64) -> Data {
+      let cx = origin.x as f64;
+      let cy = origin.y as f64;
 
       let radians = angle.to_radians();
 
@@ -612,69 +610,70 @@ impl RotateTrait<VT2I64, f64> for (VT2I64, f64) {
       let c = radians.cos();
 
       for tuple in target.iter_mut() {
-         let mut x = tuple.0 as f64;
-         let mut y = tuple.1 as f64;
+         let mut x = tuple.x as f64;
+         let mut y = tuple.y as f64;
 
          x -= cx;
          y -= cy;
 
-         tuple.0 = (x * c - y * s + cx) as i64;
-         tuple.1 = (x * s + y * c + cy) as i64;
+         tuple.x = (x * c - y * s + cx) as i64;
+         tuple.y = (x * s + y * c + cy) as i64;
       }
 
-      Data::VT2I64(target)
+      Data::PointList(target)
    }
 }
 
-impl RotateTrait<VT2I64, i64> for (VT2I64, i64) {
+impl RotateTrait<Box<PointList>, i64> for (Box<PointList>, i64) {
    #[inline]
-   fn rotate(target: VT2I64, origin: T2I64, angle: i64) -> Data {
-      <(VT2I64, f64)>::rotate(target, origin, angle as f64)
+   fn rotate(target: Box<PointList>, origin: Point, angle: i64) -> Data {
+      <(Box<PointList>, f64)>::rotate(target, origin, angle as f64)
    }
 }
 
-impl RotateTrait<VVT2I64, f64> for (VVT2I64, f64) {
+impl RotateTrait<Box<PointListList>, f64> for (Box<PointListList>, f64) {
    #[inline]
-   fn rotate(mut target: VVT2I64, origin: T2I64, angle: f64) -> Data {
-      let cx = origin.0 as f64;
-      let cy = origin.1 as f64;
+   fn rotate(mut target: Box<PointListList>, origin: Point, angle: f64) -> Data {
+      let cx = origin.x as f64;
+      let cy = origin.y as f64;
 
       let radians = angle.to_radians();
 
       let s = radians.sin();
       let c = radians.cos();
 
-      for outer in &mut target {
+      for outer in target.iter_mut() {
          for tuple in outer.iter_mut() {
-            let mut x = tuple.0 as f64;
-            let mut y = tuple.1 as f64;
+            let mut x = tuple.x as f64;
+            let mut y = tuple.y as f64;
 
             x -= cx;
             y -= cy;
 
-            tuple.0 = (x * c - y * s + cx) as i64;
-            tuple.1 = (x * s + y * c + cy) as i64;
+            tuple.x = (x * c - y * s + cx) as i64;
+            tuple.y = (x * s + y * c + cy) as i64;
          }
       }
 
-      Data::VVT2I64(target)
+      Data::PointListList(target)
    }
 }
 
-impl RotateTrait<VVT2I64, i64> for (VVT2I64, i64) {
+impl RotateTrait<Box<PointListList>, i64> for (Box<PointListList>, i64) {
    #[inline]
-   fn rotate(target: VVT2I64, origin: T2I64, angle: i64) -> Data {
-      <(VVT2I64, f64)>::rotate(target, origin, angle as f64)
+   fn rotate(target: Box<PointListList>, origin: Point, angle: i64) -> Data {
+      <(Box<PointListList>, f64)>::rotate(target, origin, angle as f64)
    }
 }
+
 
 #[derive(Debug)]
-pub struct BBox { }
+pub struct BuildBBox { }
 
-impl Operator for BBox {
+impl Operator for BuildBBox {
    #[inline]
    fn new() -> Self {
-      BBox { }
+      BuildBBox { }
    }
 
    #[inline]
@@ -682,11 +681,11 @@ impl Operator for BBox {
       let in_object = node.input(state, 0);
 
       match in_object {
-         Data::T2I64(object) => <T2I64>::bbox(object),
+         Data::Point(object) => <Point>::bbox(object),
 
-         Data::VT2I64(object) => <VT2I64>::bbox(object),
+         Data::PointList(object) => <Box<PointList>>::bbox(object),
 
-         Data::VVT2I64(object) => <VVT2I64>::bbox(object),
+         Data::PointListList(object) => <Box<PointListList>>::bbox(object),
 
          _ => NONE
       }
@@ -697,20 +696,20 @@ trait BBoxTrait<T1> {
    fn bbox(object: T1) -> Data;
 }
 
-impl BBoxTrait<T2I64> for T2I64 {
+impl BBoxTrait<Point> for Point {
    #[inline]
-   fn bbox(object: T2I64) -> Data {
-      Data::T2T2I64(
+   fn bbox(object: Point) -> Data {
+      Data::BBox(
          Box::new(
-            ((object.0, object.1), (object.0, object.1))
+            BBox::new(object, object)
          )
       )
    }
 }
 
-impl BBoxTrait<VT2I64> for VT2I64 {
+impl BBoxTrait<Box<PointList>> for Box<PointList> {
    #[inline]
-   fn bbox(object: VT2I64) -> Data {
+   fn bbox(object: Box<PointList>) -> Data {
       if object.len() == 0 {
          return NONE;
       }
@@ -722,56 +721,58 @@ impl BBoxTrait<VT2I64> for VT2I64 {
       let mut right = i64::MIN;
 
       for tuple in object.iter() {
-         if tuple.0 < left {
-            left = tuple.0;
+         if tuple.x < left {
+            left = tuple.x;
          }
 
-         if tuple.0 > right {
-            right = tuple.0;
+         if tuple.x > right {
+            right = tuple.x;
          }
 
-         if tuple.1 < top {
-            top = tuple.1;
+         if tuple.y < top {
+            top = tuple.y;
          }
 
-         if tuple.1 > bottom {
-            bottom = tuple.1;
+         if tuple.y > bottom {
+            bottom = tuple.y;
          }
       }
 
-      Data::T2T2I64(
+      Data::BBox(
          Box::new(
-            ((left, top), (right, bottom))
+            BBox::new(
+               Point::new(left, top), Point::new(right, bottom)
+            )
          )
       )
    }
 }
 
-impl BBoxTrait<VVT2I64> for VVT2I64 {
+impl BBoxTrait<Box<PointListList>> for Box<PointListList> {
    #[inline]
-   fn bbox(object: VVT2I64) -> Data {
+   fn bbox(object: Box<PointListList>) -> Data {
       let mut top = i64::MAX;
       let mut bottom = i64::MIN;
 
       let mut left = i64::MAX;
       let mut right = i64::MIN;
 
-      for outer in &object {
+      for outer in object.iter() {
          for tuple in outer.iter() {
-            if tuple.0 < left {
-               left = tuple.0;
+            if tuple.x < left {
+               left = tuple.x;
             }
 
-            if tuple.0 > right {
-               right = tuple.0;
+            if tuple.x > right {
+               right = tuple.x;
             }
 
-            if tuple.1 < top {
-               top = tuple.1;
+            if tuple.y < top {
+               top = tuple.y;
             }
 
-            if tuple.1 > bottom {
-               bottom = tuple.1;
+            if tuple.y > bottom {
+               bottom = tuple.y;
             }
          }
       }
@@ -780,9 +781,11 @@ impl BBoxTrait<VVT2I64> for VVT2I64 {
          return NONE;
       }
 
-      Data::T2T2I64(
+      Data::BBox(
          Box::new(
-            ((left, top), (right, bottom))
+            BBox::new(
+               Point::new(left, top), Point::new(right, bottom)
+            )
          )
       )
    }
@@ -803,13 +806,13 @@ impl Operator for Center {
       let in_object = node.input(state, 0);
 
       match in_object {
-         Data::T2I64(object) => <T2I64>::center(object),
+         Data::Point(object) => <Point>::center(object),
 
-         Data::T2T2I64(object) => <T2T2I64>::center(*object),
+         Data::BBox(object) => <BBox>::center(*object),
 
-         Data::VT2I64(object) => <VT2I64>::center(object),
+         Data::PointList(object) => <Box<PointList>>::center(object),
 
-         Data::VVT2I64(object) => <VVT2I64>::center(object),
+         Data::PointListList(object) => <Box<PointListList>>::center(object),
 
          _ => NONE
       }
@@ -820,86 +823,88 @@ trait CenterTrait<T1> {
    fn center(object: T1) -> Data;
 }
 
-impl CenterTrait<T2I64> for T2I64 {
+impl CenterTrait<Point> for Point {
    #[inline]
-   fn center(object: T2I64) -> Data {
-      Data::T2I64(object)
+   fn center(object: Point) -> Data {
+      Data::Point(object)
    }
 }
 
-impl CenterTrait<T2T2I64> for T2T2I64 {
+impl CenterTrait<BBox> for BBox {
    #[inline]
-   fn center(object: T2T2I64) -> Data {
-      let x = ((object.0).0 + (object.1).0) / 2;
-      let y = ((object.0).1 + (object.1).1) / 2;
-      Data::T2I64((x, y))
+   fn center(object: BBox) -> Data {
+      let x = (object.p1.x + object.p2.x) / 2;
+      let y = (object.p1.y + object.p1.y) / 2;
+      Data::Point(Point::new(x, y))
    }
 }
 
-impl CenterTrait<VT2I64> for VT2I64 {
+impl CenterTrait<Box<PointList>> for Box<PointList> {
    #[inline]
-   fn center(object: VT2I64) -> Data {
-      let bbox = <VT2I64>::bbox(object);
+   fn center(object: Box<PointList>) -> Data {
+      let bbox = <Box<PointList>>::bbox(object);
 
       match bbox {
-         Data::T2T2I64(bbox) => <T2T2I64>::center(*bbox),
+         Data::BBox(bbox) => <BBox>::center(*bbox),
          _ => NONE,
       }
    }
 }
 
-impl CenterTrait<VVT2I64> for VVT2I64 {
+impl CenterTrait<Box<PointListList>> for Box<PointListList> {
    #[inline]
-   fn center(object: VVT2I64) -> Data {
-      let bbox = <VVT2I64>::bbox(object);
+   fn center(object: Box<PointListList>) -> Data {
+      let bbox = <Box<PointListList>>::bbox(object);
 
       match bbox {
-         Data::T2T2I64(bbox) => <T2T2I64>::center(*bbox),
+         Data::BBox(bbox) => <BBox>::center(*bbox),
          _ => NONE,
       }
    }
 }
+
 
 #[derive(Debug)]
-pub struct Join { }
+pub struct BuildPoint { }
 
-impl Join {
+impl Operator for BuildPoint {
    #[inline]
-   fn process_two(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+   fn new() -> Self {
+      BuildPoint { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
       match (in1, in2) {
-         (Data::I64(v1), Data::I64(v2)) => Data::T2I64((v1, v2)),
+         (Data::Int(v1), Data::Int(v2)) => Data::Point(Point::new(v1, v2)),
          _ => NONE
       }
    }
+}
+
+
+#[derive(Debug)]
+pub struct BuildRgb { }
+
+impl Operator for BuildRgb {
+   #[inline]
+   fn new() -> Self {
+      BuildRgb { }
+   }
 
    #[inline]
-   fn process_three(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
       let in3 = node.input(state, 2);
 
       match (in1, in2, in3) {
-         (Data::U8(v1), Data::U8(v2), Data::U8(v3)) => Data::T3U8((v1, v2, v3)),
+         (Data::Int(v1), Data::Int(v2), Data::Int(v3)) =>
+            Data::Rgb(RGB::new(v1 as u8, v2 as u8, v3 as u8)),
          _ => NONE
-      }
-   }
-}
-
-impl Operator for Join {
-   #[inline]
-   fn new() -> Self {
-      Join { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      match node.len() {
-         2 => self.process_two(node, state),
-         3 => self.process_three(node, state),
-         _ => Data::None
       }
    }
 }
@@ -913,34 +918,34 @@ impl BuildList {
    fn create_poly_list(&self, node: &Node, state: &mut [Vec<Data>], poly: Box<Poly>) -> Data {
       let mut result = Vec::with_capacity(node.len());
 
-      result.push(poly);
+      result.push(*poly);
 
       for i in 1..node.len() {
          let input = node.input(state, i);
 
          if let Data::Poly(poly) = input {
-            result.push(poly);
+            result.push(*poly);
          }
       }
 
-      Data::VPoly(result)
+      Data::PolyList(Box::new(result))
    }
 
    #[inline]
    fn create_layer_list(&self, node: &Node, state: &mut [Vec<Data>], layer: Box<Layer>) -> Data {
       let mut result = Vec::with_capacity(node.len());
 
-      result.push(layer);
+      result.push(*layer);
 
       for i in 1..node.len() {
          let input = node.input(state, i);
 
          if let Data::Layer(layer) = input {
-            result.push(layer);
+            result.push(*layer);
          }
       }
 
-      Data::VLayer(result)
+      Data::LayerList(Box::new(result))
    }
 }
 
@@ -980,7 +985,7 @@ impl Operator for BuildPoly {
       let color = node.input(state, 1);
 
       match (points, color) {
-         (Data::VT2I64(v1), Data::T3U8(v2)) => <(VT2I64, T3U8)>::build_poly(v1, v2),
+         (Data::PointList(v1), Data::Rgb(v2)) => <(Box<PointList>, RGB)>::build_poly(v1, v2),
          _ => NONE
       }
    }
@@ -990,18 +995,12 @@ trait BuildPolyTrait<T1, T2> {
    fn build_poly(v1: T1, v2: T2) -> Data;
 }
 
-impl BuildPolyTrait<VT2I64, T3U8> for (VT2I64, T3U8) {
+impl BuildPolyTrait<Box<PointList>, RGB> for (Box<PointList>, RGB) {
    #[inline]
-   fn build_poly(array: VT2I64, color: T3U8) -> Data {
-      let mut points = Vec::with_capacity(array.len());
+   fn build_poly(array: Box<PointList>, color: RGB) -> Data {
+      let color = RGB::new(color.r, color.g, color.b);
 
-      for tuple in array {
-         points.push(Point::new(tuple.0, tuple.1))
-      }
-
-      let color = RGB::new(color.0, color.1, color.2);
-
-      let poly = Poly::new(points, color);
+      let poly = Poly::new(*array, color);
 
       Data::Poly(Box::new(poly))
    }
@@ -1022,10 +1021,10 @@ impl Operator for BuildLayer {
       let polys_data = node.input(state, 0);
 
       match polys_data {
-         Data::VPoly(polys) => {
+         Data::PolyList(polys) => {
             Data::Layer(
                Box::new(
-                  Layer::new(polys)
+                  Layer::new(*polys)
                )
             )
          },
