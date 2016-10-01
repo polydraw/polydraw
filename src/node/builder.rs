@@ -287,17 +287,15 @@ fn node_from_def(
 }
 
 fn node_sources(
-   mut inlets: Vec<Inlet>,
+   inlets: Vec<Inlet>,
    slot_map: &HashMap<String, usize>,
    state: &mut Vec<Vec<Data>>,
 ) -> Vec<IndexedInlet> {
 
    let mut indexed_inlets = Vec::with_capacity(inlets.len());
 
-   for inlet in inlets.iter_mut() {
-      let extracted = replace(inlet, Inlet::None);
-
-      match extracted {
+   for inlet in inlets {
+      match inlet {
          Inlet::Source(node_id) => {
             let slot = match slot_map.get::<str>(&node_id) {
                Some(slot) => slot,
