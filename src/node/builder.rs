@@ -10,15 +10,7 @@ pub const NODE_INDEX_OFFSET: usize = 1;
 
 
 #[derive(Debug)]
-pub enum Inlet<'a> {
-   Source(&'a str),
-   Data(Data),
-   None,
-}
-
-
-#[derive(Debug)]
-enum OwnedInlet {
+pub enum Inlet {
    Source(String),
    Data(Data),
    None,
@@ -27,7 +19,7 @@ enum OwnedInlet {
 
 #[derive(Debug)]
 enum NodeDef {
-   Operator((String, Box<Operator>, Vec<OwnedInlet>)),
+   Operator((String, Box<Operator>, Vec<Inlet>)),
    Data((String, Data)),
    None,
 }
@@ -46,6 +38,7 @@ impl NodeDef {
 
 pub struct NodeBuilder {
    node_defs: Vec<NodeDef>,
+   anon_count: usize,
 }
 
 
@@ -53,20 +46,29 @@ impl NodeBuilder {
    pub fn new() -> Self {
       NodeBuilder {
          node_defs: Vec::new(),
+         anon_count: 0,
       }
    }
 
-   pub fn operator<T: 'static + Operator>(&mut self, node_id: &str, inlets: Vec<Inlet>) {
-      let owned = to_owned_inlet_vec(inlets);
-
+   pub fn operator<T: 'static + Operator>(&mut self, node_id: String, inlets: Vec<Inlet>) {
       let operator = Box::new(T::new());
 
       self.node_defs.push(
-         NodeDef::Operator((String::from(node_id), operator, owned))
+         NodeDef::Operator((node_id, operator, inlets))
       );
    }
 
-   pub fn data(&mut self, node_id: &str, data: Data) {
+   pub fn anonymous<T: 'static + Operator>(&mut self, inlets: Vec<Inlet>) -> String {
+      self.anon_count += 1;
+
+      let node_id = format!("__{}__", self.anon_count);
+
+      self.operator::<T>(node_id.clone(), inlets);
+
+      node_id
+   }
+
+   pub fn data(&mut self, node_id: String, data: Data) {
       self.node_defs.push(
          NodeDef::Data((String::from(node_id), data))
       );
@@ -116,27 +118,6 @@ impl NodeBuilder {
       state[artboard_slot].push(Data::None);
 
       NodeScene::new(nodes, state, artboard_slot)
-   }
-}
-
-
-fn to_owned_inlet_vec(mut inlets: Vec<Inlet>) -> Vec<OwnedInlet> {
-   let mut owned = Vec::with_capacity(inlets.len());
-
-   for inlet in inlets.iter_mut() {
-      let converted = replace(inlet, Inlet::None);
-
-      owned.push(to_owned_inlet(converted));
-   }
-
-   owned
-}
-
-fn to_owned_inlet(inlet: Inlet) -> OwnedInlet {
-   match inlet {
-      Inlet::Source(source) => OwnedInlet::Source(String::from(source)),
-      Inlet::Data(data) => OwnedInlet::Data(data),
-      Inlet::None => OwnedInlet::None,
    }
 }
 
@@ -306,7 +287,7 @@ fn node_from_def(
 }
 
 fn node_sources(
-   mut inlets: Vec<OwnedInlet>,
+   mut inlets: Vec<Inlet>,
    slot_map: &HashMap<String, usize>,
    state: &mut Vec<Vec<Data>>,
 ) -> Vec<IndexedInlet> {
@@ -314,10 +295,10 @@ fn node_sources(
    let mut indexed_inlets = Vec::with_capacity(inlets.len());
 
    for inlet in inlets.iter_mut() {
-      let extracted = replace(inlet, OwnedInlet::None);
+      let extracted = replace(inlet, Inlet::None);
 
       match extracted {
-         OwnedInlet::Source(node_id) => {
+         Inlet::Source(node_id) => {
             let slot = match slot_map.get::<str>(&node_id) {
                Some(slot) => slot,
                _ => {
@@ -333,12 +314,12 @@ fn node_sources(
                IndexedInlet::Slot((*slot, subslot))
             );
          },
-         OwnedInlet::Data(data) => {
+         Inlet::Data(data) => {
             indexed_inlets.push(
                IndexedInlet::Data(data)
             );
          },
-         OwnedInlet::None => {
+         Inlet::None => {
             indexed_inlets.push(
                IndexedInlet::Data(Data::None)
             );

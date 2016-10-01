@@ -106,7 +106,7 @@ fn create_operator_node<T: 'static + Operator>(
 
    let inlets = node_inlets(node_id, data_value);
 
-   builder.operator::<T>(node_id, inlets);
+   builder.operator::<T>(String::from(node_id), inlets);
 }
 
 
@@ -117,7 +117,7 @@ fn create_data_node(
 ) {
    let data = extract_table_data(node_id, node_table);
 
-   builder.data(node_id, data);
+   builder.data(String::from(node_id), data);
 }
 
 
@@ -147,7 +147,7 @@ fn extract_data_value<'a>(node_id: &str, node_table: &'a toml::Table) -> &'a tom
 }
 
 
-fn node_inlets<'a>(node_id: &'a str, data: &'a toml::Value) -> Vec<Inlet<'a>> {
+fn node_inlets<'a>(node_id: &'a str, data: &'a toml::Value) -> Vec<Inlet> {
 
    let array = match data {
       &toml::Value::Array(ref array) => array,
@@ -177,7 +177,7 @@ fn node_inlets<'a>(node_id: &'a str, data: &'a toml::Value) -> Vec<Inlet<'a>> {
             };
 
             inlets.push(
-               Inlet::Source(source_id),
+               Inlet::Source(source_id.clone()),
             );
          },
          None => {
@@ -286,7 +286,7 @@ fn toml_to_point_list(node_id: &str, data: &toml::Value) -> Data {
 
 fn extract_i64(node_id: &str, data: &toml::Value) -> i64 {
    match data {
-      &toml::Value::Int(value) => value,
+      &toml::Value::Integer(value) => value,
       _ => {
          panic!("Not an integer {:?}: {}", data, node_id);
       }

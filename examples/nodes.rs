@@ -23,76 +23,76 @@ fn main() {
 
    let mut builder = NodeBuilder::new();
 
-   builder.data("center", Data::Point(Point::new(1500, 600)));
+   builder.data(String::from("center"), Data::Point(Point::new(1500, 600)));
 
-   builder.data("segment", Data::Int(120));
+   builder.data(String::from("segment"), Data::Int(120));
 
-   builder.operator::<Nth>("center-x", vec![
-      Inlet::Source("center"),
+   builder.operator::<Nth>(String::from("center-x"), vec![
+      Inlet::Source(String::from("center")),
       Inlet::Data(Data::Int(0)),
    ]);
 
-   builder.operator::<Nth>("center-y", vec![
-      Inlet::Source("center"),
+   builder.operator::<Nth>(String::from("center-y"), vec![
+      Inlet::Source(String::from("center")),
       Inlet::Data(Data::Int(1)),
    ]);
 
    // p1 = center.x, center.y - 2 * segment
 
-   builder.operator::<Multiply>("double-segment", vec![
-      Inlet::Source("segment"),
+   builder.operator::<Multiply>(String::from("double-segment"), vec![
+      Inlet::Source(String::from("segment")),
       Inlet::Data(Data::Int(2)),
    ]);
 
-   builder.operator::<Divide>("p1-y", vec![
-      Inlet::Source("center-y"),
-      Inlet::Source("double-segment"),
+   builder.operator::<Divide>(String::from("p1-y"), vec![
+      Inlet::Source(String::from("center-y")),
+      Inlet::Source(String::from("double-segment")),
    ]);
 
-   builder.operator::<BuildPoint>("p1", vec![
-      Inlet::Source("center-x"),
-      Inlet::Source("p1-y"),
+   builder.operator::<BuildPoint>(String::from("p1"), vec![
+      Inlet::Source(String::from("center-x")),
+      Inlet::Source(String::from("p1-y")),
    ]);
 
-   builder.data("poly-points", points);
+   builder.data(String::from("poly-points"), points);
 
 /*
-   builder.operator::<Center>("poly-center", vec![
+   builder.operator::<Center>(String::from("poly-center"), vec![
       Inlet::Source("poly-points"),
    ]);
 */
 
-   builder.operator::<Rotate>("rotated-points", vec![
-      Inlet::Source("poly-points"),
-      Inlet::Source("p1"),
-      Inlet::Source("frame"),
+   builder.operator::<Rotate>(String::from("rotated-points"), vec![
+      Inlet::Source(String::from("poly-points")),
+      Inlet::Source(String::from("p1")),
+      Inlet::Source(String::from("frame")),
    ]);
 
-   builder.operator::<BuildPoint>("translate-point", vec![
-      Inlet::Source("frame"),
+   builder.operator::<BuildPoint>(String::from("translate-point"), vec![
+      Inlet::Source(String::from("frame")),
       Inlet::Data(Data::Int(0)),
    ]);
 
-   builder.operator::<Add>("add-operator", vec![
-      Inlet::Source("rotated-points"),
-      Inlet::Source("translate-point"),
+   builder.operator::<Add>(String::from("add-operator"), vec![
+      Inlet::Source(String::from("rotated-points")),
+      Inlet::Source(String::from("translate-point")),
    ]);
 
-   builder.operator::<BuildPoly>("poly", vec![
-      Inlet::Source("add-operator"),
+   builder.operator::<BuildPoly>(String::from("poly"), vec![
+      Inlet::Source(String::from("add-operator")),
       Inlet::Data(color),
    ]);
 
-   builder.operator::<BuildList>("poly-list", vec![
-      Inlet::Source("poly"),
+   builder.operator::<BuildList>(String::from("poly-list"), vec![
+      Inlet::Source(String::from("poly")),
    ]);
 
-   builder.operator::<BuildLayer>("layer", vec![
-      Inlet::Source("poly-list"),
+   builder.operator::<BuildLayer>(String::from("layer"), vec![
+      Inlet::Source(String::from("poly-list")),
    ]);
 
-   builder.operator::<BuildArtboard>("artboard", vec![
-      Inlet::Source("layer"),
+   builder.operator::<BuildArtboard>(String::from("artboard"), vec![
+      Inlet::Source(String::from("layer")),
    ]);
 
    let mut renderer = NodeRenderer::new(builder);
