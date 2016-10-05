@@ -2,11 +2,9 @@ use std::mem::replace;
 use std::iter::repeat;
 use std::collections::{HashMap, HashSet};
 
-use super::operator::{Operator, DataOperator};
+use super::operator::{Operator, DataOperator, InputOperator};
 use super::data::Data;
-use super::node::{Node, NodeRole, IndexedInlet};
-
-pub const NODE_INDEX_OFFSET: usize = 1;
+use super::node::{Node, IndexedInlet};
 
 
 #[derive(Debug)]
@@ -18,9 +16,10 @@ pub enum Inlet {
 
 
 #[derive(Debug)]
-enum NodeDef {
+pub enum NodeDef {
    Operator((String, Box<Operator>, Vec<Inlet>)),
    Data((String, Data)),
+   Input(String),
    None,
 }
 
@@ -29,6 +28,7 @@ impl NodeDef {
       match self {
          &NodeDef::Operator((ref key, _, _)) => key.clone(),
          &NodeDef::Data((ref key, _)) => key.clone(),
+         &NodeDef::Input(ref key) => key.clone(),
 
          _ => panic!(""),
       }
@@ -37,8 +37,8 @@ impl NodeDef {
 
 
 pub struct NodeBuilder {
-   node_defs: Vec<NodeDef>,
-   anon_count: usize,
+   pub node_defs: Vec<NodeDef>,
+   pub anon_count: usize,
 }
 
 
@@ -58,14 +58,14 @@ impl NodeBuilder {
       );
    }
 
-   pub fn anonymous<T: 'static + Operator>(&mut self, inlets: Vec<Inlet>) -> String {
+   pub fn anonymous<T: 'static + Operator>(&mut self, inlets: Vec<Inlet>) -> Inlet {
       self.anon_count += 1;
 
       let node_id = format!("__{}__", self.anon_count);
 
       self.operator::<T>(node_id.clone(), inlets);
 
-      node_id
+      Inlet::Source(node_id)
    }
 
    pub fn data(&mut self, node_id: String, data: Data) {
@@ -74,78 +74,98 @@ impl NodeBuilder {
       );
    }
 
-   pub fn compile(&mut self) -> NodeScene {
-      let mut slot_map = HashMap::new();
+   pub fn input(&mut self, node_id: String) -> usize {
+      self.node_defs.push(
+         NodeDef::Input(String::from(node_id))
+      );
 
-      // Data::frame number at slot 0
-      slot_map.insert(String::from("frame"), 0);
+      self.node_defs.len() - 1
+   }
 
-      for (i, node_def) in self.node_defs.iter().enumerate() {
-         let slot = i + NODE_INDEX_OFFSET;
-         slot_map.insert(node_def.key(), slot);
-      }
-
-
-
-      let mut state = create_state(self.node_defs.len());
-
-      let mut nodes = Vec::new();
-
-      let mut artboard_slot = 0;
-
-      let mut i = 0;
-
-      for node_def_ref in self.node_defs.iter_mut() {
-         let node_def = replace(node_def_ref, NodeDef::None);
-
-         let slot = i + NODE_INDEX_OFFSET;
-
-         i += 1;
-
-         let node = node_from_def(
-            slot, node_def, &slot_map, &mut state
-         );
-
-         if node.role() == NodeRole::Artboard {
-            artboard_slot = node.slot;
-         }
-
-         nodes.push(node);
-      }
-
-      let nodes = execution_sort(nodes);
-
-      state[artboard_slot].push(Data::None);
-
-      NodeScene::new(nodes, state, artboard_slot)
+   pub fn compile(self) -> Program {
+      compile(self.node_defs)
    }
 }
 
+pub fn compile(node_defs: Vec<NodeDef>) -> Program {
+   let mut slot_map = HashMap::new();
 
-pub struct NodeScene {
-   pub nodes: Vec<Node>,
-   pub state: Vec<Vec<Data>>,
-   pub artboard_slot: usize,
+   let mut result_slot = 0;
+
+   for (i, node_def) in node_defs.iter().enumerate() {
+      let node_id = node_def.key();
+
+      if &node_id == "result" {
+         result_slot = i;
+      }
+
+      slot_map.insert(node_id, i);
+   }
+
+   let mut state = create_state(node_defs.len());
+
+   let mut nodes = Vec::new();
+
+   let mut i = 0;
+
+   for node_def in node_defs {
+      let node = node_from_def(i, node_def, &slot_map, &mut state);
+
+      nodes.push(node);
+
+      i += 1;
+   }
+
+   let nodes = execution_sort(nodes);
+
+   state[result_slot].push(Data::None);
+
+   Program::new(nodes, state, result_slot)
 }
 
 
-impl NodeScene {
-   pub fn new(nodes: Vec<Node>, state: Vec<Vec<Data>>, artboard_slot: usize) -> Self {
-      NodeScene {
+pub struct Program {
+   pub nodes: Vec<Node>,
+   pub state: Vec<Vec<Data>>,
+   pub result_slot: usize,
+}
+
+
+impl Program {
+   pub fn new(nodes: Vec<Node>, state: Vec<Vec<Data>>, result_slot: usize) -> Self {
+      Program {
          nodes: nodes,
          state: state,
-         artboard_slot: artboard_slot,
+         result_slot: result_slot,
       }
+   }
+
+   pub fn input(&mut self, slot: usize, data: Data) {
+      if self.state[slot].len() > 0 {
+         for i in 1..self.state[slot].len() {
+            self.state[slot][i] = data.clone();
+         }
+
+         self.state[slot][0] = data;
+      }
+   }
+
+   pub fn execute(&mut self) -> Data {
+      for node in &self.nodes {
+         node.process(&mut self.state);
+      }
+
+      let result = replace(&mut self.state[self.result_slot][0], Data::None);
+
+      result
    }
 }
 
 
 pub fn create_state(nodes_len: usize) -> Vec<Vec<Data>> {
-   let data_len = nodes_len + NODE_INDEX_OFFSET;
+   let mut state = Vec::with_capacity(nodes_len);
 
-   let mut state = Vec::with_capacity(data_len);
-
-   for _ in 0..data_len {
+   for _ in 0..nodes_len {
       state.push(Vec::new());
    }
 
@@ -281,6 +301,11 @@ fn node_from_def(
 
          Node::new(operator, indexed_inlets, node_index)
 
+      },
+      NodeDef::Input(_) => {
+         let operator = Box::new(InputOperator::new());
+
+         Node::new(operator, vec![], node_index)
       },
       _ => panic!("")
    }

@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+use std::fmt;
+
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub struct RGB {
    pub r: u8,
    pub g: u8,
@@ -18,5 +20,11 @@ impl RGB {
 impl Default for RGB {
    fn default() -> RGB {
       RGB::new(0, 0, 0)
+   }
+}
+
+impl fmt::Debug for RGB {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "(rgb! {} {} {})", self.r, self.g, self.b)
    }
 }

@@ -91,7 +91,7 @@ fn main() {
       Inlet::Source(String::from("poly-list")),
    ]);
 
-   builder.operator::<BuildArtboard>(String::from("artboard"), vec![
+   builder.operator::<BuildArtboard>(String::from("result"), vec![
       Inlet::Source(String::from("layer")),
    ]);
 

@@ -1,8 +1,9 @@
+use std::fmt;
 use std::cmp::{PartialOrd, Ordering};
-use std::ops::Mul;
+use std::ops::{Mul, MulAssign};
 
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub struct Point {
    pub x: i64,
    pub y: i64
@@ -20,18 +21,19 @@ impl Point {
       self.x = x;
       self.y = y;
    }
-
-   pub fn mul_assign(&mut self, _rhs: i64) {
-      // In the future use "impl MulAssign<i64> for Point"
-      self.x *= _rhs;
-      self.y *= _rhs;
-   }
 }
 
 impl Default for Point {
    fn default() -> Point {
       Point::new(0, 0)
    }
+}
+
+impl MulAssign for Point {
+    fn mul_assign(&mut self, _rhs: Point) {
+      self.x *= _rhs.x;
+      self.y *= _rhs.y;
+    }
 }
 
 impl PartialOrd for Point {
@@ -64,5 +66,11 @@ impl Mul<i64> for Point {
          x: self.x * val,
          y: self.y * val,
       }
+   }
+}
+
+impl fmt::Debug for Point {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "<{} {}>", self.x, self.y)
    }
 }

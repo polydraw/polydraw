@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub use devel::Poly;
 pub use draw::RGB;
 pub use geom::point::Point;
@@ -17,7 +19,7 @@ impl Layer {
    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BBox {
    pub p1: Point,
    pub p2: Point,
@@ -33,6 +35,12 @@ impl BBox {
    }
 }
 
+impl fmt::Debug for BBox {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "(bbox! {:?} {:?})", self.p1, self.p2)
+   }
+}
+
 pub type PointList = Vec<Point>;
 pub type PointListList = Vec<Vec<Point>>;
 pub type RgbList = Vec<RGB>;
@@ -40,29 +48,7 @@ pub type PolyList = Vec<Poly>;
 pub type LayerList = Vec<Layer>;
 
 
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum DataType {
-   None,
-   Int,
-   Float,
-   Bool,
-   Point,
-   Rgb,
-   BBox,
-   Poly,
-   IntList,
-   FloatList,
-   BoolList,
-   PointList,
-   PointListList,
-   PolyList,
-   RgbList,
-}
-
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Data {
    None,
    Int(i64),
@@ -81,6 +67,54 @@ pub enum Data {
    RgbList(Box<Vec<RGB>>),
    PolyList(Box<PolyList>),
    LayerList(Box<LayerList>),
+}
+
+macro_rules! write_value {
+   ($f:ident, $value:ident) => {
+      write!($f, "{:?}", $value)
+   }
+}
+
+macro_rules! write_list {
+   ($f:ident, $list:ident) => {
+      {
+         if $list.len() == 0 {
+            return write!($f, "[]");
+         }
+
+         write!($f, "[{:?}", $list[0]).unwrap();
+
+         for element in &$list[1..] {
+            write!($f, " {:?}", element).unwrap();
+         }
+
+         write!($f, "]")
+      }
+   }
+}
+
+impl fmt::Debug for Data {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         &Data::None => write!(f, "None"),
+         &Data::Int(ref value) => write_value!(f, value),
+         &Data::Float(ref value) => write_value!(f, value),
+         &Data::Bool(ref value) => write_value!(f, value),
+         &Data::Point(ref value) => write_value!(f, value),
+         &Data::Rgb(ref value) => write_value!(f, value),
+         &Data::BBox(ref value) => write_value!(f, value),
+         &Data::Poly(ref value) => write!(f, "(poly! {:?})", value),
+         &Data::Layer(ref value) => write!(f, "(layer! {:?})", value),
+         &Data::IntList(ref list) => write_list!(f, list),
+         &Data::FloatList(ref list) => write_list!(f, list),
+         &Data::BoolList(ref list) => write_list!(f, list),
+         &Data::PointList(ref list) => write_list!(f, list),
+         &Data::PointListList(ref list) => write_list!(f, list),
+         &Data::RgbList(ref list) => write_list!(f, list),
+         &Data::PolyList(ref list) => write_list!(f, list),
+         &Data::LayerList(ref list) => write_list!(f, list),
+      }
+   }
 }
 
 pub const NONE: Data = Data::None;

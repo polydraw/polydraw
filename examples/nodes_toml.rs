@@ -44,7 +44,7 @@ const NODE_DEFS: &'static str = r#"
    data = [
       { from = "poly-list" } ]
 
-   [artboard]
+   [result]
    type = "artboard"
    data = [
       { from = "layer" } ]

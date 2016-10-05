@@ -103,9 +103,9 @@ impl fmt::Debug for BinaryType {
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Binary {
-   operator: BinaryType,
-   left: Ast,
-   right: Ast,
+   pub operator: BinaryType,
+   pub left: Ast,
+   pub right: Ast,
 }
 
 impl Binary {

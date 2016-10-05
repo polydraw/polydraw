@@ -63,17 +63,19 @@ impl Node {
    pub fn process(&self, state: &mut [Vec<Data>]) {
       let data = self.operator.process(&self, state);
 
-      let mut slots = &mut state[self.slot];
+      if let Some(data) = data {
+         let mut slots = &mut state[self.slot];
 
-      if slots.len() == 0 {
-         return;
+         if slots.len() == 0 {
+            return;
+         }
+
+         for index in 1..slots.len() {
+            slots[index] = data.clone();
+         }
+
+         slots[0] = data;
       }
-
-      for index in 1..slots.len() {
-         slots[index] = data.clone();
-      }
-
-      slots[0] = data;
    }
 
    #[inline]
