@@ -134,7 +134,7 @@ fn extract_name(source: &str) -> TokenResult {
    loop {
       match chars.next() {
          Some(ch) => match ch {
-            'a' ... 'z' | 'A' ... 'Z' | '0' ... '1' | '-' | '_' => end += 1,
+            'a' ... 'z' | 'A' ... 'Z' | '0' ... '9' | '-' | '_' => end += 1,
             _ => break,
          },
          None => break,
