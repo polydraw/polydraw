@@ -147,87 +147,87 @@ impl Operator for Add {
 
 pub fn eval_add(in1: Data, in2: Data) -> Data {
    match (in1, in2) {
-      (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::add(v1, v2),
+      (Data::Int(v1), Data::Int(v2)) => v1.add(v2),
 
-      (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::add(v1, v2),
-      (Data::Int(v1), Data::Float(v2)) => <(f64, i64)>::add(v2, v1),
+      (Data::Float(v1), Data::Int(v2)) => v1.add(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.add(v1),
 
-      (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::add(v1, v2),
-      (Data::Int(v1), Data::Point(v2)) => <(Point, i64)>::add(v2, v1),
+      (Data::Point(v1), Data::Int(v2)) => v1.add(v2),
+      (Data::Int(v1), Data::Point(v2)) => v2.add(v1),
 
-      (Data::Point(v1), Data::Point(v2)) => <(Point, Point)>::add(v1, v2),
+      (Data::Point(v1), Data::Point(v2)) => v1.add(v2),
 
-      (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::add(v1, v2),
-      (Data::Point(v1), Data::PointList(v2)) => <(Box<PointList>, Point)>::add(v2, v1),
+      (Data::PointList(v1), Data::Point(v2)) => v1.add(v2),
+      (Data::Point(v1), Data::PointList(v2)) => v2.add(v1),
 
-      (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::add(v1, v2),
-      (Data::Point(v1), Data::PointListList(v2)) => <(Box<PointListList>, Point)>::add(v2, v1),
+      (Data::PointListList(v1), Data::Point(v2)) => v1.add(v2),
+      (Data::Point(v1), Data::PointListList(v2)) => v2.add(v1),
 
       _ => NONE
    }
 }
 
-trait AddTrait<T1, T2> {
-   fn add(v1: T1, v2: T2) -> Data;
+trait AddTrait<Rhs> {
+   fn add(self, v2: Rhs) -> Data;
 }
 
-impl AddTrait<i64, i64> for (i64, i64) {
+impl AddTrait<i64> for i64 {
    #[inline]
-   fn add(v1: i64, v2: i64) -> Data {
-      Data::Int(v1 + v2)
+   fn add(self, v2: i64) -> Data {
+      Data::Int(self + v2)
    }
 }
 
-impl AddTrait<f64, i64> for (f64, i64) {
+impl AddTrait<i64> for f64 {
    #[inline]
-   fn add(v1: f64, v2: i64) -> Data {
-      Data::Float(v1 + v2 as f64)
+   fn add(self, v2: i64) -> Data {
+      Data::Float(self + v2 as f64)
    }
 }
 
-impl AddTrait<Point, i64> for (Point, i64) {
+impl AddTrait<i64> for Point {
    #[inline]
-   fn add(mut v1: Point, v2: i64) -> Data {
-      v1.x += v2;
-      v1.y += v2;
+   fn add(mut self, v2: i64) -> Data {
+      self.x += v2;
+      self.y += v2;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl AddTrait<Point, Point> for (Point, Point) {
+impl AddTrait<Point> for Point {
    #[inline]
-   fn add(mut v1: Point, v2: Point) -> Data {
-      v1.x += v2.x;
-      v1.y += v2.y;
+   fn add(mut self, v2: Point) -> Data {
+      self.x += v2.x;
+      self.y += v2.y;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl AddTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
+impl AddTrait<Point> for Box<PointList> {
    #[inline]
-   fn add(mut v1: Box<PointList>, v2: Point) -> Data {
-      for point in v1.iter_mut() {
+   fn add(mut self, v2: Point) -> Data {
+      for point in self.iter_mut() {
          point.x += v2.x;
          point.y += v2.y;
       }
 
-      Data::PointList(v1)
+      Data::PointList(self)
    }
 }
 
-impl AddTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
+impl AddTrait<Point> for Box<PointListList> {
    #[inline]
-   fn add(mut v1: Box<PointListList>, v2: Point) -> Data {
-      for src in v1.iter_mut() {
+   fn add(mut self, v2: Point) -> Data {
+      for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x += v2.x;
             point.y += v2.y;
          }
       }
 
-      Data::PointListList(v1)
+      Data::PointListList(self)
    }
 }
 
@@ -252,91 +252,91 @@ impl Operator for Divide {
 
 pub fn eval_divide(in1: Data, in2: Data) -> Data {
    match (in1, in2) {
-      (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::divide(v1, v2),
+      (Data::Int(v1), Data::Int(v2)) => v1.divide(v2),
 
-      (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::divide(v1, v2),
-      (Data::Int(v1), Data::Float(v2)) => <(i64, f64)>::divide(v1, v2),
+      (Data::Float(v1), Data::Int(v2)) => v1.divide(v2),
+      (Data::Int(v1), Data::Float(v2)) => v1.divide(v2),
 
-      (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::divide(v1, v2),
+      (Data::Point(v1), Data::Int(v2)) => v1.divide(v2),
 
-      (Data::Point(v1), Data::Point(v2)) => <(Point, Point)>::divide(v1, v2),
+      (Data::Point(v1), Data::Point(v2)) => v1.divide(v2),
 
-      (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::divide(v1, v2),
+      (Data::PointList(v1), Data::Point(v2)) => v1.divide(v2),
 
-      (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::divide(v1, v2),
+      (Data::PointListList(v1), Data::Point(v2)) => v1.divide(v2),
 
       _ => NONE
    }
 }
 
-trait DivideTrait<T1, T2> {
-   fn divide(v1: T1, v2: T2) -> Data;
+trait DivideTrait<Rhs> {
+   fn divide(self, v2: Rhs) -> Data;
 }
 
-impl DivideTrait<i64, i64> for (i64, i64) {
+impl DivideTrait<i64> for i64 {
    #[inline]
-   fn divide(v1: i64, v2: i64) -> Data {
-      Data::Int(v1 / v2)
+   fn divide(self, v2: i64) -> Data {
+      Data::Int(self / v2)
    }
 }
 
-impl DivideTrait<f64, i64> for (f64, i64) {
+impl DivideTrait<i64> for f64 {
    #[inline]
-   fn divide(v1: f64, v2: i64) -> Data {
-      Data::Float(v1 / v2 as f64)
+   fn divide(self, v2: i64) -> Data {
+      Data::Float(self / v2 as f64)
    }
 }
 
-impl DivideTrait<i64, f64> for (i64, f64) {
+impl DivideTrait<f64> for i64 {
    #[inline]
-   fn divide(v1: i64, v2: f64) -> Data {
-      Data::Float(v1 as f64 / v2)
+   fn divide(self, v2: f64) -> Data {
+      Data::Float(self as f64 / v2)
    }
 }
 
-impl DivideTrait<Point, i64> for (Point, i64) {
+impl DivideTrait<i64> for Point {
    #[inline]
-   fn divide(mut v1: Point, v2: i64) -> Data {
-      v1.x /= v2;
-      v1.y /= v2;
+   fn divide(mut self, v2: i64) -> Data {
+      self.x /= v2;
+      self.y /= v2;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl DivideTrait<Point, Point> for (Point, Point) {
+impl DivideTrait<Point> for Point {
    #[inline]
-   fn divide(mut v1: Point, v2: Point) -> Data {
-      v1.x /= v2.x;
-      v1.y /= v2.y;
+   fn divide(mut self, v2: Point) -> Data {
+      self.x /= v2.x;
+      self.y /= v2.y;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl DivideTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
+impl DivideTrait<Point> for Box<PointList> {
    #[inline]
-   fn divide(mut v1: Box<PointList>, v2: Point) -> Data {
-      for point in v1.iter_mut() {
+   fn divide(mut self, v2: Point) -> Data {
+      for point in self.iter_mut() {
          point.x /= v2.x;
          point.y /= v2.y;
       }
 
-      Data::PointList(v1)
+      Data::PointList(self)
    }
 }
 
-impl DivideTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
+impl DivideTrait<Point> for Box<PointListList> {
    #[inline]
-   fn divide(mut v1: Box<PointListList>, v2: Point) -> Data {
-      for src in v1.iter_mut() {
+   fn divide(mut self, v2: Point) -> Data {
+      for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x /= v2.x;
             point.y /= v2.y;
          }
       }
 
-      Data::PointListList(v1)
+      Data::PointListList(self)
    }
 }
 
@@ -361,91 +361,91 @@ impl Operator for Subtract {
 
 pub fn eval_subtract(in1: Data, in2: Data) -> Data {
    match (in1, in2) {
-      (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::subtract(v1, v2),
+      (Data::Int(v1), Data::Int(v2)) => v1.subtract(v2),
 
-      (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::subtract(v1, v2),
-      (Data::Int(v1), Data::Float(v2)) => <(i64, f64)>::subtract(v1, v2),
+      (Data::Float(v1), Data::Int(v2)) => v1.subtract(v2),
+      (Data::Int(v1), Data::Float(v2)) => v1.subtract(v2),
 
-      (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::subtract(v1, v2),
+      (Data::Point(v1), Data::Int(v2)) => v1.subtract(v2),
 
-      (Data::Point(v1), Data::Point(v2)) => <(Point, Point)>::subtract(v1, v2),
+      (Data::Point(v1), Data::Point(v2)) => v1.subtract(v2),
 
-      (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::subtract(v1, v2),
+      (Data::PointList(v1), Data::Point(v2)) => v1.subtract(v2),
 
-      (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::subtract(v1, v2),
+      (Data::PointListList(v1), Data::Point(v2)) => v1.subtract(v2),
 
       _ => NONE
    }
 }
 
-trait SubtractTrait<T1, T2> {
-   fn subtract(v1: T1, v2: T2) -> Data;
+trait SubtractTrait<Rhs> {
+   fn subtract(self, v2: Rhs) -> Data;
 }
 
-impl SubtractTrait<i64, i64> for (i64, i64) {
+impl SubtractTrait<i64> for i64 {
    #[inline]
-   fn subtract(v1: i64, v2: i64) -> Data {
-      Data::Int(v1 - v2)
+   fn subtract(self, v2: i64) -> Data {
+      Data::Int(self - v2)
    }
 }
 
-impl SubtractTrait<f64, i64> for (f64, i64) {
+impl SubtractTrait<i64> for f64 {
    #[inline]
-   fn subtract(v1: f64, v2: i64) -> Data {
-      Data::Float(v1 - v2 as f64)
+   fn subtract(self, v2: i64) -> Data {
+      Data::Float(self - v2 as f64)
    }
 }
 
-impl SubtractTrait<i64, f64> for (i64, f64) {
+impl SubtractTrait<f64> for i64 {
    #[inline]
-   fn subtract(v1: i64, v2: f64) -> Data {
-      Data::Float(v1 as f64 - v2)
+   fn subtract(self, v2: f64) -> Data {
+      Data::Float(self as f64 - v2)
    }
 }
 
-impl SubtractTrait<Point, i64> for (Point, i64) {
+impl SubtractTrait<i64> for Point {
    #[inline]
-   fn subtract(mut v1: Point, v2: i64) -> Data {
-      v1.x -= v2;
-      v1.y -= v2;
+   fn subtract(mut self, v2: i64) -> Data {
+      self.x -= v2;
+      self.y -= v2;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl SubtractTrait<Point, Point> for (Point, Point) {
+impl SubtractTrait<Point> for Point {
    #[inline]
-   fn subtract(mut v1: Point, v2: Point) -> Data {
-      v1.x -= v2.x;
-      v1.y -= v2.y;
+   fn subtract(mut self, v2: Point) -> Data {
+      self.x -= v2.x;
+      self.y -= v2.y;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl SubtractTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
+impl SubtractTrait<Point> for Box<PointList> {
    #[inline]
-   fn subtract(mut v1: Box<PointList>, v2: Point) -> Data {
-      for point in v1.iter_mut() {
+   fn subtract(mut self, v2: Point) -> Data {
+      for point in self.iter_mut() {
          point.x -= v2.x;
          point.y -= v2.y;
       }
 
-      Data::PointList(v1)
+      Data::PointList(self)
    }
 }
 
-impl SubtractTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
+impl SubtractTrait<Point> for Box<PointListList> {
    #[inline]
-   fn subtract(mut v1: Box<PointListList>, v2: Point) -> Data {
-      for src in v1.iter_mut() {
+   fn subtract(mut self, v2: Point) -> Data {
+      for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x -= v2.x;
             point.y -= v2.y;
          }
       }
 
-      Data::PointListList(v1)
+      Data::PointListList(self)
    }
 }
 
@@ -470,87 +470,87 @@ impl Operator for Multiply {
 
 pub fn eval_multiply(in1: Data, in2: Data) -> Data {
    match (in1, in2) {
-      (Data::Int(v1), Data::Int(v2)) => <(i64, i64)>::multiply(v1, v2),
+      (Data::Int(v1), Data::Int(v2)) => v1.multiply(v2),
 
-      (Data::Float(v1), Data::Int(v2)) => <(f64, i64)>::multiply(v1, v2),
-      (Data::Int(v1), Data::Float(v2)) => <(f64, i64)>::multiply(v2, v1),
+      (Data::Float(v1), Data::Int(v2)) => v1.multiply(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.multiply(v1),
 
-      (Data::Point(v1), Data::Int(v2)) => <(Point, i64)>::multiply(v1, v2),
-      (Data::Int(v1), Data::Point(v2)) => <(Point, i64)>::multiply(v2, v1),
+      (Data::Point(v1), Data::Int(v2)) => v1.multiply(v2),
+      (Data::Int(v1), Data::Point(v2)) => v2.multiply(v1),
 
-      (Data::Point(v1), Data::Point(v2)) => <(Point, Point)>::multiply(v1, v2),
+      (Data::Point(v1), Data::Point(v2)) => v1.multiply(v2),
 
-      (Data::PointList(v1), Data::Point(v2)) => <(Box<PointList>, Point)>::multiply(v1, v2),
-      (Data::Point(v1), Data::PointList(v2)) => <(Box<PointList>, Point)>::multiply(v2, v1),
+      (Data::PointList(v1), Data::Point(v2)) => v1.multiply(v2),
+      (Data::Point(v1), Data::PointList(v2)) => v2.multiply(v1),
 
-      (Data::PointListList(v1), Data::Point(v2)) => <(Box<PointListList>, Point)>::multiply(v1, v2),
-      (Data::Point(v1), Data::PointListList(v2)) => <(Box<PointListList>, Point)>::multiply(v2, v1),
+      (Data::PointListList(v1), Data::Point(v2)) => v1.multiply(v2),
+      (Data::Point(v1), Data::PointListList(v2)) => v2.multiply(v1),
 
       _ => NONE
    }
 }
 
-trait MultiplyTrait<T1, T2> {
-   fn multiply(v1: T1, v2: T2) -> Data;
+trait MultiplyTrait<Rhs> {
+   fn multiply(self, v2: Rhs) -> Data;
 }
 
-impl MultiplyTrait<i64, i64> for (i64, i64) {
+impl MultiplyTrait<i64> for i64 {
    #[inline]
-   fn multiply(v1: i64, v2: i64) -> Data {
-      Data::Int(v1 * v2)
+   fn multiply(self, v2: i64) -> Data {
+      Data::Int(self * v2)
    }
 }
 
-impl MultiplyTrait<f64, i64> for (f64, i64) {
+impl MultiplyTrait<i64> for f64 {
    #[inline]
-   fn multiply(v1: f64, v2: i64) -> Data {
-      Data::Float(v1 * v2 as f64)
+   fn multiply(self, v2: i64) -> Data {
+      Data::Float(self * v2 as f64)
    }
 }
 
-impl MultiplyTrait<Point, i64> for (Point, i64) {
+impl MultiplyTrait<i64> for Point {
    #[inline]
-   fn multiply(mut v1: Point, v2: i64) -> Data {
-      v1.x *= v2;
-      v1.y *= v2;
+   fn multiply(mut self, v2: i64) -> Data {
+      self.x *= v2;
+      self.y *= v2;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl MultiplyTrait<Point, Point> for (Point, Point) {
+impl MultiplyTrait<Point> for Point {
    #[inline]
-   fn multiply(mut v1: Point, v2: Point) -> Data {
-      v1.x *= v2.x;
-      v1.y *= v2.y;
+   fn multiply(mut self, v2: Point) -> Data {
+      self.x *= v2.x;
+      self.y *= v2.y;
 
-      Data::Point(v1)
+      Data::Point(self)
    }
 }
 
-impl MultiplyTrait<Box<PointList>, Point> for (Box<PointList>, Point) {
+impl MultiplyTrait<Point> for Box<PointList> {
    #[inline]
-   fn multiply(mut v1: Box<PointList>, v2: Point) -> Data {
-      for point in v1.iter_mut() {
+   fn multiply(mut self, v2: Point) -> Data {
+      for point in self.iter_mut() {
          point.x *= v2.x;
          point.y *= v2.y;
       }
 
-      Data::PointList(v1)
+      Data::PointList(self)
    }
 }
 
-impl MultiplyTrait<Box<PointListList>, Point> for (Box<PointListList>, Point) {
+impl MultiplyTrait<Point> for Box<PointListList> {
    #[inline]
-   fn multiply(mut v1: Box<PointListList>, v2: Point) -> Data {
-      for src in v1.iter_mut() {
+   fn multiply(mut self, v2: Point) -> Data {
+      for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x *= v2.x;
             point.y *= v2.y;
          }
       }
 
-      Data::PointListList(v1)
+      Data::PointListList(self)
    }
 }
 
@@ -587,40 +587,40 @@ impl Operator for Nth {
    }
 }
 
-trait NthTrait<T1> {
-   fn nth(object: T1, index: i64) -> Data;
+trait NthTrait {
+   fn nth(self, index: i64) -> Data;
 }
 
-impl NthTrait<Point> for Point {
+impl NthTrait for Point {
    #[inline]
-   fn nth(object: Point, index: i64) -> Data {
+   fn nth(self, index: i64) -> Data {
       match index {
-         0 => Data::Int(object.x),
-         1 => Data::Int(object.y),
+         0 => Data::Int(self.x),
+         1 => Data::Int(self.y),
          _ => NONE,
       }
    }
 }
 
-impl NthTrait<RGB> for RGB {
+impl NthTrait for RGB {
    #[inline]
-   fn nth(object: RGB, index: i64) -> Data {
+   fn nth(self, index: i64) -> Data {
       match index {
-         0 => Data::Int(object.r as i64),
-         1 => Data::Int(object.g as i64),
-         2 => Data::Int(object.b as i64),
+         0 => Data::Int(self.r as i64),
+         1 => Data::Int(self.g as i64),
+         2 => Data::Int(self.b as i64),
          _ => NONE,
       }
    }
 }
 
 
-impl NthTrait<Box<BBox>> for Box<BBox> {
+impl NthTrait for Box<BBox> {
    #[inline]
-   fn nth(object: Box<BBox>, index: i64) -> Data {
+   fn nth(self, index: i64) -> Data {
       match index {
-         0 => Data::Point(object.p1),
-         1 => Data::Point(object.p2),
+         0 => Data::Point(self.p1),
+         1 => Data::Point(self.p2),
          _ => NONE,
       }
    }
@@ -648,34 +648,34 @@ impl Operator for Rotate {
 pub fn eval_rotate(target: Data, origin: Data, angle: Data) -> Data {
    match (target, origin, angle) {
       (Data::Point(target), Data::Point(origin), Data::Float(angle)) =>
-         <(Point, f64)>::rotate(target, origin, angle),
+         target.rotate(origin, angle),
 
       (Data::Point(target), Data::Point(origin), Data::Int(angle)) =>
-         <(Point, i64)>::rotate(target, origin, angle),
+         target.rotate(origin, angle),
 
       (Data::PointList(target), Data::Point(origin), Data::Float(angle)) =>
-         <(Box<PointList>, f64)>::rotate(target, origin, angle),
+         target.rotate(origin, angle),
 
       (Data::PointList(target), Data::Point(origin), Data::Int(angle)) =>
-         <(Box<PointList>, i64)>::rotate(target, origin, angle),
+         target.rotate(origin, angle),
 
       (Data::PointListList(target), Data::Point(origin), Data::Float(angle)) =>
-         <(Box<PointListList>, f64)>::rotate(target, origin, angle),
+         target.rotate(origin, angle),
 
       (Data::PointListList(target), Data::Point(origin), Data::Int(angle)) =>
-         <(Box<PointListList>, i64)>::rotate(target, origin, angle),
+         target.rotate(origin, angle),
 
       _ => NONE
    }
 }
 
-trait RotateTrait<T1, T2> {
-   fn rotate(target: T1, origin: Point, angle: T2) -> Data;
+trait RotateTrait<T2> {
+   fn rotate(self, origin: Point, angle: T2) -> Data;
 }
 
-impl RotateTrait<Point, f64> for (Point, f64) {
+impl RotateTrait<f64> for Point {
    #[inline]
-   fn rotate(mut target: Point, origin: Point, angle: f64) -> Data {
+   fn rotate(mut self, origin: Point, angle: f64) -> Data {
       let cx = origin.x as f64;
       let cy = origin.y as f64;
 
@@ -684,29 +684,29 @@ impl RotateTrait<Point, f64> for (Point, f64) {
       let s = radians.sin();
       let c = radians.cos();
 
-      let mut x = target.x as f64;
-      let mut y = target.y as f64;
+      let mut x = self.x as f64;
+      let mut y = self.y as f64;
 
       x -= cx;
       y -= cy;
 
-      target.x = (x * c - y * s + cx) as i64;
-      target.y = (x * s + y * c + cy) as i64;
+      self.x = (x * c - y * s + cx) as i64;
+      self.y = (x * s + y * c + cy) as i64;
 
-      Data::Point(target)
+      Data::Point(self)
    }
 }
 
-impl RotateTrait<Point, i64> for (Point, i64) {
+impl RotateTrait<i64> for Point {
    #[inline]
-   fn rotate(target: Point, origin: Point, angle: i64) -> Data {
-      <(Point, f64)>::rotate(target, origin, angle as f64)
+   fn rotate(self, origin: Point, angle: i64) -> Data {
+      self.rotate(origin, angle as f64)
    }
 }
 
-impl RotateTrait<Box<PointList>, f64> for (Box<PointList>, f64) {
+impl RotateTrait<f64> for Box<PointList> {
    #[inline]
-   fn rotate(mut target: Box<PointList>, origin: Point, angle: f64) -> Data {
+   fn rotate(mut self, origin: Point, angle: f64) -> Data {
       let cx = origin.x as f64;
       let cy = origin.y as f64;
 
@@ -715,7 +715,7 @@ impl RotateTrait<Box<PointList>, f64> for (Box<PointList>, f64) {
       let s = radians.sin();
       let c = radians.cos();
 
-      for tuple in target.iter_mut() {
+      for tuple in self.iter_mut() {
          let mut x = tuple.x as f64;
          let mut y = tuple.y as f64;
 
@@ -726,20 +726,20 @@ impl RotateTrait<Box<PointList>, f64> for (Box<PointList>, f64) {
          tuple.y = (x * s + y * c + cy) as i64;
       }
 
-      Data::PointList(target)
+      Data::PointList(self)
    }
 }
 
-impl RotateTrait<Box<PointList>, i64> for (Box<PointList>, i64) {
+impl RotateTrait<i64> for Box<PointList> {
    #[inline]
-   fn rotate(target: Box<PointList>, origin: Point, angle: i64) -> Data {
-      <(Box<PointList>, f64)>::rotate(target, origin, angle as f64)
+   fn rotate(self, origin: Point, angle: i64) -> Data {
+      self.rotate(origin, angle as f64)
    }
 }
 
-impl RotateTrait<Box<PointListList>, f64> for (Box<PointListList>, f64) {
+impl RotateTrait<f64> for Box<PointListList> {
    #[inline]
-   fn rotate(mut target: Box<PointListList>, origin: Point, angle: f64) -> Data {
+   fn rotate(mut self, origin: Point, angle: f64) -> Data {
       let cx = origin.x as f64;
       let cy = origin.y as f64;
 
@@ -748,7 +748,7 @@ impl RotateTrait<Box<PointListList>, f64> for (Box<PointListList>, f64) {
       let s = radians.sin();
       let c = radians.cos();
 
-      for outer in target.iter_mut() {
+      for outer in self.iter_mut() {
          for tuple in outer.iter_mut() {
             let mut x = tuple.x as f64;
             let mut y = tuple.y as f64;
@@ -761,14 +761,14 @@ impl RotateTrait<Box<PointListList>, f64> for (Box<PointListList>, f64) {
          }
       }
 
-      Data::PointListList(target)
+      Data::PointListList(self)
    }
 }
 
-impl RotateTrait<Box<PointListList>, i64> for (Box<PointListList>, i64) {
+impl RotateTrait<i64> for Box<PointListList> {
    #[inline]
-   fn rotate(target: Box<PointListList>, origin: Point, angle: i64) -> Data {
-      <(Box<PointListList>, f64)>::rotate(target, origin, angle as f64)
+   fn rotate(self, origin: Point, angle: i64) -> Data {
+      self.rotate(origin, angle as f64)
    }
 }
 
@@ -792,35 +792,35 @@ impl Operator for BuildBBox {
 
 pub fn eval_bbox(object: Data) -> Data {
    match object {
-      Data::Point(object) => <Point>::bbox(object),
+      Data::Point(object) => object.bbox(),
 
-      Data::PointList(object) => <Box<PointList>>::bbox(object),
+      Data::PointList(object) => object.bbox(),
 
-      Data::PointListList(object) => <Box<PointListList>>::bbox(object),
+      Data::PointListList(object) => object.bbox(),
 
       _ => NONE
    }
 }
 
-trait BBoxTrait<T1> {
-   fn bbox(object: T1) -> Data;
+trait BBoxTrait {
+   fn bbox(self) -> Data;
 }
 
-impl BBoxTrait<Point> for Point {
+impl BBoxTrait for Point {
    #[inline]
-   fn bbox(object: Point) -> Data {
+   fn bbox(self) -> Data {
       Data::BBox(
          Box::new(
-            BBox::new(object, object)
+            BBox::new(self, self)
          )
       )
    }
 }
 
-impl BBoxTrait<Box<PointList>> for Box<PointList> {
+impl BBoxTrait for Box<PointList> {
    #[inline]
-   fn bbox(object: Box<PointList>) -> Data {
-      if object.len() == 0 {
+   fn bbox(self) -> Data {
+      if self.len() == 0 {
          return NONE;
       }
 
@@ -830,7 +830,7 @@ impl BBoxTrait<Box<PointList>> for Box<PointList> {
       let mut left = i64::MAX;
       let mut right = i64::MIN;
 
-      for tuple in object.iter() {
+      for tuple in self.iter() {
          if tuple.x < left {
             left = tuple.x;
          }
@@ -858,16 +858,16 @@ impl BBoxTrait<Box<PointList>> for Box<PointList> {
    }
 }
 
-impl BBoxTrait<Box<PointListList>> for Box<PointListList> {
+impl BBoxTrait for Box<PointListList> {
    #[inline]
-   fn bbox(object: Box<PointListList>) -> Data {
+   fn bbox(self) -> Data {
       let mut top = i64::MAX;
       let mut bottom = i64::MIN;
 
       let mut left = i64::MAX;
       let mut right = i64::MIN;
 
-      for outer in object.iter() {
+      for outer in self.iter() {
          for tuple in outer.iter() {
             if tuple.x < left {
                left = tuple.x;
@@ -921,57 +921,57 @@ impl Operator for Center {
 
 pub fn eval_center(object: Data) -> Data {
    match object {
-      Data::Point(object) => <Point>::center(object),
+      Data::Point(object) => object.center(),
 
-      Data::BBox(object) => <BBox>::center(*object),
+      Data::BBox(object) => object.center(),
 
-      Data::PointList(object) => <Box<PointList>>::center(object),
+      Data::PointList(object) => object.center(),
 
-      Data::PointListList(object) => <Box<PointListList>>::center(object),
+      Data::PointListList(object) => object.center(),
 
       _ => NONE
    }
 }
 
-trait CenterTrait<T1> {
-   fn center(object: T1) -> Data;
+trait CenterTrait {
+   fn center(self) -> Data;
 }
 
-impl CenterTrait<Point> for Point {
+impl CenterTrait for Point {
    #[inline]
-   fn center(object: Point) -> Data {
-      Data::Point(object)
+   fn center(self) -> Data {
+      Data::Point(self)
    }
 }
 
-impl CenterTrait<BBox> for BBox {
+impl CenterTrait for BBox {
    #[inline]
-   fn center(object: BBox) -> Data {
-      let x = (object.p1.x + object.p2.x) / 2;
-      let y = (object.p1.y + object.p1.y) / 2;
+   fn center(self) -> Data {
+      let x = (self.p1.x + self.p2.x) / 2;
+      let y = (self.p1.y + self.p1.y) / 2;
       Data::Point(Point::new(x, y))
    }
 }
 
-impl CenterTrait<Box<PointList>> for Box<PointList> {
+impl CenterTrait for Box<PointList> {
    #[inline]
-   fn center(object: Box<PointList>) -> Data {
-      let bbox = <Box<PointList>>::bbox(object);
+   fn center(self) -> Data {
+      let bbox = self.bbox();
 
       match bbox {
-         Data::BBox(bbox) => <BBox>::center(*bbox),
+         Data::BBox(bbox) => bbox.center(),
          _ => NONE,
       }
    }
 }
 
-impl CenterTrait<Box<PointListList>> for Box<PointListList> {
+impl CenterTrait for Box<PointListList> {
    #[inline]
-   fn center(object: Box<PointListList>) -> Data {
-      let bbox = <Box<PointListList>>::bbox(object);
+   fn center(self) -> Data {
+      let bbox = self.bbox();
 
       match bbox {
-         Data::BBox(bbox) => <BBox>::center(*bbox),
+         Data::BBox(bbox) => bbox.center(),
          _ => NONE,
       }
    }
@@ -1194,7 +1194,7 @@ impl Operator for BuildPoly {
       let color = node.input(state, 1);
 
       let result = match (points, color) {
-         (Data::PointList(v1), Data::Rgb(v2)) => <(Box<PointList>, RGB)>::build_poly(v1, v2),
+         (Data::PointList(v1), Data::Rgb(v2)) => v1.build_poly(v2),
          _ => NONE
       };
 
@@ -1202,16 +1202,16 @@ impl Operator for BuildPoly {
    }
 }
 
-trait BuildPolyTrait<T1, T2> {
-   fn build_poly(v1: T1, v2: T2) -> Data;
+trait BuildPolyTrait {
+   fn build_poly(self, color: RGB) -> Data;
 }
 
-impl BuildPolyTrait<Box<PointList>, RGB> for (Box<PointList>, RGB) {
+impl BuildPolyTrait for Box<PointList> {
    #[inline]
-   fn build_poly(array: Box<PointList>, color: RGB) -> Data {
+   fn build_poly(self, color: RGB) -> Data {
       let color = RGB::new(color.r, color.g, color.b);
 
-      let poly = Poly::new(*array, color);
+      let poly = Poly::new(*self, color);
 
       Data::Poly(Box::new(poly))
    }
