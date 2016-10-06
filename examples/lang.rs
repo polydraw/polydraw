@@ -1,20 +1,35 @@
 extern crate polydraw;
 
+use std::env;
+use std::io::prelude::*;
+use std::fs::File;
+
 use polydraw::node::{Data, NodeBuilder};
 use polydraw::lang::{parse, compile, tokenize};
 
 
-pub const SOURCE: &'static str = "
-
-double = frame * 2
-
-result = <80 60> + double
-
-";
-
-
 fn main() {
-   match tokenize(SOURCE) {
+   let filename = match env::args().nth(1) {
+      Some(filename) => filename,
+      None => {
+         println!("No source file specified");
+         return;
+      }
+   };
+
+   let mut f = match File::open(&filename) {
+      Ok(f) => f,
+      Err(_) => {
+         println!("Cannot open {}", &filename);
+         return;
+      }
+   };
+
+   let mut source = String::new();
+
+   f.read_to_string(&mut source).unwrap();
+
+   match tokenize(&source) {
       Ok(tokens) => {
          match parse(tokens) {
             Ok(ast_list) => {
@@ -26,11 +41,11 @@ fn main() {
 
                let mut program = builder.compile();
 
-               program.input(frame_index, Data::Int(100));
+               program.input(frame_index, Data::Bool(false));
 
                let result = program.execute();
 
-               println!("{:?}", result);
+               println!(">> {:?}", result);
             },
             Err(err) => println!("{}", err),
          }
