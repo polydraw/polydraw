@@ -287,6 +287,7 @@ fn build_anon_list(builder: &mut NodeBuilder, list: ListBox) -> Inlet {
       ListType::Bool => Inlet::Data(create_bool_list(inlets)),
       ListType::Point => Inlet::Data(create_point_list(inlets)),
       ListType::PointList => Inlet::Data(create_point_list_list(inlets)),
+      ListType::Rgb => Inlet::Data(create_rgb_list(inlets)),
       ListType::Source => builder.anonymous::<BuildList>(inlets),
       _ => Inlet::None
    }
