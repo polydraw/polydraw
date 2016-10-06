@@ -20,24 +20,24 @@ impl Layer {
 }
 
 #[derive(Clone)]
-pub struct BBox {
+pub struct Rect {
    pub p1: Point,
    pub p2: Point,
 }
 
-impl BBox {
+impl Rect {
    #[inline]
    pub fn new(p1: Point, p2: Point) -> Self {
-      BBox {
+      Rect {
          p1: p1,
          p2: p2,
       }
    }
 }
 
-impl fmt::Debug for BBox {
+impl fmt::Debug for Rect {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      write!(f, "(bbox! {:?} {:?})", self.p1, self.p2)
+      write!(f, "(rect! {:?} {:?})", self.p1, self.p2)
    }
 }
 
@@ -56,7 +56,7 @@ pub enum Data {
    Bool(bool),
    Point(Point),
    Rgb(RGB),
-   BBox(Box<BBox>),
+   Rect(Box<Rect>),
    Poly(Box<Poly>),
    Layer(Box<Layer>),
    IntList(Box<Vec<i64>>),
@@ -102,7 +102,7 @@ impl fmt::Debug for Data {
          &Data::Bool(ref value) => write_value!(f, value),
          &Data::Point(ref value) => write_value!(f, value),
          &Data::Rgb(ref value) => write_value!(f, value),
-         &Data::BBox(ref value) => write_value!(f, value),
+         &Data::Rect(ref value) => write_value!(f, value),
          &Data::Poly(ref value) => write!(f, "(poly! {:?})", value),
          &Data::Layer(ref value) => write!(f, "(layer! {:?})", value),
          &Data::IntList(ref list) => write_list!(f, list),

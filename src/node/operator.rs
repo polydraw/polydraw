@@ -4,7 +4,7 @@ use std::i64;
 use draw::RGB;
 
 use super::node::{Node, NodeRole};
-use super::data::{Data, NONE, Layer, Point, PointList, Poly, PointListList, BBox};
+use super::data::{Data, NONE, Layer, Point, PointList, Poly, PointListList, Rect};
 
 
 pub trait Operator where Self: fmt::Debug {
@@ -574,7 +574,7 @@ impl Operator for Nth {
 
          (Data::Point(object), Data::Int(index)) => <Point>::nth(object, index),
 
-         (Data::BBox(object), Data::Int(index)) => <Box<BBox>>::nth(object, index),
+         (Data::Rect(object), Data::Int(index)) => <Box<Rect>>::nth(object, index),
 
 //         (Data::PointList(object), Data::Int(index)) => <PointList>::nth(object, index),
 
@@ -615,7 +615,7 @@ impl NthTrait for RGB {
 }
 
 
-impl NthTrait for Box<BBox> {
+impl NthTrait for Box<Rect> {
    #[inline]
    fn nth(self, index: i64) -> Data {
       match index {
@@ -774,12 +774,12 @@ impl RotateTrait<i64> for Box<PointListList> {
 
 
 #[derive(Debug)]
-pub struct BuildBBox { }
+pub struct BBox { }
 
-impl Operator for BuildBBox {
+impl Operator for BBox {
    #[inline]
    fn new() -> Self {
-      BuildBBox { }
+      BBox { }
    }
 
    #[inline]
@@ -809,9 +809,9 @@ trait BBoxTrait {
 impl BBoxTrait for Point {
    #[inline]
    fn bbox(self) -> Data {
-      Data::BBox(
+      Data::Rect(
          Box::new(
-            BBox::new(self, self)
+            Rect::new(self, self)
          )
       )
    }
@@ -848,9 +848,9 @@ impl BBoxTrait for Box<PointList> {
          }
       }
 
-      Data::BBox(
+      Data::Rect(
          Box::new(
-            BBox::new(
+            Rect::new(
                Point::new(left, top), Point::new(right, bottom)
             )
          )
@@ -891,9 +891,9 @@ impl BBoxTrait for Box<PointListList> {
          return NONE;
       }
 
-      Data::BBox(
+      Data::Rect(
          Box::new(
-            BBox::new(
+            Rect::new(
                Point::new(left, top), Point::new(right, bottom)
             )
          )
@@ -922,7 +922,7 @@ impl Operator for Center {
 pub fn eval_center(object: Data) -> Data {
    match object {
       Data::Point(object) => object.center(),
-      Data::BBox(object) => object.center(),
+      Data::Rect(object) => object.center(),
       Data::PointList(object) => object.center(),
       Data::PointListList(object) => object.center(),
       _ => NONE
@@ -940,7 +940,7 @@ impl CenterTrait for Point {
    }
 }
 
-impl CenterTrait for BBox {
+impl CenterTrait for Rect {
    #[inline]
    fn center(self) -> Data {
       let x = (self.p1.x + self.p2.x) / 2;
@@ -955,7 +955,7 @@ impl CenterTrait for Box<PointList> {
       let bbox = self.bbox();
 
       match bbox {
-         Data::BBox(bbox) => bbox.center(),
+         Data::Rect(bbox) => bbox.center(),
          _ => NONE,
       }
    }
@@ -967,7 +967,7 @@ impl CenterTrait for Box<PointListList> {
       let bbox = self.bbox();
 
       match bbox {
-         Data::BBox(bbox) => bbox.center(),
+         Data::Rect(bbox) => bbox.center(),
          _ => NONE,
       }
    }

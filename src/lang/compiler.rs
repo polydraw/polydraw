@@ -1,6 +1,6 @@
 use node::{
    Data, Add, BuildPoint, BuildList, NodeBuilder, Inlet, Center, Rotate,
-   Multiply, Divide, SourceOperator, Subtract, BuildRgb, BuildBBox,
+   Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
@@ -162,7 +162,7 @@ fn build_function(builder: &mut NodeBuilder, node_id: String, function: Function
       "subtract" => builder.operator::<Subtract>(node_id, inlets),
       "rotate" => builder.operator::<Rotate>(node_id, inlets),
       "center" => builder.operator::<Center>(node_id, inlets),
-      "bbox" => builder.operator::<BuildBBox>(node_id, inlets),
+      "bbox" => builder.operator::<BBox>(node_id, inlets),
       "rgb" => builder.operator::<BuildRgb>(node_id, inlets),
       _ => panic!("Unrecognized function {}", name),
    }
@@ -184,7 +184,7 @@ fn build_anon_function(builder: &mut NodeBuilder, function: FunctionBox) -> Inle
       "subtract" => builder.anonymous::<Subtract>(inlets),
       "rotate" => builder.anonymous::<Rotate>(inlets),
       "center" => builder.anonymous::<Center>(inlets),
-      "bbox" => builder.anonymous::<BuildBBox>(inlets),
+      "bbox" => builder.anonymous::<BBox>(inlets),
       "rgb" => builder.anonymous::<BuildRgb>(inlets),
       _ => panic!("Unrecognized function {}", name),
    }

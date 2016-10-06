@@ -8,7 +8,7 @@ pub use self::builder::{NodeBuilder, Inlet};
 
 pub use self::operator::{
    Operator, Add, BuildPoint, BuildList, BuildPoly, BuildLayer, BuildArtboard,
-   BuildBBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
+   BBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
    SourceOperator, Subtract, InputOperator,
 };
 
