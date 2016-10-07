@@ -1,10 +1,12 @@
 use node::{
    Data, Add, BuildPoint, BuildList, NodeBuilder, Inlet, Center, Rotate,
-   Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox,
+   Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
+   Less, LessEqual, Greater, GreaterEqual,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
-   eval_center, eval_rgb,
+   eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
+   eval_greater, eval_greater_equal,
 };
 use geom::point::Point;
 
@@ -103,6 +105,12 @@ fn build_binary(builder: &mut NodeBuilder, node_id: String, binary: BinaryBox) {
             BinaryType::Add => builder.operator::<Add>(node_id, inlets),
             BinaryType::Divide => builder.operator::<Divide>(node_id, inlets),
             BinaryType::Multiply => builder.operator::<Multiply>(node_id, inlets),
+            BinaryType::Equal => builder.operator::<Equal>(node_id, inlets),
+            BinaryType::Unequal => builder.operator::<Unequal>(node_id, inlets),
+            BinaryType::Less => builder.operator::<Less>(node_id, inlets),
+            BinaryType::LessEqual => builder.operator::<LessEqual>(node_id, inlets),
+            BinaryType::Greater => builder.operator::<Greater>(node_id, inlets),
+            BinaryType::GreaterEqual => builder.operator::<GreaterEqual>(node_id, inlets),
          }
       },
    }
@@ -125,6 +133,12 @@ fn build_anon_binary(builder: &mut NodeBuilder, binary: BinaryBox) -> Inlet {
             BinaryType::Add => builder.anonymous::<Add>(inlets),
             BinaryType::Divide => builder.anonymous::<Divide>(inlets),
             BinaryType::Multiply => builder.anonymous::<Multiply>(inlets),
+            BinaryType::Equal => builder.anonymous::<Equal>(inlets),
+            BinaryType::Unequal => builder.anonymous::<Equal>(inlets),
+            BinaryType::Less => builder.anonymous::<Less>(inlets),
+            BinaryType::LessEqual => builder.anonymous::<LessEqual>(inlets),
+            BinaryType::Greater => builder.anonymous::<Greater>(inlets),
+            BinaryType::GreaterEqual => builder.anonymous::<GreaterEqual>(inlets),
          }
       },
    }
@@ -136,6 +150,12 @@ fn exec_binary(binary_type: BinaryType, left: Data, right: Data) -> Data {
       BinaryType::Add => eval_add(left, right),
       BinaryType::Divide => eval_divide(left, right),
       BinaryType::Multiply => eval_multiply(left, right),
+      BinaryType::Equal => eval_equal(left, right),
+      BinaryType::Unequal => eval_unequal(left, right),
+      BinaryType::Less => eval_less(left, right),
+      BinaryType::LessEqual => eval_less_equal(left, right),
+      BinaryType::Greater => eval_greater(left, right),
+      BinaryType::GreaterEqual => eval_greater_equal(left, right),
    }
 }
 

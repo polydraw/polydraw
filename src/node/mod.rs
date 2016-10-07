@@ -9,12 +9,14 @@ pub use self::builder::{NodeBuilder, Inlet};
 pub use self::operator::{
    Operator, Add, BuildPoint, BuildList, BuildPoly, BuildLayer, BuildArtboard,
    BBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
-   SourceOperator, Subtract, InputOperator,
+   SourceOperator, Subtract, InputOperator, Equal, Unequal, Less, LessEqual,
+   Greater, GreaterEqual,
 };
 
 pub use self::operator::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
-   eval_center, eval_rgb,
+   eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
+   eval_greater, eval_greater_equal,
 };
 
 pub use self::data::Data;

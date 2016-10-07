@@ -87,6 +87,12 @@ pub enum BinaryType {
    Add,
    Divide,
    Multiply,
+   Equal,
+   Unequal,
+   Less,
+   LessEqual,
+   Greater,
+   GreaterEqual,
 }
 
 impl fmt::Debug for BinaryType {
@@ -96,6 +102,12 @@ impl fmt::Debug for BinaryType {
          &BinaryType::Add => write!(f, "+"),
          &BinaryType::Divide => write!(f, "/"),
          &BinaryType::Multiply => write!(f, "*"),
+         &BinaryType::Equal => write!(f, "=="),
+         &BinaryType::Unequal => write!(f, "!="),
+         &BinaryType::Less => write!(f, "<"),
+         &BinaryType::LessEqual => write!(f, "<="),
+         &BinaryType::Greater => write!(f, ">"),
+         &BinaryType::GreaterEqual => write!(f, ">="),
       }
    }
 }
@@ -239,6 +251,12 @@ fn match_binary(tokens: &[Token]) -> Option<Ast> {
       (Token::Add, BinaryType::Add),
       (Token::Divide, BinaryType::Divide),
       (Token::Multiply, BinaryType::Multiply),
+      (Token::Equal, BinaryType::Equal),
+      (Token::Unequal, BinaryType::Unequal),
+      (Token::AngleBracketLeft, BinaryType::Less),
+      (Token::LessEqual, BinaryType::LessEqual),
+      (Token::AngleBracketRight, BinaryType::GreaterEqual),
+      (Token::GreaterEqual, BinaryType::GreaterEqual),
    ];
 
    for binary_type in &binary_types {

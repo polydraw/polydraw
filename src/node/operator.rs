@@ -556,6 +556,294 @@ impl MultiplyTrait<Point> for Box<PointListList> {
 
 
 #[derive(Debug)]
+pub struct Equal { }
+
+impl Operator for Equal {
+   #[inline]
+   fn new() -> Self {
+      Equal { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_equal(in1, in2))
+   }
+}
+
+pub fn eval_equal(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => v1.equal(v2),
+
+      (Data::Float(v1), Data::Int(v2)) => v1.equal(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.equal(v1),
+
+      _ => NONE
+   }
+}
+
+pub trait EqualTrait<Rhs> {
+   fn equal(self, other: Rhs) -> Data;
+}
+
+impl EqualTrait<i64> for i64 {
+   #[inline]
+   fn equal(self, other: i64) -> Data {
+      Data::Bool(self == other)
+   }
+}
+
+impl EqualTrait<i64> for f64 {
+   #[inline]
+   fn equal(self, other: i64) -> Data {
+      Data::Bool(self == other as f64)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct Unequal { }
+
+impl Operator for Unequal {
+   #[inline]
+   fn new() -> Self {
+      Unequal { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_unequal(in1, in2))
+   }
+}
+
+pub fn eval_unequal(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => v1.unequal(v2),
+
+      (Data::Float(v1), Data::Int(v2)) => v1.unequal(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.unequal(v1),
+
+      _ => NONE
+   }
+}
+
+pub trait UnequalTrait<Rhs> {
+   fn unequal(self, other: Rhs) -> Data;
+}
+
+impl UnequalTrait<i64> for i64 {
+   #[inline]
+   fn unequal(self, other: i64) -> Data {
+      Data::Bool(self != other)
+   }
+}
+
+impl UnequalTrait<i64> for f64 {
+   #[inline]
+   fn unequal(self, other: i64) -> Data {
+      Data::Bool(self != other as f64)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct Less { }
+
+impl Operator for Less {
+   #[inline]
+   fn new() -> Self {
+      Less { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_less(in1, in2))
+   }
+}
+
+pub fn eval_less(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => v1.less(v2),
+
+      (Data::Float(v1), Data::Int(v2)) => v1.less(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.less(v1),
+
+      _ => NONE
+   }
+}
+
+pub trait LessTrait<Rhs> {
+   fn less(self, other: Rhs) -> Data;
+}
+
+impl LessTrait<i64> for i64 {
+   #[inline]
+   fn less(self, other: i64) -> Data {
+      Data::Bool(self < other)
+   }
+}
+
+impl LessTrait<i64> for f64 {
+   #[inline]
+   fn less(self, other: i64) -> Data {
+      Data::Bool(self < other as f64)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct LessEqual { }
+
+impl Operator for LessEqual {
+   #[inline]
+   fn new() -> Self {
+      LessEqual { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_less_equal(in1, in2))
+   }
+}
+
+pub fn eval_less_equal(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => v1.less_equal(v2),
+
+      (Data::Float(v1), Data::Int(v2)) => v1.less_equal(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.less_equal(v1),
+
+      _ => NONE
+   }
+}
+
+pub trait LessEqualTrait<Rhs> {
+   fn less_equal(self, other: Rhs) -> Data;
+}
+
+impl LessEqualTrait<i64> for i64 {
+   #[inline]
+   fn less_equal(self, other: i64) -> Data {
+      Data::Bool(self <= other)
+   }
+}
+
+impl LessEqualTrait<i64> for f64 {
+   #[inline]
+   fn less_equal(self, other: i64) -> Data {
+      Data::Bool(self <= other as f64)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct Greater { }
+
+impl Operator for Greater {
+   #[inline]
+   fn new() -> Self {
+      Greater { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_greater(in1, in2))
+   }
+}
+
+pub fn eval_greater(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => v1.greater(v2),
+
+      (Data::Float(v1), Data::Int(v2)) => v1.greater(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.greater(v1),
+
+      _ => NONE
+   }
+}
+
+pub trait GreaterTrait<Rhs> {
+   fn greater(self, other: Rhs) -> Data;
+}
+
+impl GreaterTrait<i64> for i64 {
+   #[inline]
+   fn greater(self, other: i64) -> Data {
+      Data::Bool(self > other)
+   }
+}
+
+impl GreaterTrait<i64> for f64 {
+   #[inline]
+   fn greater(self, other: i64) -> Data {
+      Data::Bool(self > other as f64)
+   }
+}
+
+
+#[derive(Debug)]
+pub struct GreaterEqual { }
+
+impl Operator for GreaterEqual {
+   #[inline]
+   fn new() -> Self {
+      GreaterEqual { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_greater_equal(in1, in2))
+   }
+}
+
+pub fn eval_greater_equal(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => v1.greater_equal(v2),
+
+      (Data::Float(v1), Data::Int(v2)) => v1.greater_equal(v2),
+      (Data::Int(v1), Data::Float(v2)) => v2.greater_equal(v1),
+
+      _ => NONE
+   }
+}
+
+pub trait GreaterEqualTrait<Rhs> {
+   fn greater_equal(self, other: Rhs) -> Data;
+}
+
+impl GreaterEqualTrait<i64> for i64 {
+   #[inline]
+   fn greater_equal(self, other: i64) -> Data {
+      Data::Bool(self >= other)
+   }
+}
+
+impl GreaterEqualTrait<i64> for f64 {
+   #[inline]
+   fn greater_equal(self, other: i64) -> Data {
+      Data::Bool(self >= other as f64)
+   }
+}
+
+
+#[derive(Debug)]
 pub struct Nth { }
 
 impl Operator for Nth {

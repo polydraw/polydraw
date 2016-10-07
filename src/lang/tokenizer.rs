@@ -17,6 +17,10 @@ pub enum Token {
    BracketRight,
    AngleBracketLeft,
    AngleBracketRight,
+   Equal,
+   Unequal,
+   LessEqual,
+   GreaterEqual,
 }
 
 
@@ -110,7 +114,7 @@ fn single_token(source: &str) -> TokenResult {
       Some(result)
    } else if let Some(result) = extract_number(source) {
       Some(result)
-   } else if let Some(result) = extract_char_token(source) {
+   } else if let Some(result) = extract_symbol_token(source) {
       Some(result)
    } else {
       None
@@ -149,25 +153,49 @@ fn extract_name(source: &str) -> TokenResult {
 }
 
 
-fn extract_char_token(source: &str) -> TokenResult {
+fn extract_symbol_token(source: &str) -> TokenResult {
    let mut chars = source.chars();
 
    match chars.next() {
       Some(ch) => {
          let token = match ch {
             '\n' => Token::NewLine,
-            '=' => Token::Assign,
+            '=' => match chars.next() {
+               Some(ch) => match ch {
+                  '=' => return Some((Token::Equal, 2)),
+                  _ => Token::Assign,
+               },
+               None => Token::Assign,
+            },
             '+' => Token::Add,
             '-' => Token::Subtract,
             '*' => Token::Multiply,
             '/' => Token::Divide,
-            '!' => Token::Not,
+            '!' => match chars.next() {
+               Some(ch) => match ch {
+                  '=' => return Some((Token::Unequal, 2)),
+                  _ => Token::Not,
+               },
+               None => Token::Not,
+            },
             '(' => Token::ParenLeft,
             ')' => Token::ParenRight,
             '[' => Token::BracketLeft,
             ']' => Token::BracketRight,
-            '<' => Token::AngleBracketLeft,
-            '>' => Token::AngleBracketRight,
+            '<' => match chars.next() {
+               Some(ch) => match ch {
+                  '=' => return Some((Token::LessEqual, 2)),
+                  _ => Token::AngleBracketLeft,
+               },
+               None => Token::AngleBracketLeft,
+            },
+            '>' => match chars.next() {
+               Some(ch) => match ch {
+                  '=' => return Some((Token::GreaterEqual, 2)),
+                  _ => Token::AngleBracketRight,
+               },
+               None => Token::AngleBracketRight,
+            },
             _ => return None,
          };
 
