@@ -1570,3 +1570,34 @@ impl Operator for BuildArtboard {
    }
 }
 
+
+#[derive(Debug)]
+pub struct Gate { }
+
+impl Operator for Gate {
+   #[inline]
+   fn new() -> Self {
+      Gate { }
+   }
+
+   #[inline]
+   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_gate(in1, in2))
+   }
+}
+
+pub fn eval_gate(in1: Data, in2: Data) -> Data {
+   match in2 {
+      Data::Bool(in2) => {
+         if in2 {
+            in1
+         } else {
+            NONE
+         }
+      },
+      _ => NONE
+   }
+}

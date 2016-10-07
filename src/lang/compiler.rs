@@ -1,12 +1,12 @@
 use node::{
    Data, Add, BuildPoint, BuildList, NodeBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
-   Less, LessEqual, Greater, GreaterEqual,
+   Less, LessEqual, Greater, GreaterEqual, Gate,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
    eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
-   eval_greater, eval_greater_equal,
+   eval_greater, eval_greater_equal, eval_gate,
 };
 use geom::point::Point;
 
@@ -184,6 +184,7 @@ fn build_function(builder: &mut NodeBuilder, node_id: String, function: Function
       "center" => builder.operator::<Center>(node_id, inlets),
       "bbox" => builder.operator::<BBox>(node_id, inlets),
       "rgb" => builder.operator::<BuildRgb>(node_id, inlets),
+      "gate" => builder.operator::<Gate>(node_id, inlets),
       _ => panic!("Unrecognized function {}", name),
    }
 }
@@ -206,6 +207,7 @@ fn build_anon_function(builder: &mut NodeBuilder, function: FunctionBox) -> Inle
       "center" => builder.anonymous::<Center>(inlets),
       "bbox" => builder.anonymous::<BBox>(inlets),
       "rgb" => builder.anonymous::<BuildRgb>(inlets),
+      "gate" => builder.anonymous::<Gate>(inlets),
       _ => panic!("Unrecognized function {}", name),
    }
 }
@@ -238,6 +240,7 @@ fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
       "center" => exec_1_arg_fn(eval_center, inlets),
       "bbox" => exec_1_arg_fn(eval_bbox, inlets),
       "rgb" => exec_3_arg_fn(eval_rgb, inlets),
+      "gate" => exec_2_arg_fn(eval_gate, inlets),
       _ => panic!("Unrecognized function {}", name),
    }
 }
