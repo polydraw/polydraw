@@ -140,6 +140,7 @@ pub enum Ast {
    Name(String),
    Int(i64),
    Float(f64),
+   Bool(bool),
    Assignment(AssignmentBox),
    List(ListBox),
    Point(PointBox),
@@ -153,6 +154,7 @@ impl fmt::Debug for Ast {
          &Ast::Name(ref value) => write!(f, "{}", value),
          &Ast::Int(ref value) => write!(f, "{}", value),
          &Ast::Float(ref value) => write!(f, "{}", value),
+         &Ast::Bool(ref value) => write!(f, "{}", value),
          &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
          &Ast::List(ref value) => write!(f, "{:?}", value.contents),
          &Ast::Function(ref value) => write!(f, "{}!{:?}", value.name, value.arguments),
@@ -309,6 +311,8 @@ fn match_single(tokens: &[Token]) -> Option<Ast> {
       &Token::Name(ref value) => Some(Ast::Name(value.clone())),
       &Token::Int(ref value) => Some(Ast::Int(*value)),
       &Token::Float(ref value) => Some(Ast::Float(*value)),
+      &Token::True => Some(Ast::Bool(true)),
+      &Token::False => Some(Ast::Bool(false)),
       _ => None
    }
 }
