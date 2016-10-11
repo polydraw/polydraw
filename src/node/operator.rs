@@ -946,6 +946,54 @@ impl NthTrait for Box<Rect> {
 }
 
 #[derive(Debug)]
+pub struct Polar { }
+
+impl Polar {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Polar {})
+   }
+}
+
+impl Operator for Polar {
+   #[inline]
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let radius = node.input(state, 0);
+      let angle = node.input(state, 1);
+
+      Some(eval_polar(radius, angle))
+   }
+}
+
+pub fn eval_polar(radius: Data, angle: Data) -> Data {
+   match (radius, angle) {
+      (Data::Float(radius), Data::Float(angle)) => <(f64, f64)>::polar(radius, angle),
+      (Data::Int(radius), Data::Float(angle)) => <(f64, f64)>::polar(radius as f64, angle),
+      (Data::Float(radius), Data::Int(angle)) => <(f64, f64)>::polar(radius, angle as f64),
+      (Data::Int(radius), Data::Int(angle)) => <(f64, f64)>::polar(radius as f64, angle as f64),
+      _ => NONE
+   }
+}
+
+
+trait PolarTrait<T1, T2> {
+   fn polar(radius: T1, angle: T2) -> Data;
+}
+
+impl PolarTrait<f64, f64> for (f64, f64) {
+   #[inline]
+   fn polar(radius: f64, angle: f64) -> Data {
+      let radians = angle.to_radians();
+
+      let x = radius * radians.cos();
+      let y = radius * radians.sin();
+
+      Data::Point(Point::new(x as i64, y as i64))
+   }
+}
+
+
+#[derive(Debug)]
 pub struct Rotate { }
 
 impl Rotate {

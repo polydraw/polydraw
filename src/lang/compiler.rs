@@ -1,12 +1,12 @@
 use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
-   Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator,
+   Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
    eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
-   eval_greater, eval_greater_equal, eval_gate,
+   eval_greater, eval_greater_equal, eval_gate, eval_polar,
 };
 use geom::point::Point;
 
@@ -16,11 +16,12 @@ use super::parser::{
 };
 
 
-const INTERNAL_FUNCS: [&'static str; 9] = [
+const INTERNAL_FUNCS: [&'static str; 10] = [
    "add",
    "divide",
    "multiply",
    "subtract",
+   "polar",
    "rotate",
    "center",
    "bbox",
@@ -206,6 +207,7 @@ fn build_function_call(
       "divide" => builder.operator(Divide::new(), node_id, inlets),
       "multiply" => builder.operator(Multiply::new(), node_id, inlets),
       "subtract" => builder.operator(Subtract::new(), node_id, inlets),
+      "polar" => builder.operator(Polar::new(), node_id, inlets),
       "rotate" => builder.operator(Rotate::new(), node_id, inlets),
       "center" => builder.operator(Center::new(), node_id, inlets),
       "bbox" => builder.operator(BBox::new(), node_id, inlets),
@@ -229,6 +231,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "divide" => builder.anonymous(Divide::new(), inlets),
       "multiply" => builder.anonymous(Multiply::new(), inlets),
       "subtract" => builder.anonymous(Subtract::new(), inlets),
+      "polar" => builder.anonymous(Polar::new(), inlets),
       "rotate" => builder.anonymous(Rotate::new(), inlets),
       "center" => builder.anonymous(Center::new(), inlets),
       "bbox" => builder.anonymous(BBox::new(), inlets),
@@ -262,6 +265,7 @@ fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
       "divide" => exec_2_arg_fn(eval_divide, inlets),
       "multiply" => exec_2_arg_fn(eval_multiply, inlets),
       "subtract" => exec_2_arg_fn(eval_subtract, inlets),
+      "polar" => exec_2_arg_fn(eval_polar, inlets),
       "rotate" => exec_3_arg_fn(eval_rotate, inlets),
       "center" => exec_1_arg_fn(eval_center, inlets),
       "bbox" => exec_1_arg_fn(eval_bbox, inlets),
