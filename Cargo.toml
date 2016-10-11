@@ -10,4 +10,4 @@ gles2 = []
 gl = []
 
 [dev-dependencies]
-toml = "0.2"
+rand = "0.3"

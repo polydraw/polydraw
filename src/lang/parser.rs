@@ -64,13 +64,37 @@ pub type PointBox = Box<PointDef>;
 #[derive(PartialEq, Clone, Debug)]
 pub struct Function {
    pub name: String,
-   pub arguments: Vec<Ast>,
+   pub arguments: Vec<String>,
+   pub assignments: Vec<Ast>,
 }
 
 impl Function {
-   pub fn new(name: String, arguments: Vec<Ast>) -> Box<Self> {
+   pub fn new(
+      name: String, arguments: Vec<String>, assignments: Vec<Ast>
+   ) -> Box<Self> {
       Box::new(
          Function {
+            name: name,
+            arguments: arguments,
+            assignments: assignments,
+         }
+      )
+   }
+}
+
+pub type FunctionBox = Box<Function>;
+
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct FunctionCall {
+   pub name: String,
+   pub arguments: Vec<Ast>,
+}
+
+impl FunctionCall {
+   pub fn new(name: String, arguments: Vec<Ast>) -> Box<Self> {
+      Box::new(
+         FunctionCall {
             name: name,
             arguments: arguments,
          }
@@ -78,7 +102,7 @@ impl Function {
    }
 }
 
-pub type FunctionBox = Box<Function>;
+pub type FunctionCallBox = Box<FunctionCall>;
 
 
 #[derive(PartialEq, Clone)]
@@ -141,10 +165,11 @@ pub enum Ast {
    Int(i64),
    Float(f64),
    Bool(bool),
+   Function(FunctionBox),
    Assignment(AssignmentBox),
    List(ListBox),
    Point(PointBox),
-   Function(FunctionBox),
+   FunctionCall(FunctionCallBox),
    Binary(BinaryBox),
 }
 
@@ -155,9 +180,10 @@ impl fmt::Debug for Ast {
          &Ast::Int(ref value) => write!(f, "{}", value),
          &Ast::Float(ref value) => write!(f, "{}", value),
          &Ast::Bool(ref value) => write!(f, "{}", value),
+         &Ast::Function(ref value) => write!(f, "{} >> {:?}", value.name, value.arguments),
          &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
          &Ast::List(ref value) => write!(f, "{:?}", value.contents),
-         &Ast::Function(ref value) => write!(f, "{}!{:?}", value.name, value.arguments),
+         &Ast::FunctionCall(ref value) => write!(f, "{}!{:?}", value.name, value.arguments),
          &Ast::Point(ref value) => write!(f, "<{:?} {:?}>", value.x, value.y),
          &Ast::Binary(ref value) => write!(f, "({:?} {:?} {:?})", value.left, value.operator, value.right),
       }
@@ -168,10 +194,13 @@ pub type AstResult = Option<(Ast, usize)>;
 
 
 pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
+   let mut functions = Vec::new();
    let mut assignments = Vec::new();
 
    let mut tokens = &tokens[..];
    let mut new_lines = 0;
+
+   let mut current_function: Option<(String, Vec<String>)> = None;
 
    loop {
       let taken = consume_new_line(tokens);
@@ -179,7 +208,16 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
       new_lines += taken;
       tokens = &tokens[taken..];
 
-      if let Some((ast, taken)) = parse_assignment(tokens) {
+      if let Some((name, arguments, taken)) = parse_function_start(tokens) {
+         tokens = &tokens[taken..];
+         if let Some((current_name, current_arguments)) = current_function {
+            let function = Function::new(current_name, current_arguments, assignments);
+            functions.push(Ast::Function(function));
+         }
+
+         current_function = Some((name, arguments));
+         assignments = Vec::new();
+      } else if let Some((ast, taken)) = parse_assignment(tokens) {
          tokens = &tokens[taken..];
          assignments.push(ast);
       } else {
@@ -188,7 +226,11 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
          tokens = &tokens[taken..];
 
          if tokens.len() == 0 {
-            return Ok(assignments);
+            if let Some((name, arguments)) = current_function {
+               let function = Function::new(name, arguments, assignments);
+               functions.push(Ast::Function(function));
+            }
+            return Ok(functions);
          } else {
             return Err(format!("Parse error at line {}", new_lines + 1));
          }
@@ -197,8 +239,8 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
 }
 
 
-fn parse_assignment(tokens: &[Token]) -> AstResult {
-   if tokens.len() < 4 {
+fn parse_function_start(tokens: &[Token]) -> Option<(String, Vec<String>, usize)> {
+   if tokens.len() < 3 {
       return None;
    }
 
@@ -207,13 +249,45 @@ fn parse_assignment(tokens: &[Token]) -> AstResult {
       _ => return None,
    };
 
-   if tokens[1] != Token::Assign {
+   if tokens[1] != Token::Function {
+      return None;
+   }
+
+   let mut arguments = Vec::new();
+
+   for i in 2..tokens.len() {
+      match &tokens[i] {
+         &Token::Name(ref name) => arguments.push(name.clone()),
+         &Token::NewLine => return Some((name.clone(), arguments, i)),
+         _ => return None,
+      }
+   }
+
+   None
+}
+
+
+fn parse_assignment(tokens: &[Token]) -> AstResult {
+   if tokens.len() < 5 {
+      return None;
+   }
+
+   if tokens[0] != Token::SpaceOffset {
+      return None;
+   }
+
+   let name = match &tokens[1] {
+      &Token::Name(ref name) => name,
+      _ => return None,
+   };
+
+   if tokens[2] != Token::Assign {
       return None;
    }
 
    let next_new_line = find_next_new_line(tokens);
 
-   let tokens = &tokens[2..next_new_line];
+   let tokens = &tokens[3..next_new_line];
 
    if let Some(value) = match_value(tokens) {
       let assignment = Assignment::new(name.clone(), value);
@@ -296,7 +370,7 @@ fn match_function(tokens: &[Token]) -> Option<Ast> {
    let tokens = &tokens[2..];
 
    if let Some(contents) = match_sequence_contents(tokens) {
-      Some(Ast::Function(Function::new(name.clone(), contents)))
+      Some(Ast::FunctionCall(FunctionCall::new(name.clone(), contents)))
    } else {
       None
    }

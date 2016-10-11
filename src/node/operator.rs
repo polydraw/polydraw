@@ -5,12 +5,11 @@ use draw::RGB;
 
 use super::node::{Node, NodeRole};
 use super::data::{Data, NONE, Layer, Point, PointList, Poly, PointListList, Rect};
+use super::builder::Program;
 
 
 pub trait Operator where Self: fmt::Debug {
-   fn new() -> Self where Self: Sized;
-
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data>;
+   fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data>;
 
    fn role(&self) -> NodeRole {
       NodeRole::Processor
@@ -21,14 +20,16 @@ pub trait Operator where Self: fmt::Debug {
 #[derive(Debug)]
 pub struct NoneOperator { }
 
+impl NoneOperator {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(NoneOperator {})
+   }
+}
+
 impl Operator for NoneOperator {
    #[inline]
-   fn new() -> Self {
-      NoneOperator { }
-   }
-
-   #[inline]
-   fn process(&self, _: &Node, _: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, _: &Node, _: &mut [Vec<Data>]) -> Option<Data> {
       Some(NONE)
    }
 
@@ -41,14 +42,16 @@ impl Operator for NoneOperator {
 #[derive(Debug)]
 pub struct InputOperator { }
 
+impl InputOperator {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(InputOperator {})
+   }
+}
+
 impl Operator for InputOperator {
    #[inline]
-   fn new() -> Self {
-      InputOperator { }
-   }
-
-   #[inline]
-   fn process(&self, _: &Node, _: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, _: &Node, _: &mut [Vec<Data>]) -> Option<Data> {
       None
    }
 
@@ -61,14 +64,16 @@ impl Operator for InputOperator {
 #[derive(Debug)]
 pub struct DataOperator { }
 
+impl DataOperator {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(DataOperator {})
+   }
+}
+
 impl Operator for DataOperator {
    #[inline]
-   fn new() -> Self {
-      DataOperator { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       Some(node.input(state, 0))
    }
 
@@ -81,14 +86,16 @@ impl Operator for DataOperator {
 #[derive(Debug)]
 pub struct SourceOperator { }
 
+impl SourceOperator {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(SourceOperator {})
+   }
+}
+
 impl Operator for SourceOperator {
    #[inline]
-   fn new() -> Self {
-      SourceOperator { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       Some(node.input(state, 0))
    }
 }
@@ -97,14 +104,16 @@ impl Operator for SourceOperator {
 #[derive(Debug)]
 pub struct Print { }
 
+impl Print {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Print {})
+   }
+}
+
 impl Operator for Print {
    #[inline]
-   fn new() -> Self {
-      Print { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -130,14 +139,16 @@ impl Operator for Print {
 #[derive(Debug)]
 pub struct Add { }
 
+impl Add {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Add {})
+   }
+}
+
 impl Operator for Add {
    #[inline]
-   fn new() -> Self {
-      Add { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -235,14 +246,16 @@ impl AddTrait<Point> for Box<PointListList> {
 #[derive(Debug)]
 pub struct Divide { }
 
+impl Divide {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Divide {})
+   }
+}
+
 impl Operator for Divide {
    #[inline]
-   fn new() -> Self {
-      Divide { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -344,14 +357,16 @@ impl DivideTrait<Point> for Box<PointListList> {
 #[derive(Debug)]
 pub struct Subtract { }
 
+impl Subtract {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Subtract {})
+   }
+}
+
 impl Operator for Subtract {
    #[inline]
-   fn new() -> Self {
-      Subtract { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -453,14 +468,16 @@ impl SubtractTrait<Point> for Box<PointListList> {
 #[derive(Debug)]
 pub struct Multiply { }
 
+impl Multiply {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Multiply {})
+   }
+}
+
 impl Operator for Multiply {
    #[inline]
-   fn new() -> Self {
-      Multiply { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -558,14 +575,16 @@ impl MultiplyTrait<Point> for Box<PointListList> {
 #[derive(Debug)]
 pub struct Equal { }
 
+impl Equal {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Equal {})
+   }
+}
+
 impl Operator for Equal {
    #[inline]
-   fn new() -> Self {
-      Equal { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -606,14 +625,16 @@ impl EqualTrait<i64> for f64 {
 #[derive(Debug)]
 pub struct Unequal { }
 
+impl Unequal {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Unequal {})
+   }
+}
+
 impl Operator for Unequal {
    #[inline]
-   fn new() -> Self {
-      Unequal { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -654,14 +675,16 @@ impl UnequalTrait<i64> for f64 {
 #[derive(Debug)]
 pub struct Less { }
 
+impl Less {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Less {})
+   }
+}
+
 impl Operator for Less {
    #[inline]
-   fn new() -> Self {
-      Less { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -702,14 +725,16 @@ impl LessTrait<i64> for f64 {
 #[derive(Debug)]
 pub struct LessEqual { }
 
+impl LessEqual {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(LessEqual {})
+   }
+}
+
 impl Operator for LessEqual {
    #[inline]
-   fn new() -> Self {
-      LessEqual { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -750,14 +775,16 @@ impl LessEqualTrait<i64> for f64 {
 #[derive(Debug)]
 pub struct Greater { }
 
+impl Greater {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Greater {})
+   }
+}
+
 impl Operator for Greater {
    #[inline]
-   fn new() -> Self {
-      Greater { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -798,14 +825,16 @@ impl GreaterTrait<i64> for f64 {
 #[derive(Debug)]
 pub struct GreaterEqual { }
 
+impl GreaterEqual {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(GreaterEqual {})
+   }
+}
+
 impl Operator for GreaterEqual {
    #[inline]
-   fn new() -> Self {
-      GreaterEqual { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -846,14 +875,16 @@ impl GreaterEqualTrait<i64> for f64 {
 #[derive(Debug)]
 pub struct Nth { }
 
+impl Nth {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Nth {})
+   }
+}
+
 impl Operator for Nth {
    #[inline]
-   fn new() -> Self {
-      Nth { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -917,14 +948,16 @@ impl NthTrait for Box<Rect> {
 #[derive(Debug)]
 pub struct Rotate { }
 
+impl Rotate {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Rotate {})
+   }
+}
+
 impl Operator for Rotate {
    #[inline]
-   fn new() -> Self {
-      Rotate { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let target = node.input(state, 0);
       let origin = node.input(state, 1);
       let angle = node.input(state, 2);
@@ -1064,14 +1097,16 @@ impl RotateTrait<i64> for Box<PointListList> {
 #[derive(Debug)]
 pub struct BBox { }
 
+impl BBox {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BBox {})
+   }
+}
+
 impl Operator for BBox {
    #[inline]
-   fn new() -> Self {
-      BBox { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let object = node.input(state, 0);
 
       Some(eval_bbox(object))
@@ -1193,14 +1228,16 @@ impl BBoxTrait for Box<PointListList> {
 #[derive(Debug)]
 pub struct Center { }
 
+impl Center {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Center {})
+   }
+}
+
 impl Operator for Center {
    #[inline]
-   fn new() -> Self {
-      Center { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let object = node.input(state, 0);
 
       Some(eval_center(object))
@@ -1265,14 +1302,16 @@ impl CenterTrait for Box<PointListList> {
 #[derive(Debug)]
 pub struct BuildPoint { }
 
+impl BuildPoint {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BuildPoint {})
+   }
+}
+
 impl Operator for BuildPoint {
    #[inline]
-   fn new() -> Self {
-      BuildPoint { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -1289,14 +1328,16 @@ impl Operator for BuildPoint {
 #[derive(Debug)]
 pub struct BuildRgb { }
 
+impl BuildRgb {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BuildRgb {})
+   }
+}
+
 impl Operator for BuildRgb {
    #[inline]
-   fn new() -> Self {
-      BuildRgb { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let red = node.input(state, 0);
       let green = node.input(state, 1);
       let blue = node.input(state, 2);
@@ -1316,14 +1357,16 @@ pub fn eval_rgb(red: Data, green: Data, blue: Data) -> Data {
 #[derive(Debug)]
 pub struct BuildList { }
 
+impl BuildList {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BuildList {})
+   }
+}
+
 impl Operator for BuildList {
    #[inline]
-   fn new() -> Self {
-      BuildList { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let first = node.input(state, 0);
 
       let result = match first {
@@ -1482,14 +1525,16 @@ impl BuildListTrait for Box<Layer> {
 #[derive(Debug)]
 pub struct BuildPoly { }
 
+impl BuildPoly {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BuildPoly {})
+   }
+}
+
 impl Operator for BuildPoly {
    #[inline]
-   fn new() -> Self {
-      BuildPoly { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let points = node.input(state, 0);
       let color = node.input(state, 1);
 
@@ -1521,14 +1566,16 @@ impl BuildPolyTrait for Box<PointList> {
 #[derive(Debug)]
 pub struct BuildLayer { }
 
+impl BuildLayer {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BuildLayer {})
+   }
+}
+
 impl Operator for BuildLayer {
    #[inline]
-   fn new() -> Self {
-      BuildLayer { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let polys_data = node.input(state, 0);
 
       let result = match polys_data {
@@ -1552,17 +1599,19 @@ pub struct BuildArtboard {
    list_node: BuildList,
 }
 
+impl BuildArtboard {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(BuildArtboard {
+         list_node: *BuildList::new()
+      })
+   }
+}
+
 impl Operator for BuildArtboard {
    #[inline]
-   fn new() -> Self {
-      BuildArtboard {
-         list_node: BuildList::new()
-      }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
-      self.list_node.process(node, state)
+   fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      self.list_node.process(program, node, state)
    }
 
    fn role(&self) -> NodeRole {
@@ -1574,14 +1623,16 @@ impl Operator for BuildArtboard {
 #[derive(Debug)]
 pub struct Gate { }
 
+impl Gate {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Gate {})
+   }
+}
+
 impl Operator for Gate {
    #[inline]
-   fn new() -> Self {
-      Gate { }
-   }
-
-   #[inline]
-   fn process(&self, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
       let in2 = node.input(state, 1);
 
@@ -1601,3 +1652,41 @@ pub fn eval_gate(in1: Data, in2: Data) -> Data {
       _ => NONE
    }
 }
+
+
+#[derive(Debug)]
+pub struct FunctionOperator {
+   name: String,
+}
+
+impl FunctionOperator {
+   #[inline]
+   pub fn new(name: String) -> Box<Self> {
+      Box::new(
+         FunctionOperator {
+            name: name
+         }
+      )
+   }
+}
+
+impl Operator for FunctionOperator {
+   #[inline]
+   fn process(
+      &self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]
+   ) -> Option<Data> {
+      match program.argument_count(&self.name) {
+         Some(count) => {
+            let mut arguments = Vec::with_capacity(count);
+
+            for i in 0..count {
+               arguments.push(node.input(state, i));
+            }
+
+            Some(program.execute_function(self.name.clone(), arguments))
+         },
+         None => None,
+      }
+   }
+}
+

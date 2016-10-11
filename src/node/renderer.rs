@@ -3,27 +3,23 @@ use renderer::Renderer;
 use frame::Frame;
 
 use super::data::Data;
-use super::builder::{NodeBuilder, Program};
+use super::builder::{ProgramBuilder, Program};
 
 
 pub struct NodeRenderer {
    renderer: DevelRenderer,
    frame: i64,
-   frame_index: usize,
    program: Program,
 }
 
 impl NodeRenderer {
    #[inline]
-   pub fn new(mut builder: NodeBuilder) -> Self {
-      let frame_index = builder.input(String::from("frame"));
-
+   pub fn new(builder: ProgramBuilder) -> Self {
       let program = builder.compile();
 
       NodeRenderer {
          renderer: DevelRenderer::new(Scene::new()),
          frame: 0,
-         frame_index: frame_index,
          program: program,
       }
    }
@@ -37,9 +33,7 @@ impl Renderer for NodeRenderer {
 
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
-      self.program.input(self.frame_index, Data::Int(self.frame));
-
-      let result = self.program.execute();
+      let result = self.program.execute(vec![Data::Int(self.frame)]);
 
       let mut scene = Scene::new();
 

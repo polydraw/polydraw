@@ -4,13 +4,13 @@ mod node;
 mod renderer;
 mod builder;
 
-pub use self::builder::{NodeBuilder, Inlet};
+pub use self::builder::{ProgramBuilder, Inlet};
 
 pub use self::operator::{
    Operator, Add, BuildPoint, BuildList, BuildPoly, BuildLayer, BuildArtboard,
    BBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
    SourceOperator, Subtract, InputOperator, Equal, Unequal, Less, LessEqual,
-   Greater, GreaterEqual, Gate,
+   Greater, GreaterEqual, Gate, FunctionOperator,
 };
 
 pub use self::operator::{

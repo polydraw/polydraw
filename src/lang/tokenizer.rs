@@ -5,6 +5,8 @@ pub enum Token {
    Int(i64),
    Float(f64),
    NewLine,
+   Function,
+   SpaceOffset,
    Assign,
    Add,
    Subtract,
@@ -38,18 +40,38 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
 
    let mut consumed = 0;
 
+   let mut after_new_line = true;
+
+   let mut spaces_offset = 0;
+
    loop {
-      let taken = consume_whitespace(source);
+      let taken = consume_spaces(source);
+
       consumed += taken;
       source = &source[taken..];
+
+      if after_new_line && taken > 0 {
+         if spaces_offset == 0 {
+            spaces_offset = taken;
+         }
+
+         if taken != spaces_offset {
+            return Err(wrong_space_offset_error(original, consumed));
+         }
+
+         tokens.push(Token::SpaceOffset);
+      }
 
       if let Some((token, taken)) = single_token(source) {
          consumed += taken;
          source = &source[taken..];
+
+         after_new_line = Token::NewLine == token;
+
          tokens.push(token);
       } else {
          if consumed != original.len() {
-            return Err(error_string(original, consumed));
+            return Err(unrecognized_char_error(original, consumed));
          }
 
          break;
@@ -74,7 +96,25 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
 }
 
 
-fn error_string(source: &str, consumed: usize) -> String {
+fn wrong_space_offset_error(source: &str, consumed: usize) -> String {
+   let (_, line, column) = error_position(source, consumed);
+
+   format!(
+      "Wrong space offset at line {}, col {}", line, column
+   )
+}
+
+
+fn unrecognized_char_error(source: &str, consumed: usize) -> String {
+   let (error_ch, line, column) = error_position(source, consumed);
+
+   format!(
+      "Unrecognized character '{}' at line {}, col {}", error_ch, line, column
+   )
+}
+
+
+fn error_position(source: &str, consumed: usize) -> (char, usize, usize) {
    let mut line = 1;
    let mut column = 1;
    let mut error_ch = ' ';
@@ -93,16 +133,13 @@ fn error_string(source: &str, consumed: usize) -> String {
       }
    }
 
-   format!(
-      "Unrecognized character '{}' at line {}, col {}",
-      error_ch, line, column
-   )
+   return (error_ch, line, column)
 }
 
 
-fn consume_whitespace(source: &str) -> usize {
+fn consume_spaces(source: &str) -> usize {
    for (index, ch) in source.chars().enumerate() {
-      if ch != ' ' && ch != '\t' {
+      if ch != ' ' {
          return index;
       }
    }
@@ -198,6 +235,7 @@ fn extract_symbol_token(source: &str) -> TokenResult {
             '>' => match chars.next() {
                Some(ch) => match ch {
                   '=' => return Some((Token::GreaterEqual, 2)),
+                  '>' => return Some((Token::Function, 2)),
                   _ => Token::AngleBracketRight,
                },
                None => Token::AngleBracketRight,

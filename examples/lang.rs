@@ -4,7 +4,7 @@ use std::env;
 use std::io::prelude::*;
 use std::fs::File;
 
-use polydraw::node::{Data, NodeBuilder};
+use polydraw::node::{Data, ProgramBuilder};
 use polydraw::lang::{parse, compile, tokenize};
 
 
@@ -33,17 +33,13 @@ fn main() {
       Ok(tokens) => {
          match parse(tokens) {
             Ok(ast_list) => {
-               let mut builder = NodeBuilder::new();
-
-               let frame_index = builder.input(String::from("frame"));
+               let mut builder = ProgramBuilder::new();
 
                compile(&mut builder, ast_list);
 
                let mut program = builder.compile();
 
-               program.input(frame_index, Data::Bool(false));
-
-               let result = program.execute();
+               let result = program.execute(vec![Data::Int(100)]);
 
                println!(">> {:?}", result);
             },

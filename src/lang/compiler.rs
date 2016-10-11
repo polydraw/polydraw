@@ -1,7 +1,7 @@
 use node::{
-   Data, Add, BuildPoint, BuildList, NodeBuilder, Inlet, Center, Rotate,
+   Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
-   Less, LessEqual, Greater, GreaterEqual, Gate,
+   Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
@@ -11,25 +11,33 @@ use node::{
 use geom::point::Point;
 
 use super::parser::{
-   Ast, ListBox, List, PointBox, PointDef, FunctionBox, Function, BinaryBox,
-   Binary, Assignment, BinaryType,
+   Ast, ListBox, List, PointBox, PointDef, FunctionCallBox, FunctionCall,
+   BinaryBox, Binary, Assignment, BinaryType, Function,
 };
 
 
-pub fn compile(builder: &mut NodeBuilder, ast_list: Vec<Ast>) {
+pub fn compile(builder: &mut ProgramBuilder, ast_list: Vec<Ast>) {
    for ast in ast_list {
-      if let Ast::Assignment(assignment) = ast {
-         build_assignment(builder, *assignment);
+      if let Ast::Function(function) = ast {
+         let Function {name, arguments, assignments} = {*function};
+
+         builder.function(name, arguments);
+
+         for ast in assignments {
+            if let Ast::Assignment(assignment) = ast {
+               build_assignment(builder, *assignment);
+            }
+         }
       }
    }
 }
 
 
-fn build_assignment(builder: &mut NodeBuilder, assignment: Assignment) {
+fn build_assignment(builder: &mut ProgramBuilder, assignment: Assignment) {
    let Assignment {node_id, value} = assignment;
    match value {
-      Ast::Name(value) => builder.operator::<SourceOperator>(
-         node_id, vec![Inlet::Source(value)]
+      Ast::Name(value) => builder.operator(
+         SourceOperator::new(), node_id, vec![Inlet::Source(value)]
       ),
       Ast::Int(value) => builder.data(node_id, Data::Int(value)),
       Ast::Float(value) => builder.data(node_id, Data::Float(value)),
@@ -37,12 +45,12 @@ fn build_assignment(builder: &mut NodeBuilder, assignment: Assignment) {
       Ast::Point(value) => build_point(builder, node_id, value),
       Ast::Binary(value) => build_binary(builder, node_id, value),
       Ast::List(value) => build_list(builder, node_id, value),
-      Ast::Function(value) => build_function(builder, node_id, value),
+      Ast::FunctionCall(value) => build_function_call(builder, node_id, value),
       _ => {},
    }
 }
 
-fn build_anon_node(builder: &mut NodeBuilder, element: Ast) -> Inlet {
+fn build_anon_node(builder: &mut ProgramBuilder, element: Ast) -> Inlet {
    match element {
       Ast::Name(value) => Inlet::Source(value),
       Ast::Int(value) => Inlet::Data(Data::Int(value)),
@@ -51,13 +59,13 @@ fn build_anon_node(builder: &mut NodeBuilder, element: Ast) -> Inlet {
       Ast::Point(value) => build_anon_point(builder, value),
       Ast::Binary(value) => build_anon_binary(builder, value),
       Ast::List(value) => build_anon_list(builder, value),
-      Ast::Function(value) => build_anon_function(builder, value),
+      Ast::FunctionCall(value) => build_anon_function(builder, value),
       _ => Inlet::None,
    }
 }
 
 
-fn build_point(builder: &mut NodeBuilder, node_id: String, point: PointBox) {
+fn build_point(builder: &mut ProgramBuilder, node_id: String, point: PointBox) {
    let PointDef {x, y} = {*point};
 
    match (x, y) {
@@ -68,12 +76,12 @@ fn build_point(builder: &mut NodeBuilder, node_id: String, point: PointBox) {
          let x_inlet = build_anon_node(builder, x);
          let y_inlet = build_anon_node(builder, y);
 
-         builder.operator::<BuildPoint>(node_id, vec![x_inlet, y_inlet])
+         builder.operator(BuildPoint::new(), node_id, vec![x_inlet, y_inlet])
       },
    }
 }
 
-fn build_anon_point(builder: &mut NodeBuilder, point: PointBox) -> Inlet {
+fn build_anon_point(builder: &mut ProgramBuilder, point: PointBox) -> Inlet {
    let PointDef {x, y} = {*point};
 
    match (x, y) {
@@ -84,13 +92,13 @@ fn build_anon_point(builder: &mut NodeBuilder, point: PointBox) -> Inlet {
          let x_inlet = build_anon_node(builder, x);
          let y_inlet = build_anon_node(builder, y);
 
-         builder.anonymous::<BuildPoint>(vec![x_inlet, y_inlet])
+         builder.anonymous(BuildPoint::new(), vec![x_inlet, y_inlet])
       },
    }
 }
 
 
-fn build_binary(builder: &mut NodeBuilder, node_id: String, binary: BinaryBox) {
+fn build_binary(builder: &mut ProgramBuilder, node_id: String, binary: BinaryBox) {
    let Binary {operator, left, right} = {*binary};
 
    let left_inlet = build_anon_node(builder, left);
@@ -103,22 +111,22 @@ fn build_binary(builder: &mut NodeBuilder, node_id: String, binary: BinaryBox) {
       (left_inlet, right_inlet) => {
          let inlets = vec![left_inlet, right_inlet];
          match operator {
-            BinaryType::Subtract => builder.operator::<Subtract>(node_id, inlets),
-            BinaryType::Add => builder.operator::<Add>(node_id, inlets),
-            BinaryType::Divide => builder.operator::<Divide>(node_id, inlets),
-            BinaryType::Multiply => builder.operator::<Multiply>(node_id, inlets),
-            BinaryType::Equal => builder.operator::<Equal>(node_id, inlets),
-            BinaryType::Unequal => builder.operator::<Unequal>(node_id, inlets),
-            BinaryType::Less => builder.operator::<Less>(node_id, inlets),
-            BinaryType::LessEqual => builder.operator::<LessEqual>(node_id, inlets),
-            BinaryType::Greater => builder.operator::<Greater>(node_id, inlets),
-            BinaryType::GreaterEqual => builder.operator::<GreaterEqual>(node_id, inlets),
+            BinaryType::Subtract => builder.operator(Subtract::new(), node_id, inlets),
+            BinaryType::Add => builder.operator(Add::new(), node_id, inlets),
+            BinaryType::Divide => builder.operator(Divide::new(), node_id, inlets),
+            BinaryType::Multiply => builder.operator(Multiply::new(), node_id, inlets),
+            BinaryType::Equal => builder.operator(Equal::new(), node_id, inlets),
+            BinaryType::Unequal => builder.operator(Unequal::new(), node_id, inlets),
+            BinaryType::Less => builder.operator(Less::new(), node_id, inlets),
+            BinaryType::LessEqual => builder.operator(LessEqual::new(), node_id, inlets),
+            BinaryType::Greater => builder.operator(Greater::new(), node_id, inlets),
+            BinaryType::GreaterEqual => builder.operator(GreaterEqual::new(), node_id, inlets),
          }
       },
    }
 }
 
-fn build_anon_binary(builder: &mut NodeBuilder, binary: BinaryBox) -> Inlet {
+fn build_anon_binary(builder: &mut ProgramBuilder, binary: BinaryBox) -> Inlet {
    let Binary {operator, left, right} = {*binary};
 
    let left_inlet = build_anon_node(builder, left);
@@ -131,16 +139,16 @@ fn build_anon_binary(builder: &mut NodeBuilder, binary: BinaryBox) -> Inlet {
       (left_inlet, right_inlet) => {
          let inlets = vec![left_inlet, right_inlet];
          match operator {
-            BinaryType::Subtract => builder.anonymous::<Subtract>(inlets),
-            BinaryType::Add => builder.anonymous::<Add>(inlets),
-            BinaryType::Divide => builder.anonymous::<Divide>(inlets),
-            BinaryType::Multiply => builder.anonymous::<Multiply>(inlets),
-            BinaryType::Equal => builder.anonymous::<Equal>(inlets),
-            BinaryType::Unequal => builder.anonymous::<Equal>(inlets),
-            BinaryType::Less => builder.anonymous::<Less>(inlets),
-            BinaryType::LessEqual => builder.anonymous::<LessEqual>(inlets),
-            BinaryType::Greater => builder.anonymous::<Greater>(inlets),
-            BinaryType::GreaterEqual => builder.anonymous::<GreaterEqual>(inlets),
+            BinaryType::Subtract => builder.anonymous(Subtract::new(), inlets),
+            BinaryType::Add => builder.anonymous(Add::new(), inlets),
+            BinaryType::Divide => builder.anonymous(Divide::new(), inlets),
+            BinaryType::Multiply => builder.anonymous(Multiply::new(), inlets),
+            BinaryType::Equal => builder.anonymous(Equal::new(), inlets),
+            BinaryType::Unequal => builder.anonymous(Unequal::new(), inlets),
+            BinaryType::Less => builder.anonymous(Less::new(), inlets),
+            BinaryType::LessEqual => builder.anonymous(LessEqual::new(), inlets),
+            BinaryType::Greater => builder.anonymous(Greater::new(), inlets),
+            BinaryType::GreaterEqual => builder.anonymous(GreaterEqual::new(), inlets),
          }
       },
    }
@@ -167,8 +175,11 @@ pub type Eval2ArgFn = fn(in1: Data, in2: Data) -> Data;
 pub type Eval3ArgFn = fn(in1: Data, in2: Data, in3: Data) -> Data;
 
 
-fn build_function(builder: &mut NodeBuilder, node_id: String, function: FunctionBox) {
-   let Function {name, arguments} = {*function};
+fn build_function_call(
+   builder: &mut ProgramBuilder, node_id: String, function: FunctionCallBox
+) {
+
+   let FunctionCall {name, arguments} = {*function};
 
    let (inlets, data_only) = function_inlets(builder, arguments);
 
@@ -178,21 +189,21 @@ fn build_function(builder: &mut NodeBuilder, node_id: String, function: Function
    };
 
    match &name as &str {
-      "add" => builder.operator::<Add>(node_id, inlets),
-      "divide" => builder.operator::<Divide>(node_id, inlets),
-      "multiply" => builder.operator::<Multiply>(node_id, inlets),
-      "subtract" => builder.operator::<Subtract>(node_id, inlets),
-      "rotate" => builder.operator::<Rotate>(node_id, inlets),
-      "center" => builder.operator::<Center>(node_id, inlets),
-      "bbox" => builder.operator::<BBox>(node_id, inlets),
-      "rgb" => builder.operator::<BuildRgb>(node_id, inlets),
-      "gate" => builder.operator::<Gate>(node_id, inlets),
-      _ => panic!("Unrecognized function {}", name),
+      "add" => builder.operator(Add::new(), node_id, inlets),
+      "divide" => builder.operator(Divide::new(), node_id, inlets),
+      "multiply" => builder.operator(Multiply::new(), node_id, inlets),
+      "subtract" => builder.operator(Subtract::new(), node_id, inlets),
+      "rotate" => builder.operator(Rotate::new(), node_id, inlets),
+      "center" => builder.operator(Center::new(), node_id, inlets),
+      "bbox" => builder.operator(BBox::new(), node_id, inlets),
+      "rgb" => builder.operator(BuildRgb::new(), node_id, inlets),
+      "gate" => builder.operator(Gate::new(), node_id, inlets),
+      _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
    }
 }
 
-fn build_anon_function(builder: &mut NodeBuilder, function: FunctionBox) -> Inlet {
-   let Function {name, arguments} = {*function};
+fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) -> Inlet {
+   let FunctionCall {name, arguments} = {*function};
 
    let (inlets, data_only) = function_inlets(builder, arguments);
 
@@ -201,20 +212,20 @@ fn build_anon_function(builder: &mut NodeBuilder, function: FunctionBox) -> Inle
    }
 
    match &name as &str {
-      "add" => builder.anonymous::<Add>(inlets),
-      "divide" => builder.anonymous::<Divide>(inlets),
-      "multiply" => builder.anonymous::<Multiply>(inlets),
-      "subtract" => builder.anonymous::<Subtract>(inlets),
-      "rotate" => builder.anonymous::<Rotate>(inlets),
-      "center" => builder.anonymous::<Center>(inlets),
-      "bbox" => builder.anonymous::<BBox>(inlets),
-      "rgb" => builder.anonymous::<BuildRgb>(inlets),
-      "gate" => builder.anonymous::<Gate>(inlets),
-      _ => panic!("Unrecognized function {}", name),
+      "add" => builder.anonymous(Add::new(), inlets),
+      "divide" => builder.anonymous(Divide::new(), inlets),
+      "multiply" => builder.anonymous(Multiply::new(), inlets),
+      "subtract" => builder.anonymous(Subtract::new(), inlets),
+      "rotate" => builder.anonymous(Rotate::new(), inlets),
+      "center" => builder.anonymous(Center::new(), inlets),
+      "bbox" => builder.anonymous(BBox::new(), inlets),
+      "rgb" => builder.anonymous(BuildRgb::new(), inlets),
+      "gate" => builder.anonymous(Gate::new(), inlets),
+      _ => builder.anonymous(FunctionOperator::new(name), inlets),
    }
 }
 
-fn function_inlets(builder: &mut NodeBuilder, arguments: Vec<Ast>) -> (Vec<Inlet>, bool) {
+fn function_inlets(builder: &mut ProgramBuilder, arguments: Vec<Ast>) -> (Vec<Inlet>, bool) {
    let mut inlets = Vec::new();
 
    let mut data_only = true;
@@ -303,7 +314,7 @@ pub enum ListType {
    Source,
 }
 
-fn build_anon_list(builder: &mut NodeBuilder, list: ListBox) -> Inlet {
+fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
    let (list_type, inlets) = list_inlets(builder, list);
 
    match list_type {
@@ -313,12 +324,12 @@ fn build_anon_list(builder: &mut NodeBuilder, list: ListBox) -> Inlet {
       ListType::Point => Inlet::Data(create_point_list(inlets)),
       ListType::PointList => Inlet::Data(create_point_list_list(inlets)),
       ListType::Rgb => Inlet::Data(create_rgb_list(inlets)),
-      ListType::Source => builder.anonymous::<BuildList>(inlets),
+      ListType::Source => builder.anonymous(BuildList::new(), inlets),
       _ => Inlet::None
    }
 }
 
-fn build_list(builder: &mut NodeBuilder, node_id: String, list: ListBox) {
+fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
    let (list_type, inlets) = list_inlets(builder, list);
 
    match list_type {
@@ -328,12 +339,12 @@ fn build_list(builder: &mut NodeBuilder, node_id: String, list: ListBox) {
       ListType::Point => builder.data(node_id, create_point_list(inlets)),
       ListType::PointList => builder.data(node_id, create_point_list_list(inlets)),
       ListType::Rgb => builder.data(node_id, create_rgb_list(inlets)),
-      ListType::Source => builder.operator::<BuildList>(node_id, inlets),
+      ListType::Source => builder.operator(BuildList::new(), node_id, inlets),
       _ => {}
    }
 }
 
-fn list_inlets(builder: &mut NodeBuilder, list: ListBox) -> (ListType, Vec<Inlet>) {
+fn list_inlets(builder: &mut ProgramBuilder, list: ListBox) -> (ListType, Vec<Inlet>) {
    let List {contents} = {*list};
 
    let mut inlets = Vec::new();

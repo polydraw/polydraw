@@ -36,58 +36,131 @@ impl NodeDef {
 }
 
 
-pub struct NodeBuilder {
+pub struct FunctionDefs {
+   pub name: String,
+   pub argument_count: usize,
    pub node_defs: Vec<NodeDef>,
+}
+
+impl FunctionDefs {
+   pub fn new(name: String, argument_count: usize) -> Self {
+      FunctionDefs {
+         name: name,
+         argument_count: argument_count,
+         node_defs: Vec::new(),
+      }
+   }
+}
+
+
+pub struct ProgramBuilder {
+   pub defs: Vec<FunctionDefs>,
    pub anon_count: usize,
 }
 
 
-impl NodeBuilder {
+impl ProgramBuilder {
    pub fn new() -> Self {
-      NodeBuilder {
-         node_defs: Vec::new(),
+      ProgramBuilder {
+         defs: Vec::new(),
          anon_count: 0,
       }
    }
 
-   pub fn operator<T: 'static + Operator>(&mut self, node_id: String, inlets: Vec<Inlet>) {
-      let operator = Box::new(T::new());
+   pub fn function(&mut self, name: String, arguments: Vec<String>) {
+      let mut def = FunctionDefs::new(name, arguments.len());
 
-      self.node_defs.push(
-         NodeDef::Operator((node_id, operator, inlets))
-      );
+      for argument in arguments {
+         def.node_defs.push(
+            NodeDef::Input(String::from(argument))
+         );
+      }
+
+      self.defs.push(def);
    }
 
-   pub fn anonymous<T: 'static + Operator>(&mut self, inlets: Vec<Inlet>) -> Inlet {
+   pub fn operator(&mut self, operator: Box<Operator>, node_id: String, inlets: Vec<Inlet>) {
+      if let Some(last) = self.defs.last_mut() {
+         last.node_defs.push(NodeDef::Operator((node_id, operator, inlets)));
+      }
+   }
+
+   pub fn anonymous(&mut self, operator: Box<Operator>, inlets: Vec<Inlet>) -> Inlet {
       self.anon_count += 1;
 
       let node_id = format!("__{}__", self.anon_count);
 
-      self.operator::<T>(node_id.clone(), inlets);
+      self.operator(operator, node_id.clone(), inlets);
 
       Inlet::Source(node_id)
    }
 
    pub fn data(&mut self, node_id: String, data: Data) {
-      self.node_defs.push(
-         NodeDef::Data((String::from(node_id), data))
-      );
-   }
-
-   pub fn input(&mut self, node_id: String) -> usize {
-      self.node_defs.push(
-         NodeDef::Input(String::from(node_id))
-      );
-
-      self.node_defs.len() - 1
+      if let Some(last) = self.defs.last_mut() {
+         last.node_defs.push(
+            NodeDef::Data((String::from(node_id), data))
+         );
+      }
    }
 
    pub fn compile(self) -> Program {
-      compile(self.node_defs)
+      let mut functions = HashMap::new();
+
+      for FunctionDefs {name, argument_count, node_defs} in self.defs {
+         let function = compile_function(argument_count, node_defs);
+
+         functions.insert(name, function);
+      }
+
+      Program::new(functions)
    }
 }
 
-pub fn compile(node_defs: Vec<NodeDef>) -> Program {
+
+pub struct Program {
+   pub functions: HashMap<String, Function>,
+}
+
+impl Program {
+   pub fn new(functions: HashMap<String, Function>) -> Self {
+      Program {
+         functions: functions,
+      }
+   }
+
+   pub fn execute(&mut self, arguments: Vec<Data>) -> Data {
+      self.execute_function(String::from("main"), arguments)
+   }
+
+   pub fn execute_function(&mut self, name: String, arguments: Vec<Data>) -> Data {
+      match self.functions.remove(&name) {
+         Some(mut function) => {
+            function.push_arguments(arguments);
+
+            for node in &function.nodes {
+               node.process(self, &mut function.state);
+            }
+
+            let data = replace(&mut function.state[function.result_slot][0], Data::None);
+
+            self.functions.insert(name, function);
+
+            data
+         },
+         None => panic!("No {:?} function available", name),
+      }
+   }
+
+   pub fn argument_count(&self, name: &str) -> Option<usize> {
+      match self.functions.get(name) {
+         Some(function) => Some(function.argument_count),
+         None => None,
+      }
+   }
+}
+
+
+pub fn compile_function(argument_count: usize, node_defs: Vec<NodeDef>) -> Function {
    let mut slot_map = HashMap::new();
 
    let mut result_slot = 0;
@@ -120,27 +193,50 @@ pub fn compile(node_defs: Vec<NodeDef>) -> Program {
 
    state[result_slot].push(Data::None);
 
-   Program::new(nodes, state, result_slot)
+   Function::new(nodes, state, result_slot, argument_count)
 }
 
 
-pub struct Program {
+pub struct Function {
    pub nodes: Vec<Node>,
    pub state: Vec<Vec<Data>>,
    pub result_slot: usize,
+   pub argument_count: usize,
 }
 
 
-impl Program {
-   pub fn new(nodes: Vec<Node>, state: Vec<Vec<Data>>, result_slot: usize) -> Self {
-      Program {
+impl Function {
+   pub fn new(
+      nodes: Vec<Node>,
+      state: Vec<Vec<Data>>,
+      result_slot: usize,
+      argument_count: usize
+   ) -> Self {
+      Function {
          nodes: nodes,
          state: state,
          result_slot: result_slot,
+         argument_count: argument_count,
       }
    }
 
-   pub fn input(&mut self, slot: usize, data: Data) {
+   fn push_arguments(&mut self, arguments: Vec<Data>) {
+      if arguments.len() > self.argument_count {
+         panic!("Function call with higher number");
+      }
+
+      let mut slot = 0;
+      for data in arguments {
+         self.push_single_argument(slot, data);
+         slot += 1;
+      }
+
+      for rest in slot..self.argument_count {
+         self.push_single_argument(rest, Data::None);
+      }
+   }
+
+   fn push_single_argument(&mut self, slot: usize, data: Data) {
       if self.state[slot].len() > 0 {
          for i in 1..self.state[slot].len() {
             self.state[slot][i] = data.clone();
@@ -148,16 +244,6 @@ impl Program {
 
          self.state[slot][0] = data;
       }
-   }
-
-   pub fn execute(&mut self) -> Data {
-      for node in &self.nodes {
-         node.process(&mut self.state);
-      }
-
-      let result = replace(&mut self.state[self.result_slot][0], Data::None);
-
-      result
    }
 }
 
@@ -288,7 +374,7 @@ fn node_from_def(
 ) -> Node {
    match node_def {
       NodeDef::Data((_, data)) => {
-         let operator = Box::new(DataOperator::new());
+         let operator = DataOperator::new();
 
          let indexed_inlets = vec![
             IndexedInlet::Data(data)
@@ -300,16 +386,16 @@ fn node_from_def(
          let indexed_inlets = node_sources(inlets, slot_map, state);
 
          Node::new(operator, indexed_inlets, node_index)
-
       },
       NodeDef::Input(_) => {
-         let operator = Box::new(InputOperator::new());
+         let operator = InputOperator::new();
 
          Node::new(operator, vec![], node_index)
       },
       _ => panic!("")
    }
 }
+
 
 fn node_sources(
    inlets: Vec<Inlet>,
@@ -352,4 +438,3 @@ fn node_sources(
 
    indexed_inlets
 }
-

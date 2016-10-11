@@ -2,6 +2,7 @@ use std::mem::replace;
 
 use super::operator::{Operator, NoneOperator};
 use super::data::Data;
+use super::builder::Program;
 
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -60,8 +61,8 @@ impl Node {
    }
 
    #[inline]
-   pub fn process(&self, state: &mut [Vec<Data>]) {
-      let data = self.operator.process(&self, state);
+   pub fn process(&self, program: &mut Program, state: &mut [Vec<Data>]) {
+      let data = self.operator.process(program, &self, state);
 
       if let Some(data) = data {
          let mut slots = &mut state[self.slot];
@@ -88,7 +89,7 @@ impl Default for Node {
    #[inline]
    fn default() -> Node {
       Node::new(
-         Box::new(NoneOperator::new()),
+         NoneOperator::new(),
          vec![],
          0
       )
