@@ -16,6 +16,19 @@ use super::parser::{
 };
 
 
+const INTERNAL_FUNCS: [&'static str; 9] = [
+   "add",
+   "divide",
+   "multiply",
+   "subtract",
+   "rotate",
+   "center",
+   "bbox",
+   "rgb",
+   "gate",
+];
+
+
 pub fn compile(builder: &mut ProgramBuilder, ast_list: Vec<Ast>) {
    for ast in ast_list {
       if let Ast::Function(function) = ast {
@@ -183,7 +196,7 @@ fn build_function_call(
 
    let (inlets, data_only) = function_inlets(builder, arguments);
 
-   if data_only {
+   if data_only && INTERNAL_FUNCS.contains(&(&name as &str)) {
       builder.data(node_id, exec_data_only(name, inlets));
       return;
    };
@@ -207,7 +220,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
 
    let (inlets, data_only) = function_inlets(builder, arguments);
 
-   if data_only {
+   if data_only && INTERNAL_FUNCS.contains(&(&name as &str)) {
       return Inlet::Data(exec_data_only(name, inlets));
    }
 
