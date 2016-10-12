@@ -166,10 +166,11 @@ pub enum Ast {
    Float(f64),
    Bool(bool),
    Function(FunctionBox),
+   FunctionCall(FunctionCallBox),
+   FunctionRef(String),
    Assignment(AssignmentBox),
    List(ListBox),
    Point(PointBox),
-   FunctionCall(FunctionCallBox),
    Binary(BinaryBox),
 }
 
@@ -184,6 +185,7 @@ impl fmt::Debug for Ast {
          &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
          &Ast::List(ref value) => write!(f, "{:?}", value.contents),
          &Ast::FunctionCall(ref value) => write!(f, "{}!{:?}", value.name, value.arguments),
+         &Ast::FunctionRef(ref value) => write!(f, "@{}", value),
          &Ast::Point(ref value) => write!(f, "<{:?} {:?}>", value.x, value.y),
          &Ast::Binary(ref value) => write!(f, "({:?} {:?} {:?})", value.left, value.operator, value.right),
       }
@@ -309,6 +311,8 @@ fn match_value(tokens: &[Token]) -> Option<Ast> {
       Some(ast)
    } else if let Some(ast) = match_binary(tokens) {
       Some(ast)
+   } else if let Some(ast) = match_function_ref(tokens) {
+      Some(ast)
    } else if let Some(ast) = match_single(tokens) {
       Some(ast)
    } else {
@@ -374,6 +378,23 @@ fn match_function(tokens: &[Token]) -> Option<Ast> {
    } else {
       None
    }
+}
+
+fn match_function_ref(tokens: &[Token]) -> Option<Ast> {
+   if tokens.len() < 2 {
+      return None;
+   }
+
+   if tokens[0] != Token::Address {
+      return None;
+   }
+
+   let name = match &tokens[1] {
+      &Token::Name(ref name) => name,
+      _ => return None,
+   };
+
+   Some(Ast::FunctionRef(name.clone()))
 }
 
 fn match_single(tokens: &[Token]) -> Option<Ast> {
@@ -529,6 +550,8 @@ fn try_list_item(tokens: &[Token]) -> AstResult {
 
    if let Some(ast) = match_single(&tokens[..1]) {
       Some((ast, 1))
+   } else if let Some(ast) = match_function_ref(&tokens[..2]) {
+      Some((ast, 2))
    } else {
       None
    }

@@ -1738,3 +1738,52 @@ impl Operator for FunctionOperator {
    }
 }
 
+
+#[derive(Debug)]
+pub struct Map { }
+
+impl Map {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Map {})
+   }
+}
+
+impl Operator for Map {
+   #[inline]
+   fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let target = node.input(state, 0);
+      let function = node.input(state, 1);
+
+      Some(eval_map(program, target, function))
+   }
+}
+
+pub fn eval_map(program: &mut Program, target: Data, function: Data) -> Data {
+   if let Data::FunctionRef(function) = function {
+      match target {
+         Data::IntList(list) => list.map(program, function),
+         _ => NONE,
+      }
+   } else {
+      NONE
+   }
+}
+
+trait MapTrait {
+   fn map(self, program: &mut Program, function: String) -> Data;
+}
+
+impl MapTrait for Vec<i64> {
+   #[inline]
+   fn map(self, program: &mut Program, function: String) -> Data {
+      let mut list = Vec::new();
+
+      for value in self {
+         let data = program.execute_function(function.clone(), vec![Data::Int(value)]);
+         list.push(data);
+      }
+
+      Data::DataList(Box::new(list))
+   }
+}

@@ -56,6 +56,7 @@ pub enum Data {
    Bool(bool),
    Point(Point),
    Rgb(RGB),
+   FunctionRef(String),
    Rect(Box<Rect>),
    Poly(Box<Poly>),
    Layer(Box<Layer>),
@@ -67,6 +68,7 @@ pub enum Data {
    RgbList(Box<Vec<RGB>>),
    PolyList(Box<PolyList>),
    LayerList(Box<LayerList>),
+   DataList(Box<Vec<Data>>),
 }
 
 macro_rules! write_value {
@@ -103,6 +105,7 @@ impl fmt::Debug for Data {
          &Data::Point(ref value) => write_value!(f, value),
          &Data::Rgb(ref value) => write_value!(f, value),
          &Data::Rect(ref value) => write_value!(f, value),
+         &Data::FunctionRef(ref value) => write!(f, "@{}", value),
          &Data::Poly(ref value) => write!(f, "(poly! {:?})", value),
          &Data::Layer(ref value) => write!(f, "(layer! {:?})", value),
          &Data::IntList(ref list) => write_list!(f, list),
@@ -113,6 +116,7 @@ impl fmt::Debug for Data {
          &Data::RgbList(ref list) => write_list!(f, list),
          &Data::PolyList(ref list) => write_list!(f, list),
          &Data::LayerList(ref list) => write_list!(f, list),
+         &Data::DataList(ref list) => write_list!(f, list),
       }
    }
 }

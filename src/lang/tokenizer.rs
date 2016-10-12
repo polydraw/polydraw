@@ -6,6 +6,7 @@ pub enum Token {
    Float(f64),
    NewLine,
    Function,
+   Address,
    SpaceOffset,
    Assign,
    Add,
@@ -240,6 +241,7 @@ fn extract_symbol_token(source: &str) -> TokenResult {
                },
                None => Token::AngleBracketRight,
             },
+            '@' => Token::Address,
             _ => return None,
          };
 

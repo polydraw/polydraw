@@ -1,7 +1,7 @@
 use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
-   Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar,
+   Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Map,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
@@ -16,7 +16,7 @@ use super::parser::{
 };
 
 
-const INTERNAL_FUNCS: [&'static str; 10] = [
+const EXEC_FUNCS: [&'static str; 10] = [
    "add",
    "divide",
    "multiply",
@@ -56,6 +56,7 @@ fn build_assignment(builder: &mut ProgramBuilder, assignment: Assignment) {
       Ast::Int(value) => builder.data(node_id, Data::Int(value)),
       Ast::Float(value) => builder.data(node_id, Data::Float(value)),
       Ast::Bool(value) => builder.data(node_id, Data::Bool(value)),
+      Ast::FunctionRef(value) => builder.data(node_id, Data::FunctionRef(value)),
       Ast::Point(value) => build_point(builder, node_id, value),
       Ast::Binary(value) => build_binary(builder, node_id, value),
       Ast::List(value) => build_list(builder, node_id, value),
@@ -70,6 +71,7 @@ fn build_anon_node(builder: &mut ProgramBuilder, element: Ast) -> Inlet {
       Ast::Int(value) => Inlet::Data(Data::Int(value)),
       Ast::Float(value) => Inlet::Data(Data::Float(value)),
       Ast::Bool(value) => Inlet::Data(Data::Bool(value)),
+      Ast::FunctionRef(value) => Inlet::Data(Data::FunctionRef(value)),
       Ast::Point(value) => build_anon_point(builder, value),
       Ast::Binary(value) => build_anon_binary(builder, value),
       Ast::List(value) => build_anon_list(builder, value),
@@ -197,7 +199,7 @@ fn build_function_call(
 
    let (inlets, data_only) = function_inlets(builder, arguments);
 
-   if data_only && INTERNAL_FUNCS.contains(&(&name as &str)) {
+   if data_only && EXEC_FUNCS.contains(&(&name as &str)) {
       builder.data(node_id, exec_data_only(name, inlets));
       return;
    };
@@ -213,6 +215,7 @@ fn build_function_call(
       "bbox" => builder.operator(BBox::new(), node_id, inlets),
       "rgb" => builder.operator(BuildRgb::new(), node_id, inlets),
       "gate" => builder.operator(Gate::new(), node_id, inlets),
+      "map" => builder.operator(Map::new(), node_id, inlets),
       _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
    }
 }
@@ -222,7 +225,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
 
    let (inlets, data_only) = function_inlets(builder, arguments);
 
-   if data_only && INTERNAL_FUNCS.contains(&(&name as &str)) {
+   if data_only && EXEC_FUNCS.contains(&(&name as &str)) {
       return Inlet::Data(exec_data_only(name, inlets));
    }
 
@@ -237,6 +240,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "bbox" => builder.anonymous(BBox::new(), inlets),
       "rgb" => builder.anonymous(BuildRgb::new(), inlets),
       "gate" => builder.anonymous(Gate::new(), inlets),
+      "map" => builder.anonymous(Map::new(), inlets),
       _ => builder.anonymous(FunctionOperator::new(name), inlets),
    }
 }
@@ -329,6 +333,7 @@ pub enum ListType {
    Rgb,
    Poly,
    Source,
+   Data,
 }
 
 fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
@@ -341,6 +346,7 @@ fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
       ListType::Point => Inlet::Data(create_point_list(inlets)),
       ListType::PointList => Inlet::Data(create_point_list_list(inlets)),
       ListType::Rgb => Inlet::Data(create_rgb_list(inlets)),
+      ListType::Data => Inlet::Data(create_data_list(inlets)),
       ListType::Source => builder.anonymous(BuildList::new(), inlets),
       _ => Inlet::None
    }
@@ -356,6 +362,7 @@ fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
       ListType::Point => builder.data(node_id, create_point_list(inlets)),
       ListType::PointList => builder.data(node_id, create_point_list_list(inlets)),
       ListType::Rgb => builder.data(node_id, create_rgb_list(inlets)),
+      ListType::Data => builder.data(node_id, create_data_list(inlets)),
       ListType::Source => builder.operator(BuildList::new(), node_id, inlets),
       _ => {}
    }
@@ -379,12 +386,12 @@ fn list_inlets(builder: &mut ProgramBuilder, list: ListBox) -> (ListType, Vec<In
 
       match list_type_option {
          Some(ref mut list_type) => {
-            if *list_type != ListType::Source {
+            if (*list_type != ListType::Source) && (*list_type != ListType::Data) {
                if element_type != ListType::Source && element_type != *list_type  {
-                  panic!("Wrong list element {:?}: {:?}", element_type, inlet);
+                  *list_type = ListType::Data;
+               } else {
+                  *list_type = element_type;
                }
-
-               *list_type = element_type;
             }
          },
          None => {
@@ -414,7 +421,7 @@ fn element_type(inlet: &Inlet) -> ListType {
          &Data::PointList(_) => ListType::PointList,
          &Data::Rgb(_) => ListType::Rgb,
          &Data::Poly(_) => ListType::Poly,
-         _ => ListType::None,
+         _ => ListType::Data,
       },
       &Inlet::Source(_) => ListType::Source,
       &Inlet::None => ListType::None,
@@ -503,4 +510,16 @@ fn create_rgb_list(inlets: Vec<Inlet>) -> Data {
    }
 
    Data::RgbList(Box::new(list))
+}
+
+fn create_data_list(inlets: Vec<Inlet>) -> Data {
+   let mut list = Vec::new();
+
+   for inlet in inlets {
+      if let Inlet::Data(data) = inlet {
+         list.push(data);
+      }
+   }
+
+   Data::DataList(Box::new(list))
 }
