@@ -1755,32 +1755,44 @@ impl Operator for Map {
       let target = node.input(state, 0);
       let function = node.input(state, 1);
 
-      Some(eval_map(program, target, function))
-   }
-}
+      let data = if let Data::FunctionRef(function) = function {
+         if let Some(count) = program.argument_count(&function) {
+            let mut extra = Vec::new();
 
-pub fn eval_map(program: &mut Program, target: Data, function: Data) -> Data {
-   if let Data::FunctionRef(function) = function {
-      match target {
-         Data::IntList(list) => list.map(program, function),
-         _ => NONE,
-      }
-   } else {
-      NONE
+            for i in 2..count + 1 {
+               extra.push(node.input(state, i));
+            }
+
+            match target {
+               Data::IntList(list) => list.map(program, function, extra),
+               _ => NONE,
+            }
+         } else {
+            NONE
+         }
+      } else {
+         NONE
+      };
+
+      Some(data)
    }
 }
 
 trait MapTrait {
-   fn map(self, program: &mut Program, function: String) -> Data;
+   fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data;
 }
 
 impl MapTrait for Vec<i64> {
    #[inline]
-   fn map(self, program: &mut Program, function: String) -> Data {
+   fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
       let mut list = Vec::new();
 
       for value in self {
-         let data = program.execute_function(function.clone(), vec![Data::Int(value)]);
+         let mut arguments = vec![Data::Int(value)];
+         let mut cloned = extra.clone();
+         arguments.append(&mut cloned);
+
+         let data = program.execute_function(function.clone(), arguments);
          list.push(data);
       }
 
