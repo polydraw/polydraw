@@ -2,6 +2,7 @@ use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
    Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Map,
+   MapWithLast,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
@@ -216,6 +217,7 @@ fn build_function_call(
       "rgb" => builder.operator(BuildRgb::new(), node_id, inlets),
       "gate" => builder.operator(Gate::new(), node_id, inlets),
       "map" => builder.operator(Map::new(), node_id, inlets),
+      "map-with-last" => builder.operator(MapWithLast::new(), node_id, inlets),
       _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
    }
 }
@@ -241,6 +243,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "rgb" => builder.anonymous(BuildRgb::new(), inlets),
       "gate" => builder.anonymous(Gate::new(), inlets),
       "map" => builder.anonymous(Map::new(), inlets),
+      "map-with-last" => builder.anonymous(MapWithLast::new(), inlets),
       _ => builder.anonymous(FunctionOperator::new(name), inlets),
    }
 }

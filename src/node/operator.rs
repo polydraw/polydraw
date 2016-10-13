@@ -1765,6 +1765,10 @@ impl Operator for Map {
 
             match target {
                Data::IntList(list) => list.map(program, function, extra),
+               Data::FloatList(list) => list.map(program, function, extra),
+               Data::BoolList(list) => list.map(program, function, extra),
+               Data::PointList(list) => list.map(program, function, extra),
+               Data::RgbList(list) => list.map(program, function, extra),
                _ => NONE,
             }
          } else {
@@ -1782,20 +1786,110 @@ trait MapTrait {
    fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data;
 }
 
-impl MapTrait for Vec<i64> {
-   #[inline]
-   fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
-      let mut list = Vec::new();
+macro_rules! map_trait {
+   ($trait_ty:ty, $data_ty:expr) => {
+      impl MapTrait for $trait_ty {
+         #[inline]
+         fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
+            let mut list = Vec::new();
 
-      for value in self {
-         let mut arguments = vec![Data::Int(value)];
-         let mut cloned = extra.clone();
-         arguments.append(&mut cloned);
+            for value in self {
+               let mut arguments = vec![$data_ty(value)];
+               arguments.append(&mut extra.clone());
 
-         let data = program.execute_function(function.clone(), arguments);
-         list.push(data);
+               let data = program.execute_function(function.clone(), arguments);
+               list.push(data);
+            }
+
+            Data::DataList(Box::new(list))
+         }
       }
-
-      Data::DataList(Box::new(list))
    }
 }
+
+map_trait!(Vec<i64>, Data::Int);
+map_trait!(Vec<f64>, Data::Float);
+map_trait!(Vec<bool>, Data::Bool);
+map_trait!(Vec<Point>, Data::Point);
+map_trait!(Vec<RGB>, Data::Rgb);
+
+
+#[derive(Debug)]
+pub struct MapWithLast { }
+
+impl MapWithLast {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(MapWithLast {})
+   }
+}
+
+impl Operator for MapWithLast {
+   #[inline]
+   fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let target = node.input(state, 0);
+      let function = node.input(state, 1);
+      let initial = node.input(state, 2);
+
+      let data = if let Data::FunctionRef(function) = function {
+         if let Some(count) = program.argument_count(&function) {
+            let mut extra = Vec::new();
+
+            for i in 3..count + 1 {
+               extra.push(node.input(state, i));
+            }
+
+            match target {
+               Data::IntList(list) => list.map_with_last(program, function, initial, extra),
+               Data::FloatList(list) => list.map_with_last(program, function, initial, extra),
+               Data::BoolList(list) => list.map_with_last(program, function, initial, extra),
+               Data::PointList(list) => list.map_with_last(program, function, initial, extra),
+               Data::RgbList(list) => list.map_with_last(program, function, initial, extra),
+               _ => NONE,
+            }
+         } else {
+            NONE
+         }
+      } else {
+         NONE
+      };
+
+      Some(data)
+   }
+}
+
+trait MapWithLastTrait {
+   fn map_with_last(
+      self, program: &mut Program, function: String, initial: Data, extra: Vec<Data>
+   ) -> Data;
+}
+
+macro_rules! map_with_last_trait {
+   ($trait_ty:ty, $data_ty:expr) => {
+      impl MapWithLastTrait for $trait_ty {
+         #[inline]
+         fn map_with_last(
+            self, program: &mut Program, function: String, mut initial: Data, extra: Vec<Data>
+         ) -> Data {
+            let mut list = Vec::new();
+
+            for value in self {
+               let mut arguments = vec![$data_ty(value), initial];
+               arguments.append(&mut extra.clone());
+
+               let data = program.execute_function(function.clone(), arguments);
+               initial = data.clone();
+               list.push(data);
+            }
+
+            Data::DataList(Box::new(list))
+         }
+      }
+   }
+}
+
+map_with_last_trait!(Vec<i64>, Data::Int);
+map_with_last_trait!(Vec<f64>, Data::Float);
+map_with_last_trait!(Vec<bool>, Data::Bool);
+map_with_last_trait!(Vec<Point>, Data::Point);
+map_with_last_trait!(Vec<RGB>, Data::Rgb);

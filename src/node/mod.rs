@@ -10,7 +10,7 @@ pub use self::operator::{
    Operator, Add, BuildPoint, BuildList, BuildPoly, BuildLayer, BuildArtboard,
    BBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
    SourceOperator, Subtract, InputOperator, Equal, Unequal, Less, LessEqual,
-   Greater, GreaterEqual, Gate, FunctionOperator, Polar, Map,
+   Greater, GreaterEqual, Gate, FunctionOperator, Polar, Map, MapWithLast,
 };
 
 pub use self::operator::{
