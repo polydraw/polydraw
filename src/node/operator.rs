@@ -1740,16 +1740,16 @@ impl Operator for FunctionOperator {
 
 
 #[derive(Debug)]
-pub struct Map { }
+pub struct Each { }
 
-impl Map {
+impl Each {
    #[inline]
    pub fn new() -> Box<Self> {
-      Box::new(Map {})
+      Box::new(Each {})
    }
 }
 
-impl Operator for Map {
+impl Operator for Each {
    #[inline]
    fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let target = node.input(state, 0);
@@ -1764,11 +1764,11 @@ impl Operator for Map {
             }
 
             match target {
-               Data::IntList(list) => list.map(program, function, extra),
-               Data::FloatList(list) => list.map(program, function, extra),
-               Data::BoolList(list) => list.map(program, function, extra),
-               Data::PointList(list) => list.map(program, function, extra),
-               Data::RgbList(list) => list.map(program, function, extra),
+               Data::IntList(list) => list.each(program, function, extra),
+               Data::FloatList(list) => list.each(program, function, extra),
+               Data::BoolList(list) => list.each(program, function, extra),
+               Data::PointList(list) => list.each(program, function, extra),
+               Data::RgbList(list) => list.each(program, function, extra),
                _ => NONE,
             }
          } else {
@@ -1782,15 +1782,15 @@ impl Operator for Map {
    }
 }
 
-trait MapTrait {
-   fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data;
+trait EachTrait {
+   fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data;
 }
 
-macro_rules! map_trait {
+macro_rules! each_trait {
    ($trait_ty:ty, $data_ty:expr) => {
-      impl MapTrait for $trait_ty {
+      impl EachTrait for $trait_ty {
          #[inline]
-         fn map(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
+         fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
             let mut list = Vec::new();
 
             for value in self {
@@ -1807,24 +1807,24 @@ macro_rules! map_trait {
    }
 }
 
-map_trait!(Vec<i64>, Data::Int);
-map_trait!(Vec<f64>, Data::Float);
-map_trait!(Vec<bool>, Data::Bool);
-map_trait!(Vec<Point>, Data::Point);
-map_trait!(Vec<RGB>, Data::Rgb);
+each_trait!(Vec<i64>, Data::Int);
+each_trait!(Vec<f64>, Data::Float);
+each_trait!(Vec<bool>, Data::Bool);
+each_trait!(Vec<Point>, Data::Point);
+each_trait!(Vec<RGB>, Data::Rgb);
 
 
 #[derive(Debug)]
-pub struct MapWithLast { }
+pub struct EachWithLast { }
 
-impl MapWithLast {
+impl EachWithLast {
    #[inline]
    pub fn new() -> Box<Self> {
-      Box::new(MapWithLast {})
+      Box::new(EachWithLast {})
    }
 }
 
-impl Operator for MapWithLast {
+impl Operator for EachWithLast {
    #[inline]
    fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let target = node.input(state, 0);
@@ -1840,11 +1840,11 @@ impl Operator for MapWithLast {
             }
 
             match target {
-               Data::IntList(list) => list.map_with_last(program, function, initial, extra),
-               Data::FloatList(list) => list.map_with_last(program, function, initial, extra),
-               Data::BoolList(list) => list.map_with_last(program, function, initial, extra),
-               Data::PointList(list) => list.map_with_last(program, function, initial, extra),
-               Data::RgbList(list) => list.map_with_last(program, function, initial, extra),
+               Data::IntList(list) => list.each_with_last(program, function, initial, extra),
+               Data::FloatList(list) => list.each_with_last(program, function, initial, extra),
+               Data::BoolList(list) => list.each_with_last(program, function, initial, extra),
+               Data::PointList(list) => list.each_with_last(program, function, initial, extra),
+               Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
                _ => NONE,
             }
          } else {
@@ -1858,17 +1858,17 @@ impl Operator for MapWithLast {
    }
 }
 
-trait MapWithLastTrait {
-   fn map_with_last(
+trait EachWithLastTrait {
+   fn each_with_last(
       self, program: &mut Program, function: String, initial: Data, extra: Vec<Data>
    ) -> Data;
 }
 
-macro_rules! map_with_last_trait {
+macro_rules! each_with_last_trait {
    ($trait_ty:ty, $data_ty:expr) => {
-      impl MapWithLastTrait for $trait_ty {
+      impl EachWithLastTrait for $trait_ty {
          #[inline]
-         fn map_with_last(
+         fn each_with_last(
             self, program: &mut Program, function: String, mut initial: Data, extra: Vec<Data>
          ) -> Data {
             let mut list = Vec::new();
@@ -1888,8 +1888,8 @@ macro_rules! map_with_last_trait {
    }
 }
 
-map_with_last_trait!(Vec<i64>, Data::Int);
-map_with_last_trait!(Vec<f64>, Data::Float);
-map_with_last_trait!(Vec<bool>, Data::Bool);
-map_with_last_trait!(Vec<Point>, Data::Point);
-map_with_last_trait!(Vec<RGB>, Data::Rgb);
+each_with_last_trait!(Vec<i64>, Data::Int);
+each_with_last_trait!(Vec<f64>, Data::Float);
+each_with_last_trait!(Vec<bool>, Data::Bool);
+each_with_last_trait!(Vec<Point>, Data::Point);
+each_with_last_trait!(Vec<RGB>, Data::Rgb);
