@@ -988,7 +988,7 @@ impl PolarTrait<f64, f64> for (f64, f64) {
       let x = radius * radians.cos();
       let y = radius * radians.sin();
 
-      Data::Point(Point::new(x as i64, y as i64))
+      Data::Point(Point::new(x.round() as i64, y.round() as i64))
    }
 }
 
@@ -1059,8 +1059,8 @@ impl RotateTrait<f64> for Point {
       x -= cx;
       y -= cy;
 
-      self.x = (x * c - y * s + cx) as i64;
-      self.y = (x * s + y * c + cy) as i64;
+      self.x = (x * c - y * s + cx).round() as i64;
+      self.y = (x * s + y * c + cy).round() as i64;
 
       Data::Point(self)
    }
@@ -1091,8 +1091,8 @@ impl RotateTrait<f64> for Box<PointList> {
          x -= cx;
          y -= cy;
 
-         tuple.x = (x * c - y * s + cx) as i64;
-         tuple.y = (x * s + y * c + cy) as i64;
+         tuple.x = (x * c - y * s + cx).round() as i64;
+         tuple.y = (x * s + y * c + cy).round() as i64;
       }
 
       Data::PointList(self)
@@ -1125,8 +1125,8 @@ impl RotateTrait<f64> for Box<PointListList> {
             x -= cx;
             y -= cy;
 
-            tuple.x = (x * c - y * s + cx) as i64;
-            tuple.y = (x * s + y * c + cy) as i64;
+            tuple.x = (x * c - y * s + cx).round() as i64;
+            tuple.y = (x * s + y * c + cy).round() as i64;
          }
       }
 
