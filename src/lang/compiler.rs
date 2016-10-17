@@ -252,7 +252,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
 }
 
 fn function_inlets(builder: &mut ProgramBuilder, arguments: Vec<Ast>) -> (Vec<Inlet>, bool) {
-   let mut inlets = Vec::new();
+   let mut inlets = Vec::with_capacity(arguments.len());
 
    let mut data_only = true;
 
@@ -314,7 +314,7 @@ fn exec_3_arg_fn(function: Eval3ArgFn, inlets: Vec<Inlet>) -> Data {
 }
 
 fn arguments_from_inlets(inlets: Vec<Inlet>, count: usize) -> Vec<Data> {
-   let mut arguments = Vec::new();
+   let mut arguments = Vec::with_capacity(inlets.len());
 
    for inlet in inlets {
       if let Inlet::Data(data) = inlet {
@@ -332,8 +332,6 @@ fn arguments_from_inlets(inlets: Vec<Inlet>, count: usize) -> Vec<Data> {
 fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
    let (list_type, inlets) = list_inlets(builder, list);
 
-   println!("build anon list {:?} / {:?}", list_type, &inlets);
-
    match list_type {
       ListType::Int => Inlet::Data(create_int_list(inlets)),
       ListType::Float => Inlet::Data(create_float_list(inlets)),
@@ -349,8 +347,6 @@ fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
 
 fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
    let (list_type, inlets) = list_inlets(builder, list);
-
-   println!("build list {:?} / {:?}", list_type, &inlets);
 
    match list_type {
       ListType::Int => builder.data(node_id, create_int_list(inlets)),
@@ -368,7 +364,7 @@ fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
 fn list_inlets(builder: &mut ProgramBuilder, list: ListBox) -> (ListType, Vec<Inlet>) {
    let List {contents} = {*list};
 
-   let mut inlets = Vec::new();
+   let mut inlets = Vec::with_capacity(contents.len());
 
    let mut list_type = ListType::None;
 
@@ -426,7 +422,7 @@ fn update_inlet_list_type(current: ListType, inlet: &Inlet) -> ListType {
 macro_rules! create_list {
    ($name:ident, $data_enum:path, $list_enum:path) => {
       fn $name(inlets: Vec<Inlet>) -> Data {
-         let mut list = Vec::new();
+         let mut list = Vec::with_capacity(inlets.len());
 
          for inlet in inlets {
             if let Inlet::Data(data) = inlet {
@@ -445,13 +441,12 @@ create_list!(create_int_list, Data::Int, Data::IntList);
 create_list!(create_float_list, Data::Float, Data::FloatList);
 create_list!(create_bool_list, Data::Bool, Data::BoolList);
 create_list!(create_point_list, Data::Point, Data::PointList);
-//create_list!(create_point_list_list, Data::PointList, Data::PointListList);
 create_list!(create_rgb_list, Data::Rgb, Data::RgbList);
 //create_list!(create_poly_list, Data::Poly, Data::PolyList);
 
 
 fn create_data_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
+   let mut list = Vec::with_capacity(inlets.len());
 
    for inlet in inlets {
       if let Inlet::Data(data) = inlet {
@@ -463,7 +458,7 @@ fn create_data_list(inlets: Vec<Inlet>) -> Data {
 }
 
 fn create_point_list_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
+   let mut list = Vec::with_capacity(inlets.len());
 
    for inlet in inlets {
       if let Inlet::Data(data) = inlet {

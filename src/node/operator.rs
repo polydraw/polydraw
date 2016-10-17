@@ -1402,6 +1402,7 @@ pub fn eval_rgb(red: Data, green: Data, blue: Data) -> Data {
    }
 }
 
+
 #[derive(Debug)]
 pub struct BuildList { }
 
@@ -1415,157 +1416,19 @@ impl BuildList {
 impl Operator for BuildList {
    #[inline]
    fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
-      let first = node.input(state, 0);
+      let mut data_list = Vec::with_capacity(node.len());
 
-      let result = match first {
-         Data::Int(first) => first.list(node, state),
-         Data::Float(first) => first.list(node, state),
-         Data::Bool(first) => first.list(node, state),
-         Data::Point(first) => first.list(node, state),
-         Data::Rgb(first) => first.list(node, state),
-         Data::Poly(first) => first.list(node, state),
-         Data::Layer(first) => first.list(node, state),
-         _ => NONE
-      };
+      let mut list_type = ListType::None;
 
-      Some(result)
-   }
-}
+      for i in 0..node.len() {
+         let data = node.input(state, i);
 
-trait BuildListTrait {
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data;
-}
+         list_type = update_list_type(list_type, &data);
 
-impl BuildListTrait for i64 {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Int(value) = input {
-            result.push(value);
-         }
+         data_list.push(data);
       }
 
-      Data::IntList(Box::new(result))
-   }
-}
-
-impl BuildListTrait for f64 {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Float(value) = input {
-            result.push(value);
-         }
-      }
-
-      Data::FloatList(Box::new(result))
-   }
-}
-
-impl BuildListTrait for bool {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Bool(value) = input {
-            result.push(value);
-         }
-      }
-
-      Data::BoolList(Box::new(result))
-   }
-}
-
-impl BuildListTrait for Point {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Point(value) = input {
-            result.push(value);
-         }
-      }
-
-      Data::PointList(Box::new(result))
-   }
-}
-
-impl BuildListTrait for RGB {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Rgb(value) = input {
-            result.push(value);
-         }
-      }
-
-      Data::RgbList(Box::new(result))
-   }
-}
-
-impl BuildListTrait for Box<Poly> {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(*self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Poly(value) = input {
-            result.push(*value);
-         }
-      }
-
-      Data::PolyList(Box::new(result))
-   }
-}
-
-impl BuildListTrait for Box<Layer> {
-   #[inline]
-   fn list(self, node: &Node, state: &mut [Vec<Data>]) -> Data {
-      let mut result = Vec::with_capacity(node.len());
-
-      result.push(*self);
-
-      for i in 1..node.len() {
-         let input = node.input(state, i);
-
-         if let Data::Layer(value) = input {
-            result.push(*value);
-         }
-      }
-
-      Data::LayerList(Box::new(result))
+      Some(to_native_list(data_list, list_type))
    }
 }
 
@@ -1790,7 +1653,7 @@ impl Operator for Each {
 
       let data = if let Data::FunctionRef(function) = function {
          if let Some(count) = program.argument_count(&function) {
-            let mut extra = Vec::new();
+            let mut extra = Vec::with_capacity(count - 1);
 
             for i in 2..count + 1 {
                extra.push(node.input(state, i));
@@ -1824,7 +1687,7 @@ macro_rules! each_trait {
       impl EachTrait for $trait_ty {
          #[inline]
          fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
-            let mut list = Vec::new();
+            let mut list = Vec::with_capacity(self.len());
 
             let mut list_type = ListType::None;
 
@@ -1871,7 +1734,7 @@ impl Operator for EachWithLast {
 
       let data = if let Data::FunctionRef(function) = function {
          if let Some(count) = program.argument_count(&function) {
-            let mut extra = Vec::new();
+            let mut extra = Vec::with_capacity(count - 2);
 
             for i in 3..count + 1 {
                extra.push(node.input(state, i));
@@ -1909,7 +1772,7 @@ macro_rules! each_with_last_trait {
          fn each_with_last(
             self, program: &mut Program, function: String, mut initial: Data, extra: Vec<Data>
          ) -> Data {
-            let mut list = Vec::new();
+            let mut list = Vec::with_capacity(self.len());
 
             let mut list_type = ListType::None;
 
@@ -1970,7 +1833,7 @@ fn to_native_list(list: Vec<Data>, list_type: ListType) -> Data {
 macro_rules! to_list {
    ($name:ident, $data_enum:path, $list_enum:path) => {
       fn $name(list: Vec<Data>) -> Data {
-         let mut result = Vec::new();
+         let mut result = Vec::with_capacity(list.len());
 
          for data in list {
             if let $data_enum(value) = data {
@@ -1992,7 +1855,7 @@ to_list!(to_rgb_list, Data::Rgb, Data::RgbList);
 
 
 fn to_point_list_list(list: Vec<Data>) -> Data {
-   let mut result = Vec::new();
+   let mut result = Vec::with_capacity(list.len());
 
    for data in list {
       if let Data::PointList(value) = data {
