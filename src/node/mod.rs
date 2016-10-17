@@ -11,12 +11,13 @@ pub use self::operator::{
    BBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
    SourceOperator, Subtract, InputOperator, Equal, Unequal, Less, LessEqual,
    Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each, EachWithLast,
+   ListType,
 };
 
 pub use self::operator::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
    eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
-   eval_greater, eval_greater_equal, eval_gate, eval_polar,
+   eval_greater, eval_greater_equal, eval_gate, eval_polar, eval_poly,
 };
 
 pub use self::data::Data;

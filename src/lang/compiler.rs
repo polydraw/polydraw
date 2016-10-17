@@ -2,12 +2,12 @@ use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
    Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each,
-   EachWithLast,
+   EachWithLast, BuildPoly, ListType,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
    eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
-   eval_greater, eval_greater_equal, eval_gate, eval_polar,
+   eval_greater, eval_greater_equal, eval_gate, eval_polar, eval_poly,
 };
 use geom::point::Point;
 
@@ -17,7 +17,7 @@ use super::parser::{
 };
 
 
-const EXEC_FUNCS: [&'static str; 10] = [
+const EXEC_FUNCS: [&'static str; 11] = [
    "add",
    "divide",
    "multiply",
@@ -28,6 +28,7 @@ const EXEC_FUNCS: [&'static str; 10] = [
    "bbox",
    "rgb",
    "gate",
+   "poly",
 ];
 
 
@@ -216,6 +217,7 @@ fn build_function_call(
       "bbox" => builder.operator(BBox::new(), node_id, inlets),
       "rgb" => builder.operator(BuildRgb::new(), node_id, inlets),
       "gate" => builder.operator(Gate::new(), node_id, inlets),
+      "poly" => builder.operator(BuildPoly::new(), node_id, inlets),
       "each" => builder.operator(Each::new(), node_id, inlets),
       "each-with-last" => builder.operator(EachWithLast::new(), node_id, inlets),
       _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
@@ -242,6 +244,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "bbox" => builder.anonymous(BBox::new(), inlets),
       "rgb" => builder.anonymous(BuildRgb::new(), inlets),
       "gate" => builder.anonymous(Gate::new(), inlets),
+      "poly" => builder.anonymous(BuildPoly::new(), inlets),
       "each" => builder.anonymous(Each::new(), inlets),
       "each-with-last" => builder.anonymous(EachWithLast::new(), inlets),
       _ => builder.anonymous(FunctionOperator::new(name), inlets),
@@ -278,6 +281,7 @@ fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
       "bbox" => exec_1_arg_fn(eval_bbox, inlets),
       "rgb" => exec_3_arg_fn(eval_rgb, inlets),
       "gate" => exec_2_arg_fn(eval_gate, inlets),
+      "poly" => exec_2_arg_fn(eval_poly, inlets),
       _ => panic!("Unrecognized function {}", name),
    }
 }
@@ -325,22 +329,10 @@ fn arguments_from_inlets(inlets: Vec<Inlet>, count: usize) -> Vec<Data> {
    arguments
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ListType {
-   None,
-   Int,
-   Float,
-   Bool,
-   Point,
-   PointList,
-   Rgb,
-   Poly,
-   Source,
-   Data,
-}
-
 fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
    let (list_type, inlets) = list_inlets(builder, list);
+
+   println!("build anon list {:?} / {:?}", list_type, &inlets);
 
    match list_type {
       ListType::Int => Inlet::Data(create_int_list(inlets)),
@@ -357,6 +349,8 @@ fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
 
 fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
    let (list_type, inlets) = list_inlets(builder, list);
+
+   println!("build list {:?} / {:?}", list_type, &inlets);
 
    match list_type {
       ListType::Int => builder.data(node_id, create_int_list(inlets)),
@@ -376,45 +370,20 @@ fn list_inlets(builder: &mut ProgramBuilder, list: ListBox) -> (ListType, Vec<In
 
    let mut inlets = Vec::new();
 
-   let mut list_type_option = None;
+   let mut list_type = ListType::None;
 
    for element in contents {
       let inlet = build_anon_node(builder, element);
 
-      let element_type = element_type(&inlet);
-
-      if element_type == ListType::None {
-         panic!("Wrong list element type {:?}: {:?}", element_type, inlet);
-      }
-
-      match list_type_option {
-         Some(ref mut list_type) => {
-            if (*list_type != ListType::Source) && (*list_type != ListType::Data) {
-               if element_type != ListType::Source && element_type != *list_type  {
-                  *list_type = ListType::Data;
-               } else {
-                  *list_type = element_type;
-               }
-            }
-         },
-         None => {
-            list_type_option = Some(element_type);
-         }
-      }
+      list_type = update_inlet_list_type(list_type, &inlet);
 
       inlets.push(inlet);
    }
 
-   if inlets.len() == 0 {
-      panic!("Empty list definition");
-   }
-
-   let list_type = list_type_option.unwrap();
-
    (list_type, inlets)
 }
 
-fn element_type(inlet: &Inlet) -> ListType {
+fn inlet_list_type(inlet: &Inlet) -> ListType {
    match inlet {
       &Inlet::Data(ref data) => match data {
          &Data::Int(_) => ListType::Int,
@@ -424,6 +393,7 @@ fn element_type(inlet: &Inlet) -> ListType {
          &Data::PointList(_) => ListType::PointList,
          &Data::Rgb(_) => ListType::Rgb,
          &Data::Poly(_) => ListType::Poly,
+         &Data::None => ListType::None,
          _ => ListType::Data,
       },
       &Inlet::Source(_) => ListType::Source,
@@ -431,60 +401,65 @@ fn element_type(inlet: &Inlet) -> ListType {
    }
 }
 
-fn create_int_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
+fn update_inlet_list_type(current: ListType, inlet: &Inlet) -> ListType {
+   if current == ListType::Source {
+      ListType::Source
+   } else {
+      let new = inlet_list_type(inlet);
 
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         if let Data::Int(value) = data {
-            list.push(value);
+      if new == ListType::Source {
+         ListType::Source
+      } else {
+         match current {
+            ListType::None => new,
+            _ => if new == current {
+               new
+            } else {
+               ListType::Data
+            }
          }
       }
    }
-
-   Data::IntList(Box::new(list))
 }
 
-fn create_float_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
 
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         if let Data::Float(value) = data {
-            list.push(value);
+macro_rules! create_list {
+   ($name:ident, $data_enum:path, $list_enum:path) => {
+      fn $name(inlets: Vec<Inlet>) -> Data {
+         let mut list = Vec::new();
+
+         for inlet in inlets {
+            if let Inlet::Data(data) = inlet {
+               if let $data_enum(value) = data {
+                  list.push(value);
+               }
+            }
          }
+
+         $list_enum(Box::new(list))
       }
    }
-
-   Data::FloatList(Box::new(list))
 }
 
-fn create_bool_list(inlets: Vec<Inlet>) -> Data {
+create_list!(create_int_list, Data::Int, Data::IntList);
+create_list!(create_float_list, Data::Float, Data::FloatList);
+create_list!(create_bool_list, Data::Bool, Data::BoolList);
+create_list!(create_point_list, Data::Point, Data::PointList);
+//create_list!(create_point_list_list, Data::PointList, Data::PointListList);
+create_list!(create_rgb_list, Data::Rgb, Data::RgbList);
+//create_list!(create_poly_list, Data::Poly, Data::PolyList);
+
+
+fn create_data_list(inlets: Vec<Inlet>) -> Data {
    let mut list = Vec::new();
 
    for inlet in inlets {
       if let Inlet::Data(data) = inlet {
-         if let Data::Bool(value) = data {
-            list.push(value);
-         }
+         list.push(data);
       }
    }
 
-   Data::BoolList(Box::new(list))
-}
-
-fn create_point_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
-
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         if let Data::Point(value) = data {
-            list.push(value);
-         }
-      }
-   }
-
-   Data::PointList(Box::new(list))
+   Data::DataList(Box::new(list))
 }
 
 fn create_point_list_list(inlets: Vec<Inlet>) -> Data {
@@ -499,30 +474,4 @@ fn create_point_list_list(inlets: Vec<Inlet>) -> Data {
    }
 
    Data::PointListList(Box::new(list))
-}
-
-fn create_rgb_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
-
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         if let Data::Rgb(value) = data {
-            list.push(value);
-         }
-      }
-   }
-
-   Data::RgbList(Box::new(list))
-}
-
-fn create_data_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::new();
-
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         list.push(data);
-      }
-   }
-
-   Data::DataList(Box::new(list))
 }

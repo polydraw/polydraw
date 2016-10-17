@@ -1586,12 +1586,14 @@ impl Operator for BuildPoly {
       let points = node.input(state, 0);
       let color = node.input(state, 1);
 
-      let result = match (points, color) {
-         (Data::PointList(v1), Data::Rgb(v2)) => v1.build_poly(v2),
-         _ => NONE
-      };
+      Some(eval_poly(points, color))
+   }
+}
 
-      Some(result)
+pub fn eval_poly(points: Data, color: Data) -> Data {
+   match (points, color) {
+      (Data::PointList(points), Data::Rgb(color)) => points.build_poly(color),
+      _ => NONE
    }
 }
 
@@ -1607,6 +1609,37 @@ impl BuildPolyTrait for Box<PointList> {
       let poly = Poly::new(*self, color);
 
       Data::Poly(Box::new(poly))
+   }
+}
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ListType {
+   None,
+   Int,
+   Float,
+   Bool,
+   Point,
+   PointList,
+   Rgb,
+   Poly,
+   Layer,
+   Source,
+   Data,
+}
+
+
+fn data_list_type(data: &Data) -> ListType {
+   match data {
+      &Data::Int(_) => ListType::Int,
+      &Data::Float(_) => ListType::Float,
+      &Data::Bool(_) => ListType::Bool,
+      &Data::Point(_) => ListType::Point,
+      &Data::PointList(_) => ListType::PointList,
+      &Data::Rgb(_) => ListType::Rgb,
+      &Data::Poly(_) => ListType::Poly,
+      &Data::None => ListType::None,
+      _ => ListType::Data
    }
 }
 
@@ -1793,15 +1826,20 @@ macro_rules! each_trait {
          fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
             let mut list = Vec::new();
 
+            let mut list_type = ListType::None;
+
             for value in self {
                let mut arguments = vec![$data_ty(value)];
                arguments.append(&mut extra.clone());
 
                let data = program.execute_function(function.clone(), arguments);
+
+               list_type = update_list_type(list_type, &data);
+
                list.push(data);
             }
 
-            Data::DataList(Box::new(list))
+            to_native_list(list, list_type)
          }
       }
    }
@@ -1873,16 +1911,22 @@ macro_rules! each_with_last_trait {
          ) -> Data {
             let mut list = Vec::new();
 
+            let mut list_type = ListType::None;
+
             for value in self {
                let mut arguments = vec![$data_ty(value), initial];
                arguments.append(&mut extra.clone());
 
                let data = program.execute_function(function.clone(), arguments);
+
+               list_type = update_list_type(list_type, &data);
+
                initial = data.clone();
+
                list.push(data);
             }
 
-            Data::DataList(Box::new(list))
+            to_native_list(list, list_type)
          }
       }
    }
@@ -1893,3 +1937,68 @@ each_with_last_trait!(Vec<f64>, Data::Float);
 each_with_last_trait!(Vec<bool>, Data::Bool);
 each_with_last_trait!(Vec<Point>, Data::Point);
 each_with_last_trait!(Vec<RGB>, Data::Rgb);
+
+
+fn update_list_type(current: ListType, data: &Data) -> ListType {
+   let new = data_list_type(data);
+
+   match current {
+      ListType::None => new,
+      ListType::Data => ListType::Data,
+      _ => if new == current {
+         new
+      } else {
+         ListType::Data
+      }
+   }
+}
+
+fn to_native_list(list: Vec<Data>, list_type: ListType) -> Data {
+   match list_type {
+      ListType::Int => to_int_list(list),
+      ListType::Float => to_float_list(list),
+      ListType::Bool => to_bool_list(list),
+      ListType::Point => to_point_list(list),
+      ListType::PointList => to_point_list_list(list),
+      ListType::Rgb => to_rgb_list(list),
+//      ListType::Poly => to_poly_list(list),
+      _ => Data::DataList(Box::new(list)),
+   }
+}
+
+
+macro_rules! to_list {
+   ($name:ident, $data_enum:path, $list_enum:path) => {
+      fn $name(list: Vec<Data>) -> Data {
+         let mut result = Vec::new();
+
+         for data in list {
+            if let $data_enum(value) = data {
+               result.push(value);
+            }
+         }
+
+         $list_enum(Box::new(result))
+      }
+   }
+}
+
+to_list!(to_int_list, Data::Int, Data::IntList);
+to_list!(to_float_list, Data::Float, Data::FloatList);
+to_list!(to_bool_list, Data::Bool, Data::BoolList);
+to_list!(to_point_list, Data::Point, Data::PointList);
+to_list!(to_rgb_list, Data::Rgb, Data::RgbList);
+//to_list!(to_poly_list, Data::Poly, Data::PolyList);
+
+
+fn to_point_list_list(list: Vec<Data>) -> Data {
+   let mut result = Vec::new();
+
+   for data in list {
+      if let Data::PointList(value) = data {
+         result.push(*value);
+      }
+   }
+
+   Data::PointListList(Box::new(result))
+}
