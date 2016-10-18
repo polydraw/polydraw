@@ -2,12 +2,13 @@ use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
    Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each,
-   EachWithLast, BuildPoly, ListType,
+   EachWithLast, BuildPoly, ListType, BuildLayer,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
    eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
    eval_greater, eval_greater_equal, eval_gate, eval_polar, eval_poly,
+   eval_layer,
 };
 use geom::point::Point;
 
@@ -17,7 +18,7 @@ use super::parser::{
 };
 
 
-const EXEC_FUNCS: [&'static str; 11] = [
+const EXEC_FUNCS: [&'static str; 12] = [
    "add",
    "divide",
    "multiply",
@@ -29,6 +30,7 @@ const EXEC_FUNCS: [&'static str; 11] = [
    "rgb",
    "gate",
    "poly",
+   "layer",
 ];
 
 
@@ -218,6 +220,7 @@ fn build_function_call(
       "rgb" => builder.operator(BuildRgb::new(), node_id, inlets),
       "gate" => builder.operator(Gate::new(), node_id, inlets),
       "poly" => builder.operator(BuildPoly::new(), node_id, inlets),
+      "layer" => builder.operator(BuildLayer::new(), node_id, inlets),
       "each" => builder.operator(Each::new(), node_id, inlets),
       "each-with-last" => builder.operator(EachWithLast::new(), node_id, inlets),
       _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
@@ -245,6 +248,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "rgb" => builder.anonymous(BuildRgb::new(), inlets),
       "gate" => builder.anonymous(Gate::new(), inlets),
       "poly" => builder.anonymous(BuildPoly::new(), inlets),
+      "layer" => builder.anonymous(BuildLayer::new(), inlets),
       "each" => builder.anonymous(Each::new(), inlets),
       "each-with-last" => builder.anonymous(EachWithLast::new(), inlets),
       _ => builder.anonymous(FunctionOperator::new(name), inlets),
@@ -282,6 +286,7 @@ fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
       "rgb" => exec_3_arg_fn(eval_rgb, inlets),
       "gate" => exec_2_arg_fn(eval_gate, inlets),
       "poly" => exec_2_arg_fn(eval_poly, inlets),
+      "layer" => exec_1_arg_fn(eval_layer, inlets),
       _ => panic!("Unrecognized function {}", name),
    }
 }
@@ -339,6 +344,8 @@ fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
       ListType::Point => Inlet::Data(create_point_list(inlets)),
       ListType::PointList => Inlet::Data(create_point_list_list(inlets)),
       ListType::Rgb => Inlet::Data(create_rgb_list(inlets)),
+      ListType::Poly => Inlet::Data(create_poly_list(inlets)),
+      ListType::Layer => Inlet::Data(create_layer_list(inlets)),
       ListType::Data => Inlet::Data(create_data_list(inlets)),
       ListType::Source => builder.anonymous(BuildList::new(), inlets),
       _ => Inlet::None
@@ -355,6 +362,8 @@ fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
       ListType::Point => builder.data(node_id, create_point_list(inlets)),
       ListType::PointList => builder.data(node_id, create_point_list_list(inlets)),
       ListType::Rgb => builder.data(node_id, create_rgb_list(inlets)),
+      ListType::Poly => builder.data(node_id, create_poly_list(inlets)),
+      ListType::Layer => builder.data(node_id, create_layer_list(inlets)),
       ListType::Data => builder.data(node_id, create_data_list(inlets)),
       ListType::Source => builder.operator(BuildList::new(), node_id, inlets),
       _ => {}
@@ -389,6 +398,7 @@ fn inlet_list_type(inlet: &Inlet) -> ListType {
          &Data::PointList(_) => ListType::PointList,
          &Data::Rgb(_) => ListType::Rgb,
          &Data::Poly(_) => ListType::Poly,
+         &Data::Layer(_) => ListType::Layer,
          &Data::None => ListType::None,
          _ => ListType::Data,
       },
@@ -437,12 +447,32 @@ macro_rules! create_list {
    }
 }
 
+macro_rules! create_list_boxed {
+   ($name:ident, $data_enum:path, $list_enum:path) => {
+      fn $name(inlets: Vec<Inlet>) -> Data {
+         let mut list = Vec::with_capacity(inlets.len());
+
+         for inlet in inlets {
+            if let Inlet::Data(data) = inlet {
+               if let $data_enum(value) = data {
+                  list.push(*value);
+               }
+            }
+         }
+
+         $list_enum(Box::new(list))
+      }
+   }
+}
+
 create_list!(create_int_list, Data::Int, Data::IntList);
 create_list!(create_float_list, Data::Float, Data::FloatList);
 create_list!(create_bool_list, Data::Bool, Data::BoolList);
 create_list!(create_point_list, Data::Point, Data::PointList);
 create_list!(create_rgb_list, Data::Rgb, Data::RgbList);
-//create_list!(create_poly_list, Data::Poly, Data::PolyList);
+create_list_boxed!(create_poly_list, Data::Poly, Data::PolyList);
+create_list_boxed!(create_layer_list, Data::Layer, Data::LayerList);
+create_list_boxed!(create_point_list_list, Data::PointList, Data::PointListList);
 
 
 fn create_data_list(inlets: Vec<Inlet>) -> Data {
@@ -457,16 +487,3 @@ fn create_data_list(inlets: Vec<Inlet>) -> Data {
    Data::DataList(Box::new(list))
 }
 
-fn create_point_list_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::with_capacity(inlets.len());
-
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         if let Data::PointList(value) = data {
-            list.push(*value);
-         }
-      }
-   }
-
-   Data::PointListList(Box::new(list))
-}

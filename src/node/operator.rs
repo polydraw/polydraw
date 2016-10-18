@@ -1476,37 +1476,6 @@ impl BuildPolyTrait for Box<PointList> {
 }
 
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ListType {
-   None,
-   Int,
-   Float,
-   Bool,
-   Point,
-   PointList,
-   Rgb,
-   Poly,
-   Layer,
-   Source,
-   Data,
-}
-
-
-fn data_list_type(data: &Data) -> ListType {
-   match data {
-      &Data::Int(_) => ListType::Int,
-      &Data::Float(_) => ListType::Float,
-      &Data::Bool(_) => ListType::Bool,
-      &Data::Point(_) => ListType::Point,
-      &Data::PointList(_) => ListType::PointList,
-      &Data::Rgb(_) => ListType::Rgb,
-      &Data::Poly(_) => ListType::Poly,
-      &Data::None => ListType::None,
-      _ => ListType::Data
-   }
-}
-
-
 #[derive(Debug)]
 pub struct BuildLayer { }
 
@@ -1520,20 +1489,16 @@ impl BuildLayer {
 impl Operator for BuildLayer {
    #[inline]
    fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
-      let polys_data = node.input(state, 0);
+      let polys = node.input(state, 0);
 
-      let result = match polys_data {
-         Data::PolyList(polys) => {
-            Data::Layer(
-               Box::new(
-                  Layer::new(*polys)
-               )
-            )
-         },
-         _ => NONE
-      };
+      Some(eval_layer(polys))
+   }
+}
 
-      Some(result)
+pub fn eval_layer(polys: Data) -> Data {
+   match polys {
+      Data::PolyList(polys) => Data::Layer(Box::new(Layer::new(*polys))),
+      _ => NONE
    }
 }
 
@@ -1631,6 +1596,38 @@ impl Operator for FunctionOperator {
          },
          None => None,
       }
+   }
+}
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ListType {
+   None,
+   Int,
+   Float,
+   Bool,
+   Point,
+   PointList,
+   Rgb,
+   Poly,
+   Layer,
+   Source,
+   Data,
+}
+
+
+fn data_list_type(data: &Data) -> ListType {
+   match data {
+      &Data::Int(_) => ListType::Int,
+      &Data::Float(_) => ListType::Float,
+      &Data::Bool(_) => ListType::Bool,
+      &Data::Point(_) => ListType::Point,
+      &Data::PointList(_) => ListType::PointList,
+      &Data::Rgb(_) => ListType::Rgb,
+      &Data::Poly(_) => ListType::Poly,
+      &Data::Layer(_) => ListType::Layer,
+      &Data::None => ListType::None,
+      _ => ListType::Data
    }
 }
 
@@ -1824,7 +1821,7 @@ fn to_native_list(list: Vec<Data>, list_type: ListType) -> Data {
       ListType::Point => to_point_list(list),
       ListType::PointList => to_point_list_list(list),
       ListType::Rgb => to_rgb_list(list),
-//      ListType::Poly => to_poly_list(list),
+      ListType::Poly => to_poly_list(list),
       _ => Data::DataList(Box::new(list)),
    }
 }
@@ -1846,22 +1843,27 @@ macro_rules! to_list {
    }
 }
 
+macro_rules! to_list_boxed {
+   ($name:ident, $data_enum:path, $list_enum:path) => {
+      fn $name(list: Vec<Data>) -> Data {
+         let mut result = Vec::with_capacity(list.len());
+
+         for data in list {
+            if let $data_enum(value) = data {
+               result.push(*value);
+            }
+         }
+
+         $list_enum(Box::new(result))
+      }
+   }
+}
+
 to_list!(to_int_list, Data::Int, Data::IntList);
 to_list!(to_float_list, Data::Float, Data::FloatList);
 to_list!(to_bool_list, Data::Bool, Data::BoolList);
 to_list!(to_point_list, Data::Point, Data::PointList);
 to_list!(to_rgb_list, Data::Rgb, Data::RgbList);
-//to_list!(to_poly_list, Data::Poly, Data::PolyList);
+to_list_boxed!(to_poly_list, Data::Poly, Data::PolyList);
+to_list_boxed!(to_point_list_list, Data::PointList, Data::PointListList);
 
-
-fn to_point_list_list(list: Vec<Data>) -> Data {
-   let mut result = Vec::with_capacity(list.len());
-
-   for data in list {
-      if let Data::PointList(value) = data {
-         result.push(*value);
-      }
-   }
-
-   Data::PointListList(Box::new(result))
-}
