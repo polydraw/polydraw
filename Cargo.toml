@@ -8,6 +8,3 @@ libc = "0.2"
 [features]
 gles2 = []
 gl = []
-
-[dev-dependencies]
-rand = "0.3"
