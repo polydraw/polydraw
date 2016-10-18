@@ -1822,6 +1822,7 @@ fn to_native_list(list: Vec<Data>, list_type: ListType) -> Data {
       ListType::PointList => to_point_list_list(list),
       ListType::Rgb => to_rgb_list(list),
       ListType::Poly => to_poly_list(list),
+      ListType::Layer => to_layer_list(list),
       _ => Data::DataList(Box::new(list)),
    }
 }
@@ -1865,5 +1866,6 @@ to_list!(to_bool_list, Data::Bool, Data::BoolList);
 to_list!(to_point_list, Data::Point, Data::PointList);
 to_list!(to_rgb_list, Data::Rgb, Data::RgbList);
 to_list_boxed!(to_poly_list, Data::Poly, Data::PolyList);
+to_list_boxed!(to_layer_list, Data::Layer, Data::LayerList);
 to_list_boxed!(to_point_list_list, Data::PointList, Data::PointListList);
 
