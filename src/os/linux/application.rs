@@ -1,14 +1,20 @@
 use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
+use sys::utils::fn_ptr::FnPtrLibrary;
+
+use sys::dl;
+use sys::ft;
+
 use super::display::LinuxDisplay;
 use super::window::{LinuxWindow, PollEventsIterator};
 use super::context::{Context, create_context};
 
 pub struct LinuxApplication {
-   display: LinuxDisplay,
-   window: LinuxWindow,
-   context: Box<Context>,
+   pub display: LinuxDisplay,
+   pub window: LinuxWindow,
+   pub context: Box<Context>,
+   pub freetype: dl::Library,
 }
 
 impl LinuxApplication {
@@ -27,11 +33,23 @@ impl LinuxApplication {
          create_context(&display.display, &display.screen_id, &window.window)
       );
 
+      let freetype = LinuxApplication::load_freetype();
+
       Ok(LinuxApplication {
          display: display,
          window: window,
          context: context,
+         freetype: freetype,
       })
+   }
+
+   #[inline]
+   pub fn load_freetype() -> dl::Library {
+      let library = dl::Library::open("libfreetype.so.6").unwrap();
+
+      ft::load(&library);
+
+      library
    }
 
    #[inline]
