@@ -5,13 +5,13 @@ use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind};
 
-use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr, FnPtrLibrary};
 
 pub struct UnixDynLibrary {
    pub handle: *mut ffi::c_void
 }
 
-impl UnixDynLibrary {
+impl FnPtrLibrary for UnixDynLibrary {
    fn open(name: &str) -> Result<Self, RuntimeError> {
       let cname = try!(CString::new(name));
 

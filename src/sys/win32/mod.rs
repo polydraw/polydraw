@@ -10,7 +10,7 @@ use std::os::windows::ffi::OsStrExt;
 
 use error::{RuntimeError, ErrorKind};
 
-use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+use super::utils::fn_ptr::{FnPtrLoader, FnPtr, FnPtrLibrary};
 
 fn to_utf16_os(s: &str) -> Vec<u16> {
    let mut v: Vec<_> = OsStr::new(s).encode_wide().collect();
@@ -237,8 +237,8 @@ pub struct WindowsDynLibrary {
    pub handle: ffi::HMODULE
 }
 
-impl WindowsDynLibrary {
-   pub fn open(name: &str) -> Result<Self, RuntimeError> {
+impl FnPtrLibrary for WindowsDynLibrary {
+   fn open(name: &str) -> Result<Self, RuntimeError> {
       let handle = unsafe {
          ffi::LoadLibraryW(to_utf16_os(name).as_ptr())
       };

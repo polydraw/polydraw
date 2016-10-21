@@ -219,7 +219,7 @@ pub unsafe fn eglSwapInterval(display: EGLDisplay, interval: EGLint) -> EGLBoole
    mem::transmute::<_, extern "system" fn(EGLDisplay, EGLint) -> EGLBoolean>(eglSwapIntervalPtr)(display, interval)
 }
 
-pub unsafe fn load_functions<T: FnPtrLoader>(loader: &Box<T>) -> bool {
+pub unsafe fn load_functions(loader: &FnPtrLoader) -> bool {
    eglGetErrorPtr = loader.load("eglGetError");
    eglBindAPIPtr = loader.load("eglBindAPI");
    eglGetDisplayPtr = loader.load("eglGetDisplay");
