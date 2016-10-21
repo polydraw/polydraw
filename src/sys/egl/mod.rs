@@ -16,25 +16,26 @@ use super::x11;
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
 
 use super::gl;
+use super::DynLibrary;
 
 pub type EGLNativeDisplayType = *mut X11Display;
 pub type EGLNativeWindowType = xcb_window_t;
 
 pub struct Loader {
-   library_loader: Box<FnPtrLoader>,
+   library: DynLibrary,
 }
 
 impl Loader {
-   pub fn new(library_loader: Box<FnPtrLoader>) -> Self {
+   pub fn new(library: DynLibrary) -> Self {
       Loader {
-         library_loader: library_loader
+         library: library
       }
    }
 }
 
 impl FnPtrLoader for Loader {
    fn load(&self, name: &str) -> FnPtr {
-      let lib_addr = self.library_loader.load(name);
+      let lib_addr = self.library.load(name);
 
       if !lib_addr.is_null() {
          return lib_addr;
@@ -88,7 +89,7 @@ pub struct Version {
 }
 
 #[inline]
-pub fn initialize<T: FnPtrLoader>(loader: &Box<T>) -> VoidResult {
+pub fn initialize(loader: &DynLibrary) -> VoidResult {
    unsafe {
       ffi::load_functions(loader)
    };

@@ -233,12 +233,12 @@ impl Default for Cursor {
    }
 }
 
-pub struct Library {
+pub struct WindowsDynLibrary {
    pub handle: ffi::HMODULE
 }
 
-impl Library {
-   pub fn new(name: &str) -> Result<Self, RuntimeError> {
+impl WindowsDynLibrary {
+   pub fn open(name: &str) -> Result<Self, RuntimeError> {
       let handle = unsafe {
          ffi::LoadLibraryW(to_utf16_os(name).as_ptr())
       };
@@ -250,26 +250,26 @@ impl Library {
          ));
       }
 
-      Ok(Library {
+      Ok(WindowsDynLibrary {
          handle: handle,
       })
    }
 }
 
-impl FnPtrLoader for Library {
+impl Drop for WindowsDynLibrary {
+   fn drop(&mut self) {
+      unsafe {
+         ffi::FreeLibrary(self.handle)
+      };
+   }
+}
+
+impl FnPtrLoader for WindowsDynLibrary {
    fn load(&self, name: &str) -> FnPtr {
       let cname = CString::new(name).unwrap();
 
       unsafe {
          ffi::GetProcAddress(self.handle, cname.as_ptr())
       }
-   }
-}
-
-impl Drop for Library {
-   fn drop(&mut self) {
-      unsafe {
-         ffi::FreeLibrary(self.handle)
-      };
    }
 }

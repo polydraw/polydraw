@@ -1,18 +1,18 @@
 use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
-use sys::dl;
 use sys::x11;
 use sys::xcb;
 use sys::glx;
 use sys::gl;
 
 use sys::utils::fn_ptr::FnPtrLibrary;
+use sys::DynLibrary;
 
 use super::Context;
 
 pub struct GlxContext {
-   pub library: Box<FnPtrLibrary>,
+   pub library: DynLibrary,
    pub display: glx::Display,
    pub version: glx::Version,
    pub config: glx::Config,
@@ -28,9 +28,7 @@ impl Context for GlxContext {
          vec!["libGL.so", "libGL.so.1"]
       };
 
-      let library = Box::new(
-         try!(dl::Library::open_any(&library_names))
-      );
+      let library = try!(DynLibrary::open_any(&library_names));
 
       try!(glx::load_functions(&library));
 

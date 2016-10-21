@@ -18,6 +18,7 @@ use super::x11::ffi::XVisualInfo;
 use super::x11;
 
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+use super::DynLibrary;
 
 pub use self::ffi::GLXWindow;
 
@@ -61,9 +62,9 @@ pub struct Version {
 }
 
 #[inline]
-pub fn load_functions<T: FnPtrLoader>(loader: &Box<T>) -> VoidResult {
+pub fn load_functions(library: &DynLibrary) -> VoidResult {
    unsafe {
-      ffi::load_functions(loader)
+      ffi::load_functions(library)
    };
 
    Ok(())

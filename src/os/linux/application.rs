@@ -3,8 +3,8 @@ use frame::GPUFrame;
 
 use sys::utils::fn_ptr::FnPtrLibrary;
 
-use sys::dl;
 use sys::ft;
+use sys::DynLibrary;
 
 use super::display::LinuxDisplay;
 use super::window::{LinuxWindow, PollEventsIterator};
@@ -14,7 +14,7 @@ pub struct LinuxApplication {
    pub display: LinuxDisplay,
    pub window: LinuxWindow,
    pub context: Box<Context>,
-   pub freetype: dl::Library,
+   pub freetype: ft::FreeType,
 }
 
 impl LinuxApplication {
@@ -44,12 +44,10 @@ impl LinuxApplication {
    }
 
    #[inline]
-   pub fn load_freetype() -> dl::Library {
-      let library = dl::Library::open("libfreetype.so.6").unwrap();
+   pub fn load_freetype() -> ft::FreeType {
+      let library = DynLibrary::open("libfreetype.so.6").unwrap();
 
-      ft::load(&library);
-
-      library
+      ft::FreeType::new(library)
    }
 
    #[inline]

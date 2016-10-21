@@ -10,3 +10,8 @@ pub mod wgl;
 pub mod glx;
 pub mod cl;
 pub mod ft;
+
+#[cfg(target_os = "windows")]
+pub use self::win32::WindowsDynLibrary as DynLibrary;
+#[cfg(target_os = "linux")]
+pub use self::dl::UnixDynLibrary as DynLibrary;

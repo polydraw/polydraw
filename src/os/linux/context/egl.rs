@@ -1,11 +1,11 @@
 use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
-use sys::dl;
 use sys::x11;
 use sys::xcb;
 use sys::egl;
 use sys::gl;
+use sys::DynLibrary;
 
 use sys::utils::fn_ptr::FnPtrLibrary;
 
@@ -22,9 +22,7 @@ pub struct EglContext {
 
 impl Context for EglContext {
    fn new(x11_display: &x11::Display, _: &x11::ScreenID, window: &xcb::Window) -> Result<Self, RuntimeError> {
-      let library = Box::new(
-         try!(dl::Library::open_any(&["libEGL.so", "libEGL.so.1"]))
-      );
+      let library = try!(DynLibrary::open_any(&["libEGL.so", "libEGL.so.1"]));
 
       try!(egl::initialize(&library));
 

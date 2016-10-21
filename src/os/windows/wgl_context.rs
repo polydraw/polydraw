@@ -4,6 +4,7 @@ use frame::GPUFrame;
 use sys::win32;
 use sys::wgl;
 use sys::gl;
+use sys::DynLibrary;
 
 pub struct WglContext {
    pub context: wgl::Context,
@@ -11,7 +12,7 @@ pub struct WglContext {
 
 impl WglContext {
    pub fn new(device_context: &win32::DeviceContext) -> Result<Self, RuntimeError> {
-      let library = try!(win32::Library::new("opengl32.dll"));
+      let library = try!(DynLibrary::open("opengl32.dll"));
 
       wgl::initialize(&library);
 
@@ -29,8 +30,8 @@ impl WglContext {
    }
 
    #[inline]
-   pub fn init_gl(library: win32::Library) -> VoidResult {
-      let loader = wgl::Loader::new(Box::new(library));
+   pub fn init_gl(library: DynLibrary) -> VoidResult {
+      let loader = wgl::Loader::new(library);
 
       wgl::load_extra_functions(&loader);
 

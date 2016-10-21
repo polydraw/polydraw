@@ -9,6 +9,7 @@ use std::ffi::CString;
 
 use error::{RuntimeError, ErrorKind, VoidResult};
 use super::utils::fn_ptr::{FnPtrLoader, FnPtr};
+use super::DynLibrary;
 
 use super::win32;
 
@@ -160,20 +161,20 @@ pub fn swap_interval(interval: ffi::c_int) -> VoidResult {
 }
 
 pub struct Loader {
-   library_loader: Box<FnPtrLoader>,
+   library: DynLibrary,
 }
 
 impl Loader {
-   pub fn new(library_loader: Box<FnPtrLoader>) -> Self {
+   pub fn new(library: DynLibrary) -> Self {
       Loader {
-         library_loader: library_loader
+         library: library
       }
    }
 }
 
 impl FnPtrLoader for Loader {
    fn load(&self, name: &str) -> FnPtr {
-      let lib_addr = self.library_loader.load(name);
+      let lib_addr = self.library.load(name);
 
       if !lib_addr.is_null() {
          return lib_addr;
