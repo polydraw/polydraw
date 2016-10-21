@@ -2,15 +2,18 @@ use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
 use sys::wgl;
+use sys::win32;
+use sys::ft;
 
 use super::display::WindowsDisplay;
 use super::window::{WindowsWindow, PollEventsIterator};
 use super::wgl_context::WglContext;
 
 pub struct WindowsApplication {
-   display: WindowsDisplay,
-   window: WindowsWindow,
-   wgl: WglContext,
+   pub display: WindowsDisplay,
+   pub window: WindowsWindow,
+   pub wgl: WglContext,
+   pub freetype: win32::Library,
 }
 
 impl WindowsApplication {
@@ -25,11 +28,23 @@ impl WindowsApplication {
 
       let wgl = try!(WglContext::new(&window.device_context));
 
+      let freetype = WindowsApplication::load_freetype();
+
       Ok(WindowsApplication {
          display: display,
          window: window,
          wgl: wgl,
+         freetype: freetype,
       })
+   }
+
+   #[inline]
+   pub fn load_freetype() -> win32::Library {
+      let library = win32::Library::new("freetype.dll").unwrap();
+
+      ft::load(&library);
+
+      library
    }
 
    #[inline]

@@ -95,8 +95,24 @@ pub type FT_Stream_CloseFunc = Option<extern "C" fn(
    stream: FT_Stream
 )>;
 
+pub const FT_LOAD_DEFAULT:                         FT_Int32 = 0x0;
+pub const FT_LOAD_NO_SCALE:                        FT_Int32 = 0x1 << 0;
+pub const FT_LOAD_NO_HINTING:                      FT_Int32 = 0x1 << 1;
+pub const FT_LOAD_RENDER:                          FT_Int32 = 0x1 << 2;
+pub const FT_LOAD_NO_BITMAP:                       FT_Int32 = 0x1 << 3;
+pub const FT_LOAD_VERTICAL_LAYOUT:                 FT_Int32 = 0x1 << 4;
+pub const FT_LOAD_FORCE_AUTOHINT:                  FT_Int32 = 0x1 << 5;
+pub const FT_LOAD_CROP_BITMAP:                     FT_Int32 = 0x1 << 6;
+pub const FT_LOAD_PEDANTIC:                        FT_Int32 = 0x1 << 7;
+pub const FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH:     FT_Int32 = 0x1 << 9;
+pub const FT_LOAD_NO_RECURSE:                      FT_Int32 = 0x1 << 10;
+pub const FT_LOAD_IGNORE_TRANSFORM:                FT_Int32 = 0x1 << 11;
+pub const FT_LOAD_MONOCHROME:                      FT_Int32 = 0x1 << 12;
+pub const FT_LOAD_LINEAR_DESIGN:                   FT_Int32 = 0x1 << 13;
+pub const FT_LOAD_NO_AUTOHINT:                     FT_Int32 = 0x1 << 15;
+pub const FT_LOAD_COLOR:                           FT_Int32 = 0x1 << 20;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum FT_Encoding {
    FT_ENCODING_NONE = 0,
@@ -115,7 +131,7 @@ pub enum FT_Encoding {
    FT_ENCODING_APPLE_ROMAN = 1634889070,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum FT_Glyph_Format {
    FT_GLYPH_FORMAT_NONE = 0,
@@ -144,7 +160,7 @@ pub enum FT_Face_InternalRec { }
 pub type FT_Face_Internal = *mut FT_Face_InternalRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Bitmap_Size {
    pub height: FT_Short,
    pub width: FT_Short,
@@ -157,7 +173,7 @@ impl Default for FT_Bitmap_Size {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_CharMapRec {
    pub face: FT_Face,
    pub encoding: FT_Encoding,
@@ -170,7 +186,7 @@ impl Default for FT_CharMapRec {
 pub type FT_CharMap = *mut FT_CharMapRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Generic {
    pub data: *mut c_void,
    pub finalizer: FT_Generic_Finalizer,
@@ -180,7 +196,7 @@ impl Default for FT_Generic {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_BBox {
    pub xMin: FT_Pos,
    pub yMin: FT_Pos,
@@ -192,7 +208,7 @@ impl Default for FT_BBox {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Glyph_Metrics {
    pub width: FT_Pos,
    pub height: FT_Pos,
@@ -208,7 +224,7 @@ impl Default for FT_Glyph_Metrics {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Bitmap {
    pub rows: c_uint,
    pub width: c_uint,
@@ -224,7 +240,7 @@ impl Default for FT_Bitmap {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_GlyphSlotRec {
    pub library: FT_Library,
    pub face: FT_Face,
@@ -255,7 +271,7 @@ impl Default for FT_GlyphSlotRec {
 pub type FT_GlyphSlot = *mut FT_GlyphSlotRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Size_Metrics {
    pub x_ppem: FT_UShort,
    pub y_ppem: FT_UShort,
@@ -271,7 +287,7 @@ impl Default for FT_Size_Metrics {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_SizeRec {
    pub face: FT_Face,
    pub generic: FT_Generic,
@@ -284,7 +300,7 @@ impl Default for FT_SizeRec {
 pub type FT_Size = *mut FT_SizeRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_MemoryRec {
    pub user: *mut c_void,
    pub alloc: FT_Alloc_Func,
@@ -297,7 +313,7 @@ impl Default for FT_MemoryRec {
 pub type FT_Memory = *mut FT_MemoryRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_StreamDesc {
    pub _bindgen_data_: [u64; 1usize],
 }
@@ -316,7 +332,7 @@ impl Default for FT_StreamDesc {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_StreamRec {
    pub base: *mut c_uchar,
    pub size: c_ulong,
@@ -335,7 +351,7 @@ impl Default for FT_StreamRec {
 pub type FT_Stream = *mut FT_StreamRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_ListNodeRec {
    pub prev: FT_ListNode,
    pub next: FT_ListNode,
@@ -347,7 +363,7 @@ impl Default for FT_ListNodeRec {
 pub type FT_ListNode = *mut FT_ListNodeRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_ListRec {
    pub head: FT_ListNode,
    pub tail: FT_ListNode,
@@ -358,7 +374,7 @@ impl Default for FT_ListRec {
 pub type FT_List = *mut FT_ListRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_FaceRec {
    pub num_faces: FT_Long,
    pub face_index: FT_Long,
@@ -398,7 +414,7 @@ impl Default for FT_FaceRec {
 pub type FT_Face = *mut FT_FaceRec;
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Vector {
    pub x: FT_Pos,
    pub y: FT_Pos,
@@ -408,7 +424,7 @@ impl Default for FT_Vector {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Outline {
    pub n_contours: c_short,
    pub n_points: c_short,
@@ -422,7 +438,7 @@ impl Default for FT_Outline {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct FT_Outline_Funcs {
    pub move_to: FT_Outline_MoveToFunc,
    pub line_to: FT_Outline_LineToFunc,
@@ -442,6 +458,7 @@ static mut FT_Done_FreeType_Ptr:                 FnPtr = NULL_PTR;
 static mut FT_New_Face_Ptr:                      FnPtr = NULL_PTR;
 static mut FT_Done_Face_Ptr:                     FnPtr = NULL_PTR;
 static mut FT_Load_Char_Ptr:                     FnPtr = NULL_PTR;
+static mut FT_Set_Pixel_Sizes_Ptr:               FnPtr = NULL_PTR;
 
 
 #[inline]
@@ -505,6 +522,17 @@ pub unsafe fn FT_Load_Char(
    ) -> FT_Error>(FT_Load_Char_Ptr)(face, char_code, load_flags)
 }
 
+#[inline]
+pub unsafe fn FT_Set_Pixel_Sizes(
+   face: FT_Face,
+   pixel_width: FT_UInt,
+   pixel_height: FT_UInt
+) -> FT_Error {
+   mem::transmute::<_, extern "system" fn(
+      FT_Face, FT_UInt, FT_UInt
+   ) -> FT_Error>(FT_Set_Pixel_Sizes_Ptr)(face, pixel_width, pixel_height)
+}
+
 
 pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    FT_Outline_Decompose_Ptr = loader.load("FT_Outline_Decompose");
@@ -513,6 +541,7 @@ pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
    FT_New_Face_Ptr = loader.load("FT_New_Face");
    FT_Done_Face_Ptr = loader.load("FT_Done_Face");
    FT_Load_Char_Ptr = loader.load("FT_Load_Char");
+   FT_Set_Pixel_Sizes_Ptr = loader.load("FT_Set_Pixel_Sizes");
 
    true
 }
