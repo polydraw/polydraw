@@ -4,6 +4,7 @@ use frame::GPUFrame;
 use sys::wgl;
 use sys::ft;
 use sys::DynLibrary;
+use sys::utils::fn_ptr::FnPtrLibrary;
 
 use super::display::WindowsDisplay;
 use super::window::{WindowsWindow, PollEventsIterator};

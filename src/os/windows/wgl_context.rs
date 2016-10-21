@@ -5,6 +5,7 @@ use sys::win32;
 use sys::wgl;
 use sys::gl;
 use sys::DynLibrary;
+use sys::utils::fn_ptr::FnPtrLibrary;
 
 pub struct WglContext {
    pub context: wgl::Context,
