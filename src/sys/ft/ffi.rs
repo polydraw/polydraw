@@ -112,6 +112,11 @@ pub const FT_LOAD_LINEAR_DESIGN:                   FT_Int32 = 0x1 << 13;
 pub const FT_LOAD_NO_AUTOHINT:                     FT_Int32 = 0x1 << 15;
 pub const FT_LOAD_COLOR:                           FT_Int32 = 0x1 << 20;
 
+pub const FT_KERNING_DEFAULT:                      FT_UInt = 0;
+pub const FT_KERNING_UNFITTED:                     FT_UInt = 1;
+pub const FT_KERNING_UNSCALED:                     FT_UInt = 2;
+
+
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum FT_Encoding {
@@ -459,6 +464,8 @@ static mut FT_New_Face_Ptr:                      FnPtr = NULL_PTR;
 static mut FT_Done_Face_Ptr:                     FnPtr = NULL_PTR;
 static mut FT_Load_Char_Ptr:                     FnPtr = NULL_PTR;
 static mut FT_Set_Pixel_Sizes_Ptr:               FnPtr = NULL_PTR;
+static mut FT_Get_Kerning_Ptr:                   FnPtr = NULL_PTR;
+static mut FT_Get_Char_Index_Ptr:                FnPtr = NULL_PTR;
 
 
 #[inline]
@@ -523,6 +530,16 @@ pub unsafe fn FT_Load_Char(
 }
 
 #[inline]
+pub unsafe fn FT_Get_Char_Index(
+   face: FT_Face,
+   charcode: FT_ULong
+) -> FT_UInt {
+   mem::transmute::<_, extern "system" fn(
+      FT_Face, FT_ULong
+   ) -> FT_UInt>(FT_Get_Char_Index_Ptr)(face, charcode)
+}
+
+#[inline]
 pub unsafe fn FT_Set_Pixel_Sizes(
    face: FT_Face,
    pixel_width: FT_UInt,
@@ -533,15 +550,30 @@ pub unsafe fn FT_Set_Pixel_Sizes(
    ) -> FT_Error>(FT_Set_Pixel_Sizes_Ptr)(face, pixel_width, pixel_height)
 }
 
+#[inline]
+pub unsafe fn FT_Get_Kerning(
+   face: FT_Face,
+   left_glyph: FT_UInt,
+   right_glyph: FT_UInt,
+   kern_mode: FT_UInt,
+   akerning: *mut FT_Vector
+) -> FT_Error {
+   mem::transmute::<_, extern "system" fn(
+      FT_Face, FT_UInt, FT_UInt, FT_UInt, *mut FT_Vector
+   ) -> FT_Error>(FT_Get_Kerning_Ptr)(face, left_glyph, right_glyph, kern_mode, akerning)
+}
 
-pub unsafe fn load_functions<T: FnPtrLoader>(loader: &T) -> bool {
+
+pub unsafe fn load_functions(loader: &FnPtrLoader) -> bool {
    FT_Outline_Decompose_Ptr = loader.load("FT_Outline_Decompose");
    FT_Init_FreeType_Ptr = loader.load("FT_Init_FreeType");
    FT_Done_FreeType_Ptr = loader.load("FT_Done_FreeType");
    FT_New_Face_Ptr = loader.load("FT_New_Face");
    FT_Done_Face_Ptr = loader.load("FT_Done_Face");
    FT_Load_Char_Ptr = loader.load("FT_Load_Char");
+   FT_Get_Char_Index_Ptr = loader.load("FT_Get_Char_Index");
    FT_Set_Pixel_Sizes_Ptr = loader.load("FT_Set_Pixel_Sizes");
+   FT_Get_Kerning_Ptr = loader.load("FT_Get_Kerning");
 
    true
 }
