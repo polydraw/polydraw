@@ -16,6 +16,7 @@ pub mod raster;
 pub mod devel;
 pub mod node;
 pub mod lang;
+pub mod data;
 
 pub use application::Application;
 pub use renderer::Renderer;
