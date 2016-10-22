@@ -3,6 +3,7 @@ pub mod ffi;
 use std::ptr;
 
 use super::DynLibrary;
+use super::utils::fn_ptr::FnPtrLibrary;
 
 pub struct FreeType {
    pub dyn_lib: DynLibrary,
@@ -10,7 +11,9 @@ pub struct FreeType {
 }
 
 impl FreeType {
-   pub fn new(dyn_lib: DynLibrary) -> Self {
+   pub fn new() -> Self {
+      let dyn_lib = FreeType::load_library();
+
       unsafe {
          ffi::load_functions(&dyn_lib);
 
@@ -23,6 +26,18 @@ impl FreeType {
             dyn_lib: dyn_lib,
          }
       }
+   }
+
+   #[inline]
+   #[cfg(target_os = "linux")]
+   pub fn load_library() -> DynLibrary {
+      DynLibrary::open("libfreetype.so.6").unwrap()
+   }
+
+   #[inline]
+   #[cfg(target_os = "windows")]
+   pub fn load_library() -> DynLibrary {
+      DynLibrary::open("freetype.dll").unwrap()
    }
 }
 

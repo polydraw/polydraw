@@ -1,10 +1,7 @@
 use error::{RuntimeError, VoidResult};
 use frame::GPUFrame;
 
-use sys::utils::fn_ptr::FnPtrLibrary;
-
 use sys::ft;
-use sys::DynLibrary;
 
 use super::display::LinuxDisplay;
 use super::window::{LinuxWindow, PollEventsIterator};
@@ -33,7 +30,7 @@ impl LinuxApplication {
          create_context(&display.display, &display.screen_id, &window.window)
       );
 
-      let freetype = LinuxApplication::load_freetype();
+      let freetype = ft::FreeType::new();
 
       Ok(LinuxApplication {
          display: display,
@@ -41,13 +38,6 @@ impl LinuxApplication {
          context: context,
          freetype: freetype,
       })
-   }
-
-   #[inline]
-   pub fn load_freetype() -> ft::FreeType {
-      let library = DynLibrary::open("libfreetype.so.6").unwrap();
-
-      ft::FreeType::new(library)
    }
 
    #[inline]

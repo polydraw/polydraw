@@ -3,8 +3,6 @@ use frame::GPUFrame;
 
 use sys::wgl;
 use sys::ft;
-use sys::DynLibrary;
-use sys::utils::fn_ptr::FnPtrLibrary;
 
 use super::display::WindowsDisplay;
 use super::window::{WindowsWindow, PollEventsIterator};
@@ -29,7 +27,7 @@ impl WindowsApplication {
 
       let wgl = try!(WglContext::new(&window.device_context));
 
-      let freetype = WindowsApplication::load_freetype();
+      let freetype = ft::FreeType::new();
 
       Ok(WindowsApplication {
          display: display,
@@ -37,13 +35,6 @@ impl WindowsApplication {
          wgl: wgl,
          freetype: freetype,
       })
-   }
-
-   #[inline]
-   pub fn load_freetype() -> ft::FreeType {
-      let library = DynLibrary::open("freetype.dll").unwrap();
-
-      ft::FreeType::new(library)
    }
 
    #[inline]
