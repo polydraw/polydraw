@@ -18,32 +18,36 @@ fn main() {
    let mut scene = Scene::new();
 
    let poly_a = Poly::new(
-      multiply_points(vec![
-         Point::new(1100, 400),
-         Point::new(200, 200),
-         Point::new(500, 700),
-      ]),
+      vec![
+         multiply_points(vec![
+            Point::new(1100, 400),
+            Point::new(200, 200),
+            Point::new(500, 700),
+         ]),
+      ],
       RGB::new(34, 78, 29),
    );
 
    let poly_b = Poly::new(
-      multiply_points(vec![
-         Point::new(100, 500),
-         Point::new(900, 700),
-         Point::new(900, 200),
-         Point::new(700, 100),
-      ]),
+      vec![
+         multiply_points(vec![
+            Point::new(100, 500),
+            Point::new(900, 700),
+            Point::new(900, 200),
+            Point::new(700, 100),
+         ]),
+      ],
       RGB::new(128, 59, 89),
    );
 
-   let poly_c = Poly::new_with_holes(
-      multiply_points(vec![
-         Point::new(270, 120),
-         Point::new(120, 450),
-         Point::new(510, 690),
-         Point::new(570, 240),
-      ]),
+   let poly_c = Poly::new(
       vec![
+         multiply_points(vec![
+            Point::new(270, 120),
+            Point::new(120, 450),
+            Point::new(510, 690),
+            Point::new(570, 240),
+         ]),
          multiply_points(vec![
             Point::new(300, 180),
             Point::new(420, 620),

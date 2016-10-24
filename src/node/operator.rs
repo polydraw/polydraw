@@ -1469,7 +1469,7 @@ impl BuildPolyTrait for Box<PointList> {
    fn build_poly(self, color: RGB) -> Data {
       let color = RGB::new(color.r, color.g, color.b);
 
-      let poly = Poly::new(*self, color);
+      let poly = Poly::new(vec![*self], color);
 
       Data::Poly(Box::new(poly))
    }

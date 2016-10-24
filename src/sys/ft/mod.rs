@@ -197,25 +197,19 @@ impl CharPoints {
 
    #[inline]
    fn last(&mut self) -> FloatPoint {
-      if let Some(list) = self.points.last() {
-         if let Some(last) = list.last() {
-            return *last;
-         }
-      }
-
-      panic!("No points");
+      *self.points.last().unwrap().last().unwrap()
    }
 
    #[inline]
-   fn as_int_points(&self) -> Vec<Vec<Point>> {
+   fn as_int_points(&self, offset: i64) -> Vec<Vec<Point>> {
       let mut outer = Vec::new();
 
       for contour in &self.points {
          let mut inner = Vec::new();
 
          for point in contour {
-            let x = point.x.round() as i64;
-            let y = -(point.y.round() as i64);
+            let x = (point.x + offset as f64).round() as i64;
+            let y = (-point.y).round() as i64;
 
             inner.push(Point::new(x, y));
          }
@@ -238,23 +232,21 @@ fn on_segment(pt1: FloatPoint, pt2: FloatPoint, t1: f64, t2: f64) -> FloatPoint 
 
 
 pub struct Face {
-   pub ft_face: ffi::FT_Face
+   pub ft_face: ffi::FT_Face,
 }
 
 impl Face {
    pub fn new(ft_face: ffi::FT_Face) -> Self {
+      unsafe {
+         ffi::FT_Set_Pixel_Sizes(ft_face, 0, 2048);
+      }
+
       Face {
          ft_face: ft_face,
       }
    }
 
-   pub fn set_size(&self, height: i64) {
-      unsafe {
-         ffi::FT_Set_Pixel_Sizes(self.ft_face, 0, height as ffi::FT_UInt);
-      }
-   }
-
-   pub fn char_points(&self, ch: char, steps: usize) -> Vec<Vec<Point>> {
+   pub fn text(&self, string: &str, steps: usize) -> Vec<Vec<Vec<Point>>> {
       let funcs = ffi::FT_Outline_Funcs {
          move_to: Some(move_to),
          line_to: Some(line_to),
@@ -264,21 +256,55 @@ impl Face {
          delta: 0,
       };
 
-      let mut points: Box<CharPoints> = Box::new(CharPoints::new(steps));
+      let mut result = Vec::new();
 
-      unsafe {
-         ffi::FT_Load_Char(self.ft_face, ch as u32, ffi::FT_LOAD_DEFAULT);
+      let mut offset = 0;
 
-         let slot: ffi::FT_GlyphSlot = (*self.ft_face).glyph as ffi::FT_GlyphSlot;
+      let mut previous_index = 0;
 
-         ffi::FT_Outline_Decompose(
-            &mut (*slot).outline,
-            &funcs,
-            &mut *points as *mut _ as *mut c_void
-         );
+      for ch in string.chars() {
+         let mut points: Box<CharPoints> = Box::new(CharPoints::new(steps));
+
+         unsafe {
+            ffi::FT_Load_Char(self.ft_face, ch as u32, ffi::FT_LOAD_DEFAULT);
+
+            let slot = (*self.ft_face).glyph as ffi::FT_GlyphSlot;
+
+            let current_index = ffi::FT_Get_Char_Index(self.ft_face, ch as u32);
+
+            if previous_index != 0 {
+               let mut delta = ffi::FT_Vector::default();
+
+               ffi::FT_Get_Kerning(
+                  self.ft_face,
+                  previous_index,
+                  current_index,
+                  ffi::FT_KERNING_DEFAULT,
+                  &mut delta
+               );
+
+               offset += delta.x as i64;
+            }
+
+            ffi::FT_Outline_Decompose(
+               &mut (*slot).outline,
+               &funcs,
+               &mut *points as *mut _ as *mut c_void
+            );
+
+            let contours = points.as_int_points(offset);
+
+            if contours.len() > 0 {
+               result.push(contours);
+            }
+
+            offset += (*slot).metrics.horiAdvance as i64;
+
+            previous_index = current_index;
+         }
       }
 
-      points.as_int_points()
+      result
    }
 }
 

@@ -297,9 +297,7 @@ fn calc_pixel_color(aliased: &mut Vec<RGB>, width: usize, x: usize, y: usize) ->
 fn get_poly_edges(poly: &Poly) -> Vec<Edge> {
    let mut edges = Vec::new();
 
-   fill_edges_from_points(&mut edges, &poly.points);
-
-   for points in &poly.holes {
+   for points in &poly.contours {
       fill_edges_from_points(&mut edges, points);
    }
 
