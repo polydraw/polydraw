@@ -5,8 +5,7 @@ use std::os::raw::{c_void, c_int};
 use std::ptr;
 use std::ffi::CString;
 
-use data::FloatPoint;
-use geom::point::Point;
+use data::{FloatPoint, IntPoint};
 
 use super::DynLibrary;
 use super::utils::fn_ptr::FnPtrLibrary;
@@ -201,7 +200,7 @@ impl CharPoints {
    }
 
    #[inline]
-   fn as_int_points(&self, offset: i64) -> Vec<Vec<Point>> {
+   fn as_int_points(&self, offset: i64) -> Vec<Vec<IntPoint>> {
       let mut outer = Vec::new();
 
       for contour in &self.points {
@@ -211,7 +210,7 @@ impl CharPoints {
             let x = (point.x + offset as f64).round() as i64;
             let y = (-point.y).round() as i64;
 
-            inner.push(Point::new(x, y));
+            inner.push(IntPoint::new(x, y));
          }
 
          outer.push(inner);
@@ -246,7 +245,7 @@ impl Face {
       }
    }
 
-   pub fn text(&self, string: &str, steps: usize) -> Vec<Vec<Vec<Point>>> {
+   pub fn text(&self, string: &str, steps: usize) -> Vec<Vec<Vec<IntPoint>>> {
       let funcs = ffi::FT_Outline_Funcs {
          move_to: Some(move_to),
          line_to: Some(line_to),

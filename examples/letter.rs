@@ -2,7 +2,7 @@ extern crate polydraw;
 
 use polydraw::Application;
 use polydraw::devel::{Scene, Poly, DevelRenderer};
-use polydraw::geom::point::Point;
+use polydraw::data::IntPoint;
 use polydraw::draw::RGB;
 
 
@@ -217,28 +217,26 @@ fn letter_poly() -> Poly {
       (1005, 998),
    ]];
 
-   let outer = points_from_coords(&data[0]);
+   let mut contours = Vec::new();
 
-   let mut inner = Vec::new();
-
-   for inner_data in &data[1..] {
-      inner.push(
-         points_from_coords(inner_data)
+   for contour_data in &data[1..] {
+      contours.push(
+         points_from_coords(contour_data)
       );
    }
 
-   let poly = Poly::new_with_holes(
-      outer, inner, RGB::new(255, 255, 255),
+   let poly = Poly::new(
+      contours, RGB::new(255, 255, 255),
    );
 
    poly
 }
 
-fn points_from_coords(coords: &[(i64, i64)]) -> Vec<Point> {
+fn points_from_coords(coords: &[(i64, i64)]) -> Vec<IntPoint> {
    let mut points = Vec::new();
 
    for &(x, y) in coords.iter() {
-      points.push(Point::new(x + 120, y + 120))
+      points.push(IntPoint::new(x + 120, y + 120))
    }
 
    points

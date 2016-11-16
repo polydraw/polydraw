@@ -61,6 +61,11 @@ impl GPUFrame for QuadFrame {
    }
 
    #[inline]
+   fn ptr_mut(&mut self) -> *mut u8 {
+      self.data.as_mut_ptr()
+   }
+
+   #[inline]
    fn resize(&mut self, width: u32, height: u32) -> VoidResult {
       self.data.resize((width * height * 4) as usize, 0);
       self.texture.resize(width, height)

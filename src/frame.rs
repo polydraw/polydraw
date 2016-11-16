@@ -12,6 +12,8 @@ pub trait GPUFrame {
 
    fn put_pixel(&mut self, x: i32, y: i32, color: &RGB, width: u32, height: u32);
 
+   fn ptr_mut(&mut self) -> *mut u8;
+
    fn resize(&mut self, width: u32, height: u32) -> VoidResult;
 
    fn pre_render(&mut self) -> VoidResult;
@@ -47,6 +49,11 @@ impl Frame {
    #[inline]
    pub fn put_pixel(&mut self, x: i32, y: i32, color: &RGB) {
       self.gpu_frame.put_pixel(x, y, color, self.width, self.height);
+   }
+
+   #[inline]
+   pub fn ptr_mut(&mut self) -> *mut u8 {
+      self.gpu_frame.ptr_mut()
    }
 
    #[inline]

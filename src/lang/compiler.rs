@@ -10,7 +10,7 @@ use node::{
    eval_greater, eval_greater_equal, eval_gate, eval_polar, eval_poly,
    eval_layer,
 };
-use geom::point::Point;
+use data::IntPoint;
 
 use super::parser::{
    Ast, ListBox, List, PointBox, PointDef, FunctionCallBox, FunctionCall,
@@ -90,7 +90,7 @@ fn build_point(builder: &mut ProgramBuilder, node_id: String, point: PointBox) {
 
    match (x, y) {
       (Ast::Int(x), Ast::Int(y)) => {
-         builder.data(node_id, Data::Point(Point::new(x, y)))
+         builder.data(node_id, Data::Point(IntPoint::new(x, y)))
       },
       (x, y) => {
          let x_inlet = build_anon_node(builder, x);
@@ -106,7 +106,7 @@ fn build_anon_point(builder: &mut ProgramBuilder, point: PointBox) -> Inlet {
 
    match (x, y) {
       (Ast::Int(x), Ast::Int(y)) => {
-         Inlet::Data(Data::Point(Point::new(x, y)))
+         Inlet::Data(Data::Point(IntPoint::new(x, y)))
       },
       (x, y) => {
          let x_inlet = build_anon_node(builder, x);

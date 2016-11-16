@@ -2,7 +2,7 @@ extern crate polydraw;
 
 use polydraw::Application;
 use polydraw::draw::RGB;
-use polydraw::geom::point::Point;
+use polydraw::data::IntPoint;
 use polydraw::node::{
    NodeRenderer, Data, Add, BuildPoint, BuildList, BuildPoly, BuildLayer,
    BuildArtboard, ProgramBuilder, Inlet, Rotate, Nth, Multiply, Divide,
@@ -12,10 +12,10 @@ use polydraw::node::{
 fn main() {
    let points = Data::PointList(
       Box::new(vec![
-         Point::new(0, 0),
-         Point::new(90, 1200),
-         Point::new(261, 1735),
-         Point::new(1443, 410)
+         IntPoint::new(0, 0),
+         IntPoint::new(90, 1200),
+         IntPoint::new(261, 1735),
+         IntPoint::new(1443, 410)
       ])
    );
 
@@ -25,7 +25,7 @@ fn main() {
 
    builder.function(String::from("main"), vec![String::from("frame")]);
 
-   builder.data(String::from("center"), Data::Point(Point::new(1500, 600)));
+   builder.data(String::from("center"), Data::Point(IntPoint::new(1500, 600)));
 
    builder.data(String::from("segment"), Data::Int(120));
 

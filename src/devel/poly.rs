@@ -1,15 +1,15 @@
-use geom::point::Point;
+use data::IntPoint;
 use draw::RGB;
 
 #[derive(Debug, Clone)]
 pub struct Poly {
-   pub contours: Vec<Vec<Point>>,
+   pub contours: Vec<Vec<IntPoint>>,
    pub color: RGB,
 }
 
 impl Poly {
    #[inline]
-   pub fn new(contours: Vec<Vec<Point>>, color: RGB) -> Self {
+   pub fn new(contours: Vec<Vec<IntPoint>>, color: RGB) -> Self {
       Poly {
          contours: contours,
          color: color,

@@ -81,3 +81,18 @@ impl Ord for IntPoint {
    }
 }
 
+
+pub fn min_max_by_x(a: IntPoint, b: IntPoint) -> (IntPoint, IntPoint) {
+   if a.x < b.x {
+      (a, b)
+   } else if a.x > b.x {
+      (b, a)
+   } else if a.y < b.y {
+      (a, b)
+   } else if a.y > b.y {
+      (b, a)
+   } else {
+      (a, b)
+   }
+}
+

@@ -58,6 +58,11 @@ impl GPUFrame for BufferFrame {
    }
 
    #[inline]
+   fn ptr_mut(&mut self) -> *mut u8 {
+      self.buffer.ptr as *mut u8
+   }
+
+   #[inline]
    fn resize(&mut self, width: u32, height: u32) -> VoidResult {
       try!(self.buffer.init_data((width * height * 4) as usize));
 

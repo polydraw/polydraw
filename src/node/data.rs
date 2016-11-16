@@ -2,7 +2,7 @@ use std::fmt;
 
 pub use devel::Poly;
 pub use draw::RGB;
-pub use geom::point::Point;
+pub use data::IntPoint;
 
 
 #[derive(Debug, Clone)]
@@ -21,13 +21,13 @@ impl Layer {
 
 #[derive(Clone)]
 pub struct Rect {
-   pub p1: Point,
-   pub p2: Point,
+   pub p1: IntPoint,
+   pub p2: IntPoint,
 }
 
 impl Rect {
    #[inline]
-   pub fn new(p1: Point, p2: Point) -> Self {
+   pub fn new(p1: IntPoint, p2: IntPoint) -> Self {
       Rect {
          p1: p1,
          p2: p2,
@@ -41,8 +41,8 @@ impl fmt::Debug for Rect {
    }
 }
 
-pub type PointList = Vec<Point>;
-pub type PointListList = Vec<Vec<Point>>;
+pub type PointList = Vec<IntPoint>;
+pub type PointListList = Vec<Vec<IntPoint>>;
 pub type RgbList = Vec<RGB>;
 pub type PolyList = Vec<Poly>;
 pub type LayerList = Vec<Layer>;
@@ -54,7 +54,7 @@ pub enum Data {
    Int(i64),
    Float(f64),
    Bool(bool),
-   Point(Point),
+   Point(IntPoint),
    Rgb(RGB),
    FunctionRef(String),
    Rect(Box<Rect>),

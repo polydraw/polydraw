@@ -2,11 +2,10 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 use std::fs::File;
+use std::slice;
 
-use draw::RGB;
 
-
-pub fn write_ppm(filename: &str, width: usize, height: usize, buffer: &Vec<RGB>) -> io::Result<()> {
+pub fn write_ppm(filename: &str, width: usize, height: usize, mut buffer: *const u8) -> io::Result<()> {
    let path = Path::new(filename);
    let mut file = try!(File::create(&path));
 
@@ -14,18 +13,15 @@ pub fn write_ppm(filename: &str, width: usize, height: usize, buffer: &Vec<RGB>)
 
    try!(file.write(header.as_bytes()));
 
-   let mut data = Vec::with_capacity(width * height);
+   for _ in 0..width * height {
+      let data = unsafe { slice::from_raw_parts(buffer, 3) };
 
-   for y in 0..height {
-      for x in 0..width {
-         let i = (y * width + x) as usize;
-         data.push(buffer[i].r);
-         data.push(buffer[i].g);
-         data.push(buffer[i].b);
+      try!(file.write(data));
+
+      unsafe {
+         buffer = buffer.offset(4);
       }
    }
-
-   try!(file.write(&data));
 
    Ok(())
 }

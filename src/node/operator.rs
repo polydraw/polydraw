@@ -4,7 +4,7 @@ use std::i64;
 use draw::RGB;
 
 use super::node::{Node, NodeRole};
-use super::data::{Data, NONE, Layer, Point, PointList, Poly, PointListList, Rect};
+use super::data::{Data, NONE, Layer, IntPoint, PointList, Poly, PointListList, Rect};
 use super::builder::Program;
 
 
@@ -196,7 +196,7 @@ impl AddTrait<i64> for f64 {
    }
 }
 
-impl AddTrait<i64> for Point {
+impl AddTrait<i64> for IntPoint {
    #[inline]
    fn add(mut self, v2: i64) -> Data {
       self.x += v2;
@@ -206,9 +206,9 @@ impl AddTrait<i64> for Point {
    }
 }
 
-impl AddTrait<Point> for Point {
+impl AddTrait<IntPoint> for IntPoint {
    #[inline]
-   fn add(mut self, v2: Point) -> Data {
+   fn add(mut self, v2: IntPoint) -> Data {
       self.x += v2.x;
       self.y += v2.y;
 
@@ -216,9 +216,9 @@ impl AddTrait<Point> for Point {
    }
 }
 
-impl AddTrait<Point> for Box<PointList> {
+impl AddTrait<IntPoint> for Box<PointList> {
    #[inline]
-   fn add(mut self, v2: Point) -> Data {
+   fn add(mut self, v2: IntPoint) -> Data {
       for point in self.iter_mut() {
          point.x += v2.x;
          point.y += v2.y;
@@ -228,9 +228,9 @@ impl AddTrait<Point> for Box<PointList> {
    }
 }
 
-impl AddTrait<Point> for Box<PointListList> {
+impl AddTrait<IntPoint> for Box<PointListList> {
    #[inline]
-   fn add(mut self, v2: Point) -> Data {
+   fn add(mut self, v2: IntPoint) -> Data {
       for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x += v2.x;
@@ -307,7 +307,7 @@ impl DivideTrait<f64> for i64 {
    }
 }
 
-impl DivideTrait<i64> for Point {
+impl DivideTrait<i64> for IntPoint {
    #[inline]
    fn divide(mut self, v2: i64) -> Data {
       self.x /= v2;
@@ -317,9 +317,9 @@ impl DivideTrait<i64> for Point {
    }
 }
 
-impl DivideTrait<Point> for Point {
+impl DivideTrait<IntPoint> for IntPoint {
    #[inline]
-   fn divide(mut self, v2: Point) -> Data {
+   fn divide(mut self, v2: IntPoint) -> Data {
       self.x /= v2.x;
       self.y /= v2.y;
 
@@ -327,9 +327,9 @@ impl DivideTrait<Point> for Point {
    }
 }
 
-impl DivideTrait<Point> for Box<PointList> {
+impl DivideTrait<IntPoint> for Box<PointList> {
    #[inline]
-   fn divide(mut self, v2: Point) -> Data {
+   fn divide(mut self, v2: IntPoint) -> Data {
       for point in self.iter_mut() {
          point.x /= v2.x;
          point.y /= v2.y;
@@ -339,9 +339,9 @@ impl DivideTrait<Point> for Box<PointList> {
    }
 }
 
-impl DivideTrait<Point> for Box<PointListList> {
+impl DivideTrait<IntPoint> for Box<PointListList> {
    #[inline]
-   fn divide(mut self, v2: Point) -> Data {
+   fn divide(mut self, v2: IntPoint) -> Data {
       for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x /= v2.x;
@@ -418,7 +418,7 @@ impl SubtractTrait<f64> for i64 {
    }
 }
 
-impl SubtractTrait<i64> for Point {
+impl SubtractTrait<i64> for IntPoint {
    #[inline]
    fn subtract(mut self, v2: i64) -> Data {
       self.x -= v2;
@@ -428,9 +428,9 @@ impl SubtractTrait<i64> for Point {
    }
 }
 
-impl SubtractTrait<Point> for Point {
+impl SubtractTrait<IntPoint> for IntPoint {
    #[inline]
-   fn subtract(mut self, v2: Point) -> Data {
+   fn subtract(mut self, v2: IntPoint) -> Data {
       self.x -= v2.x;
       self.y -= v2.y;
 
@@ -438,9 +438,9 @@ impl SubtractTrait<Point> for Point {
    }
 }
 
-impl SubtractTrait<Point> for Box<PointList> {
+impl SubtractTrait<IntPoint> for Box<PointList> {
    #[inline]
-   fn subtract(mut self, v2: Point) -> Data {
+   fn subtract(mut self, v2: IntPoint) -> Data {
       for point in self.iter_mut() {
          point.x -= v2.x;
          point.y -= v2.y;
@@ -450,9 +450,9 @@ impl SubtractTrait<Point> for Box<PointList> {
    }
 }
 
-impl SubtractTrait<Point> for Box<PointListList> {
+impl SubtractTrait<IntPoint> for Box<PointListList> {
    #[inline]
-   fn subtract(mut self, v2: Point) -> Data {
+   fn subtract(mut self, v2: IntPoint) -> Data {
       for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x -= v2.x;
@@ -525,7 +525,7 @@ impl MultiplyTrait<i64> for f64 {
    }
 }
 
-impl MultiplyTrait<i64> for Point {
+impl MultiplyTrait<i64> for IntPoint {
    #[inline]
    fn multiply(mut self, v2: i64) -> Data {
       self.x *= v2;
@@ -535,9 +535,9 @@ impl MultiplyTrait<i64> for Point {
    }
 }
 
-impl MultiplyTrait<Point> for Point {
+impl MultiplyTrait<IntPoint> for IntPoint {
    #[inline]
-   fn multiply(mut self, v2: Point) -> Data {
+   fn multiply(mut self, v2: IntPoint) -> Data {
       self.x *= v2.x;
       self.y *= v2.y;
 
@@ -545,9 +545,9 @@ impl MultiplyTrait<Point> for Point {
    }
 }
 
-impl MultiplyTrait<Point> for Box<PointList> {
+impl MultiplyTrait<IntPoint> for Box<PointList> {
    #[inline]
-   fn multiply(mut self, v2: Point) -> Data {
+   fn multiply(mut self, v2: IntPoint) -> Data {
       for point in self.iter_mut() {
          point.x *= v2.x;
          point.y *= v2.y;
@@ -557,9 +557,9 @@ impl MultiplyTrait<Point> for Box<PointList> {
    }
 }
 
-impl MultiplyTrait<Point> for Box<PointListList> {
+impl MultiplyTrait<IntPoint> for Box<PointListList> {
    #[inline]
-   fn multiply(mut self, v2: Point) -> Data {
+   fn multiply(mut self, v2: IntPoint) -> Data {
       for src in self.iter_mut() {
          for point in src.iter_mut() {
             point.x *= v2.x;
@@ -891,7 +891,7 @@ impl Operator for Nth {
       let result = match (in1, in2) {
          (Data::Rgb(object), Data::Int(index)) => <RGB>::nth(object, index),
 
-         (Data::Point(object), Data::Int(index)) => <Point>::nth(object, index),
+         (Data::Point(object), Data::Int(index)) => <IntPoint>::nth(object, index),
 
          (Data::Rect(object), Data::Int(index)) => <Box<Rect>>::nth(object, index),
 
@@ -910,7 +910,7 @@ trait NthTrait {
    fn nth(self, index: i64) -> Data;
 }
 
-impl NthTrait for Point {
+impl NthTrait for IntPoint {
    #[inline]
    fn nth(self, index: i64) -> Data {
       match index {
@@ -988,7 +988,7 @@ impl PolarTrait<f64, f64> for (f64, f64) {
       let x = radius * radians.cos();
       let y = radius * radians.sin();
 
-      Data::Point(Point::new(x.round() as i64, y.round() as i64))
+      Data::Point(IntPoint::new(x.round() as i64, y.round() as i64))
    }
 }
 
@@ -1039,12 +1039,12 @@ pub fn eval_rotate(target: Data, origin: Data, angle: Data) -> Data {
 }
 
 trait RotateTrait<T2> {
-   fn rotate(self, origin: Point, angle: T2) -> Data;
+   fn rotate(self, origin: IntPoint, angle: T2) -> Data;
 }
 
-impl RotateTrait<f64> for Point {
+impl RotateTrait<f64> for IntPoint {
    #[inline]
-   fn rotate(mut self, origin: Point, angle: f64) -> Data {
+   fn rotate(mut self, origin: IntPoint, angle: f64) -> Data {
       let cx = origin.x as f64;
       let cy = origin.y as f64;
 
@@ -1066,16 +1066,16 @@ impl RotateTrait<f64> for Point {
    }
 }
 
-impl RotateTrait<i64> for Point {
+impl RotateTrait<i64> for IntPoint {
    #[inline]
-   fn rotate(self, origin: Point, angle: i64) -> Data {
+   fn rotate(self, origin: IntPoint, angle: i64) -> Data {
       self.rotate(origin, angle as f64)
    }
 }
 
 impl RotateTrait<f64> for Box<PointList> {
    #[inline]
-   fn rotate(mut self, origin: Point, angle: f64) -> Data {
+   fn rotate(mut self, origin: IntPoint, angle: f64) -> Data {
       let cx = origin.x as f64;
       let cy = origin.y as f64;
 
@@ -1101,14 +1101,14 @@ impl RotateTrait<f64> for Box<PointList> {
 
 impl RotateTrait<i64> for Box<PointList> {
    #[inline]
-   fn rotate(self, origin: Point, angle: i64) -> Data {
+   fn rotate(self, origin: IntPoint, angle: i64) -> Data {
       self.rotate(origin, angle as f64)
    }
 }
 
 impl RotateTrait<f64> for Box<PointListList> {
    #[inline]
-   fn rotate(mut self, origin: Point, angle: f64) -> Data {
+   fn rotate(mut self, origin: IntPoint, angle: f64) -> Data {
       let cx = origin.x as f64;
       let cy = origin.y as f64;
 
@@ -1136,7 +1136,7 @@ impl RotateTrait<f64> for Box<PointListList> {
 
 impl RotateTrait<i64> for Box<PointListList> {
    #[inline]
-   fn rotate(self, origin: Point, angle: i64) -> Data {
+   fn rotate(self, origin: IntPoint, angle: i64) -> Data {
       self.rotate(origin, angle as f64)
    }
 }
@@ -1177,7 +1177,7 @@ trait BBoxTrait {
    fn bbox(self) -> Data;
 }
 
-impl BBoxTrait for Point {
+impl BBoxTrait for IntPoint {
    #[inline]
    fn bbox(self) -> Data {
       Data::Rect(
@@ -1222,7 +1222,7 @@ impl BBoxTrait for Box<PointList> {
       Data::Rect(
          Box::new(
             Rect::new(
-               Point::new(left, top), Point::new(right, bottom)
+               IntPoint::new(left, top), IntPoint::new(right, bottom)
             )
          )
       )
@@ -1265,7 +1265,7 @@ impl BBoxTrait for Box<PointListList> {
       Data::Rect(
          Box::new(
             Rect::new(
-               Point::new(left, top), Point::new(right, bottom)
+               IntPoint::new(left, top), IntPoint::new(right, bottom)
             )
          )
       )
@@ -1306,7 +1306,7 @@ trait CenterTrait {
    fn center(self) -> Data;
 }
 
-impl CenterTrait for Point {
+impl CenterTrait for IntPoint {
    #[inline]
    fn center(self) -> Data {
       Data::Point(self)
@@ -1318,7 +1318,7 @@ impl CenterTrait for Rect {
    fn center(self) -> Data {
       let x = (self.p1.x + self.p2.x) / 2;
       let y = (self.p1.y + self.p1.y) / 2;
-      Data::Point(Point::new(x, y))
+      Data::Point(IntPoint::new(x, y))
    }
 }
 
@@ -1364,7 +1364,7 @@ impl Operator for BuildPoint {
       let in2 = node.input(state, 1);
 
       let result = match (in1, in2) {
-         (Data::Int(v1), Data::Int(v2)) => Data::Point(Point::new(v1, v2)),
+         (Data::Int(v1), Data::Int(v2)) => Data::Point(IntPoint::new(v1, v2)),
          _ => NONE
       };
 
@@ -1708,7 +1708,7 @@ macro_rules! each_trait {
 each_trait!(Vec<i64>, Data::Int);
 each_trait!(Vec<f64>, Data::Float);
 each_trait!(Vec<bool>, Data::Bool);
-each_trait!(Vec<Point>, Data::Point);
+each_trait!(Vec<IntPoint>, Data::Point);
 each_trait!(Vec<RGB>, Data::Rgb);
 
 
@@ -1795,7 +1795,7 @@ macro_rules! each_with_last_trait {
 each_with_last_trait!(Vec<i64>, Data::Int);
 each_with_last_trait!(Vec<f64>, Data::Float);
 each_with_last_trait!(Vec<bool>, Data::Bool);
-each_with_last_trait!(Vec<Point>, Data::Point);
+each_with_last_trait!(Vec<IntPoint>, Data::Point);
 each_with_last_trait!(Vec<RGB>, Data::Rgb);
 
 
