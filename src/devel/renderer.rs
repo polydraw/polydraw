@@ -49,7 +49,7 @@ impl Edge {
 
    #[inline]
    fn advance(&mut self) {
-      self.drawx = self.currx.round() as i64;
+      self.drawx = ((2.0 * self.currx + self.slope) / 2.0).round() as i64;
       self.currx += self.slope;
    }
 }
