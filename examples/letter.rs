@@ -219,7 +219,7 @@ fn letter_poly() -> Poly {
 
    let mut contours = Vec::new();
 
-   for contour_data in &data[1..] {
+   for contour_data in data.iter() {
       contours.push(
          points_from_coords(contour_data)
       );
