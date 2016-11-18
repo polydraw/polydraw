@@ -39,7 +39,13 @@ fn main() {
 
                let mut program = builder.compile();
 
-               let result = program.execute(vec![Data::Int(100)]);
+               let result = program.execute(
+                  vec![
+                     Data::Int(100),
+                     Data::Int(1600),
+                     Data::Int(900),
+                  ]
+               );
 
                println!(">> {:?}", result);
             },

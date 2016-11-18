@@ -1,5 +1,5 @@
-use devel::{DevelRenderer, Scene};
-use renderer::Renderer;
+use devel::{DevelRenderer, Scene, SUBDIVISIONS};
+use renderer::{Renderer};
 use frame::Frame;
 
 use super::data::Data;
@@ -33,7 +33,13 @@ impl Renderer for NodeRenderer {
 
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
-      let result = self.program.execute(vec![Data::Int(self.frame)]);
+      let result = self.program.execute(
+         vec![
+            Data::Int(self.frame),
+            Data::Int(frame.width as i64 * SUBDIVISIONS),
+            Data::Int(frame.height as i64 * SUBDIVISIONS),
+         ]
+      );
 
       let mut scene = Scene::new();
 

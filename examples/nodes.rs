@@ -23,7 +23,9 @@ fn main() {
 
    let mut builder = ProgramBuilder::new();
 
-   builder.function(String::from("main"), vec![String::from("frame")]);
+   builder.function(String::from("main"), vec![
+      String::from("frame"), String::from("width"), String::from("height")
+   ]);
 
    builder.data(String::from("center"), Data::Point(IntPoint::new(1500, 600)));
 
