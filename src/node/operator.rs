@@ -1768,6 +1768,7 @@ impl Operator for Each {
             Data::FloatList(list) => list.each(program, function, extra),
             Data::BoolList(list) => list.each(program, function, extra),
             Data::PointList(list) => list.each(program, function, extra),
+            Data::PointListList(list) => list.each(program, function, extra),
             Data::RgbList(list) => list.each(program, function, extra),
             _ => NONE,
          }
@@ -1809,11 +1810,157 @@ macro_rules! each_trait {
    }
 }
 
+macro_rules! each_trait_boxed {
+   ($trait_ty:ty, $data_ty:expr) => {
+      impl EachTrait for $trait_ty {
+         #[inline]
+         fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
+            let mut list = Vec::with_capacity(self.len());
+
+            let mut list_type = ListType::None;
+
+            for value in *self {
+               let mut arguments = vec![$data_ty(Box::new(value))];
+               arguments.append(&mut extra.clone());
+
+               let data = program.execute_function(function.clone(), arguments);
+
+               list_type = update_list_type(list_type, &data);
+
+               list.push(data);
+            }
+
+            to_native_list(list, list_type)
+         }
+      }
+   }
+}
+
 each_trait!(Vec<i64>, Data::Int);
 each_trait!(Vec<f64>, Data::Float);
 each_trait!(Vec<bool>, Data::Bool);
 each_trait!(Vec<IntPoint>, Data::Point);
 each_trait!(Vec<RGB>, Data::Rgb);
+each_trait_boxed!(Box<Vec<Vec<IntPoint>>>, Data::PointList);
+
+
+#[derive(Debug)]
+pub struct EachWithIndex { }
+
+impl EachWithIndex {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(EachWithIndex {})
+   }
+}
+
+impl Operator for EachWithIndex {
+   #[inline]
+   fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let target = node.input(state, 0);
+      let function = node.input(state, 1);
+
+      let data = if let Data::FunctionRef(function) = function {
+         let count = program.argument_count(&function);
+         let mut extra = Vec::with_capacity(count - 2);
+
+         for i in 2..count {
+            extra.push(node.input(state, i));
+         }
+
+         match target {
+            Data::IntList(list) => list.each_with_index(program, function, extra),
+            Data::FloatList(list) => list.each_with_index(program, function, extra),
+            Data::BoolList(list) => list.each_with_index(program, function, extra),
+            Data::PointList(list) => list.each_with_index(program, function, extra),
+            Data::PointListList(list) => list.each_with_index(program, function, extra),
+            Data::RgbList(list) => list.each_with_index(program, function, extra),
+            _ => NONE,
+         }
+      } else {
+         NONE
+      };
+
+      Some(data)
+   }
+}
+
+trait EachWithIndexTrait {
+   fn each_with_index(
+      self, program: &mut Program, function: String, extra: Vec<Data>
+   ) -> Data;
+}
+
+macro_rules! each_with_index_trait {
+   ($trait_ty:ty, $data_ty:expr) => {
+      impl EachWithIndexTrait for $trait_ty {
+         #[inline]
+         fn each_with_index(
+            self, program: &mut Program, function: String, extra: Vec<Data>
+         ) -> Data {
+            let mut list = Vec::with_capacity(self.len());
+
+            let mut list_type = ListType::None;
+
+            let mut index: i64 = 0;
+
+            for value in self {
+               let mut arguments = vec![$data_ty(value), Data::Int(index)];
+               arguments.append(&mut extra.clone());
+
+               let data = program.execute_function(function.clone(), arguments);
+
+               list_type = update_list_type(list_type, &data);
+
+               list.push(data);
+
+               index += 1;
+            }
+
+            to_native_list(list, list_type)
+         }
+      }
+   }
+}
+
+macro_rules! each_with_index_trait_boxed {
+   ($trait_ty:ty, $data_ty:expr) => {
+      impl EachWithIndexTrait for $trait_ty {
+         #[inline]
+         fn each_with_index(
+            self, program: &mut Program, function: String, extra: Vec<Data>
+         ) -> Data {
+            let mut list = Vec::with_capacity(self.len());
+
+            let mut list_type = ListType::None;
+
+            let mut index: i64 = 0;
+
+            for value in *self {
+               let mut arguments = vec![$data_ty(Box::new(value)), Data::Int(index)];
+               arguments.append(&mut extra.clone());
+
+               let data = program.execute_function(function.clone(), arguments);
+
+               list_type = update_list_type(list_type, &data);
+
+               list.push(data);
+
+               index += 1;
+            }
+
+            to_native_list(list, list_type)
+         }
+      }
+   }
+}
+
+each_with_index_trait!(Vec<i64>, Data::Int);
+each_with_index_trait!(Vec<f64>, Data::Float);
+each_with_index_trait!(Vec<bool>, Data::Bool);
+each_with_index_trait!(Vec<IntPoint>, Data::Point);
+each_with_index_trait!(Vec<RGB>, Data::Rgb);
+each_with_index_trait_boxed!(Box<Vec<Vec<IntPoint>>>, Data::PointList);
 
 
 #[derive(Debug)]
@@ -1846,6 +1993,7 @@ impl Operator for EachWithLast {
             Data::FloatList(list) => list.each_with_last(program, function, initial, extra),
             Data::BoolList(list) => list.each_with_last(program, function, initial, extra),
             Data::PointList(list) => list.each_with_last(program, function, initial, extra),
+            Data::PointListList(list) => list.each_with_last(program, function, initial, extra),
             Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
             _ => NONE,
          }
@@ -1893,11 +2041,42 @@ macro_rules! each_with_last_trait {
    }
 }
 
+macro_rules! each_with_last_trait_boxed {
+   ($trait_ty:ty, $data_ty:expr) => {
+      impl EachWithLastTrait for $trait_ty {
+         #[inline]
+         fn each_with_last(
+            self, program: &mut Program, function: String, mut initial: Data, extra: Vec<Data>
+         ) -> Data {
+            let mut list = Vec::with_capacity(self.len());
+
+            let mut list_type = ListType::None;
+
+            for value in *self {
+               let mut arguments = vec![$data_ty(Box::new(value)), initial];
+               arguments.append(&mut extra.clone());
+
+               let data = program.execute_function(function.clone(), arguments);
+
+               list_type = update_list_type(list_type, &data);
+
+               initial = data.clone();
+
+               list.push(data);
+            }
+
+            to_native_list(list, list_type)
+         }
+      }
+   }
+}
+
 each_with_last_trait!(Vec<i64>, Data::Int);
 each_with_last_trait!(Vec<f64>, Data::Float);
 each_with_last_trait!(Vec<bool>, Data::Bool);
 each_with_last_trait!(Vec<IntPoint>, Data::Point);
 each_with_last_trait!(Vec<RGB>, Data::Rgb);
+each_with_last_trait_boxed!(Box<Vec<Vec<IntPoint>>>, Data::PointList);
 
 
 fn update_list_type(current: ListType, data: &Data) -> ListType {

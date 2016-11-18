@@ -11,7 +11,7 @@ pub use self::operator::{
    BBox, BuildRgb, Rotate, Center, Nth, Multiply, Divide, Print,
    SourceOperator, Subtract, InputOperator, Equal, Unequal, Less, LessEqual,
    Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each, EachWithLast,
-   ListType, Range,
+   EachWithIndex, ListType, Range,
 };
 
 pub use self::operator::{
