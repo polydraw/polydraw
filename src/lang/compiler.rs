@@ -2,13 +2,13 @@ use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
    Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each,
-   EachWithLast, BuildPoly, ListType, BuildLayer,
+   EachWithLast, BuildPoly, ListType, BuildLayer, Range,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
    eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
    eval_greater, eval_greater_equal, eval_gate, eval_polar, eval_poly,
-   eval_layer,
+   eval_layer, eval_range,
 };
 use data::IntPoint;
 
@@ -18,7 +18,7 @@ use super::parser::{
 };
 
 
-const EXEC_FUNCS: [&'static str; 12] = [
+const EXEC_FUNCS: [&'static str; 13] = [
    "add",
    "divide",
    "multiply",
@@ -31,6 +31,7 @@ const EXEC_FUNCS: [&'static str; 12] = [
    "gate",
    "poly",
    "layer",
+   "range",
 ];
 
 
@@ -221,6 +222,7 @@ fn build_function_call(
       "gate" => builder.operator(Gate::new(), node_id, inlets),
       "poly" => builder.operator(BuildPoly::new(), node_id, inlets),
       "layer" => builder.operator(BuildLayer::new(), node_id, inlets),
+      "range" => builder.operator(Range::new(), node_id, inlets),
       "each" => builder.operator(Each::new(), node_id, inlets),
       "each-with-last" => builder.operator(EachWithLast::new(), node_id, inlets),
       _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
@@ -249,6 +251,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "gate" => builder.anonymous(Gate::new(), inlets),
       "poly" => builder.anonymous(BuildPoly::new(), inlets),
       "layer" => builder.anonymous(BuildLayer::new(), inlets),
+      "range" => builder.anonymous(Range::new(), inlets),
       "each" => builder.anonymous(Each::new(), inlets),
       "each-with-last" => builder.anonymous(EachWithLast::new(), inlets),
       _ => builder.anonymous(FunctionOperator::new(name), inlets),
@@ -287,6 +290,7 @@ fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
       "gate" => exec_2_arg_fn(eval_gate, inlets),
       "poly" => exec_2_arg_fn(eval_poly, inlets),
       "layer" => exec_1_arg_fn(eval_layer, inlets),
+      "range" => exec_2_arg_fn(eval_range, inlets),
       _ => panic!("Unrecognized function {}", name),
    }
 }

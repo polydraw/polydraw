@@ -1633,6 +1633,34 @@ fn data_list_type(data: &Data) -> ListType {
 
 
 #[derive(Debug)]
+pub struct Range { }
+
+impl Range {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Range {})
+   }
+}
+
+impl Operator for Range {
+   #[inline]
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
+
+      Some(eval_range(in1, in2))
+   }
+}
+
+pub fn eval_range(in1: Data, in2: Data) -> Data {
+   match (in1, in2) {
+      (Data::Int(v1), Data::Int(v2)) => Data::IntList(Box::new((v1..v2).collect())),
+      _ => NONE
+   }
+}
+
+
+#[derive(Debug)]
 pub struct Each { }
 
 impl Each {
