@@ -8,6 +8,89 @@ use super::data::{Data, NONE, Layer, IntPoint, PointList, Poly, PointListList, R
 use super::builder::Program;
 
 
+pub type Eval1ArgFn = fn(in1: Data) -> Data;
+pub type Eval2ArgFn = fn(in1: Data, in2: Data) -> Data;
+pub type Eval3ArgFn = fn(in1: Data, in2: Data, in3: Data) -> Data;
+
+
+pub const EXEC_FUNCS: [&'static str; 13] = [
+   "add",
+   "divide",
+   "multiply",
+   "subtract",
+   "polar",
+   "rotate",
+   "center",
+   "bbox",
+   "rgb",
+   "gate",
+   "poly",
+   "layer",
+   "range",
+];
+
+
+pub fn function_argument_count(name: &str) -> usize {
+   match name {
+      "add" => 2,
+      "divide" => 2,
+      "multiply" => 2,
+      "subtract" => 2,
+      "polar" => 2,
+      "rotate" => 3,
+      "center" => 1,
+      "bbox" => 1,
+      "rgb" => 3,
+      "gate" => 2,
+      "poly" => 2,
+      "layer" => 1,
+      "range" => 2,
+      _ => panic!("Unrecognized function {}", name),
+   }
+}
+
+
+pub fn exec_built_in_function(name: &str, args: Vec<Data>) -> Data {
+   match name {
+      "add" => exec_2_arg_fn(eval_add, args),
+      "divide" => exec_2_arg_fn(eval_divide, args),
+      "multiply" => exec_2_arg_fn(eval_multiply, args),
+      "subtract" => exec_2_arg_fn(eval_subtract, args),
+      "polar" => exec_2_arg_fn(eval_polar, args),
+      "rotate" => exec_3_arg_fn(eval_rotate, args),
+      "center" => exec_1_arg_fn(eval_center, args),
+      "bbox" => exec_1_arg_fn(eval_bbox, args),
+      "rgb" => exec_3_arg_fn(eval_rgb, args),
+      "gate" => exec_2_arg_fn(eval_gate, args),
+      "poly" => exec_2_arg_fn(eval_poly, args),
+      "layer" => exec_1_arg_fn(eval_layer, args),
+      "range" => exec_2_arg_fn(eval_range, args),
+      _ => panic!("Unrecognized function {}", name),
+   }
+}
+
+fn exec_1_arg_fn(function: Eval1ArgFn, mut args: Vec<Data>) -> Data {
+   let arg1 = args.pop().unwrap();
+
+   function(arg1)
+}
+
+fn exec_2_arg_fn(function: Eval2ArgFn, mut args: Vec<Data>) -> Data {
+   let arg2 = args.pop().unwrap();
+   let arg1 = args.pop().unwrap();
+
+   function(arg1, arg2)
+}
+
+fn exec_3_arg_fn(function: Eval3ArgFn, mut args: Vec<Data>) -> Data {
+   let arg3 = args.pop().unwrap();
+   let arg2 = args.pop().unwrap();
+   let arg1 = args.pop().unwrap();
+
+   function(arg1, arg2, arg3)
+}
+
+
 pub trait Operator where Self: fmt::Debug {
    fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data>;
 
@@ -1584,18 +1667,14 @@ impl Operator for FunctionOperator {
    fn process(
       &self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]
    ) -> Option<Data> {
-      match program.argument_count(&self.name) {
-         Some(count) => {
-            let mut arguments = Vec::with_capacity(count);
+      let count = program.argument_count(&self.name);
+      let mut arguments = Vec::with_capacity(count);
 
-            for i in 0..count {
-               arguments.push(node.input(state, i));
-            }
-
-            Some(program.execute_function(self.name.clone(), arguments))
-         },
-         None => None,
+      for i in 0..count {
+         arguments.push(node.input(state, i));
       }
+
+      Some(program.execute_function(self.name.clone(), arguments))
    }
 }
 
@@ -1677,23 +1756,20 @@ impl Operator for Each {
       let function = node.input(state, 1);
 
       let data = if let Data::FunctionRef(function) = function {
-         if let Some(count) = program.argument_count(&function) {
-            let mut extra = Vec::with_capacity(count - 1);
+         let count = program.argument_count(&function);
+         let mut extra = Vec::with_capacity(count - 1);
 
-            for i in 2..count + 1 {
-               extra.push(node.input(state, i));
-            }
+         for i in 2..count + 1 {
+            extra.push(node.input(state, i));
+         }
 
-            match target {
-               Data::IntList(list) => list.each(program, function, extra),
-               Data::FloatList(list) => list.each(program, function, extra),
-               Data::BoolList(list) => list.each(program, function, extra),
-               Data::PointList(list) => list.each(program, function, extra),
-               Data::RgbList(list) => list.each(program, function, extra),
-               _ => NONE,
-            }
-         } else {
-            NONE
+         match target {
+            Data::IntList(list) => list.each(program, function, extra),
+            Data::FloatList(list) => list.each(program, function, extra),
+            Data::BoolList(list) => list.each(program, function, extra),
+            Data::PointList(list) => list.each(program, function, extra),
+            Data::RgbList(list) => list.each(program, function, extra),
+            _ => NONE,
          }
       } else {
          NONE
@@ -1758,23 +1834,20 @@ impl Operator for EachWithLast {
       let initial = node.input(state, 2);
 
       let data = if let Data::FunctionRef(function) = function {
-         if let Some(count) = program.argument_count(&function) {
-            let mut extra = Vec::with_capacity(count - 2);
+         let count = program.argument_count(&function);
+         let mut extra = Vec::with_capacity(count - 2);
 
-            for i in 3..count + 1 {
-               extra.push(node.input(state, i));
-            }
+         for i in 3..count + 1 {
+            extra.push(node.input(state, i));
+         }
 
-            match target {
-               Data::IntList(list) => list.each_with_last(program, function, initial, extra),
-               Data::FloatList(list) => list.each_with_last(program, function, initial, extra),
-               Data::BoolList(list) => list.each_with_last(program, function, initial, extra),
-               Data::PointList(list) => list.each_with_last(program, function, initial, extra),
-               Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
-               _ => NONE,
-            }
-         } else {
-            NONE
+         match target {
+            Data::IntList(list) => list.each_with_last(program, function, initial, extra),
+            Data::FloatList(list) => list.each_with_last(program, function, initial, extra),
+            Data::BoolList(list) => list.each_with_last(program, function, initial, extra),
+            Data::PointList(list) => list.each_with_last(program, function, initial, extra),
+            Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
+            _ => NONE,
          }
       } else {
          NONE

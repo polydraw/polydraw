@@ -21,6 +21,10 @@ pub use self::operator::{
    eval_layer, eval_range,
 };
 
+pub use self::operator::{
+   EXEC_FUNCS, function_argument_count, exec_built_in_function,
+};
+
 pub use self::data::Data;
 
 pub use self::renderer::NodeRenderer;

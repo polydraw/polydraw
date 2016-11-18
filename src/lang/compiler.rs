@@ -5,10 +5,11 @@ use node::{
    EachWithLast, BuildPoly, ListType, BuildLayer, Range,
 };
 use node::{
-   eval_add, eval_divide, eval_multiply, eval_subtract, eval_rotate, eval_bbox,
-   eval_center, eval_rgb, eval_equal, eval_unequal, eval_less, eval_less_equal,
-   eval_greater, eval_greater_equal, eval_gate, eval_polar, eval_poly,
-   eval_layer, eval_range,
+   eval_add, eval_divide, eval_multiply, eval_subtract, eval_equal, eval_unequal,
+   eval_less, eval_less_equal, eval_greater, eval_greater_equal,
+};
+use node::{
+   EXEC_FUNCS, function_argument_count, exec_built_in_function,
 };
 use data::IntPoint;
 
@@ -16,23 +17,6 @@ use super::parser::{
    Ast, ListBox, List, PointBox, PointDef, FunctionCallBox, FunctionCall,
    BinaryBox, Binary, Assignment, BinaryType, Function,
 };
-
-
-const EXEC_FUNCS: [&'static str; 13] = [
-   "add",
-   "divide",
-   "multiply",
-   "subtract",
-   "polar",
-   "rotate",
-   "center",
-   "bbox",
-   "rgb",
-   "gate",
-   "poly",
-   "layer",
-   "range",
-];
 
 
 pub fn compile(builder: &mut ProgramBuilder, ast_list: Vec<Ast>) {
@@ -277,49 +261,11 @@ fn function_inlets(builder: &mut ProgramBuilder, arguments: Vec<Ast>) -> (Vec<In
 }
 
 fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
-   match &name as &str {
-      "add" => exec_2_arg_fn(eval_add, inlets),
-      "divide" => exec_2_arg_fn(eval_divide, inlets),
-      "multiply" => exec_2_arg_fn(eval_multiply, inlets),
-      "subtract" => exec_2_arg_fn(eval_subtract, inlets),
-      "polar" => exec_2_arg_fn(eval_polar, inlets),
-      "rotate" => exec_3_arg_fn(eval_rotate, inlets),
-      "center" => exec_1_arg_fn(eval_center, inlets),
-      "bbox" => exec_1_arg_fn(eval_bbox, inlets),
-      "rgb" => exec_3_arg_fn(eval_rgb, inlets),
-      "gate" => exec_2_arg_fn(eval_gate, inlets),
-      "poly" => exec_2_arg_fn(eval_poly, inlets),
-      "layer" => exec_1_arg_fn(eval_layer, inlets),
-      "range" => exec_2_arg_fn(eval_range, inlets),
-      _ => panic!("Unrecognized function {}", name),
-   }
-}
+   let count = function_argument_count(&name);
 
-fn exec_1_arg_fn(function: Eval1ArgFn, inlets: Vec<Inlet>) -> Data {
-   let mut arguments = arguments_from_inlets(inlets, 1);
+   let args = arguments_from_inlets(inlets, count);
 
-   let arg1 = arguments.pop().unwrap();
-
-   function(arg1)
-}
-
-fn exec_2_arg_fn(function: Eval2ArgFn, inlets: Vec<Inlet>) -> Data {
-   let mut arguments = arguments_from_inlets(inlets, 2);
-
-   let arg2 = arguments.pop().unwrap();
-   let arg1 = arguments.pop().unwrap();
-
-   function(arg1, arg2)
-}
-
-fn exec_3_arg_fn(function: Eval3ArgFn, inlets: Vec<Inlet>) -> Data {
-   let mut arguments = arguments_from_inlets(inlets, 3);
-
-   let arg3 = arguments.pop().unwrap();
-   let arg2 = arguments.pop().unwrap();
-   let arg1 = arguments.pop().unwrap();
-
-   function(arg1, arg2, arg3)
+   exec_built_in_function(&name, args)
 }
 
 fn arguments_from_inlets(inlets: Vec<Inlet>, count: usize) -> Vec<Data> {

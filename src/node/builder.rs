@@ -2,7 +2,10 @@ use std::mem::replace;
 use std::iter::repeat;
 use std::collections::{HashMap, HashSet};
 
-use super::operator::{Operator, DataOperator, InputOperator};
+use super::operator::{
+   Operator, DataOperator, InputOperator, EXEC_FUNCS, function_argument_count,
+   exec_built_in_function,
+};
 use super::data::Data;
 use super::node::{Node, IndexedInlet};
 
@@ -133,6 +136,10 @@ impl Program {
    }
 
    pub fn execute_function(&mut self, name: String, arguments: Vec<Data>) -> Data {
+      if EXEC_FUNCS.contains(&(&name as &str)) {
+         return exec_built_in_function(&(&name as &str), arguments);
+      }
+
       match self.functions.remove(&name) {
          Some(mut function) => {
             function.push_arguments(arguments);
@@ -151,10 +158,14 @@ impl Program {
       }
    }
 
-   pub fn argument_count(&self, name: &str) -> Option<usize> {
+   pub fn argument_count(&self, name: &str) -> usize {
+      if EXEC_FUNCS.contains(&name) {
+         return function_argument_count(name);
+      }
+
       match self.functions.get(name) {
-         Some(function) => Some(function.argument_count),
-         None => None,
+         Some(function) => function.argument_count,
+         None => panic!("No {:?} function available", name),
       }
    }
 }
