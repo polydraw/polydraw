@@ -30,6 +30,14 @@ pub const EXEC_FUNCS: [&'static str; 13] = [
 ];
 
 
+pub const PROG_FUNCS: [&'static str; 4] = [
+   "each",
+   "each-with-last",
+   "each-with-index",
+   "apply",
+];
+
+
 pub fn function_argument_count(name: &str) -> usize {
    match name {
       "add" => 2,
@@ -70,24 +78,47 @@ pub fn exec_built_in_function(name: &str, args: Vec<Data>) -> Data {
 }
 
 fn exec_1_arg_fn(function: Eval1ArgFn, mut args: Vec<Data>) -> Data {
-   let arg1 = args.pop().unwrap();
+   if args.len() < 1 {
+      return NONE;
+   }
+
+   let arg1 = args.remove(0);
 
    function(arg1)
 }
 
 fn exec_2_arg_fn(function: Eval2ArgFn, mut args: Vec<Data>) -> Data {
-   let arg2 = args.pop().unwrap();
-   let arg1 = args.pop().unwrap();
+   if args.len() < 2 {
+      return NONE;
+   }
+
+   let arg1 = args.remove(0);
+   let arg2 = args.remove(0);
 
    function(arg1, arg2)
 }
 
 fn exec_3_arg_fn(function: Eval3ArgFn, mut args: Vec<Data>) -> Data {
-   let arg3 = args.pop().unwrap();
-   let arg2 = args.pop().unwrap();
-   let arg1 = args.pop().unwrap();
+   if args.len() < 3 {
+      return NONE;
+   }
+
+   let arg1 = args.remove(0);
+   let arg2 = args.remove(0);
+   let arg3 = args.remove(0);
 
    function(arg1, arg2, arg3)
+}
+
+
+pub fn exec_prog_function(program: &mut Program, name: &str, args: Vec<Data>) -> Data {
+   match name {
+      "each" => eval_each(program, args),
+      "each-with-index" => eval_each_with_index(program, args),
+      "each-with-last" => eval_each_with_last(program, args),
+      "apply" => eval_apply(program, args),
+      _ => panic!("Unrecognized function {}", name),
+   }
 }
 
 
@@ -246,6 +277,8 @@ pub fn eval_add(in1: Data, in2: Data) -> Data {
       (Data::Float(v1), Data::Int(v2)) => v1.add(v2),
       (Data::Int(v1), Data::Float(v2)) => v2.add(v1),
 
+      (Data::Float(v1), Data::Float(v2)) => v1.add(v2),
+
       (Data::Point(v1), Data::Int(v2)) => v1.add(v2),
       (Data::Int(v1), Data::Point(v2)) => v2.add(v1),
 
@@ -276,6 +309,13 @@ impl AddTrait<i64> for f64 {
    #[inline]
    fn add(self, v2: i64) -> Data {
       Data::Float(self + v2 as f64)
+   }
+}
+
+impl AddTrait<f64> for f64 {
+   #[inline]
+   fn add(self, v2: f64) -> Data {
+      Data::Float(self + v2)
    }
 }
 
@@ -1740,6 +1780,65 @@ pub fn eval_range(in1: Data, in2: Data) -> Data {
 
 
 #[derive(Debug)]
+pub struct Apply { }
+
+impl Apply {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Apply {})
+   }
+}
+
+impl Operator for Apply {
+   #[inline]
+   fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let function = node.input(state, 0);
+      let arguments = node.input(state, 1);
+
+      let data = if let Data::FunctionRef(function) = function {
+
+         if let Some(mut arguments) = to_data_list(arguments) {
+            for i in 2..node.len() {
+               arguments.push(node.input(state, i));
+            }
+
+            program.execute_function(function, arguments)
+         } else {
+            NONE
+         }
+      } else {
+         NONE
+      };
+
+      Some(data)
+   }
+}
+
+pub fn eval_apply(program: &mut Program, mut args: Vec<Data>) -> Data {
+   if args.len() < 2 {
+      return NONE;
+   }
+
+   let function = args.remove(0);
+   let arguments = args.remove(0);
+
+   if let Some(mut arguments) = to_data_list(arguments) {
+      for data in args {
+         arguments.push(data);
+      }
+
+      if let Data::FunctionRef(function) = function {
+         program.execute_function(function, arguments)
+      } else {
+         NONE
+      }
+   } else {
+      NONE
+   }
+}
+
+
+#[derive(Debug)]
 pub struct Each { }
 
 impl Each {
@@ -1756,27 +1855,49 @@ impl Operator for Each {
       let function = node.input(state, 1);
 
       let data = if let Data::FunctionRef(function) = function {
-         let count = program.argument_count(&function);
-         let mut extra = Vec::with_capacity(count - 1);
+         let count = node.len();
+         let mut extra = Vec::with_capacity(count - 2);
 
-         for i in 2..count + 1 {
+         for i in 2..count {
             extra.push(node.input(state, i));
          }
 
-         match target {
-            Data::IntList(list) => list.each(program, function, extra),
-            Data::FloatList(list) => list.each(program, function, extra),
-            Data::BoolList(list) => list.each(program, function, extra),
-            Data::PointList(list) => list.each(program, function, extra),
-            Data::PointListList(list) => list.each(program, function, extra),
-            Data::RgbList(list) => list.each(program, function, extra),
-            _ => NONE,
-         }
+         eval_each_impl(program, target, function, extra)
       } else {
          NONE
       };
 
       Some(data)
+   }
+}
+
+pub fn eval_each(program: &mut Program, mut args: Vec<Data>) -> Data {
+   if args.len() < 2 {
+      return NONE;
+   }
+
+   let target = args.remove(0);
+   let function = args.remove(0);
+
+   if let Data::FunctionRef(function) = function {
+      eval_each_impl(program, target, function, args)
+   } else {
+      NONE
+   }
+}
+
+pub fn eval_each_impl(
+   program: &mut Program, target: Data, function: String, extra: Vec<Data>
+) -> Data {
+   match target {
+      Data::IntList(list) => list.each(program, function, extra),
+      Data::FloatList(list) => list.each(program, function, extra),
+      Data::BoolList(list) => list.each(program, function, extra),
+      Data::PointList(list) => list.each(program, function, extra),
+      Data::PointListList(list) => list.each(program, function, extra),
+      Data::RgbList(list) => list.each(program, function, extra),
+      Data::DataList(list) => list.each(program, function, extra),
+      _ => NONE,
    }
 }
 
@@ -1841,6 +1962,7 @@ each_trait!(Vec<f64>, Data::Float);
 each_trait!(Vec<bool>, Data::Bool);
 each_trait!(Vec<IntPoint>, Data::Point);
 each_trait!(Vec<RGB>, Data::Rgb);
+each_trait!(Vec<Data>, this);
 each_trait_boxed!(Box<Vec<Vec<IntPoint>>>, Data::PointList);
 
 
@@ -1861,27 +1983,49 @@ impl Operator for EachWithIndex {
       let function = node.input(state, 1);
 
       let data = if let Data::FunctionRef(function) = function {
-         let count = program.argument_count(&function);
+         let count = node.len();
          let mut extra = Vec::with_capacity(count - 2);
 
          for i in 2..count {
             extra.push(node.input(state, i));
          }
 
-         match target {
-            Data::IntList(list) => list.each_with_index(program, function, extra),
-            Data::FloatList(list) => list.each_with_index(program, function, extra),
-            Data::BoolList(list) => list.each_with_index(program, function, extra),
-            Data::PointList(list) => list.each_with_index(program, function, extra),
-            Data::PointListList(list) => list.each_with_index(program, function, extra),
-            Data::RgbList(list) => list.each_with_index(program, function, extra),
-            _ => NONE,
-         }
+         eval_each_with_index_impl(program, target, function, extra)
       } else {
          NONE
       };
 
       Some(data)
+   }
+}
+
+pub fn eval_each_with_index(program: &mut Program, mut args: Vec<Data>) -> Data {
+   if args.len() < 2 {
+      return NONE;
+   }
+
+   let target = args.remove(0);
+   let function = args.remove(0);
+
+   if let Data::FunctionRef(function) = function {
+      eval_each_with_index_impl(program, target, function, args)
+   } else {
+      NONE
+   }
+}
+
+pub fn eval_each_with_index_impl(
+   program: &mut Program, target: Data, function: String, extra: Vec<Data>
+) -> Data {
+   match target {
+      Data::IntList(list) => list.each_with_index(program, function, extra),
+      Data::FloatList(list) => list.each_with_index(program, function, extra),
+      Data::BoolList(list) => list.each_with_index(program, function, extra),
+      Data::PointList(list) => list.each_with_index(program, function, extra),
+      Data::PointListList(list) => list.each_with_index(program, function, extra),
+      Data::RgbList(list) => list.each_with_index(program, function, extra),
+      Data::DataList(list) => list.each_with_index(program, function, extra),
+      _ => NONE,
    }
 }
 
@@ -1960,6 +2104,7 @@ each_with_index_trait!(Vec<f64>, Data::Float);
 each_with_index_trait!(Vec<bool>, Data::Bool);
 each_with_index_trait!(Vec<IntPoint>, Data::Point);
 each_with_index_trait!(Vec<RGB>, Data::Rgb);
+each_with_index_trait!(Vec<Data>, this);
 each_with_index_trait_boxed!(Box<Vec<Vec<IntPoint>>>, Data::PointList);
 
 
@@ -1981,27 +2126,50 @@ impl Operator for EachWithLast {
       let initial = node.input(state, 2);
 
       let data = if let Data::FunctionRef(function) = function {
-         let count = program.argument_count(&function);
-         let mut extra = Vec::with_capacity(count - 2);
+         let count = node.len();
+         let mut extra = Vec::with_capacity(count - 3);
 
-         for i in 3..count + 1 {
+         for i in 3..count {
             extra.push(node.input(state, i));
          }
 
-         match target {
-            Data::IntList(list) => list.each_with_last(program, function, initial, extra),
-            Data::FloatList(list) => list.each_with_last(program, function, initial, extra),
-            Data::BoolList(list) => list.each_with_last(program, function, initial, extra),
-            Data::PointList(list) => list.each_with_last(program, function, initial, extra),
-            Data::PointListList(list) => list.each_with_last(program, function, initial, extra),
-            Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
-            _ => NONE,
-         }
+         eval_each_with_last_impl(program, target, function, initial, extra)
       } else {
          NONE
       };
 
       Some(data)
+   }
+}
+
+pub fn eval_each_with_last(program: &mut Program, mut args: Vec<Data>) -> Data {
+   if args.len() < 3 {
+      return NONE;
+   }
+
+   let target = args.remove(0);
+   let function = args.remove(0);
+   let initial = args.remove(0);
+
+   if let Data::FunctionRef(function) = function {
+      eval_each_with_last_impl(program, target, function, initial, args)
+   } else {
+      NONE
+   }
+}
+
+pub fn eval_each_with_last_impl(
+   program: &mut Program, target: Data, function: String, initial: Data, extra: Vec<Data>
+) -> Data {
+   match target {
+      Data::IntList(list) => list.each_with_last(program, function, initial, extra),
+      Data::FloatList(list) => list.each_with_last(program, function, initial, extra),
+      Data::BoolList(list) => list.each_with_last(program, function, initial, extra),
+      Data::PointList(list) => list.each_with_last(program, function, initial, extra),
+      Data::PointListList(list) => list.each_with_last(program, function, initial, extra),
+      Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
+      Data::DataList(list) => list.each_with_last(program, function, initial, extra),
+      _ => NONE,
    }
 }
 
@@ -2076,7 +2244,13 @@ each_with_last_trait!(Vec<f64>, Data::Float);
 each_with_last_trait!(Vec<bool>, Data::Bool);
 each_with_last_trait!(Vec<IntPoint>, Data::Point);
 each_with_last_trait!(Vec<RGB>, Data::Rgb);
+each_with_last_trait!(Vec<Data>, this);
 each_with_last_trait_boxed!(Box<Vec<Vec<IntPoint>>>, Data::PointList);
+
+#[inline]
+fn this(value: Data) -> Data {
+   value
+}
 
 
 fn update_list_type(current: ListType, data: &Data) -> ListType {
@@ -2149,3 +2323,35 @@ to_list_boxed!(to_poly_list, Data::Poly, Data::PolyList);
 to_list_boxed!(to_layer_list, Data::Layer, Data::LayerList);
 to_list_boxed!(to_point_list_list, Data::PointList, Data::PointListList);
 
+
+fn to_data_list(data: Data) -> Option<Vec<Data>> {
+   match data {
+      Data::IntList(list) => Some(from_int_list(*list)),
+      Data::FloatList(list) => Some(from_float_list(*list)),
+      Data::BoolList(list) => Some(from_bool_list(*list)),
+      Data::PointList(list) => Some(from_point_list(*list)),
+      Data::RgbList(list) => Some(from_rgb_list(*list)),
+      Data::DataList(list) => Some(*list),
+      _ => None,
+   }
+}
+
+macro_rules! from_list {
+   ($name:ident, $data_enum:path, $list_ty:ty) => {
+      fn $name(list: $list_ty) -> Vec<Data> {
+         let mut result = Vec::with_capacity(list.len());
+
+         for value in list {
+            result.push($data_enum(value));
+         }
+
+         result
+      }
+   }
+}
+
+from_list!(from_int_list, Data::Int, Vec<i64>);
+from_list!(from_float_list, Data::Float, Vec<f64>);
+from_list!(from_bool_list, Data::Bool, Vec<bool>);
+from_list!(from_point_list, Data::Point, Vec<IntPoint>);
+from_list!(from_rgb_list, Data::Rgb, Vec<RGB>);

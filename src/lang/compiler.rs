@@ -2,7 +2,7 @@ use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
    Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each,
-   EachWithLast, EachWithIndex, BuildPoly, ListType, BuildLayer, Range,
+   EachWithLast, EachWithIndex, BuildPoly, ListType, BuildLayer, Range, Apply,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_equal, eval_unequal,
@@ -207,6 +207,7 @@ fn build_function_call(
       "poly" => builder.operator(BuildPoly::new(), node_id, inlets),
       "layer" => builder.operator(BuildLayer::new(), node_id, inlets),
       "range" => builder.operator(Range::new(), node_id, inlets),
+      "apply" => builder.operator(Apply::new(), node_id, inlets),
       "each" => builder.operator(Each::new(), node_id, inlets),
       "each-with-index" => builder.operator(EachWithIndex::new(), node_id, inlets),
       "each-with-last" => builder.operator(EachWithLast::new(), node_id, inlets),
@@ -237,6 +238,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "poly" => builder.anonymous(BuildPoly::new(), inlets),
       "layer" => builder.anonymous(BuildLayer::new(), inlets),
       "range" => builder.anonymous(Range::new(), inlets),
+      "apply" => builder.anonymous(Apply::new(), inlets),
       "each" => builder.anonymous(Each::new(), inlets),
       "each-with-index" => builder.anonymous(EachWithIndex::new(), inlets),
       "each-with-last" => builder.anonymous(EachWithLast::new(), inlets),

@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::operator::{
    Operator, DataOperator, InputOperator, EXEC_FUNCS, function_argument_count,
-   exec_built_in_function,
+   exec_built_in_function, PROG_FUNCS, exec_prog_function,
 };
 use super::data::Data;
 use super::node::{Node, IndexedInlet};
@@ -140,6 +140,10 @@ impl Program {
          return exec_built_in_function(&(&name as &str), arguments);
       }
 
+      if PROG_FUNCS.contains(&(&name as &str)) {
+         return exec_prog_function(self, &(&name as &str), arguments);
+      }
+
       match self.functions.remove(&name) {
          Some(mut function) => {
             function.push_arguments(arguments);
@@ -154,7 +158,7 @@ impl Program {
 
             data
          },
-         None => panic!("No {:?} function available", name),
+         None => panic!("No {:?} function defined", name),
       }
    }
 
@@ -165,7 +169,7 @@ impl Program {
 
       match self.functions.get(name) {
          Some(function) => function.argument_count,
-         None => panic!("No {:?} function available", name),
+         None => panic!("No {:?} function defined", name),
       }
    }
 }
