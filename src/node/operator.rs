@@ -288,8 +288,17 @@ pub fn eval_add(in1: Data, in2: Data) -> Data {
 
       (Data::Point(v1), Data::Point(v2)) => v1.add(v2),
 
+      (Data::IntList(v1), Data::Int(v2)) => v1.add(v2),
+      (Data::Int(v1), Data::IntList(v2)) => v2.add(v1),
+
+      (Data::PointList(v1), Data::Int(v2)) => v1.add(v2),
+      (Data::Int(v1), Data::PointList(v2)) => v2.add(v1),
+
       (Data::PointList(v1), Data::Point(v2)) => v1.add(v2),
       (Data::Point(v1), Data::PointList(v2)) => v2.add(v1),
+
+      (Data::PointListList(v1), Data::Int(v2)) => v1.add(v2),
+      (Data::Int(v1), Data::PointListList(v2)) => v2.add(v1),
 
       (Data::PointListList(v1), Data::Point(v2)) => v1.add(v2),
       (Data::Point(v1), Data::PointListList(v2)) => v2.add(v1),
@@ -343,6 +352,29 @@ impl AddTrait<IntPoint> for IntPoint {
    }
 }
 
+impl AddTrait<i64> for Box<Vec<i64>> {
+   #[inline]
+   fn add(mut self, v2: i64) -> Data {
+      for value in self.iter_mut() {
+         *value += v2;
+      }
+
+      Data::IntList(self)
+   }
+}
+
+impl AddTrait<i64> for Box<PointList> {
+   #[inline]
+   fn add(mut self, v2: i64) -> Data {
+      for point in self.iter_mut() {
+         point.x += v2;
+         point.y += v2;
+      }
+
+      Data::PointList(self)
+   }
+}
+
 impl AddTrait<IntPoint> for Box<PointList> {
    #[inline]
    fn add(mut self, v2: IntPoint) -> Data {
@@ -352,6 +384,20 @@ impl AddTrait<IntPoint> for Box<PointList> {
       }
 
       Data::PointList(self)
+   }
+}
+
+impl AddTrait<i64> for Box<PointListList> {
+   #[inline]
+   fn add(mut self, v2: i64) -> Data {
+      for src in self.iter_mut() {
+         for point in src.iter_mut() {
+            point.x += v2;
+            point.y += v2;
+         }
+      }
+
+      Data::PointListList(self)
    }
 }
 
@@ -401,7 +447,13 @@ pub fn eval_divide(in1: Data, in2: Data) -> Data {
 
       (Data::Point(v1), Data::Point(v2)) => v1.divide(v2),
 
+      (Data::IntList(v1), Data::Int(v2)) => v1.divide(v2),
+
+      (Data::PointList(v1), Data::Int(v2)) => v1.divide(v2),
+
       (Data::PointList(v1), Data::Point(v2)) => v1.divide(v2),
+
+      (Data::PointListList(v1), Data::Int(v2)) => v1.divide(v2),
 
       (Data::PointListList(v1), Data::Point(v2)) => v1.divide(v2),
 
@@ -454,6 +506,29 @@ impl DivideTrait<IntPoint> for IntPoint {
    }
 }
 
+impl DivideTrait<i64> for Box<Vec<i64>> {
+   #[inline]
+   fn divide(mut self, v2: i64) -> Data {
+      for value in self.iter_mut() {
+         *value /= v2;
+      }
+
+      Data::IntList(self)
+   }
+}
+
+impl DivideTrait<i64> for Box<PointList> {
+   #[inline]
+   fn divide(mut self, v2: i64) -> Data {
+      for point in self.iter_mut() {
+         point.x /= v2;
+         point.y /= v2;
+      }
+
+      Data::PointList(self)
+   }
+}
+
 impl DivideTrait<IntPoint> for Box<PointList> {
    #[inline]
    fn divide(mut self, v2: IntPoint) -> Data {
@@ -463,6 +538,20 @@ impl DivideTrait<IntPoint> for Box<PointList> {
       }
 
       Data::PointList(self)
+   }
+}
+
+impl DivideTrait<i64> for Box<PointListList> {
+   #[inline]
+   fn divide(mut self, v2: i64) -> Data {
+      for src in self.iter_mut() {
+         for point in src.iter_mut() {
+            point.x /= v2;
+            point.y /= v2;
+         }
+      }
+
+      Data::PointListList(self)
    }
 }
 
@@ -512,7 +601,13 @@ pub fn eval_subtract(in1: Data, in2: Data) -> Data {
 
       (Data::Point(v1), Data::Point(v2)) => v1.subtract(v2),
 
+      (Data::IntList(v1), Data::Int(v2)) => v1.subtract(v2),
+
+      (Data::PointList(v1), Data::Int(v2)) => v1.subtract(v2),
+
       (Data::PointList(v1), Data::Point(v2)) => v1.subtract(v2),
+
+      (Data::PointListList(v1), Data::Int(v2)) => v1.subtract(v2),
 
       (Data::PointListList(v1), Data::Point(v2)) => v1.subtract(v2),
 
@@ -565,6 +660,29 @@ impl SubtractTrait<IntPoint> for IntPoint {
    }
 }
 
+impl SubtractTrait<i64> for Box<Vec<i64>> {
+   #[inline]
+   fn subtract(mut self, v2: i64) -> Data {
+      for value in self.iter_mut() {
+         *value -= v2;
+      }
+
+      Data::IntList(self)
+   }
+}
+
+impl SubtractTrait<i64> for Box<PointList> {
+   #[inline]
+   fn subtract(mut self, v2: i64) -> Data {
+      for point in self.iter_mut() {
+         point.x -= v2;
+         point.y -= v2;
+      }
+
+      Data::PointList(self)
+   }
+}
+
 impl SubtractTrait<IntPoint> for Box<PointList> {
    #[inline]
    fn subtract(mut self, v2: IntPoint) -> Data {
@@ -574,6 +692,20 @@ impl SubtractTrait<IntPoint> for Box<PointList> {
       }
 
       Data::PointList(self)
+   }
+}
+
+impl SubtractTrait<i64> for Box<PointListList> {
+   #[inline]
+   fn subtract(mut self, v2: i64) -> Data {
+      for src in self.iter_mut() {
+         for point in src.iter_mut() {
+            point.x -= v2;
+            point.y -= v2;
+         }
+      }
+
+      Data::PointListList(self)
    }
 }
 
@@ -624,8 +756,17 @@ pub fn eval_multiply(in1: Data, in2: Data) -> Data {
 
       (Data::Point(v1), Data::Point(v2)) => v1.multiply(v2),
 
+      (Data::IntList(v1), Data::Int(v2)) => v1.multiply(v2),
+      (Data::Int(v1), Data::IntList(v2)) => v2.multiply(v1),
+
+      (Data::PointList(v1), Data::Int(v2)) => v1.multiply(v2),
+      (Data::Int(v1), Data::PointList(v2)) => v2.multiply(v1),
+
       (Data::PointList(v1), Data::Point(v2)) => v1.multiply(v2),
       (Data::Point(v1), Data::PointList(v2)) => v2.multiply(v1),
+
+      (Data::PointListList(v1), Data::Int(v2)) => v1.multiply(v2),
+      (Data::Int(v1), Data::PointListList(v2)) => v2.multiply(v1),
 
       (Data::PointListList(v1), Data::Point(v2)) => v1.multiply(v2),
       (Data::Point(v1), Data::PointListList(v2)) => v2.multiply(v1),
@@ -672,6 +813,29 @@ impl MultiplyTrait<IntPoint> for IntPoint {
    }
 }
 
+impl MultiplyTrait<i64> for Box<Vec<i64>> {
+   #[inline]
+   fn multiply(mut self, v2: i64) -> Data {
+      for value in self.iter_mut() {
+         *value *= v2;
+      }
+
+      Data::IntList(self)
+   }
+}
+
+impl MultiplyTrait<i64> for Box<PointList> {
+   #[inline]
+   fn multiply(mut self, v2: i64) -> Data {
+      for point in self.iter_mut() {
+         point.x *= v2;
+         point.y *= v2;
+      }
+
+      Data::PointList(self)
+   }
+}
+
 impl MultiplyTrait<IntPoint> for Box<PointList> {
    #[inline]
    fn multiply(mut self, v2: IntPoint) -> Data {
@@ -681,6 +845,20 @@ impl MultiplyTrait<IntPoint> for Box<PointList> {
       }
 
       Data::PointList(self)
+   }
+}
+
+impl MultiplyTrait<i64> for Box<PointListList> {
+   #[inline]
+   fn multiply(mut self, v2: i64) -> Data {
+      for src in self.iter_mut() {
+         for point in src.iter_mut() {
+            point.x *= v2;
+            point.y *= v2;
+         }
+      }
+
+      Data::PointListList(self)
    }
 }
 
