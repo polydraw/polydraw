@@ -42,8 +42,8 @@ fn main() {
                let result = program.execute(
                   vec![
                      Data::Int(100),
-                     Data::Int(1600),
-                     Data::Int(900),
+                     Data::Int(1600 * 4),
+                     Data::Int(900 * 4),
                   ]
                );
 
