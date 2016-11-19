@@ -1,5 +1,7 @@
 use std::fmt;
 use std::i64;
+use std::usize;
+use std::cmp::min;
 
 use draw::RGB;
 
@@ -30,7 +32,8 @@ pub const EXEC_FUNCS: [&'static str; 13] = [
 ];
 
 
-pub const PROG_FUNCS: [&'static str; 4] = [
+pub const PROG_FUNCS: [&'static str; 5] = [
+   "zip",
    "each",
    "each-with-last",
    "each-with-index",
@@ -113,6 +116,7 @@ fn exec_3_arg_fn(function: Eval3ArgFn, mut args: Vec<Data>) -> Data {
 
 pub fn exec_prog_function(program: &mut Program, name: &str, args: Vec<Data>) -> Data {
    match name {
+      "zip" => eval_zip(program, args),
       "each" => eval_each(program, args),
       "each-with-index" => eval_each_with_index(program, args),
       "each-with-last" => eval_each_with_last(program, args),
@@ -1792,20 +1796,15 @@ impl Apply {
 impl Operator for Apply {
    #[inline]
    fn process(&self, program: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
-      let function = node.input(state, 0);
-      let arguments = node.input(state, 1);
+      let in1 = node.input(state, 0);
+      let in2 = node.input(state, 1);
 
-      let data = if let Data::FunctionRef(function) = function {
-
-         if let Some(mut arguments) = to_data_list(arguments) {
-            for i in 2..node.len() {
-               arguments.push(node.input(state, i));
-            }
-
-            program.execute_function(function, arguments)
-         } else {
-            NONE
+      let data = if let Some((function, mut arguments)) = apply_function_and_arguments(in1, in2) {
+         for i in 2..node.len() {
+            arguments.push(node.input(state, i));
          }
+
+         program.execute_function(function, arguments)
       } else {
          NONE
       };
@@ -1819,21 +1818,34 @@ pub fn eval_apply(program: &mut Program, mut args: Vec<Data>) -> Data {
       return NONE;
    }
 
-   let function = args.remove(0);
-   let arguments = args.remove(0);
+   let in1 = args.remove(0);
+   let in2 = args.remove(0);
 
-   if let Some(mut arguments) = to_data_list(arguments) {
+   if let Some((function, mut arguments)) = apply_function_and_arguments(in1, in2) {
       for data in args {
          arguments.push(data);
       }
 
-      if let Data::FunctionRef(function) = function {
-         program.execute_function(function, arguments)
-      } else {
-         NONE
-      }
+      program.execute_function(function, arguments)
    } else {
       NONE
+   }
+}
+
+#[inline]
+fn apply_function_and_arguments(in1: Data, in2: Data) -> Option<(String, Vec<Data>)> {
+   let (function, arguments) = if let Data::FunctionRef(function) = in1 {
+      (function, in2)
+   } else if let Data::FunctionRef(function) = in2 {
+      (function, in1)
+   } else {
+      return None;
+   };
+
+   if let Some(arguments) = from_native_list(arguments) {
+      return Some((function, arguments));
+   } else {
+      return None;
    }
 }
 
@@ -2253,6 +2265,83 @@ fn this(value: Data) -> Data {
 }
 
 
+#[derive(Debug)]
+pub struct Zip { }
+
+impl Zip {
+   #[inline]
+   pub fn new() -> Box<Self> {
+      Box::new(Zip {})
+   }
+}
+
+impl Operator for Zip {
+   #[inline]
+   fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
+      let count = node.len();
+
+      let mut lists = Vec::with_capacity(count);
+
+      let mut result_len = usize::MAX;
+
+      for i in 0..count {
+         let data = node.input(state, i);
+         match from_native_list(data) {
+            Some(list) => {
+               result_len = min(result_len, list.len());
+               lists.push(list);
+            },
+            None => return Some(NONE),
+         }
+      }
+
+      Some(eval_zip_impl(lists, result_len))
+   }
+}
+
+fn eval_zip(_: &mut Program, args: Vec<Data>) -> Data {
+   let count = args.len();
+
+   let mut lists = Vec::with_capacity(count);
+
+   let mut result_len = usize::MAX;
+
+   for data in args {
+      match from_native_list(data) {
+         Some(list) => {
+            result_len = min(result_len, list.len());
+            lists.push(list);
+         },
+         None => return NONE,
+      }
+   }
+
+   eval_zip_impl(lists, result_len)
+}
+
+fn eval_zip_impl(mut lists: Vec<Vec<Data>>, result_len: usize) -> Data {
+   let mut result = Vec::with_capacity(result_len);
+
+   for _ in 0..result_len {
+      let mut element = Vec::with_capacity(lists.len());
+
+      let mut list_type = ListType::None;
+
+      for list in lists.iter_mut() {
+         let data = list.remove(0);
+
+         list_type = update_list_type(list_type, &data);
+
+         element.push(data);
+      }
+
+      result.push(to_native_list(element, list_type))
+   }
+
+   Data::DataList(Box::new(result))
+}
+
+
 fn update_list_type(current: ListType, data: &Data) -> ListType {
    let new = data_list_type(data);
 
@@ -2324,12 +2413,13 @@ to_list_boxed!(to_layer_list, Data::Layer, Data::LayerList);
 to_list_boxed!(to_point_list_list, Data::PointList, Data::PointListList);
 
 
-fn to_data_list(data: Data) -> Option<Vec<Data>> {
+fn from_native_list(data: Data) -> Option<Vec<Data>> {
    match data {
       Data::IntList(list) => Some(from_int_list(*list)),
       Data::FloatList(list) => Some(from_float_list(*list)),
       Data::BoolList(list) => Some(from_bool_list(*list)),
       Data::PointList(list) => Some(from_point_list(*list)),
+      Data::PointListList(list) => Some(from_point_list_list(*list)),
       Data::RgbList(list) => Some(from_rgb_list(*list)),
       Data::DataList(list) => Some(*list),
       _ => None,
@@ -2350,8 +2440,23 @@ macro_rules! from_list {
    }
 }
 
+macro_rules! from_list_boxed {
+   ($name:ident, $data_enum:path, $list_ty:ty) => {
+      fn $name(list: $list_ty) -> Vec<Data> {
+         let mut result = Vec::with_capacity(list.len());
+
+         for value in list {
+            result.push($data_enum(Box::new(value)));
+         }
+
+         result
+      }
+   }
+}
+
 from_list!(from_int_list, Data::Int, Vec<i64>);
 from_list!(from_float_list, Data::Float, Vec<f64>);
 from_list!(from_bool_list, Data::Bool, Vec<bool>);
 from_list!(from_point_list, Data::Point, Vec<IntPoint>);
 from_list!(from_rgb_list, Data::Rgb, Vec<RGB>);
+from_list_boxed!(from_point_list_list, Data::PointList, Vec<Vec<IntPoint>>);
