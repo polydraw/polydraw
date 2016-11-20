@@ -117,7 +117,9 @@ struct ZoneSplitter {
 impl ZoneSplitter {
    #[inline]
    fn new(aliased_height: i64, frame_height: i64, zone_count: i64) -> Self {
-      let zone_height = (1 + (frame_height - 1) / zone_count) * SUBDIVISIONS;
+      let pixel_height = 1 + (frame_height - 1) / zone_count;
+      let zone_height = pixel_height * SUBDIVISIONS;
+      let zone_count = 1 + (frame_height - 1) / pixel_height;
 
       ZoneSplitter {
          aliased_height: aliased_height,
@@ -833,8 +835,8 @@ impl DevelRenderer {
    }
 
    #[inline]
-   fn wait_threads(&self) {
-      for _ in 0..ZONE_COUNT {
+   fn wait_threads(&self, splitter: &ZoneSplitter) {
+      for _ in 0..splitter.zone_count {
          self.channels.result_rx.recv().unwrap();
       }
    }
@@ -859,7 +861,7 @@ impl Renderer for DevelRenderer {
 
       let mut all_zones_polys = Vec::new();
 
-      for _ in 0..ZONE_COUNT {
+      for _ in 0..splitter.zone_count {
          all_zones_polys.push(Vec::new());
       }
 
@@ -877,7 +879,7 @@ impl Renderer for DevelRenderer {
 
          sort_edges(&mut self.edges);
 
-         for zone in 0..ZONE_COUNT as usize {
+         for zone in 0..splitter.zone_count as usize {
             unsafe {
                if self.edges.get_unchecked(zone).len() > 0 {
                   let zone_edges = replace(self.edges.get_unchecked_mut(zone), Vec::new());
@@ -893,7 +895,7 @@ impl Renderer for DevelRenderer {
 
       let frame_ptr = frame.ptr_mut();
 
-      for zone in 0..ZONE_COUNT as usize {
+      for zone in 0..splitter.zone_count as usize {
          let render_tx = unsafe {
             self.channels.render_tx_vec.get_unchecked(zone)
          };
@@ -921,6 +923,6 @@ impl Renderer for DevelRenderer {
          y = y_end;
       }
 
-      self.wait_threads();
+      self.wait_threads(&splitter);
    }
 }
