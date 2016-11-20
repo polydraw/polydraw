@@ -2,12 +2,12 @@ use node::{
    Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
    Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
    Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each,
-   EachWithLast, EachWithIndex, BuildPoly, ListType, BuildLayer, Range, Apply,
+   EachWithLast, EachWithIndex, BuildPoly, ListType, BuildLayer, BuildRange, Apply,
    Zip,
 };
 use node::{
    eval_add, eval_divide, eval_multiply, eval_subtract, eval_equal, eval_unequal,
-   eval_less, eval_less_equal, eval_greater, eval_greater_equal,
+   eval_less, eval_less_equal, eval_greater, eval_greater_equal, eval_range,
 };
 use node::{
    EXEC_FUNCS, function_argument_count, exec_built_in_function,
@@ -127,6 +127,7 @@ fn build_binary(builder: &mut ProgramBuilder, node_id: String, binary: BinaryBox
             BinaryType::LessEqual => builder.operator(LessEqual::new(), node_id, inlets),
             BinaryType::Greater => builder.operator(Greater::new(), node_id, inlets),
             BinaryType::GreaterEqual => builder.operator(GreaterEqual::new(), node_id, inlets),
+            BinaryType::Range => builder.operator(BuildRange::new(), node_id, inlets),
          }
       },
    }
@@ -155,6 +156,7 @@ fn build_anon_binary(builder: &mut ProgramBuilder, binary: BinaryBox) -> Inlet {
             BinaryType::LessEqual => builder.anonymous(LessEqual::new(), inlets),
             BinaryType::Greater => builder.anonymous(Greater::new(), inlets),
             BinaryType::GreaterEqual => builder.anonymous(GreaterEqual::new(), inlets),
+            BinaryType::Range => builder.anonymous(BuildRange::new(), inlets),
          }
       },
    }
@@ -172,6 +174,7 @@ fn exec_binary(binary_type: BinaryType, left: Data, right: Data) -> Data {
       BinaryType::LessEqual => eval_less_equal(left, right),
       BinaryType::Greater => eval_greater(left, right),
       BinaryType::GreaterEqual => eval_greater_equal(left, right),
+      BinaryType::Range => eval_range(left, right),
    }
 }
 
@@ -207,7 +210,7 @@ fn build_function_call(
       "gate" => builder.operator(Gate::new(), node_id, inlets),
       "poly" => builder.operator(BuildPoly::new(), node_id, inlets),
       "layer" => builder.operator(BuildLayer::new(), node_id, inlets),
-      "range" => builder.operator(Range::new(), node_id, inlets),
+      "range" => builder.operator(BuildRange::new(), node_id, inlets),
       "apply" => builder.operator(Apply::new(), node_id, inlets),
       "zip" => builder.operator(Zip::new(), node_id, inlets),
       "each" => builder.operator(Each::new(), node_id, inlets),
@@ -239,7 +242,7 @@ fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) 
       "gate" => builder.anonymous(Gate::new(), inlets),
       "poly" => builder.anonymous(BuildPoly::new(), inlets),
       "layer" => builder.anonymous(BuildLayer::new(), inlets),
-      "range" => builder.anonymous(Range::new(), inlets),
+      "range" => builder.anonymous(BuildRange::new(), inlets),
       "apply" => builder.anonymous(Apply::new(), inlets),
       "zip" => builder.anonymous(Zip::new(), inlets),
       "each" => builder.anonymous(Each::new(), inlets),

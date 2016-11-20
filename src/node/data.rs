@@ -41,11 +41,37 @@ impl fmt::Debug for Rect {
    }
 }
 
+
+#[derive(Clone)]
+pub struct Range<T> {
+   pub start: T,
+   pub end: T,
+}
+
+impl<T> Range<T> {
+   #[inline]
+   pub fn new(start: T, end: T) -> Self {
+      Range {
+         start: start,
+         end: end,
+      }
+   }
+}
+
+impl<T> fmt::Debug for Range<T> where T: fmt::Display {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "{} .. {}", self.start, self.end)
+   }
+}
+
+
 pub type PointList = Vec<IntPoint>;
 pub type PointListList = Vec<Vec<IntPoint>>;
 pub type RgbList = Vec<RGB>;
 pub type PolyList = Vec<Poly>;
 pub type LayerList = Vec<Layer>;
+pub type IntRange = Range<i64>;
+pub type FloatRange = Range<f64>;
 
 
 #[derive(Clone)]
@@ -54,6 +80,8 @@ pub enum Data {
    Int(i64),
    Float(f64),
    Bool(bool),
+   IntRange(IntRange),
+   FloatRange(FloatRange),
    Point(IntPoint),
    Rgb(RGB),
    FunctionRef(String),
@@ -102,6 +130,8 @@ impl fmt::Debug for Data {
          &Data::Int(ref value) => write_value!(f, value),
          &Data::Float(ref value) => write_value!(f, value),
          &Data::Bool(ref value) => write_value!(f, value),
+         &Data::IntRange(ref value) => write_value!(f, value),
+         &Data::FloatRange(ref value) => write_value!(f, value),
          &Data::Point(ref value) => write_value!(f, value),
          &Data::Rgb(ref value) => write_value!(f, value),
          &Data::Rect(ref value) => write_value!(f, value),

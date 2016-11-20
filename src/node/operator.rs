@@ -6,7 +6,10 @@ use std::cmp::min;
 use draw::RGB;
 
 use super::node::{Node, NodeRole};
-use super::data::{Data, NONE, Layer, IntPoint, PointList, Poly, PointListList, Rect};
+use super::data::{
+   Data, NONE, Layer, IntPoint, PointList, Poly, PointListList, Rect, IntRange,
+   FloatRange,
+};
 use super::builder::Program;
 
 
@@ -1934,16 +1937,16 @@ fn data_list_type(data: &Data) -> ListType {
 
 
 #[derive(Debug)]
-pub struct Range { }
+pub struct BuildRange { }
 
-impl Range {
+impl BuildRange {
    #[inline]
    pub fn new() -> Box<Self> {
-      Box::new(Range {})
+      Box::new(BuildRange {})
    }
 }
 
-impl Operator for Range {
+impl Operator for BuildRange {
    #[inline]
    fn process(&self, _: &mut Program, node: &Node, state: &mut [Vec<Data>]) -> Option<Data> {
       let in1 = node.input(state, 0);
@@ -1955,7 +1958,8 @@ impl Operator for Range {
 
 pub fn eval_range(in1: Data, in2: Data) -> Data {
    match (in1, in2) {
-      (Data::Int(v1), Data::Int(v2)) => Data::IntList(Box::new((v1..v2).collect())),
+      (Data::Int(v1), Data::Int(v2)) => Data::IntRange(IntRange::new(v1, v2)),
+      (Data::Float(v1), Data::Float(v2)) => Data::FloatRange(FloatRange::new(v1, v2)),
       _ => NONE
    }
 }
@@ -2087,12 +2091,39 @@ pub fn eval_each_impl(
       Data::PointListList(list) => list.each(program, function, extra),
       Data::RgbList(list) => list.each(program, function, extra),
       Data::DataList(list) => list.each(program, function, extra),
+      Data::IntRange(range) => range.each(program, function, extra),
       _ => NONE,
    }
 }
 
 trait EachTrait {
    fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data;
+}
+
+impl EachTrait for IntRange {
+   #[inline]
+   fn each(self, program: &mut Program, function: String, extra: Vec<Data>) -> Data {
+      if self.start > self.end {
+         return NONE;
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      let mut list_type = ListType::None;
+
+      for value in self.start .. self.end {
+         let mut arguments = vec![Data::Int(value)];
+         arguments.append(&mut extra.clone());
+
+         let data = program.execute_function(function.clone(), arguments);
+
+         list_type = update_list_type(list_type, &data);
+
+         list.push(data);
+      }
+
+      to_native_list(list, list_type)
+   }
 }
 
 macro_rules! each_trait {
@@ -2215,6 +2246,7 @@ pub fn eval_each_with_index_impl(
       Data::PointListList(list) => list.each_with_index(program, function, extra),
       Data::RgbList(list) => list.each_with_index(program, function, extra),
       Data::DataList(list) => list.each_with_index(program, function, extra),
+      Data::IntRange(range) => range.each_with_index(program, function, extra),
       _ => NONE,
    }
 }
@@ -2223,6 +2255,39 @@ trait EachWithIndexTrait {
    fn each_with_index(
       self, program: &mut Program, function: String, extra: Vec<Data>
    ) -> Data;
+}
+
+impl EachWithIndexTrait for IntRange {
+   #[inline]
+   fn each_with_index(
+      self, program: &mut Program, function: String, extra: Vec<Data>
+   ) -> Data {
+      if self.start > self.end {
+         return NONE;
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      let mut list_type = ListType::None;
+
+      let mut index: i64 = 0;
+
+      for value in self.start .. self.end {
+         let mut arguments = vec![Data::Int(value), Data::Int(index)];
+
+         arguments.append(&mut extra.clone());
+
+         let data = program.execute_function(function.clone(), arguments);
+
+         list_type = update_list_type(list_type, &data);
+
+         list.push(data);
+
+         index += 1;
+      }
+
+      to_native_list(list, list_type)
+   }
 }
 
 macro_rules! each_with_index_trait {
@@ -2240,6 +2305,7 @@ macro_rules! each_with_index_trait {
 
             for value in self {
                let mut arguments = vec![$data_ty(value), Data::Int(index)];
+
                arguments.append(&mut extra.clone());
 
                let data = program.execute_function(function.clone(), arguments);
@@ -2359,6 +2425,7 @@ pub fn eval_each_with_last_impl(
       Data::PointListList(list) => list.each_with_last(program, function, initial, extra),
       Data::RgbList(list) => list.each_with_last(program, function, initial, extra),
       Data::DataList(list) => list.each_with_last(program, function, initial, extra),
+      Data::IntRange(range) => range.each_with_last(program, function, initial, extra),
       _ => NONE,
    }
 }
@@ -2367,6 +2434,37 @@ trait EachWithLastTrait {
    fn each_with_last(
       self, program: &mut Program, function: String, initial: Data, extra: Vec<Data>
    ) -> Data;
+}
+
+impl EachWithLastTrait for IntRange {
+   #[inline]
+   fn each_with_last(
+      self, program: &mut Program, function: String, mut initial: Data, extra: Vec<Data>
+   ) -> Data {
+      if self.start > self.end {
+         return NONE;
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      let mut list_type = ListType::None;
+
+      for value in self.start .. self.end {
+         let mut arguments = vec![Data::Int(value), initial];
+
+         arguments.append(&mut extra.clone());
+
+         let data = program.execute_function(function.clone(), arguments);
+
+         list_type = update_list_type(list_type, &data);
+
+         initial = data.clone();
+
+         list.push(data);
+      }
+
+      to_native_list(list, list_type)
+   }
 }
 
 macro_rules! each_with_last_trait {

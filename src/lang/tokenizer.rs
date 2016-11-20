@@ -26,6 +26,7 @@ pub enum Token {
    GreaterEqual,
    True,
    False,
+   Range,
 }
 
 
@@ -242,6 +243,13 @@ fn extract_symbol_token(source: &str) -> TokenResult {
                None => Token::AngleBracketRight,
             },
             '@' => Token::Address,
+            '.' => match chars.next() {
+               Some(ch) => match ch {
+                  '.' => return Some((Token::Range, 2)),
+                  _ => return None,
+               },
+               None => return None,
+            },
             _ => return None,
          };
 
@@ -289,25 +297,33 @@ fn extract_number(source: &str) -> TokenResult {
    }
 
    let source = &source[end..];
-   end = 0;
 
-   match source.chars().next() {
-      Some('.') => {
-         end += 1;
-      },
-      _ => {
-         if !positive {
-            integral = -integral
-         }
+   let len = source.len();
 
-         return Some((
-            Token::Int(integral),
-            full_len - source.len()
-         ));
+   let mut chars = source.chars();
+   let first = chars.next();
+   let second = chars.next();
+
+   let float = match (first, second) {
+      (Some('.'), Some(ch)) if ch != '.' => true,
+      (Some('.'), None) => true,
+      _ => false,
+   };
+
+   if !float {
+      if !positive {
+         integral = -integral
       }
+
+      return Some((
+         Token::Int(integral),
+         full_len - len
+      ));
    }
 
-   let source = &source[end..];
+   // Dot here
+
+   let source = &source[1..];
 
    end = 0;
 

@@ -166,6 +166,7 @@ pub enum BinaryType {
    LessEqual,
    Greater,
    GreaterEqual,
+   Range,
 }
 
 impl fmt::Debug for BinaryType {
@@ -181,6 +182,7 @@ impl fmt::Debug for BinaryType {
          &BinaryType::LessEqual => write!(f, "<="),
          &BinaryType::Greater => write!(f, ">"),
          &BinaryType::GreaterEqual => write!(f, ">="),
+         &BinaryType::Range => write!(f, ".."),
       }
    }
 }
@@ -390,9 +392,10 @@ fn match_binary(tokens: &[Token]) -> Option<Ast> {
       (Token::Multiply, BinaryType::Multiply),
       (Token::Equal, BinaryType::Equal),
       (Token::Unequal, BinaryType::Unequal),
+      (Token::Range, BinaryType::Range),
       (Token::AngleBracketLeft, BinaryType::Less),
       (Token::LessEqual, BinaryType::LessEqual),
-      (Token::AngleBracketRight, BinaryType::GreaterEqual),
+      (Token::AngleBracketRight, BinaryType::Greater),
       (Token::GreaterEqual, BinaryType::GreaterEqual),
    ];
 
