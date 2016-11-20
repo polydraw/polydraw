@@ -294,6 +294,9 @@ pub fn eval_add(in1: Data, in2: Data) -> Data {
       (Data::IntList(v1), Data::Int(v2)) => v1.add(v2),
       (Data::Int(v1), Data::IntList(v2)) => v2.add(v1),
 
+      (Data::IntRange(v1), Data::Int(v2)) => v1.add(v2),
+      (Data::Int(v1), Data::IntRange(v2)) => v2.add(v1),
+
       (Data::PointList(v1), Data::Int(v2)) => v1.add(v2),
       (Data::Int(v1), Data::PointList(v2)) => v2.add(v1),
 
@@ -363,6 +366,23 @@ impl AddTrait<i64> for Box<Vec<i64>> {
       }
 
       Data::IntList(self)
+   }
+}
+
+impl AddTrait<i64> for IntRange {
+   #[inline]
+   fn add(self, v2: i64) -> Data {
+      if self.start > self.end {
+         return Data::IntList(Box::new(Vec::new()));
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      for value in self.start..self.end {
+         list.push(value + v2);
+      }
+
+      Data::IntList(Box::new(list))
    }
 }
 
@@ -452,6 +472,8 @@ pub fn eval_divide(in1: Data, in2: Data) -> Data {
 
       (Data::IntList(v1), Data::Int(v2)) => v1.divide(v2),
 
+      (Data::IntRange(v1), Data::Int(v2)) => v1.divide(v2),
+
       (Data::PointList(v1), Data::Int(v2)) => v1.divide(v2),
 
       (Data::PointList(v1), Data::Point(v2)) => v1.divide(v2),
@@ -517,6 +539,23 @@ impl DivideTrait<i64> for Box<Vec<i64>> {
       }
 
       Data::IntList(self)
+   }
+}
+
+impl DivideTrait<i64> for IntRange {
+   #[inline]
+   fn divide(self, v2: i64) -> Data {
+      if self.start > self.end {
+         return Data::IntList(Box::new(Vec::new()));
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      for value in self.start..self.end {
+         list.push(value / v2);
+      }
+
+      Data::IntList(Box::new(list))
    }
 }
 
@@ -606,6 +645,8 @@ pub fn eval_subtract(in1: Data, in2: Data) -> Data {
 
       (Data::IntList(v1), Data::Int(v2)) => v1.subtract(v2),
 
+      (Data::IntRange(v1), Data::Int(v2)) => v1.subtract(v2),
+
       (Data::PointList(v1), Data::Int(v2)) => v1.subtract(v2),
 
       (Data::PointList(v1), Data::Point(v2)) => v1.subtract(v2),
@@ -671,6 +712,23 @@ impl SubtractTrait<i64> for Box<Vec<i64>> {
       }
 
       Data::IntList(self)
+   }
+}
+
+impl SubtractTrait<i64> for IntRange {
+   #[inline]
+   fn subtract(self, v2: i64) -> Data {
+      if self.start > self.end {
+         return Data::IntList(Box::new(Vec::new()));
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      for value in self.start..self.end {
+         list.push(value - v2);
+      }
+
+      Data::IntList(Box::new(list))
    }
 }
 
@@ -762,6 +820,9 @@ pub fn eval_multiply(in1: Data, in2: Data) -> Data {
       (Data::IntList(v1), Data::Int(v2)) => v1.multiply(v2),
       (Data::Int(v1), Data::IntList(v2)) => v2.multiply(v1),
 
+      (Data::IntRange(v1), Data::Int(v2)) => v1.multiply(v2),
+      (Data::Int(v1), Data::IntRange(v2)) => v2.multiply(v1),
+
       (Data::PointList(v1), Data::Int(v2)) => v1.multiply(v2),
       (Data::Int(v1), Data::PointList(v2)) => v2.multiply(v1),
 
@@ -824,6 +885,23 @@ impl MultiplyTrait<i64> for Box<Vec<i64>> {
       }
 
       Data::IntList(self)
+   }
+}
+
+impl MultiplyTrait<i64> for IntRange {
+   #[inline]
+   fn multiply(self, v2: i64) -> Data {
+      if self.start > self.end {
+         return Data::IntList(Box::new(Vec::new()));
+      }
+
+      let mut list = Vec::with_capacity((self.end - self.start) as usize);
+
+      for value in self.start..self.end {
+         list.push(value * v2);
+      }
+
+      Data::IntList(Box::new(list))
    }
 }
 
@@ -2111,8 +2189,9 @@ impl EachTrait for IntRange {
 
       let mut list_type = ListType::None;
 
-      for value in self.start .. self.end {
+      for value in self.start..self.end {
          let mut arguments = vec![Data::Int(value)];
+
          arguments.append(&mut extra.clone());
 
          let data = program.execute_function(function.clone(), arguments);
@@ -2272,7 +2351,7 @@ impl EachWithIndexTrait for IntRange {
 
       let mut index: i64 = 0;
 
-      for value in self.start .. self.end {
+      for value in self.start..self.end {
          let mut arguments = vec![Data::Int(value), Data::Int(index)];
 
          arguments.append(&mut extra.clone());
@@ -2449,7 +2528,7 @@ impl EachWithLastTrait for IntRange {
 
       let mut list_type = ListType::None;
 
-      for value in self.start .. self.end {
+      for value in self.start..self.end {
          let mut arguments = vec![Data::Int(value), initial];
 
          arguments.append(&mut extra.clone());
@@ -2697,9 +2776,24 @@ pub fn from_native_list(data: Data) -> Option<Vec<Data>> {
       Data::PointList(list) => Some(from_point_list(*list)),
       Data::PointListList(list) => Some(from_point_list_list(*list)),
       Data::RgbList(list) => Some(from_rgb_list(*list)),
+      Data::IntRange(range) => Some(from_int_range(range)),
       Data::DataList(list) => Some(*list),
       _ => None,
    }
+}
+
+fn from_int_range(range: IntRange) -> Vec<Data> {
+   if range.start > range.end {
+      return Vec::new();
+   }
+
+   let mut result = Vec::with_capacity((range.end - range.start) as usize);
+
+   for value in range.start..range.end {
+      result.push(Data::Int(value));
+   }
+
+   result
 }
 
 macro_rules! from_list {
