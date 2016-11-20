@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::operator::{
    Operator, DataOperator, InputOperator, EXEC_FUNCS, function_argument_count,
-   exec_built_in_function, PROG_FUNCS, exec_prog_function,
+   exec_built_in_function, PROG_FUNCS, exec_prog_function, from_native_list,
 };
 use super::data::Data;
 use super::node::{Node, IndexedInlet};
@@ -39,17 +39,105 @@ impl NodeDef {
 }
 
 
+#[derive(PartialEq, Clone, Debug)]
+pub struct FunctionArguments {
+   pub total_len: usize,
+   pub arguments: Vec<Argument>,
+}
+
+impl FunctionArguments {
+   #[inline]
+   pub fn new(arguments: Vec<Argument>) -> Self {
+      let total_len = argument_len(&arguments);
+
+      FunctionArguments {
+         total_len: total_len,
+         arguments: arguments,
+      }
+   }
+
+   #[inline]
+   pub fn names(&self) -> Vec<String> {
+      let mut names = Vec::new();
+
+      argument_names(&mut names, &self.arguments);
+
+      names
+   }
+
+   #[inline]
+   pub fn flatten_arguments(&self, mut list: Vec<Data>) -> Vec<Data> {
+      if list.len() == self.total_len {
+         return list;
+      }
+
+      let mut result = Vec::new();
+
+      flatten_arguments(&mut result, &mut list, &self.arguments);
+
+      result
+   }
+}
+
+fn argument_len(arguments: &Vec<Argument>) -> usize {
+   let mut len = 0;
+
+   for argument in arguments.iter() {
+      match argument {
+         &Argument::Name(_) => len += 1,
+         &Argument::List(ref list) => len += argument_len(list),
+      }
+   }
+
+   len
+}
+
+fn argument_names(mut names: &mut Vec<String>, arguments: &Vec<Argument>) {
+   for argument in arguments.iter() {
+      match argument {
+         &Argument::Name(ref name) => names.push(name.clone()),
+         &Argument::List(ref list) => argument_names(names, list),
+      }
+   }
+}
+
+fn flatten_arguments(
+   mut result: &mut Vec<Data>,
+   mut passed: &mut Vec<Data>,
+   arguments: &Vec<Argument>
+) {
+   for argument in arguments.iter() {
+      let data = passed.remove(0);
+
+      match argument {
+         &Argument::Name(_) => result.push(data),
+         &Argument::List(ref list) => {
+            let mut inner_passed = from_native_list(data).unwrap();
+            flatten_arguments(result, &mut inner_passed, list);
+         }
+      }
+   }
+}
+
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Argument {
+   Name(String),
+   List(Vec<Argument>),
+}
+
+
 pub struct FunctionDefs {
    pub name: String,
-   pub argument_count: usize,
+   pub arguments: FunctionArguments,
    pub node_defs: Vec<NodeDef>,
 }
 
 impl FunctionDefs {
-   pub fn new(name: String, argument_count: usize) -> Self {
+   pub fn new(name: String, arguments: FunctionArguments) -> Self {
       FunctionDefs {
          name: name,
-         argument_count: argument_count,
+         arguments: arguments,
          node_defs: Vec::new(),
       }
    }
@@ -70,12 +158,12 @@ impl ProgramBuilder {
       }
    }
 
-   pub fn function(&mut self, name: String, arguments: Vec<String>) {
-      let mut def = FunctionDefs::new(name, arguments.len());
+   pub fn function(&mut self, name: String, arguments: FunctionArguments) {
+      let mut def = FunctionDefs::new(name, arguments);
 
-      for argument in arguments {
+      for argument in def.arguments.names() {
          def.node_defs.push(
-            NodeDef::Input(String::from(argument))
+            NodeDef::Input(argument)
          );
       }
 
@@ -109,8 +197,8 @@ impl ProgramBuilder {
    pub fn compile(self) -> Program {
       let mut functions = HashMap::new();
 
-      for FunctionDefs {name, argument_count, node_defs} in self.defs {
-         let function = compile_function(argument_count, node_defs);
+      for FunctionDefs {name, arguments, node_defs} in self.defs {
+         let function = compile_function(arguments, node_defs);
 
          functions.insert(name, function);
       }
@@ -168,14 +256,14 @@ impl Program {
       }
 
       match self.functions.get(name) {
-         Some(function) => function.argument_count,
+         Some(function) => function.arguments.arguments.len(),
          None => panic!("No {:?} function defined", name),
       }
    }
 }
 
 
-pub fn compile_function(argument_count: usize, node_defs: Vec<NodeDef>) -> Function {
+pub fn compile_function(arguments: FunctionArguments, node_defs: Vec<NodeDef>) -> Function {
    let mut slot_map = HashMap::new();
 
    let mut result_slot = 0;
@@ -208,7 +296,7 @@ pub fn compile_function(argument_count: usize, node_defs: Vec<NodeDef>) -> Funct
 
    state[result_slot].push(Data::None);
 
-   Function::new(nodes, state, result_slot, argument_count)
+   Function::new(nodes, state, result_slot, arguments)
 }
 
 
@@ -216,7 +304,7 @@ pub struct Function {
    pub nodes: Vec<Node>,
    pub state: Vec<Vec<Data>>,
    pub result_slot: usize,
-   pub argument_count: usize,
+   pub arguments: FunctionArguments,
 }
 
 
@@ -225,18 +313,20 @@ impl Function {
       nodes: Vec<Node>,
       state: Vec<Vec<Data>>,
       result_slot: usize,
-      argument_count: usize
+      arguments: FunctionArguments
    ) -> Self {
       Function {
          nodes: nodes,
          state: state,
          result_slot: result_slot,
-         argument_count: argument_count,
+         arguments: arguments,
       }
    }
 
    fn push_arguments(&mut self, arguments: Vec<Data>) {
-      if arguments.len() > self.argument_count {
+      let arguments = self.arguments.flatten_arguments(arguments);
+
+      if arguments.len() > self.arguments.total_len {
          panic!("Function call with higher number");
       }
 
@@ -246,7 +336,7 @@ impl Function {
          slot += 1;
       }
 
-      for rest in slot..self.argument_count {
+      for rest in slot..self.arguments.total_len {
          self.push_single_argument(rest, Data::None);
       }
    }

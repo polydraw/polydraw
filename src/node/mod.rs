@@ -4,7 +4,7 @@ mod node;
 mod renderer;
 mod builder;
 
-pub use self::builder::{ProgramBuilder, Inlet};
+pub use self::builder::{ProgramBuilder, Inlet, FunctionArguments, Argument};
 
 pub use self::operator::{
    Operator, Add, BuildPoint, BuildList, BuildPoly, BuildLayer, BuildArtboard,

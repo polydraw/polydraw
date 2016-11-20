@@ -2591,7 +2591,7 @@ to_list_boxed!(to_layer_list, Data::Layer, Data::LayerList);
 to_list_boxed!(to_point_list_list, Data::PointList, Data::PointListList);
 
 
-fn from_native_list(data: Data) -> Option<Vec<Data>> {
+pub fn from_native_list(data: Data) -> Option<Vec<Data>> {
    match data {
       Data::IntList(list) => Some(from_int_list(*list)),
       Data::FloatList(list) => Some(from_float_list(*list)),

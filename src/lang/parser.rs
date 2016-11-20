@@ -1,7 +1,8 @@
 use std::fmt;
 
-use super::tokenizer::Token;
+use node::{Argument, FunctionArguments};
 
+use super::tokenizer::Token;
 
 #[derive(PartialEq, Clone, Debug)]
 pub struct Assignment {
@@ -61,16 +62,64 @@ impl PointDef {
 pub type PointBox = Box<PointDef>;
 
 
+struct FunctionArgumentStack {
+   stack: Vec<Vec<Argument>>,
+}
+
+impl FunctionArgumentStack {
+   #[inline]
+   fn new() -> Self {
+      FunctionArgumentStack {
+         stack: vec![vec![]],
+      }
+   }
+
+   fn push(&mut self, name: String) {
+      let last = self.stack.last_mut().unwrap();
+
+      last.push(Argument::Name(name));
+   }
+
+   fn open_list(&mut self) {
+      self.stack.push(Vec::new());
+   }
+
+   fn close_list(&mut self) -> Option<()> {
+      if self.stack.len() < 2 {
+         return None;
+      }
+
+      let list = self.stack.pop().unwrap();
+
+      let last = self.stack.last_mut().unwrap();
+
+      last.push(Argument::List(list));
+
+      Some(())
+   }
+
+   fn arguments(&mut self) -> Option<FunctionArguments> {
+      if self.stack.len() != 1 {
+         return None;
+      }
+
+      let list = self.stack.pop().unwrap();
+
+      Some(FunctionArguments::new(list))
+   }
+}
+
+
 #[derive(PartialEq, Clone, Debug)]
 pub struct Function {
    pub name: String,
-   pub arguments: Vec<String>,
+   pub arguments: FunctionArguments,
    pub assignments: Vec<Ast>,
 }
 
 impl Function {
    pub fn new(
-      name: String, arguments: Vec<String>, assignments: Vec<Ast>
+      name: String, arguments: FunctionArguments, assignments: Vec<Ast>
    ) -> Box<Self> {
       Box::new(
          Function {
@@ -202,7 +251,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
    let mut tokens = &tokens[..];
    let mut new_lines = 0;
 
-   let mut current_function: Option<(String, Vec<String>)> = None;
+   let mut current_function: Option<(String, FunctionArguments)> = None;
 
    loop {
       let taken = consume_new_line(tokens);
@@ -241,7 +290,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
 }
 
 
-fn parse_function_start(tokens: &[Token]) -> Option<(String, Vec<String>, usize)> {
+fn parse_function_start(tokens: &[Token]) -> Option<(String, FunctionArguments, usize)> {
    if tokens.len() < 3 {
       return None;
    }
@@ -255,12 +304,20 @@ fn parse_function_start(tokens: &[Token]) -> Option<(String, Vec<String>, usize)
       return None;
    }
 
-   let mut arguments = Vec::new();
+   let mut argument_stack = FunctionArgumentStack::new();
 
    for i in 2..tokens.len() {
       match &tokens[i] {
-         &Token::Name(ref name) => arguments.push(name.clone()),
-         &Token::NewLine => return Some((name.clone(), arguments, i)),
+         &Token::Name(ref name) => argument_stack.push(name.clone()),
+         &Token::BracketLeft => argument_stack.open_list(),
+         &Token::BracketRight => if let None = argument_stack.close_list() {
+            return None;
+         },
+         &Token::NewLine => if let Some(arguments) = argument_stack.arguments() {
+            return Some((name.clone(), arguments, i));
+         } else {
+            return None;
+         },
          _ => return None,
       }
    }
