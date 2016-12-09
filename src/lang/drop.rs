@@ -4,7 +4,7 @@ use std::ptr;
 
 use super::super::data::{IntPoint, FloatPoint, Empty};
 use super::value_ptr::{ValuePtr, ValuePtrList};
-use super::parser::FnRef;
+use super::compiler::FnRef;
 
 
 pub type DropFunc = fn(&ValuePtr, &DropRegistry);

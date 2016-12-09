@@ -26,31 +26,6 @@ impl FnIndex {
 }
 
 
-#[derive(Clone, Debug)]
-pub struct FnRef {
-   pub fn_type: FnType,
-   pub fn_index: FnIndex,
-}
-
-impl FnRef {
-   #[inline]
-   pub fn builtin(fn_index: FnIndex) -> Self {
-      FnRef {
-         fn_type: FnType::Builtin,
-         fn_index: fn_index,
-      }
-   }
-
-   #[inline]
-   pub fn defined(fn_index: FnIndex) -> Self {
-      FnRef {
-         fn_type: FnType::Defined,
-         fn_index: fn_index,
-      }
-   }
-}
-
-
 #[derive(Clone)]
 pub enum Value {
    Int(i64),

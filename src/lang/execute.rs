@@ -3,15 +3,15 @@ use std::any::TypeId;
 
 use super::super::data::Empty;
 
-use super::compiler::{Program, CompiledFn, CallArgType, ArgTemplate};
+use super::compiler::{Program, CompiledFn, CallArgType, ArgTemplate, FnRef};
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
 use super::operator::{FnList, TypeFnMap};
 use super::clone::{CloneRegistry, clone_value_ptr};
 use super::drop::{DropRegistry, drop_value_ptr_vec};
-use super::parser::{FnType, FnRef};
+use super::parser::FnType;
 
 
-pub fn execute(
+pub fn execute_program(
    program: &Program,
    arguments: Vec<ValuePtr>,
    builtin_fns: &FnList,
@@ -25,14 +25,20 @@ pub fn execute(
          arg_refs.push(arg);
       }
 
-      execute_compiled_function(
-         program.main_index,
-         arg_refs,
+      let executor = Executor::new(
          &program.compiled_fns,
          builtin_fns,
          &program.consts,
          clone_registry,
          drop_registry,
+      );
+
+      let fn_ref = FnRef::defined(program.main_index);
+
+      execute_compiled_function(
+         &fn_ref,
+         arg_refs,
+         &executor,
       )
    };
 
@@ -43,52 +49,33 @@ pub fn execute(
 
 
 pub fn execute_builtin_function(
-   index: usize,
+   fn_ref: &FnRef,
    arguments: Vec<&ValuePtr>,
-   compiled_fns: &Vec<CompiledFn>,
-   builtin_fns: &FnList,
-   consts: &Vec<ValuePtr>,
-   clone_registry: &CloneRegistry,
-   drop_registry: &DropRegistry,
+   executor: &Executor,
 ) -> Vec<ValuePtr> {
-   match &builtin_fns[index] {
+   match &executor.builtin_fns[fn_ref.index] {
       &TypeFnMap::HMA2R1(ref map) => {
          if let Some(func) = map.get(&(arguments[0].type_id, arguments[1].type_id)) {
-            vec![func(arguments[0], arguments[1])]
+            func(arguments, executor, fn_ref)
          } else {
-            vec![ValuePtr::new(Empty)]
+            vecval!(Empty)
          }
       },
-      &TypeFnMap::ALR1(ref func) => {
-         vec![func(arguments, clone_registry)]
-      },
       &TypeFnMap::CALL(ref func) => {
-         let executor = Executor::new(
-            compiled_fns,
-            builtin_fns,
-            consts,
-            clone_registry,
-            drop_registry,
-         );
-
-         func(arguments, executor)
+         func(arguments, executor, fn_ref)
       }
    }
 }
 
 
 fn execute_compiled_function(
-   index: usize,
+   fn_ref: &FnRef,
    arguments: Vec<&ValuePtr>,
-   compiled_fns: &Vec<CompiledFn>,
-   builtin_fns: &FnList,
-   consts: &Vec<ValuePtr>,
-   clone_registry: &CloneRegistry,
-   drop_registry: &DropRegistry,
+   executor: &Executor,
 ) -> Vec<ValuePtr> {
    let mut stack: Vec<ValuePtr> = Vec::new();
 
-   let func = &compiled_fns[index];
+   let func = &executor.compiled_fns[fn_ref.index];
 
    let expanded_arguments = match expand_arguments(&arguments, &func.template) {
       Some(expanded) => expanded,
@@ -102,7 +89,7 @@ fn execute_compiled_function(
          for call_arg in exec_fn.args.iter() {
             let reference = match call_arg.arg_type {
                CallArgType::Argument => expanded_arguments[call_arg.index],
-               CallArgType::Const => &consts[call_arg.index],
+               CallArgType::Const => &executor.consts[call_arg.index],
                CallArgType::Variable => &stack[call_arg.index],
             };
 
@@ -112,24 +99,16 @@ fn execute_compiled_function(
          match exec_fn.fn_type {
             FnType::Builtin => {
                execute_builtin_function(
-                  exec_fn.fn_index.index,
+                  &FnRef::builtin(exec_fn.fn_index.index),
                   argument_references,
-                  compiled_fns,
-                  builtin_fns,
-                  consts,
-                  clone_registry,
-                  drop_registry,
+                  executor,
                )
             },
             FnType::Defined => {
                execute_compiled_function(
-                  exec_fn.fn_index.index,
+                  &FnRef::defined(exec_fn.fn_index.index),
                   argument_references,
-                  compiled_fns,
-                  builtin_fns,
-                  consts,
-                  clone_registry,
-                  drop_registry,
+                  executor,
                )
             }
          }
@@ -146,10 +125,10 @@ fn execute_compiled_function(
       result.push(
          match call_arg.arg_type {
             CallArgType::Argument => {
-               clone_value_ptr(expanded_arguments[call_arg.index], clone_registry)
+               clone_value_ptr(expanded_arguments[call_arg.index], executor.clone_registry)
             },
             CallArgType::Const => {
-               clone_value_ptr(&consts[call_arg.index], clone_registry)
+               clone_value_ptr(&executor.consts[call_arg.index], executor.clone_registry)
             },
             CallArgType::Variable => unsafe {
                mem::replace(stack.get_unchecked_mut(call_arg.index), ValuePtr::null())
@@ -158,7 +137,7 @@ fn execute_compiled_function(
       );
    }
 
-   drop_value_ptr_vec(&stack, drop_registry);
+   drop_value_ptr_vec(&stack, executor.drop_registry);
 
    result
 }
@@ -193,24 +172,16 @@ impl<'a> Executor<'a> {
       match fn_ref.fn_type {
          FnType::Builtin => {
             execute_builtin_function(
-               fn_ref.fn_index.index,
+               fn_ref,
                arguments,
-               self.compiled_fns,
-               self.builtin_fns,
-               self.consts,
-               self.clone_registry,
-               self.drop_registry,
+               self,
             )
          },
          FnType::Defined => {
             execute_compiled_function(
-               fn_ref.fn_index.index,
+               fn_ref,
                arguments,
-               self.compiled_fns,
-               self.builtin_fns,
-               self.consts,
-               self.clone_registry,
-               self.drop_registry,
+               self,
             )
          }
       }

@@ -5,11 +5,11 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use super::value_ptr::ValuePtr;
-use super::parser::{FnType, FnIndex, Argument, Function, Value, FnRef};
+use super::parser::{FnType, FnIndex, Argument, Function, Value};
 use super::operator::FnList;
 use super::clone::CloneRegistry;
 use super::drop::{DropRegistry, drop_value_ptr};
-use super::execute::execute_builtin_function;
+use super::execute::{execute_builtin_function, Executor};
 
 
 #[derive(PartialEq, Clone, Debug)]
@@ -78,6 +78,31 @@ impl ExecFn {
          fn_index: fn_index,
          args: args,
          target: target,
+      }
+   }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct FnRef {
+   pub fn_type: FnType,
+   pub index: usize,
+}
+
+impl FnRef {
+   #[inline]
+   pub fn builtin(index: usize) -> Self {
+      FnRef {
+         fn_type: FnType::Builtin,
+         index: index,
+      }
+   }
+
+   #[inline]
+   pub fn defined(index: usize) -> Self {
+      FnRef {
+         fn_type: FnType::Defined,
+         index: index,
       }
    }
 }
@@ -371,9 +396,9 @@ fn compile_value(
       },
       &Value::FunctionRef(ref name) => {
          let fn_ref = if let Some(fn_index) = defined_indices.get(name as &str) {
-            FnRef::defined(fn_index.clone())
+            FnRef::defined(fn_index.index)
          } else if let Some(fn_index) = builtin_indices.get(name as &str) {
-            FnRef::builtin(fn_index.clone())
+            FnRef::builtin(fn_index.index)
          } else {
             return Err(format!("Reference to unrecognized function '{}'", name));
          };
@@ -416,6 +441,8 @@ fn compile_value(
             Ok((CallArg::variable(target), fn_index.span))
          } else if let Some(fn_index) = builtin_indices.get(&call.name as &str) {
             if consts_only {
+               let compiled_fns = Vec::new();
+
                let mut value_ptr_list = {
                   let mut argument_references = Vec::new();
 
@@ -427,14 +454,20 @@ fn compile_value(
                      }
                   }
 
-                  execute_builtin_function(
-                     fn_index.index,
-                     argument_references,
-                     &Vec::new(),
+                  let executor = Executor::new(
+                     &compiled_fns,
                      builtin_fns,
                      consts,
                      clone_registry,
                      drop_registry,
+                  );
+
+                  let fn_ref = FnRef::builtin(fn_index.index);
+
+                  execute_builtin_function(
+                     &fn_ref,
+                     argument_references,
+                     &executor,
                   )
                };
 

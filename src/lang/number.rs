@@ -1,4 +1,6 @@
 use super::value_ptr::ValuePtr;
+use super::compiler::FnRef;
+use super::execute::Executor;
 
 
 fn add_i64_(a: &i64, b: &i64) -> i64 {

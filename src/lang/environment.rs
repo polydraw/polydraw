@@ -6,7 +6,7 @@ use super::operator::{FnList, register_builtin_fns};
 use super::value_ptr::ValuePtr;
 use super::tokenizer::tokenize;
 use super::parser::parse;
-use super::execute::execute;
+use super::execute::execute_program;
 
 
 pub struct Environment {
@@ -45,7 +45,7 @@ impl Environment {
    }
 
    pub fn execute(&self, program: &Program, arguments: Vec<ValuePtr>) -> Vec<ValuePtr> {
-      execute(
+      execute_program(
          program,
          arguments,
          &self.builtin_fns,

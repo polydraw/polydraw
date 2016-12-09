@@ -1,5 +1,7 @@
 use super::super::data::{FloatPoint, IntPoint};
 use super::value_ptr::ValuePtr;
+use super::compiler::FnRef;
+use super::execute::Executor;
 
 
 fn point_f64_f64_(a: &f64, b: &f64) -> FloatPoint {

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use super::super::data::{IntPoint, FloatPoint, Empty};
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use super::parser::FnRef;
+use super::compiler::FnRef;
 
 
 pub type DebugFunc = fn(&ValuePtr, &DebugRegistry) -> String;

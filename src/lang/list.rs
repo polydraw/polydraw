@@ -2,31 +2,41 @@ use std::any::TypeId;
 
 use super::super::data::Empty;
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use super::clone::{CloneRegistry, clone_value_ptr};
+use super::clone::{clone_value_ptr};
 use super::drop::drop_value_ptr;
 use super::execute::Executor;
-use super::parser::FnRef;
+use super::compiler::FnRef;
 
 
-pub fn create_list(arguments: Vec<&ValuePtr>, clone_registry: &CloneRegistry) -> ValuePtr {
+pub fn create_list(
+   arguments: Vec<&ValuePtr>,
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
    let mut list = Vec::new();
 
    for value_ptr in arguments.iter() {
       list.push(
-         clone_value_ptr(value_ptr, clone_registry)
+         clone_value_ptr(value_ptr, executor.clone_registry)
       );
    }
 
-   ValuePtr::new(list)
+   vecval!(list)
 }
 
 
-pub fn each(arguments: Vec<&ValuePtr>, executor: Executor) -> Vec<ValuePtr> {
+pub fn each(
+   arguments: Vec<&ValuePtr>,
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
    if arguments.len() < 2
       || TypeId::of::<ValuePtrList>() != arguments[0].type_id
       || TypeId::of::<FnRef>() != arguments[1].type_id {
 
-      return vec![ValuePtr::new(Empty)];
+      return vecval!(Empty);
    }
 
    let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
@@ -53,16 +63,21 @@ pub fn each(arguments: Vec<&ValuePtr>, executor: Executor) -> Vec<ValuePtr> {
       result.push(value);
    }
 
-   vec![ValuePtr::new(result)]
+   vecval!(result)
 }
 
 
-pub fn each_with_last(arguments: Vec<&ValuePtr>, executor: Executor) -> Vec<ValuePtr> {
+pub fn each_with_last(
+   arguments: Vec<&ValuePtr>,
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
    if arguments.len() < 3
       || TypeId::of::<ValuePtrList>() != arguments[0].type_id
       || TypeId::of::<FnRef>() != arguments[1].type_id {
 
-      return vec![ValuePtr::new(Empty)];
+      return vecval!(Empty);
    }
 
    let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
@@ -95,16 +110,21 @@ pub fn each_with_last(arguments: Vec<&ValuePtr>, executor: Executor) -> Vec<Valu
       result.push(value);
    }
 
-   vec![ValuePtr::new(result)]
+   vecval!(result)
 }
 
 
-pub fn each_with_index(arguments: Vec<&ValuePtr>, executor: Executor) -> Vec<ValuePtr> {
+pub fn each_with_index(
+   arguments: Vec<&ValuePtr>,
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
    if arguments.len() < 2
       || TypeId::of::<ValuePtrList>() != arguments[0].type_id
       || TypeId::of::<FnRef>() != arguments[1].type_id {
 
-      return vec![ValuePtr::new(Empty)];
+      return vecval!(Empty);
    }
 
    let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
@@ -135,6 +155,6 @@ pub fn each_with_index(arguments: Vec<&ValuePtr>, executor: Executor) -> Vec<Val
       drop_value_ptr(&index_value, executor.drop_registry);
    }
 
-   vec![ValuePtr::new(result)]
+   vecval!(result)
 }
 

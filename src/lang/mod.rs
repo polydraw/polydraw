@@ -1,7 +1,10 @@
 #[macro_use]
 mod value_ptr;
 
-pub mod tokenizer;
+#[macro_use]
+mod operator;
+
+mod tokenizer;
 mod parser;
 mod compiler;
 mod drop;
@@ -9,9 +12,6 @@ mod clone;
 mod debug;
 mod execute;
 mod environment;
-
-#[macro_use]
-mod operator;
 
 mod number;
 mod list;
