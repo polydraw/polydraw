@@ -1,68 +1,301 @@
 use std::fmt;
 
-use node::{Argument, FunctionArguments};
-
 use super::tokenizer::Token;
 
-#[derive(PartialEq, Clone, Debug)]
+
+#[derive(Clone, Debug)]
+pub enum FnType {
+   Builtin,
+   Defined,
+}
+
+
+#[derive(Clone, Debug)]
+pub struct FnIndex {
+   pub index: usize,
+   pub span: usize,
+}
+
+impl FnIndex {
+   pub fn new(index: usize, span: usize) -> Self {
+      FnIndex {
+         index: index,
+         span: span,
+      }
+   }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct FnRef {
+   pub fn_type: FnType,
+   pub fn_index: FnIndex,
+}
+
+impl FnRef {
+   #[inline]
+   pub fn builtin(fn_index: FnIndex) -> Self {
+      FnRef {
+         fn_type: FnType::Builtin,
+         fn_index: fn_index,
+      }
+   }
+
+   #[inline]
+   pub fn defined(fn_index: FnIndex) -> Self {
+      FnRef {
+         fn_type: FnType::Defined,
+         fn_index: fn_index,
+      }
+   }
+}
+
+
+#[derive(Clone)]
+pub enum Value {
+   Int(i64),
+   Float(f64),
+   Bool(bool),
+//   String(Box<String>),
+   List(Box<Vec<Value>>),
+   Name(Box<String>),
+   FunctionRef(Box<String>),
+   Call(Box<FunctionCall>),
+}
+
+impl fmt::Debug for Value {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         &Value::Int(ref value) => write!(f, "{}", value),
+         &Value::Float(ref value) => write!(f, "{}", value),
+         &Value::Bool(ref value) => write!(f, "{}", value),
+//         &Value::String(ref value) => write!(f, "{:?}", value),
+         &Value::Call(ref value) => write!(f, "{:?}", value),
+         &Value::FunctionRef(ref value) => write!(f, "@{}", value),
+         &Value::Name(ref value) => write!(f, "{}", value),
+         &Value::List(ref value) => write!(f, "{:?}", value),
+      }
+   }
+}
+
+
+#[derive(Clone)]
+pub struct FunctionCall {
+   pub name: String,
+   pub arguments: Vec<Value>,
+}
+
+impl FunctionCall {
+   pub fn new(name: String, arguments: Vec<Value>) -> Self {
+      FunctionCall {
+         name: name,
+         arguments: arguments
+      }
+   }
+
+   fn match_point(&self) -> bool {
+      if self.arguments.len() != 2 {
+         return false;
+      }
+
+      self.name == "point"
+   }
+
+   fn match_binary_operator(&self) -> Option<&'static str> {
+      if self.arguments.len() != 2 {
+         return None;
+      }
+
+      Some(match &self.name as &str {
+         "subtract" => "-",
+         "add" => "+",
+         "divide" => "/",
+         "multiply" => "*",
+         "equal" => "==",
+         "unequal" => "!=",
+         "range" => "..",
+         "less" => "<",
+         "less-equal" => "<=",
+         "greater" => ">",
+         "greater-equal" => ">=",
+         _ => return None,
+      })
+   }
+}
+
+impl fmt::Debug for FunctionCall {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      if self.match_point() {
+         write!(f, "<{:?} {:?}>", self.arguments[0], self.arguments[1])
+      } else if let Some(operator) = self.match_binary_operator() {
+         write!(f, "({:?} {} {:?})", self.arguments[0], operator, self.arguments[1])
+      } else {
+         write!(f, "({}!", self.name).unwrap();
+
+         for argument in self.arguments.iter() {
+            write!(f, " {:?}", argument).unwrap();
+         }
+
+         write!(f, ")")
+      }
+   }
+}
+
+
+#[derive(Clone)]
 pub struct Assignment {
-   pub node_id: String,
-   pub value: Ast,
+   pub names: Vec<String>,
+   pub value: Value,
 }
 
 impl Assignment {
-   pub fn new(node_id: String, value: Ast) -> Box<Self> {
-      Box::new(
-         Assignment {
-            node_id: node_id,
-            value: value
-         }
-      )
+   pub fn new(names: Vec<String>, value: Value) -> Self {
+      Assignment {
+         names: names,
+         value: value
+      }
    }
 }
 
-pub type AssignmentBox = Box<Assignment>;
+impl fmt::Debug for Assignment {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      for name in self.names.iter() {
+         write!(f, "{} ", name).unwrap();
+      }
 
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct List {
-   pub contents: Vec<Ast>,
-}
-
-impl List {
-   pub fn new(contents: Vec<Ast>) -> Box<Self> {
-      Box::new(
-         List {
-            contents: contents
-         }
-      )
+      write!(f, "= {:?}", self.value)
    }
 }
 
-pub type ListBox = Box<List>;
 
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct PointDef {
-   pub x: Ast,
-   pub y: Ast,
+#[derive(Clone)]
+pub enum Argument {
+   Name(String),
+   List(Vec<Argument>),
 }
 
-impl PointDef {
-   pub fn new(x: Ast, y: Ast) -> Box<Self> {
-      Box::new(
-         PointDef {
-            x: x,
-            y: y,
-         }
-      )
+impl fmt::Debug for Argument {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         &Argument::Name(ref name) => write!(f, "{}", name),
+         &Argument::List(ref list) => {
+            write!(f, "[").unwrap();
+
+            for (index, argument) in list.iter().enumerate() {
+               write!(f, "{:?}", argument).unwrap();
+
+               if index != list.len() - 1 {
+                  write!(f, " ").unwrap();
+               }
+            }
+
+            write!(f, "]")
+         },
+      }
    }
 }
 
-pub type PointBox = Box<PointDef>;
+
+#[derive(Clone)]
+pub struct FunctionArguments {
+   pub total_len: usize,
+   pub arguments: Vec<Argument>,
+}
+
+impl fmt::Debug for FunctionArguments {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      for (index, argument) in self.arguments.iter().enumerate() {
+         write!(f, "{:?}", argument).unwrap();
+
+         if index != self.arguments.len() - 1 {
+            write!(f, " ").unwrap();
+         }
+      }
+
+      write!(f, "")
+   }
+}
+
+impl FunctionArguments {
+   #[inline]
+   pub fn new(arguments: Vec<Argument>) -> Self {
+      let total_len = argument_len(&arguments);
+
+      FunctionArguments {
+         total_len: total_len,
+         arguments: arguments,
+      }
+   }
+}
+
+fn argument_len(arguments: &Vec<Argument>) -> usize {
+   let mut len = 0;
+
+   for argument in arguments.iter() {
+      match argument {
+         &Argument::Name(_) => len += 1,
+         &Argument::List(ref list) => len += argument_len(list),
+      }
+   }
+
+   len
+}
 
 
-struct FunctionArgumentStack {
+#[derive(Clone)]
+pub struct Function {
+   pub name: String,
+   pub arguments: FunctionArguments,
+   pub assignments: Vec<Assignment>,
+   pub flat_arguments: Vec<String>,
+}
+
+impl Function {
+   pub fn new(
+      name: String, arguments: FunctionArguments, assignments: Vec<Assignment>
+   ) -> Self {
+      let mut flat = Vec::new();
+
+      flat_arguments(&mut flat, &arguments.arguments);
+
+      Function {
+         name: name,
+         arguments: arguments,
+         assignments: assignments,
+         flat_arguments: flat,
+      }
+   }
+}
+
+impl fmt::Debug for Function {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      writeln!(f, "{} >> {:?}", self.name, self.arguments).unwrap();
+
+      for assignment in self.assignments.iter() {
+         writeln!(f, "   {:?}", assignment).unwrap();
+      }
+
+      write!(f, "")
+   }
+}
+
+
+fn flat_arguments(
+   flat: &mut Vec<String>,
+   arguments: &Vec<Argument>,
+) {
+   for argument in arguments.iter() {
+      match argument {
+         &Argument::Name(ref name) => flat.push(name.clone()),
+         &Argument::List(ref list) => {
+            flat_arguments(flat, list);
+         }
+      }
+   }
+}
+
+
+pub struct FunctionArgumentStack {
    stack: Vec<Vec<Argument>>,
 }
 
@@ -84,9 +317,9 @@ impl FunctionArgumentStack {
       self.stack.push(Vec::new());
    }
 
-   fn close_list(&mut self) -> Option<()> {
+   fn close_list(&mut self) -> bool {
       if self.stack.len() < 2 {
-         return None;
+         return false;
       }
 
       let list = self.stack.pop().unwrap();
@@ -95,7 +328,7 @@ impl FunctionArgumentStack {
 
       last.push(Argument::List(list));
 
-      Some(())
+      true
    }
 
    fn arguments(&mut self) -> Option<FunctionArguments> {
@@ -110,143 +343,32 @@ impl FunctionArgumentStack {
 }
 
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct Function {
-   pub name: String,
-   pub arguments: FunctionArguments,
-   pub assignments: Vec<Ast>,
-}
-
-impl Function {
-   pub fn new(
-      name: String, arguments: FunctionArguments, assignments: Vec<Ast>
-   ) -> Box<Self> {
-      Box::new(
-         Function {
-            name: name,
-            arguments: arguments,
-            assignments: assignments,
-         }
-      )
-   }
-}
-
-pub type FunctionBox = Box<Function>;
-
-
-#[derive(PartialEq, Clone, Debug)]
-pub struct FunctionCall {
-   pub name: String,
-   pub arguments: Vec<Ast>,
-}
-
-impl FunctionCall {
-   pub fn new(name: String, arguments: Vec<Ast>) -> Box<Self> {
-      Box::new(
-         FunctionCall {
-            name: name,
-            arguments: arguments,
-         }
-      )
-   }
-}
-
-pub type FunctionCallBox = Box<FunctionCall>;
-
-
-#[derive(PartialEq, Clone)]
-pub enum BinaryType {
-   Subtract,
-   Add,
-   Divide,
-   Multiply,
-   Equal,
-   Unequal,
-   Less,
-   LessEqual,
-   Greater,
-   GreaterEqual,
-   Range,
-}
-
-impl fmt::Debug for BinaryType {
-   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      match self {
-         &BinaryType::Subtract => write!(f, "-"),
-         &BinaryType::Add => write!(f, "+"),
-         &BinaryType::Divide => write!(f, "/"),
-         &BinaryType::Multiply => write!(f, "*"),
-         &BinaryType::Equal => write!(f, "=="),
-         &BinaryType::Unequal => write!(f, "!="),
-         &BinaryType::Less => write!(f, "<"),
-         &BinaryType::LessEqual => write!(f, "<="),
-         &BinaryType::Greater => write!(f, ">"),
-         &BinaryType::GreaterEqual => write!(f, ">="),
-         &BinaryType::Range => write!(f, ".."),
+fn find_next_new_line(tokens: &[Token]) -> usize {
+   for (index, token) in tokens.iter().enumerate() {
+      if let &Token::NewLine = token {
+         return index;
       }
    }
+
+   tokens.len()
 }
 
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct Binary {
-   pub operator: BinaryType,
-   pub left: Ast,
-   pub right: Ast,
-}
-
-impl Binary {
-   pub fn new(operator: BinaryType, left: Ast, right: Ast) -> Box<Self> {
-      Box::new(
-         Binary {
-            operator: operator,
-            left: left,
-            right: right,
+fn consume_new_line(tokens: &[Token]) -> usize {
+   for (index, token) in tokens.iter().enumerate() {
+      match token {
+         &Token::NewLine => {},
+         _ => {
+            return index;
          }
-      )
-   }
-}
-
-pub type BinaryBox = Box<Binary>;
-
-
-#[derive(PartialEq, Clone)]
-pub enum Ast {
-   Name(String),
-   Int(i64),
-   Float(f64),
-   Bool(bool),
-   Function(FunctionBox),
-   FunctionCall(FunctionCallBox),
-   FunctionRef(String),
-   Assignment(AssignmentBox),
-   List(ListBox),
-   Point(PointBox),
-   Binary(BinaryBox),
-}
-
-impl fmt::Debug for Ast {
-   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      match self {
-         &Ast::Name(ref value) => write!(f, "{}", value),
-         &Ast::Int(ref value) => write!(f, "{}", value),
-         &Ast::Float(ref value) => write!(f, "{}", value),
-         &Ast::Bool(ref value) => write!(f, "{}", value),
-         &Ast::Function(ref value) => write!(f, "{} >> {:?}", value.name, value.arguments),
-         &Ast::Assignment(ref value) => write!(f, "{} = {:?}", value. node_id, value.value),
-         &Ast::List(ref value) => write!(f, "{:?}", value.contents),
-         &Ast::FunctionCall(ref value) => write!(f, "{}!{:?}", value.name, value.arguments),
-         &Ast::FunctionRef(ref value) => write!(f, "@{}", value),
-         &Ast::Point(ref value) => write!(f, "<{:?} {:?}>", value.x, value.y),
-         &Ast::Binary(ref value) => write!(f, "({:?} {:?} {:?})", value.left, value.operator, value.right),
       }
    }
+
+   tokens.len()
 }
 
-pub type AstResult = Option<(Ast, usize)>;
 
-
-pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
+pub fn parse(tokens: Vec<Token>) -> Result<Vec<Function>, String> {
    let mut functions = Vec::new();
    let mut assignments = Vec::new();
 
@@ -265,14 +387,14 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
          tokens = &tokens[taken..];
          if let Some((current_name, current_arguments)) = current_function {
             let function = Function::new(current_name, current_arguments, assignments);
-            functions.push(Ast::Function(function));
+            functions.push(function);
          }
 
          current_function = Some((name, arguments));
          assignments = Vec::new();
-      } else if let Some((ast, taken)) = parse_assignment(tokens) {
+      } else if let Some((value, taken)) = parse_assignment(tokens) {
          tokens = &tokens[taken..];
-         assignments.push(ast);
+         assignments.push(value);
       } else {
          let taken = consume_new_line(tokens);
 
@@ -281,7 +403,7 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Ast>, String> {
          if tokens.len() == 0 {
             if let Some((name, arguments)) = current_function {
                let function = Function::new(name, arguments, assignments);
-               functions.push(Ast::Function(function));
+               functions.push(function);
             }
             return Ok(functions);
          } else {
@@ -312,7 +434,7 @@ fn parse_function_start(tokens: &[Token]) -> Option<(String, FunctionArguments, 
       match &tokens[i] {
          &Token::Name(ref name) => argument_stack.push(name.clone()),
          &Token::BracketLeft => argument_stack.open_list(),
-         &Token::BracketRight => if let None = argument_stack.close_list() {
+         &Token::BracketRight => if argument_stack.close_list() == false {
             return None;
          },
          &Token::NewLine => if let Some(arguments) = argument_stack.arguments() {
@@ -328,7 +450,7 @@ fn parse_function_start(tokens: &[Token]) -> Option<(String, FunctionArguments, 
 }
 
 
-fn parse_assignment(tokens: &[Token]) -> AstResult {
+fn parse_assignment(tokens: &[Token]) -> Option<(Assignment, usize)> {
    if tokens.len() < 5 {
       return None;
    }
@@ -337,66 +459,73 @@ fn parse_assignment(tokens: &[Token]) -> AstResult {
       return None;
    }
 
-   let name = match &tokens[1] {
-      &Token::Name(ref name) => name,
-      _ => return None,
-   };
+   let mut i = 1;
 
-   if tokens[2] != Token::Assign {
+   let mut names = Vec::new();
+
+   while let &Token::Name(ref name) = &tokens[i] {
+      names.push(name.clone());
+      i += 1;
+   }
+
+   if i == 1 {
+      return None;
+   }
+
+   if tokens[i] != Token::Assign {
       return None;
    }
 
    let next_new_line = find_next_new_line(tokens);
 
-   let tokens = &tokens[3..next_new_line];
+   let tokens = &tokens[i+1..next_new_line];
 
    if let Some(value) = match_value(tokens) {
-      let assignment = Assignment::new(name.clone(), value);
-      Some((Ast::Assignment(assignment), next_new_line))
+      let assignment = Assignment::new(names, value);
+      Some((assignment, next_new_line))
    } else {
       None
    }
 }
 
 
-fn match_value(tokens: &[Token]) -> Option<Ast> {
-   if let Some(ast) = match_list(tokens) {
-      Some(ast)
-   } else if let Some(ast) = match_parenthesis(tokens) {
-      Some(ast)
-   } else if let Some(ast) = match_point(tokens) {
-      Some(ast)
-   } else if let Some(ast) = match_function(tokens) {
-      Some(ast)
-   } else if let Some(ast) = match_binary(tokens) {
-      Some(ast)
-   } else if let Some(ast) = match_function_ref(tokens) {
-      Some(ast)
-   } else if let Some(ast) = match_single(tokens) {
-      Some(ast)
+fn match_value(tokens: &[Token]) -> Option<Value> {
+   if let Some(value) = match_list(tokens) {
+      Some(value)
+   } else if let Some(value) = match_parenthesis(tokens) {
+      Some(value)
+   } else if let Some(value) = match_point(tokens) {
+      Some(value)
+   } else if let Some(value) = match_function_call(tokens) {
+      Some(value)
+   } else if let Some(value) = match_binary(tokens) {
+      Some(value)
+   } else if let Some(value) = match_function_ref(tokens) {
+      Some(value)
+   } else if let Some(value) = match_single(tokens) {
+      Some(value)
    } else {
       None
    }
 }
 
-
-fn match_binary(tokens: &[Token]) -> Option<Ast> {
+fn match_binary(tokens: &[Token]) -> Option<Value> {
    if tokens.len() < 3 {
       return None;
    }
 
    let binary_types = [
-      (Token::Subtract, BinaryType::Subtract),
-      (Token::Add, BinaryType::Add),
-      (Token::Divide, BinaryType::Divide),
-      (Token::Multiply, BinaryType::Multiply),
-      (Token::Equal, BinaryType::Equal),
-      (Token::Unequal, BinaryType::Unequal),
-      (Token::Range, BinaryType::Range),
-      (Token::AngleBracketLeft, BinaryType::Less),
-      (Token::LessEqual, BinaryType::LessEqual),
-      (Token::AngleBracketRight, BinaryType::Greater),
-      (Token::GreaterEqual, BinaryType::GreaterEqual),
+      (Token::Subtract, "subtract"),
+      (Token::Add, "add"),
+      (Token::Divide, "divide"),
+      (Token::Multiply, "multiply"),
+      (Token::Equal, "equal"),
+      (Token::Unequal, "unequal"),
+      (Token::Range, "range"),
+      (Token::AngleBracketLeft, "less"),
+      (Token::LessEqual, "less-equal"),
+      (Token::AngleBracketRight, "greater"),
+      (Token::GreaterEqual, "greater-equal"),
    ];
 
    for binary_type in &binary_types {
@@ -407,7 +536,9 @@ fn match_binary(tokens: &[Token]) -> Option<Ast> {
 
          if let Some(left) = match_value(&tokens[..middle]) {
             if let Some(right) = match_value(&tokens[middle + 1..]) {
-               return Some(Ast::Binary(Binary::new(binary_type.1.clone(), left, right)));
+               return Some(
+                  binary_call(binary_type.1, left, right)
+               );
             }
          }
       }
@@ -416,8 +547,7 @@ fn match_binary(tokens: &[Token]) -> Option<Ast> {
    None
 }
 
-
-fn match_function(tokens: &[Token]) -> Option<Ast> {
+fn match_function_call(tokens: &[Token]) -> Option<Value> {
    if tokens.len() < 3 {
       return None;
    }
@@ -434,13 +564,13 @@ fn match_function(tokens: &[Token]) -> Option<Ast> {
    let tokens = &tokens[2..];
 
    if let Some(contents) = match_sequence_contents(tokens) {
-      Some(Ast::FunctionCall(FunctionCall::new(name.clone(), contents)))
+      Some(Value::Call(Box::new(FunctionCall::new(name.clone(), contents))))
    } else {
       None
    }
 }
 
-fn match_function_ref(tokens: &[Token]) -> Option<Ast> {
+fn match_function_ref(tokens: &[Token]) -> Option<Value> {
    if tokens.len() < 2 {
       return None;
    }
@@ -454,26 +584,27 @@ fn match_function_ref(tokens: &[Token]) -> Option<Ast> {
       _ => return None,
    };
 
-   Some(Ast::FunctionRef(name.clone()))
+   Some(Value::FunctionRef(Box::new(name.clone())))
 }
 
-fn match_single(tokens: &[Token]) -> Option<Ast> {
+fn match_single(tokens: &[Token]) -> Option<Value> {
    if tokens.len() != 1 {
       return None;
    }
 
-   match &tokens[0] {
-      &Token::Name(ref value) => Some(Ast::Name(value.clone())),
-      &Token::Int(ref value) => Some(Ast::Int(*value)),
-      &Token::Float(ref value) => Some(Ast::Float(*value)),
-      &Token::True => Some(Ast::Bool(true)),
-      &Token::False => Some(Ast::Bool(false)),
-      _ => None
-   }
+   let value = match &tokens[0] {
+      &Token::Name(ref value) => Value::Name(Box::new(value.clone())),
+      &Token::Int(ref value) => Value::Int(*value),
+      &Token::Float(ref value) => Value::Float(*value),
+      &Token::True => Value::Bool(true),
+      &Token::False => Value::Bool(false),
+      _ => return None,
+   };
+
+   Some(value)
 }
 
-
-fn match_list(tokens: &[Token]) -> Option<Ast> {
+fn match_list(tokens: &[Token]) -> Option<Value> {
    if tokens.len() < 3 {
       return None;
    }
@@ -489,14 +620,13 @@ fn match_list(tokens: &[Token]) -> Option<Ast> {
    let tokens = &tokens[1..tokens.len() - 1];
 
    if let Some(contents) = match_sequence_contents(tokens) {
-      Some(Ast::List(List::new(contents)))
+      Some(Value::List(Box::new(contents)))
    } else {
       None
    }
 }
 
-
-fn match_parenthesis(tokens: &[Token]) -> Option<Ast> {
+fn match_parenthesis(tokens: &[Token]) -> Option<Value> {
    if tokens.len() < 3 {
       return None;
    }
@@ -511,14 +641,14 @@ fn match_parenthesis(tokens: &[Token]) -> Option<Ast> {
 
    let tokens = &tokens[1..tokens.len() - 1];
 
-   if let Some(ast) = match_value(tokens) {
-      Some(ast)
+   if let Some(value) = match_value(tokens) {
+      Some(value)
    } else {
       None
    }
 }
 
-fn match_point(tokens: &[Token]) -> Option<Ast> {
+fn match_point(tokens: &[Token]) -> Option<Value> {
    if tokens.len() < 4 {
       return None;
    }
@@ -540,18 +670,7 @@ fn match_point(tokens: &[Token]) -> Option<Ast> {
    }
 }
 
-fn point_def_from_contents(mut contents: Vec<Ast>) -> Option<Ast> {
-   if contents.len() != 2 {
-      None
-   } else {
-      let y = contents.pop().unwrap();
-      let x = contents.pop().unwrap();
-
-      Some(Ast::Point(PointDef::new(x, y)))
-   }
-}
-
-fn match_sequence_contents(tokens: &[Token]) -> Option<Vec<Ast>> {
+fn match_sequence_contents(tokens: &[Token]) -> Option<Vec<Value>> {
    let mut contents = Vec::new();
    let mut tokens = tokens;
 
@@ -561,8 +680,8 @@ fn match_sequence_contents(tokens: &[Token]) -> Option<Vec<Ast>> {
       }
 
       match try_list_item(tokens) {
-         Some((ast, end)) => {
-            contents.push(ast);
+         Some((value, end)) => {
+            contents.push(value);
             tokens = &tokens[end..];
          },
          None => return None
@@ -570,7 +689,7 @@ fn match_sequence_contents(tokens: &[Token]) -> Option<Vec<Ast>> {
    }
 }
 
-fn try_list_item(tokens: &[Token]) -> AstResult {
+fn try_list_item(tokens: &[Token]) -> Option<(Value, usize)> {
    if tokens.len() == 0 {
       return None;
    }
@@ -580,7 +699,7 @@ fn try_list_item(tokens: &[Token]) -> AstResult {
 
       if let Some(contents) = match_sequence_contents(tokens) {
          match point_def_from_contents(contents) {
-            Some(ast) => return Some((ast, end + 1)),
+            Some(value) => return Some((value, end + 1)),
             _ => return None,
          }
       }
@@ -592,7 +711,7 @@ fn try_list_item(tokens: &[Token]) -> AstResult {
       let tokens = &tokens[1..end];
 
       if let Some(contents) = match_sequence_contents(tokens) {
-         return Some((Ast::List(List::new(contents)), end + 1));
+         return Some((Value::List(Box::new(contents)), end + 1));
       }
 
       return None;
@@ -601,17 +720,17 @@ fn try_list_item(tokens: &[Token]) -> AstResult {
    if let Some(end) = try_sequence(tokens, Token::ParenLeft, Token::ParenRight) {
       let tokens = &tokens[1..end];
 
-      if let Some(ast) = match_value(tokens) {
-         return Some((ast, end + 1));
+      if let Some(value) = match_value(tokens) {
+         return Some((value, end + 1));
       }
 
       return None;
    }
 
-   if let Some(ast) = match_single(&tokens[..1]) {
-      Some((ast, 1))
-   } else if let Some(ast) = match_function_ref(&tokens[..2]) {
-      Some((ast, 2))
+   if let Some(value) = match_single(&tokens[..1]) {
+      Some((value, 1))
+   } else if let Some(value) = match_function_ref(&tokens[..2]) {
+      Some((value, 2))
    } else {
       None
    }
@@ -647,27 +766,18 @@ fn try_sequence(tokens: &[Token], left: Token, right: Token) -> Option<usize> {
    None
 }
 
+fn point_def_from_contents(mut contents: Vec<Value>) -> Option<Value> {
+   if contents.len() != 2 {
+      None
+   } else {
+      let y = contents.pop().unwrap();
+      let x = contents.pop().unwrap();
 
-fn find_next_new_line(tokens: &[Token]) -> usize {
-   for (index, token) in tokens.iter().enumerate() {
-      if let &Token::NewLine = token {
-         return index;
-      }
+      Some(binary_call("point", x, y))
    }
-
-   tokens.len()
 }
 
-
-fn consume_new_line(tokens: &[Token]) -> usize {
-   for (index, token) in tokens.iter().enumerate() {
-      match token {
-         &Token::NewLine => {},
-         _ => {
-            return index;
-         }
-      }
-   }
-
-   tokens.len()
+fn binary_call(name: &str, left: Value, right: Value) -> Value {
+   Value::Call(Box::new(FunctionCall::new(name.to_string(), vec![left, right])))
 }
+

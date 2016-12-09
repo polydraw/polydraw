@@ -4,8 +4,7 @@ use std::env;
 use std::io::prelude::*;
 use std::fs::File;
 
-use polydraw::node::{Data, ProgramBuilder};
-use polydraw::lang::{parse, compile, tokenize};
+pub use polydraw::lang::{Environment, ValuePtr, debug_value_ptr};
 
 
 fn main() {
@@ -29,31 +28,33 @@ fn main() {
 
    f.read_to_string(&mut source).unwrap();
 
-   match tokenize(&source) {
-      Ok(tokens) => {
-         match parse(tokens) {
-            Ok(ast_list) => {
-               let mut builder = ProgramBuilder::new();
 
-               compile(&mut builder, ast_list);
+   let environment = Environment::new();
 
-               let mut program = builder.compile();
+   let program = match environment.compile_program(&source) {
+      Ok(program) => program,
+      Err(error) => {
+         println!("Error: {}", error);
+         return;
+      }
+   };
 
-               let result = program.execute(
-                  vec![
-                     Data::Int(100),
-                     Data::Int(1600 * 4),
-                     Data::Int(900 * 4),
-                  ]
-               );
+   let arguments = vec![
+      ValuePtr::new(100_i64),
+      ValuePtr::new(1600_i64 * 4_i64),
+      ValuePtr::new(900_i64 * 4_i64),
+   ];
 
-               println!(">> {:?}", result);
-            },
-            Err(err) => println!("{}", err),
-         }
-      },
-      Err(err) => println!("{}", err)
+   let result = environment.execute(&program, arguments);
+
+   for (index, value_ptr) in result.iter().enumerate() {
+      let debug = debug_value_ptr(value_ptr, &environment.debug_registry);
+      println!("${} >> {}", index, debug);
    }
+
+   environment.drop_result_contents(&result);
+
+   environment.drop_program_contents(&program);
 }
 
 

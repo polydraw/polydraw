@@ -1,449 +1,637 @@
-use node::{
-   Data, Add, BuildPoint, BuildList, ProgramBuilder, Inlet, Center, Rotate,
-   Multiply, Divide, SourceOperator, Subtract, BuildRgb, BBox, Equal, Unequal,
-   Less, LessEqual, Greater, GreaterEqual, Gate, FunctionOperator, Polar, Each,
-   EachWithLast, EachWithIndex, BuildPoly, ListType, BuildLayer, BuildRange, Apply,
-   Zip,
-};
-use node::{
-   eval_add, eval_divide, eval_multiply, eval_subtract, eval_equal, eval_unequal,
-   eval_less, eval_less_equal, eval_greater, eval_greater_equal, eval_range,
-};
-use node::{
-   EXEC_FUNCS, function_argument_count, exec_built_in_function,
-};
-use data::IntPoint;
+use std::usize;
+use std::cmp::max;
+use std::iter::repeat;
+use std::collections::{HashMap, HashSet};
+use std::fmt;
 
-use super::parser::{
-   Ast, ListBox, List, PointBox, PointDef, FunctionCallBox, FunctionCall,
-   BinaryBox, Binary, Assignment, BinaryType, Function,
-};
+use super::value_ptr::ValuePtr;
+use super::parser::{FnType, FnIndex, Argument, Function, Value, FnRef};
+use super::operator::FnList;
+use super::clone::CloneRegistry;
+use super::drop::{DropRegistry, drop_value_ptr};
+use super::execute::execute_builtin_function;
 
 
-pub fn compile(builder: &mut ProgramBuilder, ast_list: Vec<Ast>) {
-   for ast in ast_list {
-      if let Ast::Function(function) = ast {
-         let Function {name, arguments, assignments} = {*function};
+#[derive(PartialEq, Clone, Debug)]
+pub enum CallArgType {
+   Argument,
+   Const,
+   Variable,
+}
 
-         builder.function(name, arguments);
+#[derive(Clone, Debug)]
+pub struct CallArg {
+   pub arg_type: CallArgType,
+   pub index: usize,
+}
 
-         for ast in assignments {
-            if let Ast::Assignment(assignment) = ast {
-               build_assignment(builder, *assignment);
+impl CallArg {
+   #[inline]
+   pub fn argument(index: usize) -> Self {
+      CallArg {
+         arg_type: CallArgType::Argument,
+         index: index,
+      }
+   }
+
+   #[inline]
+   pub fn const_(index: usize) -> Self {
+      CallArg {
+         arg_type: CallArgType::Const,
+         index: index,
+      }
+   }
+
+   #[inline]
+   pub fn variable(index: usize) -> Self {
+      CallArg {
+         arg_type: CallArgType::Variable,
+         index: index,
+      }
+   }
+}
+
+
+#[derive(Debug)]
+pub struct ExecFn {
+   pub fn_type: FnType,
+   pub fn_index: FnIndex,
+   pub args: Vec<CallArg>,
+   pub target: usize,
+}
+
+impl ExecFn {
+   #[inline]
+   pub fn builtin(fn_index: FnIndex, args: Vec<CallArg>, target: usize) -> Self {
+      ExecFn {
+         fn_type: FnType::Builtin,
+         fn_index: fn_index,
+         args: args,
+         target: target,
+      }
+   }
+
+   #[inline]
+   pub fn defined(fn_index: FnIndex, args: Vec<CallArg>, target: usize) -> Self {
+      ExecFn {
+         fn_type: FnType::Defined,
+         fn_index: fn_index,
+         args: args,
+         target: target,
+      }
+   }
+}
+
+
+#[derive(Debug)]
+pub enum ArgTemplate {
+   Value,
+   List(Vec<ArgTemplate>)
+}
+
+
+#[derive(Debug)]
+pub struct CompiledFn {
+   pub exec_lane: Vec<ExecFn>,
+   pub stack_size: usize,
+   pub result_args: Vec<CallArg>,
+   pub template: Vec<ArgTemplate>,
+}
+
+impl CompiledFn {
+   #[inline]
+   pub fn new(span: usize, arguments: &Vec<Argument>)-> Self {
+      let mut template = Vec::new();
+
+      arguments_to_template(arguments, &mut template);
+
+      CompiledFn {
+         exec_lane: Vec::new(),
+         stack_size: 0,
+         result_args: repeat(CallArg::argument(0)).take(span).collect(),
+         template: template,
+      }
+   }
+}
+
+
+fn arguments_to_template(arguments: &Vec<Argument>, template: &mut Vec<ArgTemplate>) {
+   for argument in arguments.iter() {
+      match argument {
+         &Argument::Name(_) => {
+            template.push(ArgTemplate::Value);
+         },
+         &Argument::List(ref list) => {
+            let mut inner = Vec::new();
+
+            arguments_to_template(list, &mut inner);
+
+            template.push(ArgTemplate::List(inner));
+         }
+      }
+   }
+}
+
+
+pub type DefinedIndices<'a> = HashMap<&'a str, FnIndex>;
+
+pub type BuiltinIndices = HashMap<&'static str, FnIndex>;
+
+
+pub struct Program {
+   pub compiled_fns: Vec<CompiledFn>,
+   pub main_index: usize,
+   pub consts: Vec<ValuePtr>,
+}
+
+impl Program {
+   #[inline]
+   pub fn new(
+      compiled_fns: Vec<CompiledFn>,
+      main_index: usize,
+      consts: Vec<ValuePtr>,
+   ) -> Self {
+      Program {
+         compiled_fns: compiled_fns,
+         main_index: main_index,
+         consts: consts,
+      }
+   }
+}
+
+pub fn compile (
+   functions: &Vec<Function>,
+   builtin_indices: &BuiltinIndices,
+   builtin_fns: &FnList,
+   clone_registry: &CloneRegistry,
+   drop_registry: &DropRegistry,
+) -> Result<Program, String> {
+   let defined_indices = try!(map_defined_indices(&functions));
+
+   let mut main_index = usize::MAX;
+
+   let mut consts: Vec<ValuePtr> = Vec::new();
+
+   let mut compiled_fns = Vec::new();
+
+   for (index, function) in functions.iter().enumerate() {
+      compiled_fns.push(
+         try!(compile_function(
+            function,
+            &mut consts,
+            builtin_indices,
+            builtin_fns,
+            &defined_indices,
+            clone_registry,
+            drop_registry,
+         ))
+      );
+
+      if function.name == "main" {
+         main_index = index;
+      }
+   }
+
+   if main_index == usize::MAX {
+      Err("Function 'main' is not defined".to_string())
+   } else {
+      Ok(Program::new(compiled_fns, main_index, consts))
+   }
+}
+
+fn map_defined_indices<'a>(
+   functions: &'a Vec<Function>
+) -> Result<DefinedIndices<'a>, String> {
+   let mut defined_indices: DefinedIndices = HashMap::new();
+
+   for (index, function) in functions.iter().enumerate() {
+      let span = try!(function_span(function));
+      defined_indices.insert(
+         &function.name as &str,
+         FnIndex::new(index, span)
+      );
+   }
+
+   Ok(defined_indices)
+}
+
+fn function_span(function: &Function) -> Result<usize, String> {
+   let mut max_index = usize::MIN;
+   let mut total = 0;
+
+   for assignment in function.assignments.iter() {
+      for name in assignment.names.iter() {
+         if let Some(index) = as_return_variable(name) {
+            max_index = max(max_index, index);
+            total += 1;
+         }
+      }
+   }
+
+   if max_index + 1 != total {
+      Err(format!("Function '{}' missing return indices", function.name))
+   } else {
+      Ok(total)
+   }
+}
+
+fn as_return_variable(name: &str) -> Option<usize> {
+   if name.chars().next().unwrap() != '$' {
+      return None;
+   }
+
+   if let Ok(index) = name[1..].parse::<usize>() {
+      if index > 32 {
+         None
+      } else {
+         Some(index)
+      }
+   } else {
+      None
+   }
+}
+
+
+fn compile_function(
+   function: &Function,
+   consts: &mut Vec<ValuePtr>,
+   builtin_indices: &BuiltinIndices,
+   builtin_fns: &FnList,
+   defined_indices: &DefinedIndices,
+   clone_registry: &CloneRegistry,
+   drop_registry: &DropRegistry,
+) -> Result<CompiledFn, String> {
+   let span = defined_indices[&function.name as &str].span;
+
+   let mut compiled_fn = CompiledFn::new(span, &function.arguments.arguments);
+
+   let mut variable_map: HashMap<&str, CallArg> = HashMap::new();
+
+   for (index, argument) in function.flat_arguments.iter().enumerate() {
+      variable_map.insert(argument as &str, CallArg::argument(index));
+   }
+
+   let ordering = try!(assignment_ordering(function));
+
+   for index in ordering.iter() {
+      let assignment = &function.assignments[*index];
+
+      let (call_arg, span) = try!(compile_value(
+         &mut compiled_fn,
+         &variable_map,
+         &assignment.value,
+         consts,
+         builtin_indices,
+         builtin_fns,
+         defined_indices,
+         clone_registry,
+         drop_registry,
+      ));
+
+      if span < assignment.names.len() {
+         return Err(format!(
+            "Assignment with more variables than values: '{}' in function '{}'",
+            assignment.names.join(" "),
+            function.name,
+         ));
+      }
+
+      match call_arg.arg_type {
+         CallArgType::Argument => {
+            variable_map.insert(&assignment.names[0] as &str, call_arg);
+         },
+         CallArgType::Const => {
+            variable_map.insert(&assignment.names[0] as &str, call_arg);
+         },
+         CallArgType::Variable => {
+            for (i, name) in assignment.names.iter().enumerate() {
+               variable_map.insert(name, CallArg::variable(call_arg.index + i));
             }
-         }
+         },
       }
    }
+
+   for (name, call_arg) in variable_map.iter() {
+      if let Some(index) = as_return_variable(name) {
+         compiled_fn.result_args[index] = call_arg.clone();
+      }
+   }
+
+   Ok(compiled_fn)
 }
 
-
-fn build_assignment(builder: &mut ProgramBuilder, assignment: Assignment) {
-   let Assignment {node_id, value} = assignment;
+fn compile_value(
+   compiled_fn: &mut CompiledFn,
+   variable_map: &HashMap<&str, CallArg>,
+   value: &Value,
+   consts: &mut Vec<ValuePtr>,
+   builtin_indices: &BuiltinIndices,
+   builtin_fns: &FnList,
+   defined_indices: &DefinedIndices,
+   clone_registry: &CloneRegistry,
+   drop_registry: &DropRegistry,
+) -> Result<(CallArg, usize), String> {
    match value {
-      Ast::Name(value) => builder.operator(
-         SourceOperator::new(), node_id, vec![Inlet::Source(value)]
-      ),
-      Ast::Int(value) => builder.data(node_id, Data::Int(value)),
-      Ast::Float(value) => builder.data(node_id, Data::Float(value)),
-      Ast::Bool(value) => builder.data(node_id, Data::Bool(value)),
-      Ast::FunctionRef(value) => builder.data(node_id, Data::FunctionRef(value)),
-      Ast::Point(value) => build_point(builder, node_id, value),
-      Ast::Binary(value) => build_binary(builder, node_id, value),
-      Ast::List(value) => build_list(builder, node_id, value),
-      Ast::FunctionCall(value) => build_function_call(builder, node_id, value),
-      _ => {},
-   }
-}
+      &Value::Int(value) => push_const(consts, value),
+      &Value::Float(value) => push_const(consts, value),
+      &Value::Bool(value) => push_const(consts, value),
+//      &Value::String(ref value) => push_const(consts, value.clone()),
+      &Value::List(ref list) => {
+         let mut list_args = Vec::new();
 
-fn build_anon_node(builder: &mut ProgramBuilder, element: Ast) -> Inlet {
-   match element {
-      Ast::Name(value) => Inlet::Source(value),
-      Ast::Int(value) => Inlet::Data(Data::Int(value)),
-      Ast::Float(value) => Inlet::Data(Data::Float(value)),
-      Ast::Bool(value) => Inlet::Data(Data::Bool(value)),
-      Ast::FunctionRef(value) => Inlet::Data(Data::FunctionRef(value)),
-      Ast::Point(value) => build_anon_point(builder, value),
-      Ast::Binary(value) => build_anon_binary(builder, value),
-      Ast::List(value) => build_anon_list(builder, value),
-      Ast::FunctionCall(value) => build_anon_function(builder, value),
-      _ => Inlet::None,
-   }
-}
+         for value in list.iter() {
+            let (compiled, _) = try!(compile_value(
+               compiled_fn,
+               variable_map,
+               value,
+               consts,
+               builtin_indices,
+               builtin_fns,
+               defined_indices,
+               clone_registry,
+               drop_registry,
+            ));
 
+            list_args.push(compiled);
+         }
 
-fn build_point(builder: &mut ProgramBuilder, node_id: String, point: PointBox) {
-   let PointDef {x, y} = {*point};
+         let fn_index = builtin_indices.get("list").unwrap().clone();
 
-   match (x, y) {
-      (Ast::Int(x), Ast::Int(y)) => {
-         builder.data(node_id, Data::Point(IntPoint::new(x, y)))
+         let target = compiled_fn.stack_size;
+
+         compiled_fn.stack_size += fn_index.span;
+         compiled_fn.exec_lane.push(
+            ExecFn::builtin(fn_index.clone(), list_args, target)
+         );
+
+         Ok((CallArg::variable(target), fn_index.span))
       },
-      (x, y) => {
-         let x_inlet = build_anon_node(builder, x);
-         let y_inlet = build_anon_node(builder, y);
-
-         builder.operator(BuildPoint::new(), node_id, vec![x_inlet, y_inlet])
+      &Value::Name(ref name) => {
+         Ok(((*variable_map.get(name as &str).unwrap()).clone(), 1))
       },
-   }
-}
+      &Value::FunctionRef(ref name) => {
+         let fn_ref = if let Some(fn_index) = defined_indices.get(name as &str) {
+            FnRef::defined(fn_index.clone())
+         } else if let Some(fn_index) = builtin_indices.get(name as &str) {
+            FnRef::builtin(fn_index.clone())
+         } else {
+            return Err(format!("Reference to unrecognized function '{}'", name));
+         };
 
-fn build_anon_point(builder: &mut ProgramBuilder, point: PointBox) -> Inlet {
-   let PointDef {x, y} = {*point};
-
-   match (x, y) {
-      (Ast::Int(x), Ast::Int(y)) => {
-         Inlet::Data(Data::Point(IntPoint::new(x, y)))
+         push_const(consts, fn_ref)
       },
-      (x, y) => {
-         let x_inlet = build_anon_node(builder, x);
-         let y_inlet = build_anon_node(builder, y);
+      &Value::Call(ref call) => {
+         let mut consts_only = true;
 
-         builder.anonymous(BuildPoint::new(), vec![x_inlet, y_inlet])
-      },
-   }
-}
+         let mut call_args = Vec::with_capacity(call.arguments.len());
 
+         for value in call.arguments.iter() {
+            let (call_arg, _) = try!(compile_value(
+               compiled_fn,
+               variable_map,
+               value,
+               consts,
+               builtin_indices,
+               builtin_fns,
+               defined_indices,
+               clone_registry,
+               drop_registry,
+            ));
 
-fn build_binary(builder: &mut ProgramBuilder, node_id: String, binary: BinaryBox) {
-   let Binary {operator, left, right} = {*binary};
+            if call_arg.arg_type != CallArgType::Const {
+               consts_only = false;
+            }
 
-   let left_inlet = build_anon_node(builder, left);
-   let right_inlet = build_anon_node(builder, right);
+            call_args.push(call_arg);
+         }
 
-   match (left_inlet, right_inlet) {
-      (Inlet::Data(left), Inlet::Data(right)) => {
-         builder.data(node_id, exec_binary(operator, left, right));
-      },
-      (left_inlet, right_inlet) => {
-         let inlets = vec![left_inlet, right_inlet];
-         match operator {
-            BinaryType::Subtract => builder.operator(Subtract::new(), node_id, inlets),
-            BinaryType::Add => builder.operator(Add::new(), node_id, inlets),
-            BinaryType::Divide => builder.operator(Divide::new(), node_id, inlets),
-            BinaryType::Multiply => builder.operator(Multiply::new(), node_id, inlets),
-            BinaryType::Equal => builder.operator(Equal::new(), node_id, inlets),
-            BinaryType::Unequal => builder.operator(Unequal::new(), node_id, inlets),
-            BinaryType::Less => builder.operator(Less::new(), node_id, inlets),
-            BinaryType::LessEqual => builder.operator(LessEqual::new(), node_id, inlets),
-            BinaryType::Greater => builder.operator(Greater::new(), node_id, inlets),
-            BinaryType::GreaterEqual => builder.operator(GreaterEqual::new(), node_id, inlets),
-            BinaryType::Range => builder.operator(BuildRange::new(), node_id, inlets),
+         let target = compiled_fn.stack_size;
+
+         if let Some(fn_index) = defined_indices.get(&call.name as &str) {
+            compiled_fn.stack_size += fn_index.span;
+            compiled_fn.exec_lane.push(
+               ExecFn::defined(fn_index.clone(), call_args, target)
+            );
+
+            Ok((CallArg::variable(target), fn_index.span))
+         } else if let Some(fn_index) = builtin_indices.get(&call.name as &str) {
+            if consts_only {
+               let mut value_ptr_list = {
+                  let mut argument_references = Vec::new();
+
+                  for call_arg in call_args.iter() {
+                     if call_arg.arg_type == CallArgType::Const {
+                        argument_references.push(
+                           &consts[call_arg.index]
+                        );
+                     }
+                  }
+
+                  execute_builtin_function(
+                     fn_index.index,
+                     argument_references,
+                     &Vec::new(),
+                     builtin_fns,
+                     consts,
+                     clone_registry,
+                     drop_registry,
+                  )
+               };
+
+               let pos = consts.len();
+
+               let value = value_ptr_list.remove(0);
+
+               for ptr in value_ptr_list {
+                  drop_value_ptr(&ptr, drop_registry);
+               }
+
+               consts.push(value);
+
+               Ok((CallArg::const_(pos), 1))
+            } else {
+               compiled_fn.stack_size += fn_index.span;
+               compiled_fn.exec_lane.push(
+                  ExecFn::builtin(fn_index.clone(), call_args, target)
+               );
+
+               Ok((CallArg::variable(target), fn_index.span))
+            }
+         } else {
+            Err(format!("Call of unrecognized function '{}'", call.name))
          }
       },
    }
 }
 
-fn build_anon_binary(builder: &mut ProgramBuilder, binary: BinaryBox) -> Inlet {
-   let Binary {operator, left, right} = {*binary};
+fn push_const<T: 'static>(
+   consts: &mut Vec<ValuePtr>,
+   value: T
+) -> Result<(CallArg, usize), String> where T: fmt::Debug {
+   let pos = consts.len();
 
-   let left_inlet = build_anon_node(builder, left);
-   let right_inlet = build_anon_node(builder, right);
+   consts.push(ValuePtr::new(value));
 
-   match (left_inlet, right_inlet) {
-      (Inlet::Data(left), Inlet::Data(right)) => {
-         Inlet::Data(exec_binary(operator, left, right))
-      },
-      (left_inlet, right_inlet) => {
-         let inlets = vec![left_inlet, right_inlet];
-         match operator {
-            BinaryType::Subtract => builder.anonymous(Subtract::new(), inlets),
-            BinaryType::Add => builder.anonymous(Add::new(), inlets),
-            BinaryType::Divide => builder.anonymous(Divide::new(), inlets),
-            BinaryType::Multiply => builder.anonymous(Multiply::new(), inlets),
-            BinaryType::Equal => builder.anonymous(Equal::new(), inlets),
-            BinaryType::Unequal => builder.anonymous(Unequal::new(), inlets),
-            BinaryType::Less => builder.anonymous(Less::new(), inlets),
-            BinaryType::LessEqual => builder.anonymous(LessEqual::new(), inlets),
-            BinaryType::Greater => builder.anonymous(Greater::new(), inlets),
-            BinaryType::GreaterEqual => builder.anonymous(GreaterEqual::new(), inlets),
-            BinaryType::Range => builder.anonymous(BuildRange::new(), inlets),
+   Ok((CallArg::const_(pos), 1))
+}
+
+fn map_assignments<'a>(
+   function: &'a Function
+) -> HashMap<&'a str, usize> {
+   let mut assignment_map: HashMap<&str, usize> = HashMap::new();
+
+   for name in function.flat_arguments.iter() {
+      assignment_map.insert(name as &str, 0);
+   }
+
+   for (outer, assignment) in function.assignments.iter().enumerate() {
+      for name in assignment.names.iter() {
+         assignment_map.insert(&name, outer + 1);
+      }
+   }
+
+   assignment_map
+}
+
+
+type Graph = Vec<HashSet<usize>>;
+
+
+fn assignment_ordering(function: &Function) -> Result<Vec<usize>, String> {
+   let names_map = map_assignments(function);
+
+   let len = function.assignments.len() + 1;
+   let mut connections = init_graph(len);
+
+   for (target, assignment) in function.assignments.iter().enumerate() {
+      try!(connect_assignments(
+         function,
+         &mut connections,
+         &assignment.value,
+         target + 1,
+         &names_map
+      ));
+   }
+
+   let ordering_option = topological_ordering(&connections);
+
+   if let Some(mut ordering) = ordering_option {
+      let zero_index = ordering.iter().position(|&i| i == 0).unwrap();
+      ordering.remove(zero_index);
+      for value in ordering.iter_mut() {
+         *value -= 1;
+      }
+      Ok(ordering)
+   } else {
+      Err(format!("Circular assignments found in function '{}'", function.name))
+   }
+}
+
+
+fn init_graph(len: usize) -> Graph {
+   repeat(HashSet::new()).take(len).collect()
+}
+
+
+fn connect_assignments(
+   function: &Function,
+   connections: &mut Vec<HashSet<usize>>,
+   value: &Value,
+   target: usize,
+   names_map: &HashMap<&str, usize>
+) -> Result<(), String> {
+   match value {
+      &Value::Name(ref name) => {
+         if let Some(&source) = names_map.get(name as &str) {
+            connections[source].insert(target);
+         } else {
+            return Err(
+               format!(
+                  "Variable '{}' not found in function '{}'", name, function.name
+               )
+            );
          }
       },
-   }
-}
-
-fn exec_binary(binary_type: BinaryType, left: Data, right: Data) -> Data {
-   match binary_type {
-      BinaryType::Subtract => eval_subtract(left, right),
-      BinaryType::Add => eval_add(left, right),
-      BinaryType::Divide => eval_divide(left, right),
-      BinaryType::Multiply => eval_multiply(left, right),
-      BinaryType::Equal => eval_equal(left, right),
-      BinaryType::Unequal => eval_unequal(left, right),
-      BinaryType::Less => eval_less(left, right),
-      BinaryType::LessEqual => eval_less_equal(left, right),
-      BinaryType::Greater => eval_greater(left, right),
-      BinaryType::GreaterEqual => eval_greater_equal(left, right),
-      BinaryType::Range => eval_range(left, right),
-   }
-}
-
-
-pub type Eval1ArgFn = fn(in1: Data) -> Data;
-pub type Eval2ArgFn = fn(in1: Data, in2: Data) -> Data;
-pub type Eval3ArgFn = fn(in1: Data, in2: Data, in3: Data) -> Data;
-
-
-fn build_function_call(
-   builder: &mut ProgramBuilder, node_id: String, function: FunctionCallBox
-) {
-
-   let FunctionCall {name, arguments} = {*function};
-
-   let (inlets, data_only) = function_inlets(builder, arguments);
-
-   if data_only && EXEC_FUNCS.contains(&(&name as &str)) {
-      builder.data(node_id, exec_data_only(name, inlets));
-      return;
-   };
-
-   match &name as &str {
-      "add" => builder.operator(Add::new(), node_id, inlets),
-      "divide" => builder.operator(Divide::new(), node_id, inlets),
-      "multiply" => builder.operator(Multiply::new(), node_id, inlets),
-      "subtract" => builder.operator(Subtract::new(), node_id, inlets),
-      "polar" => builder.operator(Polar::new(), node_id, inlets),
-      "rotate" => builder.operator(Rotate::new(), node_id, inlets),
-      "center" => builder.operator(Center::new(), node_id, inlets),
-      "bbox" => builder.operator(BBox::new(), node_id, inlets),
-      "rgb" => builder.operator(BuildRgb::new(), node_id, inlets),
-      "gate" => builder.operator(Gate::new(), node_id, inlets),
-      "poly" => builder.operator(BuildPoly::new(), node_id, inlets),
-      "layer" => builder.operator(BuildLayer::new(), node_id, inlets),
-      "range" => builder.operator(BuildRange::new(), node_id, inlets),
-      "apply" => builder.operator(Apply::new(), node_id, inlets),
-      "zip" => builder.operator(Zip::new(), node_id, inlets),
-      "each" => builder.operator(Each::new(), node_id, inlets),
-      "each-with-index" => builder.operator(EachWithIndex::new(), node_id, inlets),
-      "each-with-last" => builder.operator(EachWithLast::new(), node_id, inlets),
-      _ => builder.operator(FunctionOperator::new(name), node_id, inlets),
-   }
-}
-
-fn build_anon_function(builder: &mut ProgramBuilder, function: FunctionCallBox) -> Inlet {
-   let FunctionCall {name, arguments} = {*function};
-
-   let (inlets, data_only) = function_inlets(builder, arguments);
-
-   if data_only && EXEC_FUNCS.contains(&(&name as &str)) {
-      return Inlet::Data(exec_data_only(name, inlets));
-   }
-
-   match &name as &str {
-      "add" => builder.anonymous(Add::new(), inlets),
-      "divide" => builder.anonymous(Divide::new(), inlets),
-      "multiply" => builder.anonymous(Multiply::new(), inlets),
-      "subtract" => builder.anonymous(Subtract::new(), inlets),
-      "polar" => builder.anonymous(Polar::new(), inlets),
-      "rotate" => builder.anonymous(Rotate::new(), inlets),
-      "center" => builder.anonymous(Center::new(), inlets),
-      "bbox" => builder.anonymous(BBox::new(), inlets),
-      "rgb" => builder.anonymous(BuildRgb::new(), inlets),
-      "gate" => builder.anonymous(Gate::new(), inlets),
-      "poly" => builder.anonymous(BuildPoly::new(), inlets),
-      "layer" => builder.anonymous(BuildLayer::new(), inlets),
-      "range" => builder.anonymous(BuildRange::new(), inlets),
-      "apply" => builder.anonymous(Apply::new(), inlets),
-      "zip" => builder.anonymous(Zip::new(), inlets),
-      "each" => builder.anonymous(Each::new(), inlets),
-      "each-with-index" => builder.anonymous(EachWithIndex::new(), inlets),
-      "each-with-last" => builder.anonymous(EachWithLast::new(), inlets),
-      _ => builder.anonymous(FunctionOperator::new(name), inlets),
-   }
-}
-
-fn function_inlets(builder: &mut ProgramBuilder, arguments: Vec<Ast>) -> (Vec<Inlet>, bool) {
-   let mut inlets = Vec::with_capacity(arguments.len());
-
-   let mut data_only = true;
-
-   for argument in arguments {
-      let inlet = build_anon_node(builder, argument);
-
-      if let Inlet::Data(_) = inlet {} else {
-         data_only = false;
-      }
-
-      inlets.push(inlet);
-   }
-
-   (inlets, data_only)
-}
-
-fn exec_data_only(name: String, inlets: Vec<Inlet>) -> Data {
-   let count = function_argument_count(&name);
-
-   let args = arguments_from_inlets(inlets, count);
-
-   exec_built_in_function(&name, args)
-}
-
-fn arguments_from_inlets(inlets: Vec<Inlet>, count: usize) -> Vec<Data> {
-   let mut arguments = Vec::with_capacity(inlets.len());
-
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         arguments.push(data);
-      }
-   }
-
-   for _ in arguments.len()..count {
-      arguments.push(Data::None);
-   }
-
-   arguments
-}
-
-fn build_anon_list(builder: &mut ProgramBuilder, list: ListBox) -> Inlet {
-   let (list_type, inlets) = list_inlets(builder, list);
-
-   match list_type {
-      ListType::Int => Inlet::Data(create_int_list(inlets)),
-      ListType::Float => Inlet::Data(create_float_list(inlets)),
-      ListType::Bool => Inlet::Data(create_bool_list(inlets)),
-      ListType::Point => Inlet::Data(create_point_list(inlets)),
-      ListType::PointList => Inlet::Data(create_point_list_list(inlets)),
-      ListType::Rgb => Inlet::Data(create_rgb_list(inlets)),
-      ListType::Poly => Inlet::Data(create_poly_list(inlets)),
-      ListType::Layer => Inlet::Data(create_layer_list(inlets)),
-      ListType::Data => Inlet::Data(create_data_list(inlets)),
-      ListType::Source => builder.anonymous(BuildList::new(), inlets),
-      _ => Inlet::None
-   }
-}
-
-fn build_list(builder: &mut ProgramBuilder, node_id: String, list: ListBox) {
-   let (list_type, inlets) = list_inlets(builder, list);
-
-   match list_type {
-      ListType::Int => builder.data(node_id, create_int_list(inlets)),
-      ListType::Float => builder.data(node_id, create_float_list(inlets)),
-      ListType::Bool => builder.data(node_id, create_bool_list(inlets)),
-      ListType::Point => builder.data(node_id, create_point_list(inlets)),
-      ListType::PointList => builder.data(node_id, create_point_list_list(inlets)),
-      ListType::Rgb => builder.data(node_id, create_rgb_list(inlets)),
-      ListType::Poly => builder.data(node_id, create_poly_list(inlets)),
-      ListType::Layer => builder.data(node_id, create_layer_list(inlets)),
-      ListType::Data => builder.data(node_id, create_data_list(inlets)),
-      ListType::Source => builder.operator(BuildList::new(), node_id, inlets),
+      &Value::Call(ref call) => {
+         for value in call.arguments.iter() {
+            try!(connect_assignments(function, connections, value, target, &names_map));
+         }
+      },
+      &Value::List(ref list) => {
+         for value in list.iter() {
+            try!(connect_assignments(function, connections, value, target, &names_map));
+         }
+      },
       _ => {}
    }
+
+   Ok(())
 }
 
-fn list_inlets(builder: &mut ProgramBuilder, list: ListBox) -> (ListType, Vec<Inlet>) {
-   let List {contents} = {*list};
 
-   let mut inlets = Vec::with_capacity(contents.len());
+fn topological_ordering(
+   connections: &Vec<HashSet<usize>>,
+) -> Option<Vec<usize>> {
+   let starting = starting_nodes(connections);
 
-   let mut list_type = ListType::None;
+   let len = connections.len();
 
-   for element in contents {
-      let inlet = build_anon_node(builder, element);
+   let mut ordering = Vec::new();
+   let mut visiting = Vec::new();
+   let mut processed = HashSet::new();
+   let mut parents = HashSet::new();
 
-      list_type = update_inlet_list_type(list_type, &inlet);
-
-      inlets.push(inlet);
-   }
-
-   (list_type, inlets)
-}
-
-fn inlet_list_type(inlet: &Inlet) -> ListType {
-   match inlet {
-      &Inlet::Data(ref data) => match data {
-         &Data::Int(_) => ListType::Int,
-         &Data::Float(_) => ListType::Float,
-         &Data::Bool(_) => ListType::Bool,
-         &Data::Point(_) => ListType::Point,
-         &Data::PointList(_) => ListType::PointList,
-         &Data::Rgb(_) => ListType::Rgb,
-         &Data::Poly(_) => ListType::Poly,
-         &Data::Layer(_) => ListType::Layer,
-         &Data::None => ListType::None,
-         _ => ListType::Data,
-      },
-      &Inlet::Source(_) => ListType::Source,
-      &Inlet::None => ListType::None,
-   }
-}
-
-fn update_inlet_list_type(current: ListType, inlet: &Inlet) -> ListType {
-   if current == ListType::Source {
-      ListType::Source
-   } else {
-      let new = inlet_list_type(inlet);
-
-      if new == ListType::Source {
-         ListType::Source
-      } else {
-         match current {
-            ListType::None => new,
-            _ => if new == current {
-               new
-            } else {
-               ListType::Data
-            }
-         }
+   for (root, _) in connections.iter().enumerate() {
+      if !starting[root] {
+         continue;
       }
-   }
-}
 
+      visiting.push(root);
 
-macro_rules! create_list {
-   ($name:ident, $data_enum:path, $list_enum:path) => {
-      fn $name(inlets: Vec<Inlet>) -> Data {
-         let mut list = Vec::with_capacity(inlets.len());
+      while let Some(index) = visiting.pop() {
+         if processed.contains(&index) {
+            continue;
+         }
 
-         for inlet in inlets {
-            if let Inlet::Data(data) = inlet {
-               if let $data_enum(value) = data {
-                  list.push(value);
+         if parents.contains(&index) {
+            ordering.push(index);
+            processed.insert(index);
+            parents.remove(&index);
+         } else {
+            visiting.push(index);
+            parents.insert(index);
+
+            for child in connections[index].iter() {
+               if !processed.contains(child) {
+                  if parents.contains(child) {
+                     return None;
+                  }
+                  visiting.push(*child);
                }
             }
          }
-
-         $list_enum(Box::new(list))
       }
    }
+
+   if ordering.len() != len {
+      return None;
+   }
+
+   ordering.reverse();
+
+   Some(ordering)
 }
 
-macro_rules! create_list_boxed {
-   ($name:ident, $data_enum:path, $list_enum:path) => {
-      fn $name(inlets: Vec<Inlet>) -> Data {
-         let mut list = Vec::with_capacity(inlets.len());
 
-         for inlet in inlets {
-            if let Inlet::Data(data) = inlet {
-               if let $data_enum(value) = data {
-                  list.push(*value);
-               }
-            }
-         }
+fn starting_nodes(connections: &Vec<HashSet<usize>>) -> Vec<bool> {
+   let mut starting: Vec<bool> = repeat(true).take(connections.len()).collect();
 
-         $list_enum(Box::new(list))
-      }
-   }
-}
-
-create_list!(create_int_list, Data::Int, Data::IntList);
-create_list!(create_float_list, Data::Float, Data::FloatList);
-create_list!(create_bool_list, Data::Bool, Data::BoolList);
-create_list!(create_point_list, Data::Point, Data::PointList);
-create_list!(create_rgb_list, Data::Rgb, Data::RgbList);
-create_list_boxed!(create_poly_list, Data::Poly, Data::PolyList);
-create_list_boxed!(create_layer_list, Data::Layer, Data::LayerList);
-create_list_boxed!(create_point_list_list, Data::PointList, Data::PointListList);
-
-
-fn create_data_list(inlets: Vec<Inlet>) -> Data {
-   let mut list = Vec::with_capacity(inlets.len());
-
-   for inlet in inlets {
-      if let Inlet::Data(data) = inlet {
-         list.push(data);
+   for outgoing in connections.iter() {
+      for target in outgoing.iter() {
+         starting[*target] = false;
       }
    }
 
-   Data::DataList(Box::new(list))
+   starting
 }
 

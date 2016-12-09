@@ -65,6 +65,21 @@ impl PartialOrd for IntPoint {
    }
 }
 
+
+impl IntPoint {
+   pub fn as_float(&self) -> FloatPoint {
+      FloatPoint::new(self.x as f64, self.y as f64)
+   }
+}
+
+
+impl FloatPoint {
+   pub fn as_int(&self) -> IntPoint {
+      IntPoint::new(self.x.round() as i64, self.y.round() as i64)
+   }
+}
+
+
 impl Ord for IntPoint {
    fn cmp(&self, other: &IntPoint) -> Ordering {
       if self.y < other.y {

@@ -23,7 +23,7 @@ impl WglContext {
 
       try!(Self::init_gl(library));
 
-      try!(wgl::swap_interval(0));
+      try!(wgl::swap_interval(1));
 
       Ok(WglContext {
          context: context,

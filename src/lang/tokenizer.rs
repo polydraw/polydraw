@@ -170,7 +170,7 @@ fn extract_name(source: &str) -> TokenResult {
 
    match chars.next() {
       Some(ch) => match ch {
-         'a' ... 'z' | 'A' ... 'Z' => end += 1,
+         'a' ... 'z' | 'A' ... 'Z' | '$' => end += 1,
          _ => return None,
       },
       None => return None,
