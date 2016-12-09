@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 
 use super::compiler::{BuiltinIndices, FnRef};
-use super::value_ptr::ValuePtr;
+use super::value_ptr::{ValuePtr, ValuePtrList};
 use super::execute::Executor;
 use super::parser::FnIndex;
 
@@ -16,7 +16,7 @@ use super::point::{
 };
 
 use super::list::{
-   create_list, each, each_with_last, each_with_index,
+   create_list, each, each_with_last, each_with_index, list_2_arg,
 };
 
 
@@ -123,18 +123,27 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    let tyid_i64 = TypeId::of::<i64>();
    let tyid_f64 = TypeId::of::<f64>();
+   let tyid_list = TypeId::of::<ValuePtrList>();
 
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_i64, tyid_i64), add_i64);
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_f64, tyid_f64), add_f64);
+   register_2_arg(&mut indices, &mut fn_list, "add", (tyid_list, tyid_i64), list_2_arg);
+   register_2_arg(&mut indices, &mut fn_list, "add", (tyid_list, tyid_f64), list_2_arg);
 
    register_2_arg(&mut indices, &mut fn_list, "multiply", (tyid_i64, tyid_i64), multiply_i64);
    register_2_arg(&mut indices, &mut fn_list, "multiply", (tyid_f64, tyid_f64), multiply_f64);
+   register_2_arg(&mut indices, &mut fn_list, "multiply", (tyid_list, tyid_i64), list_2_arg);
+   register_2_arg(&mut indices, &mut fn_list, "multiply", (tyid_list, tyid_f64), list_2_arg);
 
    register_2_arg(&mut indices, &mut fn_list, "subtract", (tyid_i64, tyid_i64), subtract_i64);
    register_2_arg(&mut indices, &mut fn_list, "subtract", (tyid_f64, tyid_f64), subtract_f64);
+   register_2_arg(&mut indices, &mut fn_list, "subtract", (tyid_list, tyid_i64), list_2_arg);
+   register_2_arg(&mut indices, &mut fn_list, "subtract", (tyid_list, tyid_f64), list_2_arg);
 
    register_2_arg(&mut indices, &mut fn_list, "divide", (tyid_i64, tyid_i64), divide_i64);
    register_2_arg(&mut indices, &mut fn_list, "divide", (tyid_f64, tyid_f64), divide_f64);
+   register_2_arg(&mut indices, &mut fn_list, "divide", (tyid_list, tyid_i64), list_2_arg);
+   register_2_arg(&mut indices, &mut fn_list, "divide", (tyid_list, tyid_f64), list_2_arg);
 
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_f64), point_f64_f64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_i64), point_f64_i64);

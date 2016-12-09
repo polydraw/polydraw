@@ -158,3 +158,27 @@ pub fn each_with_index(
    vecval!(result)
 }
 
+
+pub fn list_2_arg(
+   arguments: Vec<&ValuePtr>,
+   executor: &Executor,
+   fn_ref: &FnRef
+) -> Vec<ValuePtr> {
+   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+
+   let right = arguments[1];
+
+   let mut result = Vec::new();
+
+   for value_ptr in list.iter() {
+      let call_arguments = vec![value_ptr, right];
+
+      let mut values = executor.execute_function(fn_ref, call_arguments);
+
+      let value = values.remove(0);
+
+      result.push(value);
+   }
+
+   vecval!(result)
+}
