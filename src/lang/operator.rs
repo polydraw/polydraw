@@ -36,14 +36,20 @@ use super::point::{
 };
 
 use super::list::{
-   list, each, each_with_last, each_with_index,
+   list, list_call, each, each_with_last, each_with_index,
    list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
 };
 
+use super::functional::{
+   call,
+};
+
 
 type CALL = fn(Vec<&ValuePtr>, &Executor, &FnRef) -> Vec<ValuePtr>;
+
+type HMA1R1 = HashMap<TypeId, CALL>;
 
 type HMA2R1 = HashMap<(TypeId, TypeId), CALL>;
 
@@ -51,6 +57,7 @@ type HMA3R1 = HashMap<(TypeId, TypeId, TypeId), CALL>;
 
 
 pub enum TypeFnMap {
+   HMA1R1(HMA1R1),
    HMA2R1(HMA2R1),
    HMA3R1(HMA3R1),
    CALL(CALL),
@@ -132,6 +139,8 @@ macro_rules! define_register_func {
 }
 
 
+define_register_func!(register_1_arg, TypeId, HMA1R1);
+
 define_register_func!(register_2_arg, (TypeId, TypeId), HMA2R1);
 
 define_register_func!(register_3_arg, (TypeId, TypeId, TypeId), HMA3R1);
@@ -165,6 +174,7 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    let tyid_lst = TypeId::of::<ValuePtrList>();
    let tyid_ipt = TypeId::of::<IntPoint>();
    let tyid_fpt = TypeId::of::<FloatPoint>();
+   let tyid_fnp = TypeId::of::<FnRef>();
 
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_i64, tyid_i64), add_i64_i64);
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_f64, tyid_f64), add_f64_f64);
@@ -350,6 +360,9 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_lst, tyid_lst), list_val_lst_lst);
 
    register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_lst, tyid_lst, tyid_lst), list_lst_lst_lst);
+
+   register_1_arg(&mut indices, &mut fn_list, "call", tyid_fnp, call);
+   register_1_arg(&mut indices, &mut fn_list, "call", tyid_lst, list_call);
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 

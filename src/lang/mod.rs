@@ -16,6 +16,8 @@ mod environment;
 mod number;
 mod list;
 mod point;
+mod functional;
+
 mod renderer;
 
 pub use self::environment::Environment;

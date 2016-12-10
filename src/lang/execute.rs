@@ -57,15 +57,28 @@ pub fn execute_builtin_function(
    executor: &Executor,
 ) -> Vec<ValuePtr> {
    match &executor.builtin_fns[fn_ref.index] {
+      &TypeFnMap::HMA1R1(ref map) => {
+         if args.len() < 1 {
+            vecval!(Empty)
+         } else if let Some(func) = map.get(&args[0].type_id) {
+            func(args, executor, fn_ref)
+         } else {
+            vecval!(Empty)
+         }
+      },
       &TypeFnMap::HMA2R1(ref map) => {
-         if let Some(func) = map.get(&(args[0].type_id, args[1].type_id)) {
+         if args.len() < 2 {
+            vecval!(Empty)
+         } else if let Some(func) = map.get(&(args[0].type_id, args[1].type_id)) {
             func(args, executor, fn_ref)
          } else {
             vecval!(Empty)
          }
       },
       &TypeFnMap::HMA3R1(ref map) => {
-         if let Some(func) = map.get(&(args[0].type_id, args[1].type_id, args[2].type_id)) {
+         if args.len() < 3 {
+            vecval!(Empty)
+         } else if let Some(func) = map.get(&(args[0].type_id, args[1].type_id, args[2].type_id)) {
             func(args, executor, fn_ref)
          } else {
             vecval!(Empty)
