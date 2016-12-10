@@ -1,7 +1,7 @@
 use super::clone::{CloneRegistry, create_clone_registry};
 use super::drop::{DropRegistry, create_drop_registry, drop_value_ptr_vec};
 use super::debug::{DebugRegistry, create_debug_registry};
-use super::compiler::{BuiltinIndices, Program, compile};
+use super::compiler::{BuiltinIndices, Program, compile_program};
 use super::operator::{FnList, register_builtin_fns};
 use super::value_ptr::ValuePtr;
 use super::tokenizer::tokenize;
@@ -35,22 +35,28 @@ impl Environment {
 
       let functions = try!(parse(tokens));
 
-      compile(
+      compile_program(
          &functions,
          &self.builtin_indices,
          &self.builtin_fns,
          &self.clone_registry,
          &self.drop_registry,
+         &self.debug_registry,
       )
    }
 
-   pub fn execute(&self, program: &Program, arguments: Vec<ValuePtr>) -> Vec<ValuePtr> {
+   pub fn execute_program(
+      &self,
+      program: &Program,
+      arguments: Vec<ValuePtr>
+   ) -> Vec<ValuePtr> {
       execute_program(
          program,
          arguments,
          &self.builtin_fns,
          &self.clone_registry,
          &self.drop_registry,
+         &self.debug_registry,
       )
    }
 

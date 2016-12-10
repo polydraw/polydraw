@@ -54,7 +54,7 @@ impl Renderer for LangRenderer {
          ValuePtr::new(frame.height as i64 * SUBDIVISIONS),
       ];
 
-      let result = self.environment.execute(&self.program, arguments);
+      let result = self.environment.execute_program(&self.program, arguments);
 
       let mut scene = Scene::new();
 

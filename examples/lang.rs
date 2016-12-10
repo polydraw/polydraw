@@ -45,7 +45,7 @@ fn main() {
       ValuePtr::new(900_i64 * 4_i64),
    ];
 
-   let result = environment.execute(&program, arguments);
+   let result = environment.execute_program(&program, arguments);
 
    for (index, value_ptr) in result.iter().enumerate() {
       let debug = debug_value_ptr(value_ptr, &environment.debug_registry);

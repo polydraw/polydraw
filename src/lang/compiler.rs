@@ -9,6 +9,7 @@ use super::parser::{FnType, FnIndex, Argument, Function, Value};
 use super::operator::FnList;
 use super::clone::CloneRegistry;
 use super::drop::{DropRegistry, drop_value_ptr};
+use super::debug::DebugRegistry;
 use super::execute::{execute_builtin_function, Executor};
 
 
@@ -184,12 +185,13 @@ impl Program {
    }
 }
 
-pub fn compile (
+pub fn compile_program (
    functions: &Vec<Function>,
    builtin_indices: &BuiltinIndices,
    builtin_fns: &FnList,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
+   debug_registry: &DebugRegistry,
 ) -> Result<Program, String> {
    let defined_indices = try!(map_defined_indices(&functions));
 
@@ -209,6 +211,7 @@ pub fn compile (
             &defined_indices,
             clone_registry,
             drop_registry,
+            debug_registry,
          ))
       );
 
@@ -285,6 +288,7 @@ fn compile_function(
    defined_indices: &DefinedIndices,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
+   debug_registry: &DebugRegistry,
 ) -> Result<CompiledFn, String> {
    let span = defined_indices[&function.name as &str].span;
 
@@ -311,6 +315,7 @@ fn compile_function(
          defined_indices,
          clone_registry,
          drop_registry,
+         debug_registry,
       ));
 
       if span < assignment.names.len() {
@@ -355,6 +360,7 @@ fn compile_value(
    defined_indices: &DefinedIndices,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
+   debug_registry: &DebugRegistry,
 ) -> Result<(CallArg, usize), String> {
    match value {
       &Value::Int(value) => push_const(consts, value),
@@ -375,6 +381,7 @@ fn compile_value(
                defined_indices,
                clone_registry,
                drop_registry,
+               debug_registry,
             ));
 
             list_args.push(compiled);
@@ -421,6 +428,7 @@ fn compile_value(
                defined_indices,
                clone_registry,
                drop_registry,
+               debug_registry,
             ));
 
             if call_arg.arg_type != CallArgType::Const {
@@ -460,6 +468,7 @@ fn compile_value(
                      consts,
                      clone_registry,
                      drop_registry,
+                     debug_registry,
                   );
 
                   let fn_ref = FnRef::builtin(fn_index.index);

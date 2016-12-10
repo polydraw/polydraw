@@ -8,6 +8,7 @@ use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
 use super::operator::{FnList, TypeFnMap};
 use super::clone::{CloneRegistry, clone_value_ptr};
 use super::drop::{DropRegistry, drop_value_ptr_vec};
+use super::debug::DebugRegistry;
 use super::parser::FnType;
 
 
@@ -17,6 +18,7 @@ pub fn execute_program(
    builtin_fns: &FnList,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
+   debug_registry: &DebugRegistry,
 ) -> Vec<ValuePtr> {
    let result = {
       let mut arg_refs = Vec::new();
@@ -31,6 +33,7 @@ pub fn execute_program(
          &program.consts,
          clone_registry,
          drop_registry,
+         debug_registry,
       );
 
       let fn_ref = FnRef::defined(program.main_index);
@@ -149,6 +152,7 @@ pub struct Executor<'a> {
    pub consts: &'a Vec<ValuePtr>,
    pub clone_registry: &'a CloneRegistry,
    pub drop_registry: &'a DropRegistry,
+   pub debug_registry: &'a DebugRegistry,
 }
 
 impl<'a> Executor<'a> {
@@ -158,6 +162,7 @@ impl<'a> Executor<'a> {
       consts: &'a Vec<ValuePtr>,
       clone_registry: &'a CloneRegistry,
       drop_registry: &'a DropRegistry,
+      debug_registry: &'a DebugRegistry,
    ) -> Self {
       Executor {
          compiled_fns: compiled_fns,
@@ -165,6 +170,7 @@ impl<'a> Executor<'a> {
          consts: consts,
          clone_registry: clone_registry,
          drop_registry: drop_registry,
+         debug_registry: debug_registry,
       }
    }
 

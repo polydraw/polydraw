@@ -2,13 +2,13 @@ use std::any::TypeId;
 
 use super::super::data::Empty;
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use super::clone::{clone_value_ptr};
+use super::clone::clone_value_ptr;
 use super::drop::drop_value_ptr;
 use super::execute::Executor;
 use super::compiler::FnRef;
 
 
-pub fn create_list(
+pub fn list(
    arguments: Vec<&ValuePtr>,
    executor: &Executor,
    _: &FnRef
@@ -159,7 +159,31 @@ pub fn each_with_index(
 }
 
 
-pub fn list_2_arg(
+pub fn list_val_arg(
+   arguments: Vec<&ValuePtr>,
+   executor: &Executor,
+   fn_ref: &FnRef
+) -> Vec<ValuePtr> {
+   let left = arguments[0];
+
+   let list = value_ptr_as_ref!(arguments[1], ValuePtrList);
+
+   let mut result = Vec::new();
+
+   for value_ptr in list.iter() {
+      let call_arguments = vec![left, value_ptr];
+
+      let mut values = executor.execute_function(fn_ref, call_arguments);
+
+      let value = values.remove(0);
+
+      result.push(value);
+   }
+
+   vecval!(result)
+}
+
+pub fn list_arg_val(
    arguments: Vec<&ValuePtr>,
    executor: &Executor,
    fn_ref: &FnRef

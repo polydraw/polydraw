@@ -3,49 +3,89 @@ use super::compiler::FnRef;
 use super::execute::Executor;
 
 
-fn add_i64_(a: &i64, b: &i64) -> i64 {
+fn add_i64_i64_(a: &i64, b: &i64) -> i64 {
    *a + *b
 }
-wrap_operator!(add_i64, add_i64_);
+wrap_operator!(add_i64_i64, add_i64_i64_);
 
-fn add_f64_(a: &f64, b: &f64) -> f64 {
+fn add_f64_f64_(a: &f64, b: &f64) -> f64 {
    *a + *b
 }
-wrap_operator!(add_f64, add_f64_);
+wrap_operator!(add_f64_f64, add_f64_f64_);
+
+fn add_i64_f64_(a: &i64, b: &f64) -> f64 {
+   *a as f64 + *b
+}
+wrap_operator!(add_i64_f64, add_i64_f64_);
+
+fn add_f64_i64_(a: &f64, b: &i64) -> f64 {
+   *a + *b as f64
+}
+wrap_operator!(add_f64_i64, add_f64_i64_);
 
 
 
-fn multiply_i64_(a: &i64, b: &i64) -> i64 {
+fn multiply_i64_i64_(a: &i64, b: &i64) -> i64 {
    *a * *b
 }
-wrap_operator!(multiply_i64, multiply_i64_);
+wrap_operator!(multiply_i64_i64, multiply_i64_i64_);
 
-fn multiply_f64_(a: &f64, b: &f64) -> f64 {
+fn multiply_f64_f64_(a: &f64, b: &f64) -> f64 {
    *a * *b
 }
-wrap_operator!(multiply_f64, multiply_f64_);
+wrap_operator!(multiply_f64_f64, multiply_f64_f64_);
+
+fn multiply_i64_f64_(a: &i64, b: &f64) -> f64 {
+   *a as f64 * *b
+}
+wrap_operator!(multiply_i64_f64, multiply_i64_f64_);
+
+fn multiply_f64_i64_(a: &f64, b: &i64) -> f64 {
+   *a * *b as f64
+}
+wrap_operator!(multiply_f64_i64, multiply_f64_i64_);
 
 
 
-fn subtract_i64_(a: &i64, b: &i64) -> i64 {
+fn subtract_i64_i64_(a: &i64, b: &i64) -> i64 {
    *a - *b
 }
-wrap_operator!(subtract_i64, subtract_i64_);
+wrap_operator!(subtract_i64_i64, subtract_i64_i64_);
 
-fn subtract_f64_(a: &f64, b: &f64) -> f64 {
+fn subtract_f64_f64_(a: &f64, b: &f64) -> f64 {
    *a - *b
 }
-wrap_operator!(subtract_f64, subtract_f64_);
+wrap_operator!(subtract_f64_f64, subtract_f64_f64_);
+
+fn subtract_i64_f64_(a: &i64, b: &f64) -> f64 {
+   *a as f64 - *b
+}
+wrap_operator!(subtract_i64_f64, subtract_i64_f64_);
+
+fn subtract_f64_i64_(a: &f64, b: &i64) -> f64 {
+   *a - *b as f64
+}
+wrap_operator!(subtract_f64_i64, subtract_f64_i64_);
 
 
 
-fn divide_i64_(a: &i64, b: &i64) -> i64 {
+fn divide_i64_i64_(a: &i64, b: &i64) -> f64 {
+   *a as f64 / *b as f64
+}
+wrap_operator!(divide_i64_i64, divide_i64_i64_);
+
+fn divide_f64_f64_(a: &f64, b: &f64) -> f64 {
    *a / *b
 }
-wrap_operator!(divide_i64, divide_i64_);
+wrap_operator!(divide_f64_f64, divide_f64_f64_);
 
-fn divide_f64_(a: &f64, b: &f64) -> f64 {
-   *a / *b
+fn divide_i64_f64_(a: &i64, b: &f64) -> f64 {
+   *a as f64 / *b
 }
-wrap_operator!(divide_f64, divide_f64_);
+wrap_operator!(divide_i64_f64, divide_i64_f64_);
+
+fn divide_f64_i64_(a: &f64, b: &i64) -> f64 {
+   *a / *b as f64
+}
+wrap_operator!(divide_f64_i64, divide_f64_i64_);
 
