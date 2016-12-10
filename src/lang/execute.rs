@@ -40,7 +40,7 @@ pub fn execute_program(
 
       execute_compiled_function(
          &fn_ref,
-         arg_refs,
+         &arg_refs,
          &executor,
       )
    };
@@ -53,7 +53,7 @@ pub fn execute_program(
 
 pub fn execute_builtin_function(
    fn_ref: &FnRef,
-   args: Vec<&ValuePtr>,
+   args: &[&ValuePtr],
    executor: &Executor,
 ) -> Vec<ValuePtr> {
    match &executor.builtin_fns[fn_ref.index] {
@@ -93,14 +93,14 @@ pub fn execute_builtin_function(
 
 fn execute_compiled_function(
    fn_ref: &FnRef,
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
 ) -> Vec<ValuePtr> {
    let mut stack: Vec<ValuePtr> = Vec::new();
 
    let func = &executor.compiled_fns[fn_ref.index];
 
-   let expanded_arguments = match expand_arguments(&arguments, &func.template) {
+   let expanded_arguments = match expand_arguments(arguments, &func.template) {
       Some(expanded) => expanded,
       None => panic!("Expand arguments failed"),
    };
@@ -123,14 +123,14 @@ fn execute_compiled_function(
             FnType::Builtin => {
                execute_builtin_function(
                   &FnRef::builtin(exec_fn.fn_index.index),
-                  argument_references,
+                  &argument_references,
                   executor,
                )
             },
             FnType::Defined => {
                execute_compiled_function(
                   &FnRef::defined(exec_fn.fn_index.index),
-                  argument_references,
+                  &argument_references,
                   executor,
                )
             }
@@ -194,7 +194,7 @@ impl<'a> Executor<'a> {
       }
    }
 
-   pub fn execute_function(&self, fn_ref: &FnRef, arguments: Vec<&ValuePtr>) -> Vec<ValuePtr> {
+   pub fn execute_function(&self, fn_ref: &FnRef, arguments: &[&ValuePtr]) -> Vec<ValuePtr> {
       match fn_ref.fn_type {
          FnType::Builtin => {
             execute_builtin_function(
@@ -216,7 +216,7 @@ impl<'a> Executor<'a> {
 
 
 fn expand_arguments<'a>(
-   arguments: &Vec<&'a ValuePtr>,
+   arguments: &[&'a ValuePtr],
    template: &Vec<ArgTemplate>,
 ) -> Option<Vec<&'a ValuePtr>> {
 

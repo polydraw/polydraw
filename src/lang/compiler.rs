@@ -475,7 +475,7 @@ fn compile_value(
 
                   execute_builtin_function(
                      &fn_ref,
-                     argument_references,
+                     &argument_references,
                      &executor,
                   )
                };

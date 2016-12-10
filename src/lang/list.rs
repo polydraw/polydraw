@@ -9,7 +9,7 @@ use super::compiler::FnRef;
 
 
 pub fn list(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
@@ -40,7 +40,7 @@ macro_rules! push_result {
 
 
 pub fn each(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
@@ -65,7 +65,7 @@ pub fn each(
          call_arguments.push(*arg);
       }
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -75,7 +75,7 @@ pub fn each(
 
 
 pub fn each_with_last(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
@@ -103,7 +103,7 @@ pub fn each_with_last(
             call_arguments.push(*arg);
          }
 
-         executor.execute_function(fn_ref, call_arguments)
+         executor.execute_function(fn_ref, &call_arguments)
       };
 
       let value = values.remove(0);
@@ -122,7 +122,7 @@ pub fn each_with_last(
 
 
 pub fn each_with_index(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
@@ -149,7 +149,7 @@ pub fn each_with_index(
          call_arguments.push(*arg);
       }
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
 
@@ -161,7 +161,7 @@ pub fn each_with_index(
 
 
 pub fn list_val_lst(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -174,7 +174,7 @@ pub fn list_val_lst(
    for value_ptr in right.iter() {
       let call_arguments = vec![left, value_ptr];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -184,7 +184,7 @@ pub fn list_val_lst(
 
 
 pub fn list_lst_val(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -197,7 +197,7 @@ pub fn list_lst_val(
    for value_ptr in left.iter() {
       let call_arguments = vec![value_ptr, right];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -207,7 +207,7 @@ pub fn list_lst_val(
 
 
 pub fn list_lst_lst(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -220,7 +220,7 @@ pub fn list_lst_lst(
    for (left_ptr, right_ptr) in left.iter().zip(right.iter()) {
       let call_arguments = vec![left_ptr, right_ptr];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -230,7 +230,7 @@ pub fn list_lst_lst(
 
 
 pub fn list_lst_val_val(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -243,7 +243,7 @@ pub fn list_lst_val_val(
    for value_ptr in left.iter() {
       let call_arguments = vec![value_ptr, middle, right];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -253,7 +253,7 @@ pub fn list_lst_val_val(
 
 
 pub fn list_val_lst_val(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -266,7 +266,7 @@ pub fn list_val_lst_val(
    for value_ptr in middle.iter() {
       let call_arguments = vec![left, value_ptr, right];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -276,7 +276,7 @@ pub fn list_val_lst_val(
 
 
 pub fn list_val_val_lst(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -289,7 +289,7 @@ pub fn list_val_val_lst(
    for value_ptr in right.iter() {
       let call_arguments = vec![left, middle, value_ptr];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -299,7 +299,7 @@ pub fn list_val_val_lst(
 
 
 pub fn list_lst_lst_val(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -312,7 +312,7 @@ pub fn list_lst_lst_val(
    for (left_ptr, middle_ptr) in left.iter().zip(middle.iter()) {
       let call_arguments = vec![left_ptr, middle_ptr, right];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -321,7 +321,7 @@ pub fn list_lst_lst_val(
 }
 
 pub fn list_lst_val_lst(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -334,7 +334,7 @@ pub fn list_lst_val_lst(
    for (left_ptr, right_ptr) in left.iter().zip(right.iter()) {
       let call_arguments = vec![left_ptr, middle, right_ptr];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -343,7 +343,7 @@ pub fn list_lst_val_lst(
 }
 
 pub fn list_val_lst_lst(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -356,7 +356,7 @@ pub fn list_val_lst_lst(
    for (middle_ptr, right_ptr) in middle.iter().zip(right.iter()) {
       let call_arguments = vec![left, middle_ptr, right_ptr];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -365,7 +365,7 @@ pub fn list_val_lst_lst(
 }
 
 pub fn list_lst_lst_lst(
-   arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    fn_ref: &FnRef
 ) -> Vec<ValuePtr> {
@@ -378,7 +378,7 @@ pub fn list_lst_lst_lst(
    for ((left_ptr, middle_ptr), right_ptr) in left.iter().zip(middle.iter()).zip(right.iter()) {
       let call_arguments = vec![left_ptr, middle_ptr, right_ptr];
 
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
 
       push_result!(result, values, executor);
    }
@@ -388,12 +388,12 @@ pub fn list_lst_lst_lst(
 
 
 pub fn list_call(
-   mut arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
 
-   let fn_refs = value_ptr_as_ref!(arguments.remove(0), ValuePtrList);
+   let fn_refs = value_ptr_as_ref!(arguments[0], ValuePtrList);
 
    let mut result = Vec::new();
 
@@ -405,9 +405,7 @@ pub fn list_call(
 
       let fn_ref = value_ptr_as_ref!(fn_ref_ptr, FnRef);
 
-      let call_arguments = arguments.clone();
-
-      let mut values = executor.execute_function(fn_ref, call_arguments);
+      let mut values = executor.execute_function(fn_ref, &arguments[1..]);
 
       push_result!(result, values, executor);
    }

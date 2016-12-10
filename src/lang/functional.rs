@@ -4,11 +4,11 @@ use super::compiler::FnRef;
 
 
 pub fn call(
-   mut arguments: Vec<&ValuePtr>,
+   arguments: &[&ValuePtr],
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
-   let fn_ref = value_ptr_as_ref!(arguments.remove(0), FnRef);
+   let fn_ref = value_ptr_as_ref!(arguments[0], FnRef);
 
-   executor.execute_function(fn_ref, arguments)
+   executor.execute_function(fn_ref, &arguments[1..])
 }

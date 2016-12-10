@@ -47,7 +47,7 @@ use super::functional::{
 };
 
 
-type CALL = fn(Vec<&ValuePtr>, &Executor, &FnRef) -> Vec<ValuePtr>;
+type CALL = fn(&[&ValuePtr], &Executor, &FnRef) -> Vec<ValuePtr>;
 
 type HMA1R1 = HashMap<TypeId, CALL>;
 
@@ -76,7 +76,7 @@ macro_rules! vecval {
 
 macro_rules! wrap_2_arg {
    ($name:ident, $func:ident) => {
-      pub fn $name(arguments: Vec<&ValuePtr>, _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
+      pub fn $name(arguments: &[&ValuePtr], _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
          vecval!(
             $func(
                unsafe { ::std::mem::transmute(arguments[0].data) },
@@ -90,7 +90,7 @@ macro_rules! wrap_2_arg {
 
 macro_rules! wrap_3_arg {
    ($name:ident, $func:ident) => {
-      pub fn $name(arguments: Vec<&ValuePtr>, _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
+      pub fn $name(arguments: &[&ValuePtr], _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
          vecval!(
             $func(
                unsafe { ::std::mem::transmute(arguments[0].data) },
