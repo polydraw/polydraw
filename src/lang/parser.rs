@@ -523,7 +523,7 @@ fn match_binary(tokens: &[Token]) -> Option<Value> {
 }
 
 fn match_function_call(tokens: &[Token]) -> Option<Value> {
-   if tokens.len() < 3 {
+   if tokens.len() < 2 {
       return None;
    }
 
