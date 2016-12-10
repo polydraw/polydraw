@@ -30,6 +30,9 @@ use super::point::{
    divide_ipt_i64, divide_fpt_f64, divide_ipt_f64, divide_fpt_i64,
    divide_i64_ipt, divide_f64_fpt, divide_f64_ipt, divide_i64_fpt,
    polar_f64_f64, polar_i64_i64, polar_f64_i64, polar_i64_f64,
+   rotate_fpt_fpt_f64, rotate_ipt_fpt_f64, rotate_fpt_ipt_f64,
+   rotate_fpt_fpt_i64, rotate_ipt_ipt_f64, rotate_ipt_fpt_i64,
+   rotate_fpt_ipt_i64, rotate_ipt_ipt_i64,
 };
 
 use super::list::{
@@ -41,9 +44,12 @@ type CALL = fn(Vec<&ValuePtr>, &Executor, &FnRef) -> Vec<ValuePtr>;
 
 type HMA2R1 = HashMap<(TypeId, TypeId), CALL>;
 
+type HMA3R1 = HashMap<(TypeId, TypeId, TypeId), CALL>;
+
 
 pub enum TypeFnMap {
    HMA2R1(HMA2R1),
+   HMA3R1(HMA3R1),
    CALL(CALL),
 }
 
@@ -58,17 +64,28 @@ macro_rules! vecval {
 }
 
 
-macro_rules! wrap_operator {
+macro_rules! wrap_2_arg {
    ($name:ident, $func:ident) => {
       pub fn $name(arguments: Vec<&ValuePtr>, _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
          vecval!(
             $func(
-               unsafe {
-                  ::std::mem::transmute(arguments[0].data)
-               },
-               unsafe {
-                  ::std::mem::transmute(arguments[1].data)
-               },
+               unsafe { ::std::mem::transmute(arguments[0].data) },
+               unsafe { ::std::mem::transmute(arguments[1].data) },
+            )
+         )
+      }
+   }
+}
+
+
+macro_rules! wrap_3_arg {
+   ($name:ident, $func:ident) => {
+      pub fn $name(arguments: Vec<&ValuePtr>, _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
+         vecval!(
+            $func(
+               unsafe { ::std::mem::transmute(arguments[0].data) },
+               unsafe { ::std::mem::transmute(arguments[1].data) },
+               unsafe { ::std::mem::transmute(arguments[2].data) },
             )
          )
       }
@@ -113,6 +130,8 @@ macro_rules! define_register_func {
 
 
 define_register_func!(register_2_arg, (TypeId, TypeId), HMA2R1);
+
+define_register_func!(register_3_arg, (TypeId, TypeId, TypeId), HMA3R1);
 
 
 fn register_n_arg(
@@ -273,6 +292,15 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_f64, tyid_f64), polar_f64_f64);
    register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_i64, tyid_f64), polar_i64_f64);
    register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_f64, tyid_i64), polar_f64_i64);
+
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_fpt, tyid_fpt, tyid_f64), rotate_fpt_fpt_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_fpt, tyid_f64), rotate_ipt_fpt_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_fpt, tyid_ipt, tyid_f64), rotate_fpt_ipt_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_fpt, tyid_fpt, tyid_i64), rotate_fpt_fpt_i64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_ipt, tyid_f64), rotate_ipt_ipt_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_fpt, tyid_i64), rotate_ipt_fpt_i64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_fpt, tyid_ipt, tyid_i64), rotate_fpt_ipt_i64);
+   register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_ipt, tyid_i64), rotate_ipt_ipt_i64);
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 
