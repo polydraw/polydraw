@@ -703,12 +703,16 @@ fn try_list_item(tokens: &[Token]) -> Option<(Value, usize)> {
    }
 
    if let Some(value) = match_single(&tokens[..1]) {
-      Some((value, 1))
-   } else if let Some(value) = match_function_ref(&tokens[..2]) {
-      Some((value, 2))
-   } else {
-      None
+      return Some((value, 1));
    }
+
+   if tokens.len() > 1 {
+      if let Some(value) = match_function_ref(&tokens[..2]) {
+         return Some((value, 2));
+      }
+   }
+
+   None
 }
 
 
