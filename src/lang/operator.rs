@@ -29,6 +29,7 @@ use super::point::{
    divide_ipt_ipt, divide_fpt_fpt, divide_ipt_fpt, divide_fpt_ipt,
    divide_ipt_i64, divide_fpt_f64, divide_ipt_f64, divide_fpt_i64,
    divide_i64_ipt, divide_f64_fpt, divide_f64_ipt, divide_i64_fpt,
+   polar_f64_f64, polar_i64_i64, polar_f64_i64, polar_i64_f64,
 };
 
 use super::list::{
@@ -267,6 +268,11 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_f64), point_f64_f64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_i64, tyid_f64), point_i64_f64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_i64), point_f64_i64);
+
+   register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_i64, tyid_i64), polar_i64_i64);
+   register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_f64, tyid_f64), polar_f64_f64);
+   register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_i64, tyid_f64), polar_i64_f64);
+   register_2_arg(&mut indices, &mut fn_list, "polar", (tyid_f64, tyid_i64), polar_f64_i64);
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 

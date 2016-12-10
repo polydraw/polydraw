@@ -289,3 +289,30 @@ fn divide_i64_fpt_(a: &i64, b: &FloatPoint) -> FloatPoint {
 }
 wrap_operator!(divide_i64_fpt, divide_i64_fpt_);
 
+
+
+fn polar_f64_f64_(radius: &f64, angle: &f64) -> FloatPoint {
+   let radians = angle.to_radians();
+
+   let x = *radius * radians.cos();
+   let y = *radius * radians.sin();
+
+   FloatPoint::new(x, y)
+}
+wrap_operator!(polar_f64_f64, polar_f64_f64_);
+
+fn polar_i64_i64_(radius: &i64, angle: &i64) -> FloatPoint {
+   polar_f64_f64_(&(*radius as f64), &(*angle as f64))
+}
+wrap_operator!(polar_i64_i64, polar_i64_i64_);
+
+fn polar_f64_i64_(radius: &f64, angle: &i64) -> FloatPoint {
+   polar_f64_f64_(radius, &(*angle as f64))
+}
+wrap_operator!(polar_f64_i64, polar_f64_i64_);
+
+fn polar_i64_f64_(radius: &i64, angle: &f64) -> FloatPoint {
+   polar_f64_f64_(&(*radius as f64), angle)
+}
+wrap_operator!(polar_i64_f64, polar_i64_f64_);
+
