@@ -8,7 +8,7 @@ use super::value_ptr::ValuePtr;
 use super::parser::{FnType, FnIndex, Argument, Function, Value};
 use super::operator::FnList;
 use super::clone::CloneRegistry;
-use super::drop::{DropRegistry, drop_value_ptr};
+use super::drop::DropRegistry;
 use super::debug::DebugRegistry;
 use super::execute::{execute_builtin_function, Executor};
 
@@ -482,13 +482,13 @@ fn compile_value(
 
                let pos = consts.len();
 
-               let value = value_ptr_list.remove(0);
-
-               for ptr in value_ptr_list {
-                  drop_value_ptr(&ptr, drop_registry);
-               }
-
-               consts.push(value);
+               consts.push(
+                  if value_ptr_list.len() == 1 {
+                     value_ptr_list.remove(0)
+                  } else {
+                     ValuePtr::new(value_ptr_list)
+                  }
+               );
 
                Ok((CallArg::const_(pos), 1))
             } else {

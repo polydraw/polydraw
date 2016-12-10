@@ -27,14 +27,14 @@ pub fn list(
 
 
 macro_rules! push_result {
-   ($result:ident, $values:ident, $executor:ident) => {
-      let value = $values.remove(0);
-
-      for ptr in $values {
-         drop_value_ptr(&ptr, $executor.drop_registry);
-      }
-
-      $result.push(value);
+   ($result:ident, $values:ident) => {
+      $result.push(
+         if $values.len() == 1 {
+            $values.remove(0)
+         } else {
+            ValuePtr::new($values)
+         }
+      );
    }
 }
 
@@ -67,7 +67,7 @@ pub fn each(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -106,11 +106,11 @@ pub fn each_with_last(
          executor.execute_function(fn_ref, &call_arguments)
       };
 
-      let value = values.remove(0);
-
-      for ptr in values {
-         drop_value_ptr(&ptr, executor.drop_registry);
-      }
+      let value = if values.len() == 1 {
+         values.remove(0)
+      } else {
+         ValuePtr::new(values)
+      };
 
       last_item = value.clone();
 
@@ -151,7 +151,7 @@ pub fn each_with_index(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
 
       drop_value_ptr(&index_value, executor.drop_registry);
    }
@@ -176,7 +176,7 @@ pub fn list_val_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -199,7 +199,7 @@ pub fn list_lst_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -222,7 +222,7 @@ pub fn list_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -245,7 +245,7 @@ pub fn list_lst_val_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -268,7 +268,7 @@ pub fn list_val_lst_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -291,7 +291,7 @@ pub fn list_val_val_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -314,7 +314,7 @@ pub fn list_lst_lst_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -336,7 +336,7 @@ pub fn list_lst_val_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -358,7 +358,7 @@ pub fn list_val_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -380,7 +380,7 @@ pub fn list_lst_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
@@ -407,7 +407,7 @@ pub fn list_call(
 
       let mut values = executor.execute_function(fn_ref, &arguments[1..]);
 
-      push_result!(result, values, executor);
+      push_result!(result, values);
    }
 
    vecval!(result)
