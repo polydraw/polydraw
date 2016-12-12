@@ -329,17 +329,22 @@ fn find_next_new_line(tokens: &[Token]) -> usize {
 }
 
 
-fn consume_new_line(tokens: &[Token]) -> usize {
+fn consume_start(tokens: &[Token]) -> (usize, usize, bool) {
+   let mut last_space_offset = false;
+   let mut lines = 0;
+
    for (index, token) in tokens.iter().enumerate() {
       match token {
-         &Token::NewLine => {},
-         _ => {
-            return index;
-         }
+         &Token::NewLine => {
+            last_space_offset = false;
+            lines += 1;
+         },
+         &Token::SpaceOffset => last_space_offset = true,
+         _ => return (index, lines, last_space_offset),
       }
    }
 
-   tokens.len()
+   (tokens.len(), lines, last_space_offset)
 }
 
 
@@ -353,37 +358,43 @@ pub fn parse(tokens: Vec<Token>) -> Result<Vec<Function>, String> {
    let mut current_function: Option<(String, FunctionArguments)> = None;
 
    loop {
-      let taken = consume_new_line(tokens);
+      let (taken, lines, last_space_offset) = consume_start(tokens);
 
-      new_lines += taken;
+      new_lines += lines;
       tokens = &tokens[taken..];
 
-      if let Some((name, arguments, taken)) = parse_function_start(tokens) {
-         tokens = &tokens[taken..];
-         if let Some((current_name, current_arguments)) = current_function {
-            let function = Function::new(current_name, current_arguments, assignments);
-            functions.push(function);
+      if last_space_offset {
+         if let Some((value, taken)) = parse_assignment(tokens) {
+            tokens = &tokens[taken..];
+            assignments.push(value);
+            continue;
          }
-
-         current_function = Some((name, arguments));
-         assignments = Vec::new();
-      } else if let Some((value, taken)) = parse_assignment(tokens) {
-         tokens = &tokens[taken..];
-         assignments.push(value);
       } else {
-         let taken = consume_new_line(tokens);
-
-         tokens = &tokens[taken..];
-
-         if tokens.len() == 0 {
-            if let Some((name, arguments)) = current_function {
-               let function = Function::new(name, arguments, assignments);
+         if let Some((name, arguments, taken)) = parse_function_start(tokens) {
+            tokens = &tokens[taken..];
+            if let Some((current_name, current_arguments)) = current_function {
+               let function = Function::new(current_name, current_arguments, assignments);
                functions.push(function);
             }
-            return Ok(functions);
-         } else {
-            return Err(format!("Parse error at line {}", new_lines + 1));
+
+            current_function = Some((name, arguments));
+            assignments = Vec::new();
+            continue;
          }
+      }
+
+      let (taken, _, _) = consume_start(tokens);
+
+      tokens = &tokens[taken..];
+
+      if tokens.len() == 0 {
+         if let Some((name, arguments)) = current_function {
+            let function = Function::new(name, arguments, assignments);
+            functions.push(function);
+         }
+         return Ok(functions);
+      } else {
+         return Err(format!("Parse error at line {}", new_lines + 1));
       }
    }
 }
@@ -426,15 +437,11 @@ fn parse_function_start(tokens: &[Token]) -> Option<(String, FunctionArguments, 
 
 
 fn parse_assignment(tokens: &[Token]) -> Option<(Assignment, usize)> {
-   if tokens.len() < 5 {
+   if tokens.len() < 4 {
       return None;
    }
 
-   if tokens[0] != Token::SpaceOffset {
-      return None;
-   }
-
-   let mut i = 1;
+   let mut i = 0;
 
    let mut names = Vec::new();
 
@@ -443,7 +450,7 @@ fn parse_assignment(tokens: &[Token]) -> Option<(Assignment, usize)> {
       i += 1;
    }
 
-   if i == 1 {
+   if names.len() == 0 {
       return None;
    }
 
