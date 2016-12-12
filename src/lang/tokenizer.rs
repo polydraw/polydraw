@@ -33,12 +33,14 @@ pub enum Token {
 pub type TokenResult = Option<(Token, usize)>;
 
 
-pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
+pub fn tokenize(string: &str) -> Result<Vec<Token>, String> {
    let mut tokens = Vec::new();
 
-   let original = source;
+   let chars_vec: Vec<char> = string.chars().collect();
 
-   let mut source = source;
+   let mut source: &[char] = &chars_vec;
+
+   let original = source;
 
    let mut consumed = 0;
 
@@ -103,7 +105,7 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
 }
 
 
-fn wrong_space_offset_error(source: &str, consumed: usize) -> String {
+fn wrong_space_offset_error(source: &[char], consumed: usize) -> String {
    let (_, line, column) = error_position(source, consumed);
 
    format!(
@@ -112,7 +114,7 @@ fn wrong_space_offset_error(source: &str, consumed: usize) -> String {
 }
 
 
-fn unrecognized_char_error(source: &str, consumed: usize) -> String {
+fn unrecognized_char_error(source: &[char], consumed: usize) -> String {
    let (error_ch, line, column) = error_position(source, consumed);
 
    format!(
@@ -121,12 +123,12 @@ fn unrecognized_char_error(source: &str, consumed: usize) -> String {
 }
 
 
-fn error_position(source: &str, consumed: usize) -> (char, usize, usize) {
+fn error_position(source: &[char], consumed: usize) -> (char, usize, usize) {
    let mut line = 1;
    let mut column = 1;
    let mut error_ch = ' ';
 
-   for (index, ch) in source.chars().enumerate() {
+   for (index, &ch) in source.iter().enumerate() {
       if consumed == index {
          error_ch = ch;
          break;
@@ -144,9 +146,9 @@ fn error_position(source: &str, consumed: usize) -> (char, usize, usize) {
 }
 
 
-fn consume_spaces(source: &str) -> usize {
-   for (index, ch) in source.chars().enumerate() {
-      if ch != ' ' {
+fn consume_spaces(source: &[char]) -> usize {
+   for (index, ch) in source.iter().enumerate() {
+      if *ch != ' ' {
          return index;
       }
    }
@@ -155,18 +157,18 @@ fn consume_spaces(source: &str) -> usize {
 }
 
 
-fn consume_comment(source: &str) -> usize {
+fn consume_comment(source: &[char]) -> usize {
    let mut end = 0;
 
-   let mut chars = source.chars();
+   let mut chars = source.iter();
 
    if let Some(ch) = chars.next() {
-      if ch == '#' {
+      if *ch == '#' {
          end += 1;
 
          loop {
             match chars.next() {
-               Some(ch) => match ch {
+               Some(ch) => match *ch {
                   '\n' => break,
                   _ => end += 1,
                },
@@ -180,7 +182,7 @@ fn consume_comment(source: &str) -> usize {
 }
 
 
-fn single_token(source: &str) -> TokenResult {
+fn single_token(source: &[char]) -> TokenResult {
    if let Some(result) = extract_name(source) {
       Some(result)
    } else if let Some(result) = extract_number(source) {
@@ -193,13 +195,13 @@ fn single_token(source: &str) -> TokenResult {
 }
 
 
-fn extract_name(source: &str) -> TokenResult {
+fn extract_name(source: &[char]) -> TokenResult {
    let mut end = 0;
 
-   let mut chars = source.chars();
+   let mut chars = source.iter();
 
    match chars.next() {
-      Some(ch) => match ch {
+      Some(ch) => match *ch {
          'a' ... 'z' | 'A' ... 'Z' | '$' => end += 1,
          _ => return None,
       },
@@ -208,7 +210,7 @@ fn extract_name(source: &str) -> TokenResult {
 
    loop {
       match chars.next() {
-         Some(ch) => match ch {
+         Some(ch) => match *ch {
             'a' ... 'z' | 'A' ... 'Z' | '0' ... '9' | '-' | '_' => end += 1,
             _ => break,
          },
@@ -216,27 +218,38 @@ fn extract_name(source: &str) -> TokenResult {
       }
    }
 
-   let name = &source[0..end];
+   let name = as_string(&source[0..end]);
 
-   let token = match name {
+   let token = match &name as &str {
       "true" => Token::True,
       "false" => Token::False,
-      _ => Token::Name(String::from(name)),
+      _ => Token::Name(name),
    };
 
    Some((token, end))
 }
 
 
-fn extract_symbol_token(source: &str) -> TokenResult {
-   let mut chars = source.chars();
+fn as_string(source: &[char]) -> String {
+   let mut result = String::with_capacity(source.len());
+
+   for ch in source.iter() {
+      result.push(*ch);
+   }
+
+   result
+}
+
+
+fn extract_symbol_token(source: &[char]) -> TokenResult {
+   let mut chars = source.iter();
 
    match chars.next() {
       Some(ch) => {
-         let token = match ch {
+         let token = match *ch {
             '\n' => Token::NewLine,
             '=' => match chars.next() {
-               Some(ch) => match ch {
+               Some(ch) => match *ch {
                   '=' => return Some((Token::Equal, 2)),
                   _ => Token::Assign,
                },
@@ -247,7 +260,7 @@ fn extract_symbol_token(source: &str) -> TokenResult {
             '*' => Token::Multiply,
             '/' => Token::Divide,
             '!' => match chars.next() {
-               Some(ch) => match ch {
+               Some(ch) => match *ch {
                   '=' => return Some((Token::Unequal, 2)),
                   _ => Token::Not,
                },
@@ -258,14 +271,14 @@ fn extract_symbol_token(source: &str) -> TokenResult {
             '[' => Token::BracketLeft,
             ']' => Token::BracketRight,
             '<' => match chars.next() {
-               Some(ch) => match ch {
+               Some(ch) => match *ch {
                   '=' => return Some((Token::LessEqual, 2)),
                   _ => Token::AngleBracketLeft,
                },
                None => Token::AngleBracketLeft,
             },
             '>' => match chars.next() {
-               Some(ch) => match ch {
+               Some(ch) => match *ch {
                   '=' => return Some((Token::GreaterEqual, 2)),
                   '>' => return Some((Token::Function, 2)),
                   _ => Token::AngleBracketRight,
@@ -274,7 +287,7 @@ fn extract_symbol_token(source: &str) -> TokenResult {
             },
             '@' => Token::Address,
             '.' => match chars.next() {
-               Some(ch) => match ch {
+               Some(ch) => match *ch {
                   '.' => return Some((Token::Range, 2)),
                   _ => return None,
                },
@@ -290,16 +303,16 @@ fn extract_symbol_token(source: &str) -> TokenResult {
 }
 
 
-fn extract_number(source: &str) -> TokenResult {
+fn extract_number(source: &[char]) -> TokenResult {
    let full_len = source.len();
 
    let mut end = 0;
 
-   let positive = match source.chars().next() {
+   let positive = match source.iter().next() {
       None => {
          return None;
       },
-      Some('-') => {
+      Some(&'-') => {
          end += 1;
          false
       },
@@ -313,8 +326,8 @@ fn extract_number(source: &str) -> TokenResult {
    let source = &source[end..];
    end = 0;
 
-   for ch in source.chars() {
-      if let Some(digit) = to_digit(ch) {
+   for ch in source.iter() {
+      if let Some(digit) = to_digit(*ch) {
          integral = 10 * integral + digit;
          end += 1;
       } else {
@@ -330,13 +343,13 @@ fn extract_number(source: &str) -> TokenResult {
 
    let len = source.len();
 
-   let mut chars = source.chars();
+   let mut chars = source.iter();
    let first = chars.next();
    let second = chars.next();
 
    let float = match (first, second) {
-      (Some('.'), Some(ch)) if ch != '.' => true,
-      (Some('.'), None) => true,
+      (Some(&'.'), Some(&ch)) if ch != '.' => true,
+      (Some(&'.'), None) => true,
       _ => false,
    };
 
@@ -360,8 +373,8 @@ fn extract_number(source: &str) -> TokenResult {
    let mut fractional = 0;
    let mut divisor = 1;
 
-   for ch in source.chars() {
-      if let Some(digit) = to_digit(ch) {
+   for ch in source.iter() {
+      if let Some(digit) = to_digit(*ch) {
          fractional = 10 * fractional + digit;
          divisor = 10 * divisor;
 
