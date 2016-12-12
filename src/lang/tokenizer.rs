@@ -64,6 +64,11 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
          tokens.push(Token::SpaceOffset);
       }
 
+      let taken = consume_comment(source);
+
+      consumed += taken;
+      source = &source[taken..];
+
       if let Some((token, taken)) = single_token(source) {
          consumed += taken;
          source = &source[taken..];
@@ -147,6 +152,31 @@ fn consume_spaces(source: &str) -> usize {
    }
 
    source.len()
+}
+
+
+fn consume_comment(source: &str) -> usize {
+   let mut end = 0;
+
+   let mut chars = source.chars();
+
+   if let Some(ch) = chars.next() {
+      if ch == '#' {
+         end += 1;
+
+         loop {
+            match chars.next() {
+               Some(ch) => match ch {
+                  '\n' => break,
+                  _ => end += 1,
+               },
+               None => break,
+            }
+         }
+      }
+   }
+
+   end
 }
 
 
