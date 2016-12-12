@@ -366,9 +366,9 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 
-   register_n_arg(&mut indices, &mut fn_list, "each", each);
-   register_n_arg(&mut indices, &mut fn_list, "each_with_last", each_with_last);
-   register_n_arg(&mut indices, &mut fn_list, "each_with_index", each_with_index);
+   register_2_arg(&mut indices, &mut fn_list, "each", (tyid_lst, tyid_fnp), each);
+   register_2_arg(&mut indices, &mut fn_list, "each_with_last", (tyid_lst, tyid_fnp), each_with_last);
+   register_2_arg(&mut indices, &mut fn_list, "each_with_index", (tyid_lst, tyid_fnp), each_with_index);
 
    (indices, fn_list)
 }
