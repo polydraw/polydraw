@@ -45,13 +45,6 @@ pub fn each(
    _: &FnRef
 ) -> Vec<ValuePtr> {
 
-   if arguments.len() < 2
-      || TypeId::of::<ValuePtrList>() != arguments[0].type_id
-      || TypeId::of::<FnRef>() != arguments[1].type_id {
-
-      return vecval!(Empty);
-   }
-
    let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
 
    let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
@@ -80,10 +73,7 @@ pub fn each_with_last(
    _: &FnRef
 ) -> Vec<ValuePtr> {
 
-   if arguments.len() < 3
-      || TypeId::of::<ValuePtrList>() != arguments[0].type_id
-      || TypeId::of::<FnRef>() != arguments[1].type_id {
-
+   if arguments.len() < 3 {
       return vecval!(Empty);
    }
 
@@ -126,13 +116,6 @@ pub fn each_with_index(
    executor: &Executor,
    _: &FnRef
 ) -> Vec<ValuePtr> {
-
-   if arguments.len() < 2
-      || TypeId::of::<ValuePtrList>() != arguments[0].type_id
-      || TypeId::of::<FnRef>() != arguments[1].type_id {
-
-      return vecval!(Empty);
-   }
 
    let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
 
