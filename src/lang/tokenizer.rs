@@ -285,7 +285,7 @@ fn extract_symbol_token(source: &[char]) -> TokenResult {
                },
                None => Token::AngleBracketRight,
             },
-            '@' => Token::Address,
+            '&' => Token::Address,
             '.' => match chars.next() {
                Some(ch) => match *ch {
                   '.' => return Some((Token::Range, 2)),
