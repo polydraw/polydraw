@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::usize;
 
 use super::super::data::Empty;
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
@@ -137,6 +138,72 @@ pub fn each_with_index(
       push_result!(result, values);
 
       drop_value_ptr(&index_value, executor.drop_registry);
+   }
+
+   vecval!(result)
+}
+
+
+pub fn zip(
+   arguments: &[&ValuePtr],
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
+   if arguments.len() == 0 {
+      return vecval!(Empty);
+   }
+
+   let mut lists = Vec::with_capacity(arguments.len());
+
+   let mut min_len = usize::MAX;
+
+   for value_ptr in arguments.iter() {
+      if TypeId::of::<ValuePtrList>() == value_ptr.type_id {
+         let list = value_ptr_as_ref!(value_ptr, ValuePtrList);
+
+         if list.len() < min_len {
+            min_len = list.len();
+         }
+
+         lists.push(list);
+      } else {
+         return vecval!(Empty);
+      }
+   }
+
+   let mut result: ValuePtrList = Vec::new();
+
+   for i in 0..min_len {
+      let mut inner: ValuePtrList = Vec::new();
+
+      for list in lists.iter() {
+         inner.push(
+            clone_value_ptr(&list[i], executor.clone_registry)
+         );
+      }
+
+      result.push(ValuePtr::new(inner));
+   }
+
+   vecval!(result)
+}
+
+
+pub fn range(
+   arguments: &[&ValuePtr],
+   _: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
+   let start = value_ptr_as_ref!(arguments[0], i64);
+
+   let end = value_ptr_as_ref!(arguments[1], i64);
+
+   let mut result = Vec::new();
+
+   for value in *start..*end {
+      result.push(ValuePtr::new(value));
    }
 
    vecval!(result)

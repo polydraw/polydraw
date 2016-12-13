@@ -36,7 +36,7 @@ use super::point::{
 };
 
 use super::list::{
-   list, list_call, each, each_with_last, each_with_index,
+   list, list_call, each, each_with_last, each_with_index, zip, range,
    list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
@@ -366,9 +366,13 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 
+   register_n_arg(&mut indices, &mut fn_list, "zip", zip);
+
    register_2_arg(&mut indices, &mut fn_list, "each", (tyid_lst, tyid_fnp), each);
    register_2_arg(&mut indices, &mut fn_list, "each_with_last", (tyid_lst, tyid_fnp), each_with_last);
    register_2_arg(&mut indices, &mut fn_list, "each_with_index", (tyid_lst, tyid_fnp), each_with_index);
+
+   register_2_arg(&mut indices, &mut fn_list, "range", (tyid_i64, tyid_i64), range);
 
    (indices, fn_list)
 }
