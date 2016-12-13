@@ -42,6 +42,11 @@ use super::list::{
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
 };
 
+use super::color::{
+   rgb_f64_f64_f64, rgb_i64_f64_f64, rgb_f64_i64_f64, rgb_f64_f64_i64,
+   rgb_i64_i64_f64, rgb_i64_f64_i64, rgb_f64_i64_i64, rgb_i64_i64_i64,
+};
+
 use super::functional::{
    call,
 };
@@ -360,6 +365,15 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_lst, tyid_lst), list_val_lst_lst);
 
    register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_lst, tyid_lst, tyid_lst), list_lst_lst_lst);
+
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_f64, tyid_f64), rgb_f64_f64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_f64, tyid_f64), rgb_i64_f64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_i64, tyid_f64), rgb_f64_i64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_f64, tyid_i64), rgb_f64_f64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_i64, tyid_f64), rgb_i64_i64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_f64, tyid_i64), rgb_i64_f64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_i64, tyid_i64), rgb_f64_i64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_i64, tyid_i64), rgb_i64_i64_i64);
 
    register_1_arg(&mut indices, &mut fn_list, "call", tyid_fnp, call);
    register_1_arg(&mut indices, &mut fn_list, "call", tyid_lst, list_call);

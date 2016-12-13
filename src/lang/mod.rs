@@ -16,6 +16,7 @@ mod environment;
 mod number;
 mod list;
 mod point;
+mod color;
 mod functional;
 
 mod renderer;

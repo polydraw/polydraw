@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::ptr;
 
-use super::super::data::{IntPoint, FloatPoint, Empty};
+use super::super::data::{IntPoint, FloatPoint, Empty, Rgb};
 use super::value_ptr::{ValuePtr, ValuePtrList};
 use super::compiler::FnRef;
 
@@ -55,6 +55,8 @@ drop_func!(drop_int_point, IntPoint);
 
 drop_func!(drop_float_point, FloatPoint);
 
+drop_func!(drop_rgb, Rgb);
+
 
 fn drop_value_ptr_list(arg: &ValuePtr, drop_registry: &DropRegistry) {
    let list = unsafe { *Box::from_raw(arg.data as *mut ValuePtrList) };
@@ -79,6 +81,7 @@ pub fn create_drop_registry() -> DropRegistry {
    drop_registry.insert(TypeId::of::<ValuePtrList>(), drop_value_ptr_list);
    drop_registry.insert(TypeId::of::<IntPoint>(), drop_int_point);
    drop_registry.insert(TypeId::of::<FloatPoint>(), drop_float_point);
+   drop_registry.insert(TypeId::of::<Rgb>(), drop_rgb);
 
    drop_registry
 }

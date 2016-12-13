@@ -1,7 +1,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use super::super::data::{IntPoint, FloatPoint, Empty};
+use super::super::data::{IntPoint, FloatPoint, Empty, Rgb};
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
 use super::compiler::FnRef;
 
@@ -53,6 +53,8 @@ debug_func!(debug_int_point, IntPoint);
 
 debug_func!(debug_float_point, FloatPoint);
 
+debug_func!(debug_rgb, Rgb);
+
 
 fn debug_value_ptr_list(arg: &ValuePtr, debug_registry: &DebugRegistry) -> String {
    let list = value_ptr_as_ref!(arg, ValuePtrList);
@@ -91,6 +93,7 @@ pub fn create_debug_registry() -> DebugRegistry {
    debug_registry.insert(TypeId::of::<ValuePtrList>(), debug_value_ptr_list);
    debug_registry.insert(TypeId::of::<IntPoint>(), debug_int_point);
    debug_registry.insert(TypeId::of::<FloatPoint>(), debug_float_point);
+   debug_registry.insert(TypeId::of::<Rgb>(), debug_rgb);
 
    debug_registry
 }
