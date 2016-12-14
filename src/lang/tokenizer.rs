@@ -2,6 +2,7 @@
 #[derive(PartialEq, Clone, Debug)]
 pub enum Token {
    Name(String),
+   String(String),
    Int(i64),
    Float(f64),
    NewLine,
@@ -183,7 +184,9 @@ fn consume_comment(source: &[char]) -> usize {
 
 
 fn single_token(source: &[char]) -> TokenResult {
-   if let Some(result) = extract_name(source) {
+   if let Some(result) = extract_string(source) {
+      Some(result)
+   } else if let Some(result) = extract_name(source) {
       Some(result)
    } else if let Some(result) = extract_number(source) {
       Some(result)
@@ -192,6 +195,53 @@ fn single_token(source: &[char]) -> TokenResult {
    } else {
       None
    }
+}
+
+
+fn extract_string(source: &[char]) -> TokenResult {
+   if source.len() < 2 {
+      return None;
+   }
+
+   if source[0] != '"' {
+      return None;
+   }
+
+   let source = &source[1..];
+   let mut end = 1;
+
+   let mut chars = source.iter();
+
+   let mut result = String::new();
+
+   loop {
+      end += 1;
+
+      match chars.next() {
+         Some(ch) => match *ch {
+            '\\' => {
+               match chars.next() {
+                  Some(ch) => match *ch {
+                     '\\' | '"' => result.push(*ch),
+                     _ => break,
+                  },
+                  None => break,
+               }
+
+               end += 1;
+            },
+            '"' => {
+               let token = Token::String(result);
+
+               return Some((token, end));
+            },
+            _ => result.push(*ch),
+         },
+         None => break,
+      }
+   }
+
+   None
 }
 
 

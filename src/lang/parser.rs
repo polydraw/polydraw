@@ -31,7 +31,7 @@ pub enum Value {
    Int(i64),
    Float(f64),
    Bool(bool),
-//   String(Box<String>),
+   String(Box<String>),
    List(Box<Vec<Value>>),
    Name(Box<String>),
    FunctionRef(Box<String>),
@@ -44,7 +44,7 @@ impl fmt::Debug for Value {
          &Value::Int(ref value) => write!(f, "{}", value),
          &Value::Float(ref value) => write!(f, "{}", value),
          &Value::Bool(ref value) => write!(f, "{}", value),
-//         &Value::String(ref value) => write!(f, "{:?}", value),
+         &Value::String(ref value) => write!(f, "{:?}", value),
          &Value::Call(ref value) => write!(f, "{:?}", value),
          &Value::FunctionRef(ref value) => write!(f, "@{}", value),
          &Value::Name(ref value) => write!(f, "{}", value),
@@ -575,6 +575,7 @@ fn match_single(tokens: &[Token]) -> Option<Value> {
    }
 
    let value = match &tokens[0] {
+      &Token::String(ref value) => Value::String(Box::new(value.clone())),
       &Token::Name(ref value) => Value::Name(Box::new(value.clone())),
       &Token::Int(ref value) => Value::Int(*value),
       &Token::Float(ref value) => Value::Float(*value),

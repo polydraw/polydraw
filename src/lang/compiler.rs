@@ -366,7 +366,7 @@ fn compile_value(
       &Value::Int(value) => push_const(consts, value),
       &Value::Float(value) => push_const(consts, value),
       &Value::Bool(value) => push_const(consts, value),
-//      &Value::String(ref value) => push_const(consts, value.clone()),
+      &Value::String(ref value) => push_const(consts, (**value).clone()),
       &Value::List(ref list) => {
          let mut list_args = Vec::new();
 
