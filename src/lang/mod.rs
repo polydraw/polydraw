@@ -15,9 +15,10 @@ mod environment;
 
 mod number;
 mod list;
+mod functional;
 mod point;
 mod color;
-mod functional;
+mod draw;
 
 mod renderer;
 

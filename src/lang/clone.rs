@@ -1,7 +1,10 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use super::super::data::{IntPoint, FloatPoint, Empty, Rgb};
+use draw::RGB;
+use devel::Poly;
+use data::{IntPoint, FloatPoint, Empty};
+
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
 use super::compiler::FnRef;
 
@@ -56,7 +59,9 @@ clone_func!(clone_int_point, IntPoint);
 
 clone_func!(clone_float_point, FloatPoint);
 
-clone_func!(clone_rgb, Rgb);
+clone_func!(clone_rgb, RGB);
+
+clone_func!(clone_poly, Poly);
 
 
 pub fn clone_value_ptr_list(arg: &ValuePtr, clone_registry: &CloneRegistry) -> ValuePtr {
@@ -86,7 +91,8 @@ pub fn create_clone_registry() -> CloneRegistry {
    clone_registry.insert(TypeId::of::<ValuePtrList>(), clone_value_ptr_list);
    clone_registry.insert(TypeId::of::<IntPoint>(), clone_int_point);
    clone_registry.insert(TypeId::of::<FloatPoint>(), clone_float_point);
-   clone_registry.insert(TypeId::of::<Rgb>(), clone_rgb);
+   clone_registry.insert(TypeId::of::<RGB>(), clone_rgb);
+   clone_registry.insert(TypeId::of::<Poly>(), clone_poly);
 
    clone_registry
 }

@@ -86,6 +86,10 @@ fn collect_polys(scene: &mut Scene, value_ptr: &ValuePtr) {
    if TypeId::of::<ValuePtrList>() == value_ptr.type_id {
       let list = value_ptr_as_ref!(value_ptr, ValuePtrList);
       collect_polys_from_list(scene, list);
+
+   } else if TypeId::of::<Poly>() == value_ptr.type_id {
+      let poly = value_ptr_as_ref!(value_ptr, Poly);
+      scene.push(Box::new(poly.clone()));
    }
 }
 
@@ -101,6 +105,22 @@ fn collect_polys_from_list(scene: &mut Scene, value_ptrs: &Vec<ValuePtr>) {
       let poly = Poly::new(vec![points], RGB::new(255, 255, 255));
 
       scene.push(Box::new(poly));
+
+   } else {
+      let poly_ty = TypeId::of::<Poly>();
+      let list_ty = TypeId::of::<ValuePtrList>();
+
+      for value_ptr in value_ptrs.iter() {
+         if value_ptr.type_id == list_ty {
+            let list = value_ptr_as_ref!(value_ptr, ValuePtrList);
+
+            collect_polys_from_list(scene, list);
+
+         } else if value_ptr.type_id == poly_ty {
+            let poly = value_ptr_as_ref!(value_ptr, Poly);
+            scene.push(Box::new(poly.clone()));
+         }
+      }
    }
 }
 

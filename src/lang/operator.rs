@@ -1,7 +1,8 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use super::super::data::{IntPoint, FloatPoint};
+use draw::RGB;
+use data::{IntPoint, FloatPoint};
 
 use super::compiler::{BuiltinIndices, FnRef};
 use super::value_ptr::{ValuePtr, ValuePtrList};
@@ -45,6 +46,10 @@ use super::list::{
 use super::color::{
    rgb_f64_f64_f64, rgb_i64_f64_f64, rgb_f64_i64_f64, rgb_f64_f64_i64,
    rgb_i64_i64_f64, rgb_i64_f64_i64, rgb_f64_i64_i64, rgb_i64_i64_i64,
+};
+
+use super::draw::{
+   solid_fill,
 };
 
 use super::functional::{
@@ -180,6 +185,7 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    let tyid_ipt = TypeId::of::<IntPoint>();
    let tyid_fpt = TypeId::of::<FloatPoint>();
    let tyid_fnp = TypeId::of::<FnRef>();
+   let tyid_rgb = TypeId::of::<RGB>();
 
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_i64, tyid_i64), add_i64_i64);
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_f64, tyid_f64), add_f64_f64);
@@ -374,6 +380,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_f64, tyid_i64), rgb_i64_f64_i64);
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_i64, tyid_i64), rgb_f64_i64_i64);
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_i64, tyid_i64), rgb_i64_i64_i64);
+
+   register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_rgb), solid_fill);
 
    register_1_arg(&mut indices, &mut fn_list, "call", tyid_fnp, call);
    register_1_arg(&mut indices, &mut fn_list, "call", tyid_lst, list_call);
