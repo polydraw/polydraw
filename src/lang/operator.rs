@@ -37,7 +37,7 @@ use super::point::{
 };
 
 use super::list::{
-   list, list_call, each, each_with_last, each_with_index, zip, range,
+   list, each, each_with_last, each_with_index, zip, range,
    list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
@@ -53,7 +53,7 @@ use super::draw::{
 };
 
 use super::functional::{
-   call,
+   call_fn_list, call_list_fn,
 };
 
 
@@ -149,7 +149,7 @@ macro_rules! define_register_func {
 }
 
 
-define_register_func!(register_1_arg, TypeId, HMA1R1);
+//define_register_func!(register_1_arg, TypeId, HMA1R1);
 
 define_register_func!(register_2_arg, (TypeId, TypeId), HMA2R1);
 
@@ -383,8 +383,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_rgb), solid_fill);
 
-   register_1_arg(&mut indices, &mut fn_list, "call", tyid_fnp, call);
-   register_1_arg(&mut indices, &mut fn_list, "call", tyid_lst, list_call);
+   register_2_arg(&mut indices, &mut fn_list, "call", (tyid_fnp, tyid_lst), call_fn_list);
+   register_2_arg(&mut indices, &mut fn_list, "call", (tyid_lst, tyid_fnp), call_list_fn);
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 

@@ -436,29 +436,3 @@ pub fn list_lst_lst_lst(
    vecval!(result)
 }
 
-
-pub fn list_call(
-   arguments: &[&ValuePtr],
-   executor: &Executor,
-   _: &FnRef
-) -> Vec<ValuePtr> {
-
-   let fn_refs = value_ptr_as_ref!(arguments[0], ValuePtrList);
-
-   let mut result = Vec::new();
-
-   for fn_ref_ptr in fn_refs.iter() {
-      if TypeId::of::<FnRef>() != fn_ref_ptr.type_id {
-         result.push(ValuePtr::new(Empty));
-         continue;
-      }
-
-      let fn_ref = value_ptr_as_ref!(fn_ref_ptr, FnRef);
-
-      let mut values = executor.execute_function(fn_ref, &arguments[1..]);
-
-      push_result!(result, values);
-   }
-
-   vecval!(result)
-}
