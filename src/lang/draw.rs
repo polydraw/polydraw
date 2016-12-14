@@ -61,7 +61,7 @@ fn extract_poly_points(list: &ValuePtrList, points: &mut Vec<Vec<IntPoint>>) -> 
             let point = value_ptr_as_ref!(value_ptr, IntPoint);
 
             inner_points.push(point.clone());
-         } else if TypeId::of::<IntPoint>() == value_ptr.type_id {
+         } else if TypeId::of::<FloatPoint>() == value_ptr.type_id {
             let point = value_ptr_as_ref!(value_ptr, FloatPoint);
 
             inner_points.push(point.as_int());
