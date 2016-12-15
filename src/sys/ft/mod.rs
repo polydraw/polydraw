@@ -317,7 +317,7 @@ impl CharPoints {
 
          for point in contour {
             let x = point.x + offset;
-            let y = -point.y;
+            let y = point.y;
 
             inner.push(FloatPoint::new(x, y));
          }

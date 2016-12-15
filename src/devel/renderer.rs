@@ -411,6 +411,7 @@ fn blend(v1: u16, v2: u16, a1: u16) -> u8 {
    ).wrapping_shr(8) as u8).wrapping_sub(1)
 }
 
+/*
 
 #[inline]
 fn write_to_surface(
@@ -438,6 +439,34 @@ fn write_to_surface(
          src_ptr = src_ptr.offset(bytes_width);
          dst_ptr = dst_ptr.offset(-bytes_width);
       }
+   }
+}
+
+*/
+
+#[inline]
+fn write_to_surface(
+   mut src_ptr: *const u8,
+   mut dst_ptr: *mut u8,
+   width: usize,
+   y: i64,
+   y_end: i64
+) {
+   let width = width as isize;
+   let y = y as isize;
+   let y_end = y_end as isize;
+   let bytes_width = width.wrapping_mul(4);
+   let offset = y.wrapping_mul(bytes_width);
+
+   unsafe {
+      src_ptr = src_ptr.offset(offset);
+      dst_ptr = dst_ptr.offset(offset);
+
+      ptr::copy_nonoverlapping(
+         src_ptr,
+         dst_ptr,
+         y_end.wrapping_sub(y).wrapping_mul(bytes_width) as usize
+      );
    }
 }
 
@@ -693,7 +722,6 @@ fn thread_rasterize(thread_rx: Receiver<ThreadInput>, thread_tx: Sender<usize>) 
                y,
                y_end,
                frame_width,
-               frame_height,
             } = input;
 
             let aliased_len = (frame_width as usize) * (SUBDIVISIONS_X2 as usize);
@@ -722,7 +750,6 @@ fn thread_rasterize(thread_rx: Receiver<ThreadInput>, thread_tx: Sender<usize>) 
                layer_ptr,
                frame_ptr,
                frame_width,
-               frame_height,
                y,
                y_end,
             );
@@ -749,7 +776,6 @@ struct RenderInput {
    y: i64,
    y_end: i64,
    frame_width: usize,
-   frame_height: usize,
 }
 
 unsafe impl Send for RenderInput {
@@ -915,7 +941,6 @@ impl Renderer for DevelRenderer {
                   y: y,
                   y_end: y_end,
                   frame_width: frame_width,
-                  frame_height: frame_height,
                }
             )
          ).unwrap();
