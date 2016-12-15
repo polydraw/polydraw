@@ -1,6 +1,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
+use sys::ft::Face;
 use draw::RGB;
 use data::{IntPoint, FloatPoint};
 
@@ -54,6 +55,10 @@ use super::draw::{
 
 use super::functional::{
    call_fn_list, call_list_fn,
+};
+
+use super::text::{
+   font_face, text_fce_str_f64, text_fce_str_i64,
 };
 
 
@@ -149,7 +154,7 @@ macro_rules! define_register_func {
 }
 
 
-//define_register_func!(register_1_arg, TypeId, HMA1R1);
+define_register_func!(register_1_arg, TypeId, HMA1R1);
 
 define_register_func!(register_2_arg, (TypeId, TypeId), HMA2R1);
 
@@ -186,6 +191,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    let tyid_fpt = TypeId::of::<FloatPoint>();
    let tyid_fnp = TypeId::of::<FnRef>();
    let tyid_rgb = TypeId::of::<RGB>();
+   let tyid_fce = TypeId::of::<Face>();
+   let tyid_str = TypeId::of::<String>();
 
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_i64, tyid_i64), add_i64_i64);
    register_2_arg(&mut indices, &mut fn_list, "add", (tyid_f64, tyid_f64), add_f64_f64);
@@ -380,6 +387,11 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_f64, tyid_i64), rgb_i64_f64_i64);
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_i64, tyid_i64), rgb_f64_i64_i64);
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_i64, tyid_i64), rgb_i64_i64_i64);
+
+   register_1_arg(&mut indices, &mut fn_list, "font_face", tyid_str, font_face);
+
+   register_3_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_f64), text_fce_str_f64);
+   register_3_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_i64), text_fce_str_i64);
 
    register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_rgb), solid_fill);
 

@@ -1,3 +1,5 @@
+use sys::ft::FreeType;
+
 use super::clone::{CloneRegistry, create_clone_registry};
 use super::drop::{DropRegistry, create_drop_registry, drop_value_ptr_vec};
 use super::debug::{DebugRegistry, create_debug_registry};
@@ -15,11 +17,14 @@ pub struct Environment {
    pub debug_registry: DebugRegistry,
    pub builtin_indices: BuiltinIndices,
    pub builtin_fns: FnList,
+   pub freetype: FreeType,
 }
 
 impl Environment {
    pub fn new() -> Self {
       let (builtin_indices, builtin_fns) = register_builtin_fns();
+
+      let freetype = FreeType::new();
 
       Environment {
          clone_registry: create_clone_registry(),
@@ -27,6 +32,7 @@ impl Environment {
          debug_registry: create_debug_registry(),
          builtin_indices: builtin_indices,
          builtin_fns: builtin_fns,
+         freetype: freetype,
       }
    }
 
@@ -42,6 +48,7 @@ impl Environment {
          &self.clone_registry,
          &self.drop_registry,
          &self.debug_registry,
+         &self.freetype,
       )
    }
 
@@ -57,6 +64,7 @@ impl Environment {
          &self.clone_registry,
          &self.drop_registry,
          &self.debug_registry,
+         &self.freetype,
       )
    }
 

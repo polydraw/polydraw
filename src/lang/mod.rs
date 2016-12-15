@@ -18,6 +18,7 @@ mod list;
 mod functional;
 mod point;
 mod color;
+mod text;
 mod draw;
 
 mod renderer;

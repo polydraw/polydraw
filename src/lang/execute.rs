@@ -1,7 +1,8 @@
 use std::mem;
 use std::any::TypeId;
 
-use super::super::data::Empty;
+use sys::ft::FreeType;
+use data::Empty;
 
 use super::compiler::{Program, CompiledFn, CallArgType, ArgTemplate, FnRef};
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
@@ -19,6 +20,7 @@ pub fn execute_program(
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
    debug_registry: &DebugRegistry,
+   freetype: &FreeType,
 ) -> Vec<ValuePtr> {
    let result = {
       let mut arg_refs = Vec::new();
@@ -34,6 +36,7 @@ pub fn execute_program(
          clone_registry,
          drop_registry,
          debug_registry,
+         freetype,
       );
 
       let fn_ref = FnRef::defined(program.main_index);
@@ -173,6 +176,7 @@ pub struct Executor<'a> {
    pub clone_registry: &'a CloneRegistry,
    pub drop_registry: &'a DropRegistry,
    pub debug_registry: &'a DebugRegistry,
+   pub freetype: &'a FreeType,
 }
 
 impl<'a> Executor<'a> {
@@ -183,6 +187,7 @@ impl<'a> Executor<'a> {
       clone_registry: &'a CloneRegistry,
       drop_registry: &'a DropRegistry,
       debug_registry: &'a DebugRegistry,
+      freetype: &'a FreeType,
    ) -> Self {
       Executor {
          compiled_fns: compiled_fns,
@@ -191,6 +196,7 @@ impl<'a> Executor<'a> {
          clone_registry: clone_registry,
          drop_registry: drop_registry,
          debug_registry: debug_registry,
+         freetype: freetype,
       }
    }
 

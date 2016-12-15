@@ -4,6 +4,8 @@ use std::iter::repeat;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
+use sys::ft::FreeType;
+
 use super::value_ptr::ValuePtr;
 use super::parser::{FnType, FnIndex, Argument, Function, Value};
 use super::operator::FnList;
@@ -192,6 +194,7 @@ pub fn compile_program (
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
    debug_registry: &DebugRegistry,
+   freetype: &FreeType,
 ) -> Result<Program, String> {
    let defined_indices = try!(map_defined_indices(&functions));
 
@@ -212,6 +215,7 @@ pub fn compile_program (
             clone_registry,
             drop_registry,
             debug_registry,
+            freetype,
          ))
       );
 
@@ -289,7 +293,9 @@ fn compile_function(
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
    debug_registry: &DebugRegistry,
+   freetype: &FreeType,
 ) -> Result<CompiledFn, String> {
+
    let span = defined_indices[&function.name as &str].span;
 
    let mut compiled_fn = CompiledFn::new(span, &function.arguments.arguments);
@@ -316,6 +322,7 @@ fn compile_function(
          clone_registry,
          drop_registry,
          debug_registry,
+         freetype,
       ));
 
       if span < assignment.names.len() {
@@ -361,6 +368,7 @@ fn compile_value(
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
    debug_registry: &DebugRegistry,
+   freetype: &FreeType,
 ) -> Result<(CallArg, usize), String> {
    match value {
       &Value::Int(value) => push_const(consts, value),
@@ -382,6 +390,7 @@ fn compile_value(
                clone_registry,
                drop_registry,
                debug_registry,
+               freetype,
             ));
 
             list_args.push(compiled);
@@ -429,6 +438,7 @@ fn compile_value(
                clone_registry,
                drop_registry,
                debug_registry,
+               freetype,
             ));
 
             if call_arg.arg_type != CallArgType::Const {
@@ -469,6 +479,7 @@ fn compile_value(
                      clone_registry,
                      drop_registry,
                      debug_registry,
+                     freetype,
                   );
 
                   let fn_ref = FnRef::builtin(fn_index.index);

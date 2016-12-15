@@ -2,6 +2,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::ptr;
 
+use sys::ft::Face;
 use draw::RGB;
 use devel::Poly;
 use data::{IntPoint, FloatPoint, Empty};
@@ -62,6 +63,8 @@ drop_func!(drop_rgb, RGB);
 
 drop_func!(drop_poly, Poly);
 
+drop_func!(drop_face, Face);
+
 
 fn drop_value_ptr_list(arg: &ValuePtr, drop_registry: &DropRegistry) {
    let list = unsafe { *Box::from_raw(arg.data as *mut ValuePtrList) };
@@ -88,6 +91,7 @@ pub fn create_drop_registry() -> DropRegistry {
    drop_registry.insert(TypeId::of::<FloatPoint>(), drop_float_point);
    drop_registry.insert(TypeId::of::<RGB>(), drop_rgb);
    drop_registry.insert(TypeId::of::<Poly>(), drop_poly);
+   drop_registry.insert(TypeId::of::<Face>(), drop_face);
 
    drop_registry
 }

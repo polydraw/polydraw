@@ -1,6 +1,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
+use sys::ft::Face;
 use draw::RGB;
 use devel::Poly;
 use data::{IntPoint, FloatPoint, Empty};
@@ -60,6 +61,8 @@ debug_func!(debug_rgb, RGB);
 
 debug_func!(debug_poly, Poly);
 
+debug_func!(debug_face, Face);
+
 
 fn debug_value_ptr_list(arg: &ValuePtr, debug_registry: &DebugRegistry) -> String {
    let list = value_ptr_as_ref!(arg, ValuePtrList);
@@ -100,6 +103,7 @@ pub fn create_debug_registry() -> DebugRegistry {
    debug_registry.insert(TypeId::of::<FloatPoint>(), debug_float_point);
    debug_registry.insert(TypeId::of::<RGB>(), debug_rgb);
    debug_registry.insert(TypeId::of::<Poly>(), debug_poly);
+   debug_registry.insert(TypeId::of::<Face>(), debug_face);
 
    debug_registry
 }

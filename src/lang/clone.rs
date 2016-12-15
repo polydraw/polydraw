@@ -1,6 +1,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
+use sys::ft::Face;
 use draw::RGB;
 use devel::Poly;
 use data::{IntPoint, FloatPoint, Empty};
@@ -63,6 +64,8 @@ clone_func!(clone_rgb, RGB);
 
 clone_func!(clone_poly, Poly);
 
+clone_func!(clone_face, Face);
+
 
 pub fn clone_value_ptr_list(arg: &ValuePtr, clone_registry: &CloneRegistry) -> ValuePtr {
    let mut list = Vec::new();
@@ -93,6 +96,7 @@ pub fn create_clone_registry() -> CloneRegistry {
    clone_registry.insert(TypeId::of::<FloatPoint>(), clone_float_point);
    clone_registry.insert(TypeId::of::<RGB>(), clone_rgb);
    clone_registry.insert(TypeId::of::<Poly>(), clone_poly);
+   clone_registry.insert(TypeId::of::<Face>(), clone_face);
 
    clone_registry
 }
