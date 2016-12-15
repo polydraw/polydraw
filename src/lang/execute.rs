@@ -63,7 +63,9 @@ pub fn execute_builtin_function(
       &TypeFnMap::HMA1R1(ref map) => {
          if args.len() < 1 {
             vecval!(Empty)
-         } else if let Some(func) = map.get(&args[0].type_id) {
+         } else if let Some(func) = map.get(
+            &args[0].type_id
+         ) {
             func(args, executor, fn_ref)
          } else {
             vecval!(Empty)
@@ -72,7 +74,9 @@ pub fn execute_builtin_function(
       &TypeFnMap::HMA2R1(ref map) => {
          if args.len() < 2 {
             vecval!(Empty)
-         } else if let Some(func) = map.get(&(args[0].type_id, args[1].type_id)) {
+         } else if let Some(func) = map.get(
+            &(args[0].type_id, args[1].type_id)
+         ) {
             func(args, executor, fn_ref)
          } else {
             vecval!(Empty)
@@ -81,7 +85,20 @@ pub fn execute_builtin_function(
       &TypeFnMap::HMA3R1(ref map) => {
          if args.len() < 3 {
             vecval!(Empty)
-         } else if let Some(func) = map.get(&(args[0].type_id, args[1].type_id, args[2].type_id)) {
+         } else if let Some(func) = map.get(
+            &(args[0].type_id, args[1].type_id, args[2].type_id)
+         ) {
+            func(args, executor, fn_ref)
+         } else {
+            vecval!(Empty)
+         }
+      },
+      &TypeFnMap::HMA4R1(ref map) => {
+         if args.len() < 4 {
+            vecval!(Empty)
+         } else if let Some(func) = map.get(
+            &(args[0].type_id, args[1].type_id, args[2].type_id, args[3].type_id)
+         ) {
             func(args, executor, fn_ref)
          } else {
             vecval!(Empty)

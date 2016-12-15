@@ -58,7 +58,8 @@ use super::functional::{
 };
 
 use super::text::{
-   font_face, text_fce_str_f64, text_fce_str_i64,
+   font_face, text_fce_str_f64_fpt, text_fce_str_i64_fpt, text_fce_str_f64_ipt,
+   text_fce_str_i64_ipt,
 };
 
 
@@ -70,11 +71,14 @@ type HMA2R1 = HashMap<(TypeId, TypeId), CALL>;
 
 type HMA3R1 = HashMap<(TypeId, TypeId, TypeId), CALL>;
 
+type HMA4R1 = HashMap<(TypeId, TypeId, TypeId, TypeId), CALL>;
+
 
 pub enum TypeFnMap {
    HMA1R1(HMA1R1),
    HMA2R1(HMA2R1),
    HMA3R1(HMA3R1),
+   HMA4R1(HMA4R1),
    CALL(CALL),
 }
 
@@ -111,6 +115,22 @@ macro_rules! wrap_3_arg {
                unsafe { ::std::mem::transmute(arguments[0].data) },
                unsafe { ::std::mem::transmute(arguments[1].data) },
                unsafe { ::std::mem::transmute(arguments[2].data) },
+            )
+         )
+      }
+   }
+}
+
+
+macro_rules! wrap_4_arg {
+   ($name:ident, $func:ident) => {
+      pub fn $name(arguments: &[&ValuePtr], _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
+         vecval!(
+            $func(
+               unsafe { ::std::mem::transmute(arguments[0].data) },
+               unsafe { ::std::mem::transmute(arguments[1].data) },
+               unsafe { ::std::mem::transmute(arguments[2].data) },
+               unsafe { ::std::mem::transmute(arguments[3].data) },
             )
          )
       }
@@ -159,6 +179,8 @@ define_register_func!(register_1_arg, TypeId, HMA1R1);
 define_register_func!(register_2_arg, (TypeId, TypeId), HMA2R1);
 
 define_register_func!(register_3_arg, (TypeId, TypeId, TypeId), HMA3R1);
+
+define_register_func!(register_4_arg, (TypeId, TypeId, TypeId, TypeId), HMA4R1);
 
 
 fn register_n_arg(
@@ -390,8 +412,10 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_1_arg(&mut indices, &mut fn_list, "font_face", tyid_str, font_face);
 
-   register_3_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_f64), text_fce_str_f64);
-   register_3_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_i64), text_fce_str_i64);
+   register_4_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_f64, tyid_fpt), text_fce_str_f64_fpt);
+   register_4_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_f64, tyid_ipt), text_fce_str_f64_ipt);
+   register_4_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_i64, tyid_fpt), text_fce_str_i64_fpt);
+   register_4_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_i64, tyid_ipt), text_fce_str_i64_ipt);
 
    register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_rgb), solid_fill);
 
