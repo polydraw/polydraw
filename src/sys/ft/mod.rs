@@ -2,13 +2,15 @@ pub mod ffi;
 
 use std::os::raw::{c_void, c_int};
 
+use std::fmt;
 use std::ptr;
 use std::ffi::CString;
 
-use data::{FloatPoint, IntPoint};
+use data::FloatPoint;
 
 use super::DynLibrary;
 use super::utils::fn_ptr::FnPtrLibrary;
+
 
 pub struct FreeType {
    pub dyn_lib: DynLibrary,
@@ -45,16 +47,16 @@ impl FreeType {
       DynLibrary::open("freetype.dll").unwrap()
    }
 
-   pub fn load_face(&self, name: &str) -> Face {
-      let cname = CString::new(name).unwrap();
+   pub fn load_face(&self, path: &str) -> Face {
+      let cpath = CString::new(path).unwrap();
 
       let mut ft_face: ffi::FT_Face = ptr::null_mut();
 
       unsafe {
-         ffi::FT_New_Face(self.ft_lib, cname.as_ptr() as *const _, 0, &mut ft_face);
+         ffi::FT_New_Face(self.ft_lib, cpath.as_ptr() as *const _, 0, &mut ft_face);
       }
 
-      Face::new(ft_face)
+      Face::new(ft_face, String::from(path))
    }
 }
 
@@ -63,6 +65,113 @@ impl Drop for FreeType {
       unsafe {
          ffi::FT_Done_FreeType(self.ft_lib);
       }
+   }
+}
+
+
+pub struct Face {
+   pub ft_face: ffi::FT_Face,
+   pub path: String,
+}
+
+impl Face {
+   pub fn new(ft_face: ffi::FT_Face, path: String) -> Self {
+      unsafe {
+         ffi::FT_Set_Pixel_Sizes(ft_face, 0, 2048);
+      }
+
+      Face {
+         ft_face: ft_face,
+         path: path,
+      }
+   }
+
+   pub fn text(&self, string: &str, steps: usize) -> Vec<Vec<Vec<FloatPoint>>> {
+      let funcs = ffi::FT_Outline_Funcs {
+         move_to: Some(move_to),
+         line_to: Some(line_to),
+         conic_to: Some(conic_to),
+         cubic_to: Some(cubic_to),
+         shift: 0,
+         delta: 0,
+      };
+
+      let mut result = Vec::new();
+
+      let mut offset = 0.0;
+
+      let mut previous_index = 0;
+
+      for ch in string.chars() {
+         let mut points: Box<CharPoints> = Box::new(CharPoints::new(steps));
+
+         unsafe {
+            ffi::FT_Load_Char(self.ft_face, ch as u32, ffi::FT_LOAD_DEFAULT);
+
+            let slot = (*self.ft_face).glyph as ffi::FT_GlyphSlot;
+
+            let current_index = ffi::FT_Get_Char_Index(self.ft_face, ch as u32);
+
+            if previous_index != 0 {
+               let mut delta = ffi::FT_Vector::default();
+
+               ffi::FT_Get_Kerning(
+                  self.ft_face,
+                  previous_index,
+                  current_index,
+                  ffi::FT_KERNING_DEFAULT,
+                  &mut delta
+               );
+
+               offset += delta.x as f64;
+            }
+
+            ffi::FT_Outline_Decompose(
+               &mut (*slot).outline,
+               &funcs,
+               &mut *points as *mut _ as *mut c_void
+            );
+
+            let contours = points.order_points(offset);
+
+            if contours.len() > 0 {
+               result.push(contours);
+            }
+
+            offset += (*slot).metrics.horiAdvance as f64;
+
+            previous_index = current_index;
+         }
+      }
+
+      result
+   }
+}
+
+impl Clone for Face {
+   fn clone(&self) -> Self {
+      unsafe {
+         ffi::FT_Reference_Face(self.ft_face);
+      }
+
+      Face {
+         ft_face: self.ft_face,
+         path: self.path.clone(),
+      }
+   }
+}
+
+impl Drop for Face {
+   fn drop (&mut self) {
+      unsafe {
+         ffi::FT_Done_Face(self.ft_face);
+      }
+   }
+}
+
+impl fmt::Debug for Face {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "font_face! {:?}", self.path)
    }
 }
 
@@ -200,17 +309,17 @@ impl CharPoints {
    }
 
    #[inline]
-   fn as_int_points(&self, offset: i64) -> Vec<Vec<IntPoint>> {
+   fn order_points(&self, offset: f64) -> Vec<Vec<FloatPoint>> {
       let mut outer = Vec::new();
 
       for contour in &self.points {
          let mut inner = Vec::new();
 
          for point in contour {
-            let x = (point.x + offset as f64).round() as i64;
-            let y = (-point.y).round() as i64;
+            let x = point.x + offset;
+            let y = -point.y;
 
-            inner.push(IntPoint::new(x, y));
+            inner.push(FloatPoint::new(x, y));
          }
 
          outer.push(inner);
@@ -228,82 +337,3 @@ fn on_segment(pt1: FloatPoint, pt2: FloatPoint, t1: f64, t2: f64) -> FloatPoint 
 
    FloatPoint::new(x, y)
 }
-
-
-pub struct Face {
-   pub ft_face: ffi::FT_Face,
-}
-
-impl Face {
-   pub fn new(ft_face: ffi::FT_Face) -> Self {
-      unsafe {
-         ffi::FT_Set_Pixel_Sizes(ft_face, 0, 2048);
-      }
-
-      Face {
-         ft_face: ft_face,
-      }
-   }
-
-   pub fn text(&self, string: &str, steps: usize) -> Vec<Vec<Vec<IntPoint>>> {
-      let funcs = ffi::FT_Outline_Funcs {
-         move_to: Some(move_to),
-         line_to: Some(line_to),
-         conic_to: Some(conic_to),
-         cubic_to: Some(cubic_to),
-         shift: 0,
-         delta: 0,
-      };
-
-      let mut result = Vec::new();
-
-      let mut offset = 0;
-
-      let mut previous_index = 0;
-
-      for ch in string.chars() {
-         let mut points: Box<CharPoints> = Box::new(CharPoints::new(steps));
-
-         unsafe {
-            ffi::FT_Load_Char(self.ft_face, ch as u32, ffi::FT_LOAD_DEFAULT);
-
-            let slot = (*self.ft_face).glyph as ffi::FT_GlyphSlot;
-
-            let current_index = ffi::FT_Get_Char_Index(self.ft_face, ch as u32);
-
-            if previous_index != 0 {
-               let mut delta = ffi::FT_Vector::default();
-
-               ffi::FT_Get_Kerning(
-                  self.ft_face,
-                  previous_index,
-                  current_index,
-                  ffi::FT_KERNING_DEFAULT,
-                  &mut delta
-               );
-
-               offset += delta.x as i64;
-            }
-
-            ffi::FT_Outline_Decompose(
-               &mut (*slot).outline,
-               &funcs,
-               &mut *points as *mut _ as *mut c_void
-            );
-
-            let contours = points.as_int_points(offset);
-
-            if contours.len() > 0 {
-               result.push(contours);
-            }
-
-            offset += (*slot).metrics.horiAdvance as i64;
-
-            previous_index = current_index;
-         }
-      }
-
-      result
-   }
-}
-

@@ -461,6 +461,7 @@ static mut FT_Outline_Decompose_Ptr:             FnPtr = NULL_PTR;
 static mut FT_Init_FreeType_Ptr:                 FnPtr = NULL_PTR;
 static mut FT_Done_FreeType_Ptr:                 FnPtr = NULL_PTR;
 static mut FT_New_Face_Ptr:                      FnPtr = NULL_PTR;
+static mut FT_Reference_Face_Ptr:                FnPtr = NULL_PTR;
 static mut FT_Done_Face_Ptr:                     FnPtr = NULL_PTR;
 static mut FT_Load_Char_Ptr:                     FnPtr = NULL_PTR;
 static mut FT_Set_Pixel_Sizes_Ptr:               FnPtr = NULL_PTR;
@@ -507,6 +508,15 @@ pub unsafe fn FT_New_Face(
    mem::transmute::<_, extern "system" fn(
       FT_Library, *const c_char, FT_Long, *mut FT_Face
    ) -> FT_Error>(FT_New_Face_Ptr)(library, filepathname, face_index, aface)
+}
+
+#[inline]
+pub unsafe fn FT_Reference_Face(
+   face: FT_Face
+) -> FT_Error {
+   mem::transmute::<_, extern "system" fn(
+      FT_Face
+   ) -> FT_Error>(FT_Reference_Face_Ptr)(face)
 }
 
 #[inline]
@@ -569,6 +579,7 @@ pub unsafe fn load_functions(loader: &FnPtrLoader) -> bool {
    FT_Init_FreeType_Ptr = loader.load("FT_Init_FreeType");
    FT_Done_FreeType_Ptr = loader.load("FT_Done_FreeType");
    FT_New_Face_Ptr = loader.load("FT_New_Face");
+   FT_Reference_Face_Ptr = loader.load("FT_Reference_Face");
    FT_Done_Face_Ptr = loader.load("FT_Done_Face");
    FT_Load_Char_Ptr = loader.load("FT_Load_Char");
    FT_Get_Char_Index_Ptr = loader.load("FT_Get_Char_Index");
