@@ -711,7 +711,10 @@ fn thread_rasterize(thread_rx: Receiver<ThreadInput>, thread_tx: Sender<usize>) 
    let mut aliased = Vec::new();
 
    loop {
-      let input = thread_rx.recv().unwrap();
+      let input = match thread_rx.recv() {
+         Ok(input) => input,
+         Err(_) => break,
+      };
 
       match input {
          ThreadInput::Render(input) => {
@@ -764,7 +767,9 @@ fn thread_rasterize(thread_rx: Receiver<ThreadInput>, thread_tx: Sender<usize>) 
          },
       }
 
-      thread_tx.send(0).unwrap();
+      if let Err(_) = thread_tx.send(0) {
+         break;
+      }
    }
 }
 
@@ -861,9 +866,10 @@ impl DevelRenderer {
    }
 
    #[inline]
+   #[allow(unused_must_use)]
    fn wait_threads(&self, splitter: &ZoneSplitter) {
       for _ in 0..splitter.zone_count {
-         self.channels.result_rx.recv().unwrap();
+         self.channels.result_rx.recv();
       }
    }
 }
@@ -932,7 +938,7 @@ impl Renderer for DevelRenderer {
 
          let y_end = splitter.zone_y_end(zone as i64);
 
-         render_tx.send(
+         if let Err(_) = render_tx.send(
             ThreadInput::Render(
                RenderInput {
                   zone_polys: zone_polys,
@@ -943,7 +949,9 @@ impl Renderer for DevelRenderer {
                   frame_width: frame_width,
                }
             )
-         ).unwrap();
+         ) {
+            return;
+         }
 
          y = y_end;
       }
