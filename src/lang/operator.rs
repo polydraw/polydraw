@@ -438,6 +438,7 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_4_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_i64, tyid_ipt), text_fce_str_i64_ipt);
 
    register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_rgb), solid_fill);
+   register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_lst), list_lst_lst);
 
    register_2_arg(&mut indices, &mut fn_list, "call", (tyid_lst, tyid_fnp), call_lst_fnp);
    register_2_arg(&mut indices, &mut fn_list, "call", (tyid_lst, tyid_lst), call_lst_lst);
