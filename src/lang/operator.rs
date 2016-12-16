@@ -410,6 +410,30 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_i64, tyid_i64), rgb_f64_i64_i64);
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_i64, tyid_i64), rgb_i64_i64_i64);
 
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_f64, tyid_f64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_i64, tyid_i64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_f64, tyid_i64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_i64, tyid_f64), list_lst_val_val);
+
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_lst, tyid_f64), list_val_lst_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_lst, tyid_i64), list_val_lst_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_lst, tyid_i64), list_val_lst_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_lst, tyid_f64), list_val_lst_val);
+
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_f64, tyid_lst), list_val_val_lst);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_i64, tyid_lst), list_val_val_lst);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_i64, tyid_lst), list_val_val_lst);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_f64, tyid_lst), list_val_val_lst);
+
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_lst, tyid_f64), list_lst_lst_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_lst, tyid_i64), list_lst_lst_val);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_f64, tyid_lst), list_lst_val_lst);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_i64, tyid_lst), list_lst_val_lst);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_lst, tyid_lst), list_val_lst_lst);
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_lst, tyid_lst), list_val_lst_lst);
+
+   register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_lst, tyid_lst, tyid_lst), list_lst_lst_lst);
+
    register_1_arg(&mut indices, &mut fn_list, "font_face", tyid_str, font_face);
 
    register_4_arg(&mut indices, &mut fn_list, "text", (tyid_fce, tyid_str, tyid_f64, tyid_fpt), text_fce_str_f64_fpt);
