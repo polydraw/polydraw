@@ -37,9 +37,9 @@ use super::point::{
    rotate_fpt_ipt_i64, rotate_ipt_ipt_i64,
 };
 
-use super::list::{
-   list, each, each_with_last, each_with_index, zip, range,
-   list_lst_val, list_val_lst, list_lst_lst,
+use super::functional::{
+   list, call_lst_fnp, call_lst_lst, each, each_with_last, each_with_index,
+   zip, range, list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
 };
@@ -51,10 +51,6 @@ use super::color::{
 
 use super::draw::{
    solid_fill,
-};
-
-use super::functional::{
-   call_fn_list, call_list_fn,
 };
 
 use super::text::{
@@ -443,8 +439,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_2_arg(&mut indices, &mut fn_list, "fill", (tyid_lst, tyid_rgb), solid_fill);
 
-   register_2_arg(&mut indices, &mut fn_list, "call", (tyid_fnp, tyid_lst), call_fn_list);
-   register_2_arg(&mut indices, &mut fn_list, "call", (tyid_lst, tyid_fnp), call_list_fn);
+   register_2_arg(&mut indices, &mut fn_list, "call", (tyid_lst, tyid_fnp), call_lst_fnp);
+   register_2_arg(&mut indices, &mut fn_list, "call", (tyid_lst, tyid_lst), call_lst_lst);
 
    register_n_arg(&mut indices, &mut fn_list, "list", list);
 
