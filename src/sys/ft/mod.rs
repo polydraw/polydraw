@@ -12,6 +12,14 @@ use super::DynLibrary;
 use super::utils::fn_ptr::FnPtrLibrary;
 
 
+#[derive(Debug)]
+pub enum TextAlign {
+   Left,
+   Center,
+   Right,
+}
+
+
 pub struct FreeType {
    pub dyn_lib: DynLibrary,
    pub ft_lib: ffi::FT_Library,
@@ -86,7 +94,10 @@ impl Face {
       }
    }
 
-   pub fn text(&self, string: &str, steps: usize) -> Vec<Vec<Vec<FloatPoint>>> {
+   pub fn text(
+      &self, string: &str, steps: usize, align: TextAlign
+   ) -> Vec<Vec<Vec<FloatPoint>>> {
+
       let funcs = ffi::FT_Outline_Funcs {
          move_to: Some(move_to),
          line_to: Some(line_to),
@@ -132,7 +143,7 @@ impl Face {
                &mut *points as *mut _ as *mut c_void
             );
 
-            let contours = points.order_points(offset);
+            let contours = points.with_offset(offset);
 
             if contours.len() > 0 {
                result.push(contours);
@@ -144,9 +155,27 @@ impl Face {
          }
       }
 
+      match align {
+         TextAlign::Left => {},
+         TextAlign::Center => offset_points(&mut result, -offset / 2.0),
+         TextAlign::Right => offset_points(&mut result, -offset),
+      }
+
       result
    }
 }
+
+
+fn offset_points(points: &mut Vec<Vec<Vec<FloatPoint>>>, offset: f64) {
+   for contours in points.iter_mut() {
+      for contour in contours.iter_mut() {
+         for point in contour.iter_mut() {
+            point.x += offset;
+         }
+      }
+   }
+}
+
 
 impl Clone for Face {
    fn clone(&self) -> Self {
@@ -309,7 +338,7 @@ impl CharPoints {
    }
 
    #[inline]
-   fn order_points(&self, offset: f64) -> Vec<Vec<FloatPoint>> {
+   fn with_offset(&self, offset: f64) -> Vec<Vec<FloatPoint>> {
       let mut outer = Vec::new();
 
       for contour in &self.points {

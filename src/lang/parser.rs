@@ -576,15 +576,24 @@ fn match_single(tokens: &[Token]) -> Option<Value> {
 
    let value = match &tokens[0] {
       &Token::String(ref value) => Value::String(Box::new(value.clone())),
-      &Token::Name(ref value) => Value::Name(Box::new(value.clone())),
+      &Token::Name(ref value) => name_value(value),
       &Token::Int(ref value) => Value::Int(*value),
       &Token::Float(ref value) => Value::Float(*value),
-      &Token::True => Value::Bool(true),
-      &Token::False => Value::Bool(false),
       _ => return None,
    };
 
    Some(value)
+}
+
+fn name_value(name: &String) -> Value {
+   match name as &str {
+      "True" => Value::Bool(true),
+      "False" => Value::Bool(false),
+      "ALIGN_LEFT" => Value::Int(0),
+      "ALIGN_CENTER" => Value::Int(1),
+      "ALIGN_RIGHT" => Value::Int(2),
+      _ => Value::Name(Box::new(name.clone())),
+   }
 }
 
 fn match_list(tokens: &[Token]) -> Option<Value> {

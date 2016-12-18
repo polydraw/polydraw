@@ -1,4 +1,4 @@
-use sys::ft::Face;
+use sys::ft::{Face, TextAlign};
 
 use data::{FloatPoint, IntPoint};
 
@@ -20,14 +20,89 @@ pub fn font_face(
 }
 
 
-fn text_fce_str_f64_fpt_(
-   face: &Face, string: &String, size: &f64, origin: &FloatPoint
+pub fn text_fce_str_f64_fpt(
+   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
+) -> Vec<ValuePtr> {
+   let face = value_ptr_as_ref!(arguments[0], Face);
+   let string = value_ptr_as_ref!(arguments[1], String);
+   let size = value_ptr_as_ref!(arguments[2], f64);
+   let origin = value_ptr_as_ref!(arguments[3], FloatPoint);
+   let text_align = alignment_argument(arguments);
+
+   text_fce_str_f64_fpt_(
+      face, string, size, origin, text_align,
+   )
+}
+
+
+pub fn text_fce_str_i64_fpt(
+   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
 ) -> ValuePtrList {
+   let face = value_ptr_as_ref!(arguments[0], Face);
+   let string = value_ptr_as_ref!(arguments[1], String);
+   let size = value_ptr_as_ref!(arguments[2], i64);
+   let origin = value_ptr_as_ref!(arguments[3], FloatPoint);
+   let text_align = alignment_argument(arguments);
+
+   text_fce_str_f64_fpt_(
+      face, string, &(*size as f64), origin, text_align
+   )
+}
+
+
+pub fn text_fce_str_f64_ipt(
+   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
+) -> ValuePtrList {
+   let face = value_ptr_as_ref!(arguments[0], Face);
+   let string = value_ptr_as_ref!(arguments[1], String);
+   let size = value_ptr_as_ref!(arguments[2], f64);
+   let origin = value_ptr_as_ref!(arguments[3], IntPoint);
+   let text_align = alignment_argument(arguments);
+
+   text_fce_str_f64_fpt_(
+      face, string, size, &origin.as_float(), text_align
+   )
+}
+
+
+pub fn text_fce_str_i64_ipt(
+   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
+) -> ValuePtrList {
+   let face = value_ptr_as_ref!(arguments[0], Face);
+   let string = value_ptr_as_ref!(arguments[1], String);
+   let size = value_ptr_as_ref!(arguments[2], i64);
+   let origin = value_ptr_as_ref!(arguments[3], IntPoint);
+   let text_align = alignment_argument(arguments);
+
+   text_fce_str_f64_fpt_(
+      face, string, &(*size as f64), &origin.as_float(), text_align
+   )
+}
+
+
+fn alignment_argument(arguments: &[&ValuePtr]) -> TextAlign {
+   if arguments.len() < 5 {
+      return TextAlign::Left;
+   }
+
+   let alignment = value_ptr_as_ref!(arguments[4], i64);
+
+   match *alignment {
+      1 => TextAlign::Center,
+      2 => TextAlign::Right,
+      _ => TextAlign::Left,
+   }
+}
+
+
+fn text_fce_str_f64_fpt_(
+   face: &Face, string: &String, size: &f64, origin: &FloatPoint, text_align: TextAlign
+) -> Vec<ValuePtr> {
 
    let capped_size = if *size <= 0.0 { 0.0000001 } else { *size };
    let scale = capped_size / (2048.0 * 64.0);
 
-   let text_contours = face.text(string, 20);
+   let text_contours = face.text(string, 20, text_align);
 
    let mut result = Vec::new();
 
@@ -51,31 +126,6 @@ fn text_fce_str_f64_fpt_(
       result.push(ValuePtr::new(char_outer));
    }
 
-   result
+   vecval!(result)
 }
-wrap_4_arg!(text_fce_str_f64_fpt, text_fce_str_f64_fpt_);
-
-
-fn text_fce_str_i64_fpt_(
-   face: &Face, string: &String, size: &i64, origin: &FloatPoint
-) -> ValuePtrList {
-   text_fce_str_f64_fpt_(face, string, &(*size as f64), origin)
-}
-wrap_4_arg!(text_fce_str_i64_fpt, text_fce_str_i64_fpt_);
-
-
-fn text_fce_str_f64_ipt_(
-   face: &Face, string: &String, size: &f64, origin: &IntPoint
-) -> ValuePtrList {
-   text_fce_str_f64_fpt_(face, string, size, &origin.as_float())
-}
-wrap_4_arg!(text_fce_str_f64_ipt, text_fce_str_f64_ipt_);
-
-
-fn text_fce_str_i64_ipt_(
-   face: &Face, string: &String, size: &i64, origin: &IntPoint
-) -> ValuePtrList {
-   text_fce_str_f64_fpt_(face, string, &(*size as f64), &origin.as_float())
-}
-wrap_4_arg!(text_fce_str_i64_ipt, text_fce_str_i64_ipt_);
 

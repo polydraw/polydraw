@@ -25,8 +25,6 @@ pub enum Token {
    Unequal,
    LessEqual,
    GreaterEqual,
-   True,
-   False,
    Range,
 }
 
@@ -270,13 +268,7 @@ fn extract_name(source: &[char]) -> TokenResult {
 
    let name = as_string(&source[0..end]);
 
-   let token = match &name as &str {
-      "true" => Token::True,
-      "false" => Token::False,
-      _ => Token::Name(name),
-   };
-
-   Some((token, end))
+   Some((Token::Name(name), end))
 }
 
 
