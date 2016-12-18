@@ -32,7 +32,7 @@ fn main() {
    let mut renderer = match LangRenderer::new(&source) {
       Ok(renderer) => renderer,
       Err(err) => {
-         println!("Error: {:?}", err);
+         println!("Error: {}", err);
          return;
       }
    };
