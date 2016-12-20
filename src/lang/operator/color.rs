@@ -1,9 +1,5 @@
 use draw::RGB;
 
-use super::value_ptr::ValuePtr;
-use super::compiler::FnRef;
-use super::execute::Executor;
-
 
 
 fn rgb_f64_f64_f64_(r: &f64, g: &f64, b: &f64) -> RGB {

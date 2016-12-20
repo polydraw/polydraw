@@ -1,7 +1,4 @@
-use super::super::data::{FloatPoint, IntPoint};
-use super::value_ptr::ValuePtr;
-use super::compiler::FnRef;
-use super::execute::Executor;
+use data::{FloatPoint, IntPoint};
 
 
 

@@ -1,3 +1,14 @@
+#[macro_use]
+mod macros;
+
+mod number;
+mod boolean;
+mod functional;
+mod point;
+mod color;
+mod text;
+mod draw;
+
 use std::any::TypeId;
 use std::collections::HashMap;
 
@@ -10,7 +21,7 @@ use super::value_ptr::{ValuePtr, ValuePtrList};
 use super::execute::Executor;
 use super::parser::FnIndex;
 
-use super::number::{
+use self::number::{
    add_i64_i64, add_f64_f64, add_i64_f64, add_f64_i64,
    multiply_i64_i64, multiply_f64_f64, multiply_i64_f64, multiply_f64_i64,
    subtract_i64_i64, subtract_f64_f64, subtract_i64_f64, subtract_f64_i64,
@@ -19,11 +30,11 @@ use super::number::{
    unequal_i64_i64, unequal_f64_f64, unequal_i64_f64, unequal_f64_i64,
 };
 
-use super::boolean::{
+use self::boolean::{
    equal_bln_bln, unequal_bln_bln,
 };
 
-use super::point::{
+use self::point::{
    point_f64_f64, point_f64_i64, point_i64_f64, point_i64_i64,
    add_ipt_ipt, add_fpt_fpt, add_ipt_fpt, add_fpt_ipt,
    add_ipt_i64, add_fpt_f64, add_ipt_f64, add_fpt_i64,
@@ -45,24 +56,24 @@ use super::point::{
    unequal_ipt_ipt, unequal_fpt_fpt, unequal_ipt_fpt, unequal_fpt_ipt,
 };
 
-use super::functional::{
+use self::functional::{
    list, call_lst_fnp, call_lst_lst, each, each_with_last, each_with_index,
    zip, range, list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
 };
 
-use super::color::{
+use self::color::{
    rgb_f64_f64_f64, rgb_i64_f64_f64, rgb_f64_i64_f64, rgb_f64_f64_i64,
    rgb_i64_i64_f64, rgb_i64_f64_i64, rgb_f64_i64_i64, rgb_i64_i64_i64,
    equal_rgb_rgb, unequal_rgb_rgb,
 };
 
-use super::draw::{
+use self::draw::{
    solid_fill,
 };
 
-use super::text::{
+use self::text::{
    font_face, text_fce_str_f64_fpt, text_fce_str_i64_fpt, text_fce_str_f64_ipt,
    text_fce_str_i64_ipt,
 };
@@ -89,58 +100,6 @@ pub enum TypeFnMap {
 
 
 pub type FnList = Vec<TypeFnMap>;
-
-
-macro_rules! vecval {
-   ($value:expr) => {
-      vec![ValuePtr::new($value)]
-   }
-}
-
-
-macro_rules! wrap_2_arg {
-   ($name:ident, $func:ident) => {
-      pub fn $name(arguments: &[&ValuePtr], _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
-         vecval!(
-            $func(
-               unsafe { ::std::mem::transmute(arguments[0].data) },
-               unsafe { ::std::mem::transmute(arguments[1].data) },
-            )
-         )
-      }
-   }
-}
-
-
-macro_rules! wrap_3_arg {
-   ($name:ident, $func:ident) => {
-      pub fn $name(arguments: &[&ValuePtr], _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
-         vecval!(
-            $func(
-               unsafe { ::std::mem::transmute(arguments[0].data) },
-               unsafe { ::std::mem::transmute(arguments[1].data) },
-               unsafe { ::std::mem::transmute(arguments[2].data) },
-            )
-         )
-      }
-   }
-}
-
-
-macro_rules! wrap_4_arg {
-   ($name:ident, $func:ident) => {
-      pub fn $name(arguments: &[&ValuePtr], _: &Executor, _: &FnRef) -> Vec<ValuePtr> {
-         vecval!(
-            $func(
-               unsafe { ::std::mem::transmute(arguments[0].data) },
-               unsafe { ::std::mem::transmute(arguments[1].data) },
-               unsafe { ::std::mem::transmute(arguments[2].data) },
-               unsafe { ::std::mem::transmute(arguments[3].data) },
-            )
-         )
-      }
-   }
-}
 
 
 macro_rules! define_register_func {

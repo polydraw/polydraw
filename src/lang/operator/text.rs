@@ -2,9 +2,9 @@ use sys::ft::{Face, TextAlign};
 
 use data::{FloatPoint, IntPoint};
 
-use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use super::compiler::FnRef;
-use super::execute::Executor;
+use lang::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
+use lang::compiler::FnRef;
+use lang::execute::Executor;
 
 
 pub fn font_face(

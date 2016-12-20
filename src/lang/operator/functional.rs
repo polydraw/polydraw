@@ -1,12 +1,13 @@
 use std::any::TypeId;
 use std::usize;
 
-use super::super::data::Empty;
-use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use super::clone::clone_value_ptr;
-use super::drop::drop_value_ptr;
-use super::execute::Executor;
-use super::compiler::FnRef;
+use data::Empty;
+
+use lang::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
+use lang::clone::clone_value_ptr;
+use lang::drop::drop_value_ptr;
+use lang::execute::Executor;
+use lang::compiler::FnRef;
 
 
 
