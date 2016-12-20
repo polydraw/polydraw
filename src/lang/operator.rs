@@ -55,6 +55,7 @@ use super::functional::{
 use super::color::{
    rgb_f64_f64_f64, rgb_i64_f64_f64, rgb_f64_i64_f64, rgb_f64_f64_i64,
    rgb_i64_i64_f64, rgb_i64_f64_i64, rgb_f64_i64_i64, rgb_i64_i64_i64,
+   equal_rgb_rgb, unequal_rgb_rgb,
 };
 
 use super::draw::{
@@ -373,6 +374,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_lst, tyid_lst), list_lst_lst);
 
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_rgb, tyid_rgb), equal_rgb_rgb);
+
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_bln, tyid_bln), unequal_bln_bln);
 
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_i64, tyid_i64), unequal_i64_i64);
@@ -396,6 +399,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_fpt, tyid_lst), list_val_lst);
 
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_lst, tyid_lst), list_lst_lst);
+
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_rgb, tyid_rgb), unequal_rgb_rgb);
 
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_i64, tyid_i64), point_i64_i64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_f64), point_f64_f64);

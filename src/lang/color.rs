@@ -53,3 +53,15 @@ fn rgb_i64_i64_i64_(r: &i64, g: &i64, b: &i64) -> RGB {
 }
 wrap_3_arg!(rgb_i64_i64_i64, rgb_i64_i64_i64_);
 
+
+fn equal_rgb_rgb_(a: &RGB, b: &RGB) -> bool {
+   *a == *b
+}
+wrap_2_arg!(equal_rgb_rgb, equal_rgb_rgb_);
+
+
+fn unequal_rgb_rgb_(a: &RGB, b: &RGB) -> bool {
+   *a != *b
+}
+wrap_2_arg!(unequal_rgb_rgb, unequal_rgb_rgb_);
+
