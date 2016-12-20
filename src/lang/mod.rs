@@ -14,6 +14,7 @@ mod execute;
 mod environment;
 
 mod number;
+mod boolean;
 mod functional;
 mod point;
 mod color;
