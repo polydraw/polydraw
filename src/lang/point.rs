@@ -291,6 +291,50 @@ wrap_2_arg!(divide_i64_fpt, divide_i64_fpt_);
 
 
 
+fn equal_ipt_ipt_(a: &IntPoint, b: &IntPoint) -> bool {
+   a == b
+}
+wrap_2_arg!(equal_ipt_ipt, equal_ipt_ipt_);
+
+fn equal_fpt_fpt_(a: &FloatPoint, b: &FloatPoint) -> bool {
+   a.x == b.x && a.y == b.y
+}
+wrap_2_arg!(equal_fpt_fpt, equal_fpt_fpt_);
+
+fn equal_ipt_fpt_(a: &IntPoint, b: &FloatPoint) -> bool {
+   a.x as f64 == b.x && a.y as f64 == b.y
+}
+wrap_2_arg!(equal_ipt_fpt, equal_ipt_fpt_);
+
+fn equal_fpt_ipt_(a: &FloatPoint, b: &IntPoint) -> bool {
+   a.x == b.x as f64 && a.y == b.y as f64
+}
+wrap_2_arg!(equal_fpt_ipt, equal_fpt_ipt_);
+
+
+
+fn unequal_ipt_ipt_(a: &IntPoint, b: &IntPoint) -> bool {
+   a != b
+}
+wrap_2_arg!(unequal_ipt_ipt, unequal_ipt_ipt_);
+
+fn unequal_fpt_fpt_(a: &FloatPoint, b: &FloatPoint) -> bool {
+   a.x != b.x || a.y != b.y
+}
+wrap_2_arg!(unequal_fpt_fpt, unequal_fpt_fpt_);
+
+fn unequal_ipt_fpt_(a: &IntPoint, b: &FloatPoint) -> bool {
+   a.x as f64 != b.x || a.y as f64 != b.y
+}
+wrap_2_arg!(unequal_ipt_fpt, unequal_ipt_fpt_);
+
+fn unequal_fpt_ipt_(a: &FloatPoint, b: &IntPoint) -> bool {
+   a.x != b.x as f64 || a.y != b.y as f64
+}
+wrap_2_arg!(unequal_fpt_ipt, unequal_fpt_ipt_);
+
+
+
 fn polar_f64_f64_(radius: &f64, angle: &f64) -> FloatPoint {
    let radians = angle.to_radians();
 

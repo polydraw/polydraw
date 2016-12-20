@@ -15,6 +15,8 @@ use super::number::{
    multiply_i64_i64, multiply_f64_f64, multiply_i64_f64, multiply_f64_i64,
    subtract_i64_i64, subtract_f64_f64, subtract_i64_f64, subtract_f64_i64,
    divide_i64_i64, divide_f64_f64, divide_i64_f64, divide_f64_i64,
+   equal_i64_i64, equal_f64_f64, equal_i64_f64, equal_f64_i64,
+   unequal_i64_i64, unequal_f64_f64, unequal_i64_f64, unequal_f64_i64,
 };
 
 use super::point::{
@@ -35,6 +37,8 @@ use super::point::{
    rotate_fpt_fpt_f64, rotate_ipt_fpt_f64, rotate_fpt_ipt_f64,
    rotate_fpt_fpt_i64, rotate_ipt_ipt_f64, rotate_ipt_fpt_i64,
    rotate_fpt_ipt_i64, rotate_ipt_ipt_i64,
+   equal_ipt_ipt, equal_fpt_fpt, equal_ipt_fpt, equal_fpt_ipt,
+   unequal_ipt_ipt, unequal_fpt_fpt, unequal_ipt_fpt, unequal_fpt_ipt,
 };
 
 use super::functional::{
@@ -339,6 +343,26 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
    register_2_arg(&mut indices, &mut fn_list, "divide", (tyid_fpt, tyid_lst), list_val_lst);
 
    register_2_arg(&mut indices, &mut fn_list, "divide", (tyid_lst, tyid_lst), list_lst_lst);
+
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_i64, tyid_i64), equal_i64_i64);
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_f64, tyid_f64), equal_f64_f64);
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_i64, tyid_f64), equal_i64_f64);
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_f64, tyid_i64), equal_f64_i64);
+
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_ipt, tyid_ipt), equal_ipt_ipt);
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_fpt, tyid_fpt), equal_fpt_fpt);
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_ipt, tyid_fpt), equal_ipt_fpt);
+   register_2_arg(&mut indices, &mut fn_list, "equal", (tyid_fpt, tyid_ipt), equal_fpt_ipt);
+
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_i64, tyid_i64), unequal_i64_i64);
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_f64, tyid_f64), unequal_f64_f64);
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_i64, tyid_f64), unequal_i64_f64);
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_f64, tyid_i64), unequal_f64_i64);
+
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_ipt, tyid_ipt), unequal_ipt_ipt);
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_fpt, tyid_fpt), unequal_fpt_fpt);
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_ipt, tyid_fpt), unequal_ipt_fpt);
+   register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_fpt, tyid_ipt), unequal_fpt_ipt);
 
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_i64, tyid_i64), point_i64_i64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_f64), point_f64_f64);
