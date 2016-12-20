@@ -587,8 +587,8 @@ fn match_single(tokens: &[Token]) -> Option<Value> {
 
 fn name_value(name: &String) -> Value {
    match name as &str {
-      "True" => Value::Bool(true),
-      "False" => Value::Bool(false),
+      "true" => Value::Bool(true),
+      "false" => Value::Bool(false),
       "ALIGN_LEFT" => Value::Int(0),
       "ALIGN_CENTER" => Value::Int(1),
       "ALIGN_RIGHT" => Value::Int(2),
