@@ -4,7 +4,7 @@ use super::clone::{CloneRegistry, create_clone_registry};
 use super::drop::{DropRegistry, create_drop_registry, drop_value_ptr_vec};
 use super::debug::{DebugRegistry, create_debug_registry};
 use super::compiler::{BuiltinIndices, Program, compile_program};
-use super::operator::{FnList, register_builtin_fns};
+use super::operator::{BuiltinFns, register_builtin_fns};
 use super::value_ptr::ValuePtr;
 use super::tokenizer::tokenize;
 use super::parser::parse;
@@ -16,7 +16,7 @@ pub struct Environment {
    pub drop_registry: DropRegistry,
    pub debug_registry: DebugRegistry,
    pub builtin_indices: BuiltinIndices,
-   pub builtin_fns: FnList,
+   pub builtin_fns: BuiltinFns,
    pub freetype: FreeType,
 }
 

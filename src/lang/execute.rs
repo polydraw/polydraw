@@ -6,7 +6,7 @@ use data::Empty;
 
 use super::compiler::{Program, CompiledFn, CallArgType, ArgTemplate, FnRef};
 use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use super::operator::{FnList, TypeFnMap};
+use super::operator::{BuiltinFns, TypeFnMap};
 use super::clone::{CloneRegistry, clone_value_ptr};
 use super::drop::{DropRegistry, drop_value_ptr_vec};
 use super::debug::DebugRegistry;
@@ -16,7 +16,7 @@ use super::parser::FnType;
 pub fn execute_program(
    program: &Program,
    arguments: Vec<ValuePtr>,
-   builtin_fns: &FnList,
+   builtin_fns: &BuiltinFns,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
    debug_registry: &DebugRegistry,
@@ -59,7 +59,7 @@ pub fn execute_builtin_function(
    args: &[&ValuePtr],
    executor: &Executor,
 ) -> Vec<ValuePtr> {
-   match &executor.builtin_fns[fn_ref.index] {
+   match &executor.builtin_fns.fn_list[fn_ref.index] {
       &TypeFnMap::HMA1R1(ref map) => {
          if args.len() < 1 {
             vecval!(Empty)
@@ -188,7 +188,7 @@ fn execute_compiled_function(
 
 pub struct Executor<'a> {
    pub compiled_fns: &'a Vec<CompiledFn>,
-   pub builtin_fns: &'a FnList,
+   pub builtin_fns: &'a BuiltinFns,
    pub consts: &'a Vec<ValuePtr>,
    pub clone_registry: &'a CloneRegistry,
    pub drop_registry: &'a DropRegistry,
@@ -199,7 +199,7 @@ pub struct Executor<'a> {
 impl<'a> Executor<'a> {
    pub fn new(
       compiled_fns: &'a Vec<CompiledFn>,
-      builtin_fns: &'a FnList,
+      builtin_fns: &'a BuiltinFns,
       consts: &'a Vec<ValuePtr>,
       clone_registry: &'a CloneRegistry,
       drop_registry: &'a DropRegistry,

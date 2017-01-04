@@ -482,3 +482,154 @@ pub fn list_lst_lst_lst(
    vecval!(result)
 }
 
+
+pub fn all(
+   arguments: &[&ValuePtr],
+   executor: &Executor,
+   fn_ref: &FnRef
+) -> Vec<ValuePtr> {
+   if arguments.len() < 2 {
+      return all_true(arguments, executor, fn_ref);
+   }
+
+   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+
+   for value_ptr in list.iter() {
+      let call_arguments = vec![value_ptr, arguments[1]];
+
+      let mut values = executor.execute_function(
+         &executor.builtin_fns.equal_ref,
+         &call_arguments
+      );
+
+      let result = values.remove(0);
+
+      let is_true = is_true(&result);
+
+      drop_value_ptr(&result, executor.drop_registry);
+
+      if !is_true {
+         return vecval!(false);
+      }
+   }
+
+   vecval!(true)
+}
+
+
+pub fn all_true(
+   arguments: &[&ValuePtr],
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
+   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+
+   let true_value = ValuePtr::new(true);
+
+   for value_ptr in list.iter() {
+      let call_arguments = vec![value_ptr, &true_value];
+
+      let mut values = executor.execute_function(
+         &executor.builtin_fns.equal_ref,
+         &call_arguments
+      );
+
+      let result = values.remove(0);
+
+      let is_true = is_true(&result);
+
+      drop_value_ptr(&result, executor.drop_registry);
+
+      if !is_true {
+         drop_value_ptr(&true_value, executor.drop_registry);
+
+         return vecval!(false);
+      }
+   }
+
+   drop_value_ptr(&true_value, executor.drop_registry);
+
+   vecval!(true)
+}
+
+
+pub fn any(
+   arguments: &[&ValuePtr],
+   executor: &Executor,
+   fn_ref: &FnRef
+) -> Vec<ValuePtr> {
+   if arguments.len() < 2 {
+      return any_true(arguments, executor, fn_ref);
+   }
+
+   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+
+   for value_ptr in list.iter() {
+      let call_arguments = vec![value_ptr, arguments[1]];
+
+      let mut values = executor.execute_function(
+         &executor.builtin_fns.equal_ref,
+         &call_arguments
+      );
+
+      let result = values.remove(0);
+
+      let is_true = is_true(&result);
+
+      drop_value_ptr(&result, executor.drop_registry);
+
+      if is_true {
+         return vecval!(true);
+      }
+   }
+
+   vecval!(false)
+}
+
+
+pub fn any_true(
+   arguments: &[&ValuePtr],
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
+   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+
+   let true_value = ValuePtr::new(true);
+
+   for value_ptr in list.iter() {
+      let call_arguments = vec![value_ptr, &true_value];
+
+      let mut values = executor.execute_function(
+         &executor.builtin_fns.equal_ref,
+         &call_arguments
+      );
+
+      let result = values.remove(0);
+
+      let is_true = is_true(&result);
+
+      drop_value_ptr(&result, executor.drop_registry);
+
+      if is_true {
+         drop_value_ptr(&true_value, executor.drop_registry);
+
+         return vecval!(true);
+      }
+   }
+
+   drop_value_ptr(&true_value, executor.drop_registry);
+
+   vecval!(false)
+}
+
+
+fn is_true(value_ptr: &ValuePtr) -> bool {
+   if value_ptr.type_id == TypeId::of::<bool>() {
+      *value_ptr_as_ref!(value_ptr, bool)
+   } else {
+      false
+   }
+}
+

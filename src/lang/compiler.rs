@@ -8,7 +8,7 @@ use sys::ft::FreeType;
 
 use super::value_ptr::ValuePtr;
 use super::parser::{FnType, FnIndex, Argument, Function, Value};
-use super::operator::FnList;
+use super::operator::BuiltinFns;
 use super::clone::CloneRegistry;
 use super::drop::DropRegistry;
 use super::debug::DebugRegistry;
@@ -190,7 +190,7 @@ impl Program {
 pub fn compile_program (
    functions: &Vec<Function>,
    builtin_indices: &BuiltinIndices,
-   builtin_fns: &FnList,
+   builtin_fns: &BuiltinFns,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
    debug_registry: &DebugRegistry,
@@ -288,7 +288,7 @@ fn compile_function(
    function: &Function,
    consts: &mut Vec<ValuePtr>,
    builtin_indices: &BuiltinIndices,
-   builtin_fns: &FnList,
+   builtin_fns: &BuiltinFns,
    defined_indices: &DefinedIndices,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,
@@ -363,7 +363,7 @@ fn compile_value(
    value: &Value,
    consts: &mut Vec<ValuePtr>,
    builtin_indices: &BuiltinIndices,
-   builtin_fns: &FnList,
+   builtin_fns: &BuiltinFns,
    defined_indices: &DefinedIndices,
    clone_registry: &CloneRegistry,
    drop_registry: &DropRegistry,

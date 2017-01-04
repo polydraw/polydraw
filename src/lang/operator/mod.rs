@@ -58,7 +58,7 @@ use self::point::{
 
 use self::functional::{
    list, call_lst_fnp, call_lst_lst, each, each_with_last, each_with_index,
-   zip, range, list_lst_val, list_val_lst, list_lst_lst,
+   zip, range, all, any, list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
 };
@@ -100,6 +100,12 @@ pub enum TypeFnMap {
 
 
 pub type FnList = Vec<TypeFnMap>;
+
+
+pub struct BuiltinFns {
+   pub fn_list: FnList,
+   pub equal_ref: FnRef,
+}
 
 
 macro_rules! define_register_func {
@@ -165,7 +171,7 @@ fn register_n_arg(
 }
 
 
-pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
+pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
    let mut indices = BuiltinIndices::new();
 
    let mut fn_list = FnList::new();
@@ -361,6 +367,10 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_rgb, tyid_rgb), unequal_rgb_rgb);
 
+   register_1_arg(&mut indices, &mut fn_list, "all", tyid_lst, all);
+
+   register_1_arg(&mut indices, &mut fn_list, "any", tyid_lst, any);
+
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_i64, tyid_i64), point_i64_i64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_f64, tyid_f64), point_f64_f64);
    register_2_arg(&mut indices, &mut fn_list, "point", (tyid_i64, tyid_f64), point_i64_f64);
@@ -474,6 +484,13 @@ pub fn register_builtin_fns() -> (BuiltinIndices, FnList) {
 
    register_2_arg(&mut indices, &mut fn_list, "range", (tyid_i64, tyid_i64), range);
 
-   (indices, fn_list)
+   let equal_ref = FnRef::builtin(indices.get("equal").unwrap().index);
+
+   let fns = BuiltinFns {
+      fn_list: fn_list,
+      equal_ref: equal_ref,
+   };
+
+   (indices, fns)
 }
 
