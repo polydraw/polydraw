@@ -7,6 +7,24 @@ macro_rules! vecval {
 }
 
 
+macro_rules! wrap_1_arg {
+   ($name:ident, $func:ident) => {
+      pub fn $name(
+         arguments: &[&::lang::value_ptr::ValuePtr],
+         _: &::lang::execute::Executor,
+         _: &::lang::compiler::FnRef
+      ) -> Vec<::lang::value_ptr::ValuePtr> {
+
+         vecval!(
+            $func(
+               unsafe { ::std::mem::transmute(arguments[0].data) },
+            )
+         )
+      }
+   }
+}
+
+
 macro_rules! wrap_2_arg {
    ($name:ident, $func:ident) => {
       pub fn $name(

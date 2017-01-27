@@ -8,6 +8,7 @@ mod point;
 mod color;
 mod text;
 mod draw;
+mod svg;
 
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -77,6 +78,8 @@ use self::text::{
    font_face, text_fce_str_f64_fpt, text_fce_str_i64_fpt, text_fce_str_f64_ipt,
    text_fce_str_i64_ipt,
 };
+
+use self::svg::svg_path;
 
 
 type CALL = fn(&[&ValuePtr], &Executor, &FnRef) -> Vec<ValuePtr>;
@@ -483,6 +486,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
    register_2_arg(&mut indices, &mut fn_list, "each_with_index", (tyid_lst, tyid_fnp), each_with_index);
 
    register_2_arg(&mut indices, &mut fn_list, "range", (tyid_i64, tyid_i64), range);
+
+   register_1_arg(&mut indices, &mut fn_list, "svg_path", tyid_str, svg_path);
 
    let equal_ref = FnRef::builtin(indices.get("equal").unwrap().index);
 

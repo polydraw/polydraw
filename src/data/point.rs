@@ -1,6 +1,6 @@
 use std::fmt;
 use std::cmp::{PartialOrd, Ordering};
-use std::ops::{Mul, MulAssign};
+use std::ops::{Mul, MulAssign, Add, Sub, Div};
 
 
 macro_rules! point_struct {
@@ -35,14 +35,26 @@ macro_rules! point_struct {
           }
       }
 
-      impl Mul<$point_ty> for $name {
+      impl Add<$name> for $name {
          type Output = $name;
 
          #[inline]
-         fn mul(self, val: $point_ty) -> $name {
+         fn add(self, val: $name) -> $name {
             $name {
-               x: self.x * val,
-               y: self.y * val,
+               x: self.x + val.x,
+               y: self.y + val.y,
+            }
+         }
+      }
+
+      impl Sub<$name> for $name {
+         type Output = $name;
+
+         #[inline]
+         fn sub(self, val: $name) -> $name {
+            $name {
+               x: self.x - val.x,
+               y: self.y - val.y,
             }
          }
       }
@@ -62,6 +74,84 @@ point_struct!(FloatPoint, f64, Clone, Copy, Default);
 impl PartialOrd for IntPoint {
    fn partial_cmp(&self, other: &IntPoint) -> Option<Ordering> {
       Some(self.cmp(other))
+   }
+}
+
+
+impl Mul<i64> for IntPoint {
+   type Output = IntPoint;
+
+   #[inline]
+   fn mul(self, val: i64) -> IntPoint {
+      IntPoint {
+         x: self.x * val,
+         y: self.y * val,
+      }
+   }
+}
+
+
+impl Div<i64> for IntPoint {
+   type Output = IntPoint;
+
+   #[inline]
+   fn div(self, val: i64) -> IntPoint {
+      IntPoint {
+         x: self.x / val,
+         y: self.y / val,
+      }
+   }
+}
+
+
+impl Mul<f64> for FloatPoint {
+   type Output = FloatPoint;
+
+   #[inline]
+   fn mul(self, val: f64) -> FloatPoint {
+      FloatPoint {
+         x: self.x * val,
+         y: self.y * val,
+      }
+   }
+}
+
+
+impl Div<f64> for FloatPoint {
+   type Output = FloatPoint;
+
+   #[inline]
+   fn div(self, val: f64) -> FloatPoint {
+      FloatPoint {
+         x: self.x / val,
+         y: self.y / val,
+      }
+   }
+}
+
+
+impl Mul<i64> for FloatPoint {
+   type Output = FloatPoint;
+
+   #[inline]
+   fn mul(self, val: i64) -> FloatPoint {
+      FloatPoint {
+         x: self.x * val as f64,
+         y: self.y * val as f64,
+      }
+   }
+}
+
+
+impl Div<i64> for FloatPoint {
+   type Output = FloatPoint;
+
+   #[inline]
+   fn div(self, val: i64) -> FloatPoint {
+      FloatPoint {
+         x: self.x / val as f64,
+         y: self.y / val as f64,
+      }
    }
 }
 
