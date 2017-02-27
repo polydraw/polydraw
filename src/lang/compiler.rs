@@ -3,10 +3,11 @@ use std::cmp::max;
 use std::iter::repeat;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::any::TypeId;
 
 use sys::ft::FreeType;
 
-use super::value_ptr::ValuePtr;
+use super::value_ptr::{ValuePtr, VoidPtr};
 use super::parser::{FnType, FnIndex, Argument, Function, Value};
 use super::operator::BuiltinFns;
 use super::clone::CloneRegistry;
@@ -375,38 +376,6 @@ fn compile_value(
       &Value::Float(value) => push_const(consts, value),
       &Value::Bool(value) => push_const(consts, value),
       &Value::String(ref value) => push_const(consts, (**value).clone()),
-      &Value::List(ref list) => {
-         let mut list_args = Vec::new();
-
-         for value in list.iter() {
-            let (compiled, _) = try!(compile_value(
-               compiled_fn,
-               variable_map,
-               value,
-               consts,
-               builtin_indices,
-               builtin_fns,
-               defined_indices,
-               clone_registry,
-               drop_registry,
-               debug_registry,
-               freetype,
-            ));
-
-            list_args.push(compiled);
-         }
-
-         let fn_index = builtin_indices.get("list").unwrap().clone();
-
-         let target = compiled_fn.stack_size;
-
-         compiled_fn.stack_size += fn_index.span;
-         compiled_fn.exec_lane.push(
-            ExecFn::builtin(fn_index.clone(), list_args, target)
-         );
-
-         Ok((CallArg::variable(target), fn_index.span))
-      },
       &Value::Name(ref name) => {
          Ok(((*variable_map.get(name as &str).unwrap()).clone(), 1))
       },
@@ -441,7 +410,9 @@ fn compile_value(
                freetype,
             ));
 
-            if call_arg.arg_type != CallArgType::Const {
+            if call_arg.arg_type != CallArgType::Const
+               || is_defined_fn_ref(&consts[call_arg.index]) {
+
                consts_only = false;
             }
 
@@ -515,6 +486,17 @@ fn compile_value(
          }
       },
    }
+}
+
+fn is_defined_fn_ref(value_ptr: &ValuePtr) -> bool {
+   let tyid_fnp = TypeId::of::<FnRef>();
+
+   if value_ptr.type_id == tyid_fnp {
+      let fn_ref = value_ptr_as_ref!(value_ptr, FnRef);
+      return fn_ref.fn_type == FnType::Defined;
+   }
+
+   false
 }
 
 fn push_const<T: 'static>(
@@ -607,11 +589,6 @@ fn connect_assignments(
       },
       &Value::Call(ref call) => {
          for value in call.arguments.iter() {
-            try!(connect_assignments(function, connections, value, target, &names_map));
-         }
-      },
-      &Value::List(ref list) => {
-         for value in list.iter() {
             try!(connect_assignments(function, connections, value, target, &names_map));
          }
       },

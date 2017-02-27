@@ -3,7 +3,7 @@ use std::fmt;
 use super::tokenizer::Token;
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FnType {
    Builtin,
    Defined,
@@ -32,7 +32,6 @@ pub enum Value {
    Float(f64),
    Bool(bool),
    String(Box<String>),
-   List(Box<Vec<Value>>),
    Name(Box<String>),
    FunctionRef(Box<String>),
    Call(Box<FunctionCall>),
@@ -48,7 +47,6 @@ impl fmt::Debug for Value {
          &Value::Call(ref value) => write!(f, "{:?}", value),
          &Value::FunctionRef(ref value) => write!(f, "@{}", value),
          &Value::Name(ref value) => write!(f, "{}", value),
-         &Value::List(ref value) => write!(f, "{:?}", value),
       }
    }
 }
@@ -612,7 +610,7 @@ fn match_list(tokens: &[Token]) -> Option<Value> {
    let tokens = &tokens[1..tokens.len() - 1];
 
    if let Some(contents) = match_sequence_contents(tokens) {
-      Some(Value::List(Box::new(contents)))
+      Some(list_def_from_contents(contents))
    } else {
       None
    }
@@ -703,7 +701,7 @@ fn try_list_item(tokens: &[Token]) -> Option<(Value, usize)> {
       let tokens = &tokens[1..end];
 
       if let Some(contents) = match_sequence_contents(tokens) {
-         return Some((Value::List(Box::new(contents)), end + 1));
+         return Some((list_def_from_contents(contents), end + 1));
       }
 
       return None;
@@ -771,6 +769,10 @@ fn point_def_from_contents(mut contents: Vec<Value>) -> Option<Value> {
 
       Some(binary_call("point", x, y))
    }
+}
+
+fn list_def_from_contents(contents: Vec<Value>) -> Value {
+   Value::Call(Box::new(FunctionCall::new("list".to_string(), contents)))
 }
 
 fn binary_call(name: &str, left: Value, right: Value) -> Value {
