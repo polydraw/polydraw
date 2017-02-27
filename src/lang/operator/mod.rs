@@ -62,6 +62,7 @@ use self::functional::{
    zip, range, all, any, list_lst_val, list_val_lst, list_lst_lst,
    list_lst_val_val, list_val_lst_val, list_val_val_lst,
    list_lst_lst_val, list_lst_val_lst, list_val_lst_lst, list_lst_lst_lst,
+   repeat,
 };
 
 use self::color::{
@@ -488,6 +489,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
    register_2_arg(&mut indices, &mut fn_list, "range", (tyid_i64, tyid_i64), range);
 
    register_1_arg(&mut indices, &mut fn_list, "svg_path", tyid_str, svg_path);
+
+   register_2_arg(&mut indices, &mut fn_list, "repeat", (tyid_i64, tyid_fnp), repeat);
 
    let equal_ref = FnRef::builtin(indices.get("equal").unwrap().index);
 

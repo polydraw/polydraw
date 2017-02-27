@@ -633,3 +633,38 @@ fn is_true(value_ptr: &ValuePtr) -> bool {
    }
 }
 
+
+pub fn repeat(
+   arguments: &[&ValuePtr],
+   executor: &Executor,
+   _: &FnRef
+) -> Vec<ValuePtr> {
+
+   let count = value_ptr_as_ref!(arguments[0], i64);
+
+   if *count < 0 {
+      return vecval!(Empty);
+   }
+
+   let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
+
+   let mut result = Vec::new();
+
+   for index in 0..(*count) as usize {
+      let index_value = ValuePtr::new(index as i64);
+
+      let mut call_arguments = vec![&index_value];
+
+      for arg in arguments[2..].iter() {
+         call_arguments.push(*arg);
+      }
+
+      let mut values = executor.execute_function(fn_ref, &call_arguments);
+
+      push_result!(result, values);
+
+      drop_value_ptr(&index_value, executor.drop_registry);
+   }
+
+   vecval!(result)
+}
