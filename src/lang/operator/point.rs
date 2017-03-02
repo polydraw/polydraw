@@ -1,5 +1,6 @@
-use data::{FloatPoint, IntPoint};
+use std::f64::consts::PI;
 
+use data::{FloatPoint, IntPoint};
 
 
 fn point_f64_f64_(a: &f64, b: &f64) -> FloatPoint {
@@ -409,4 +410,96 @@ fn rotate_ipt_ipt_i64_(target: &IntPoint, origin: &IntPoint, angle: &i64) -> Flo
    rotate_fpt_fpt_f64_(&target.as_float(), &origin.as_float(), &(*angle as f64))
 }
 wrap_3_arg!(rotate_ipt_ipt_i64, rotate_ipt_ipt_i64_);
+
+
+fn flip_x_fpt_f64_f64_(target: &FloatPoint, x: &f64, amount: &f64) -> FloatPoint {
+   let stretch = (amount * PI).cos();
+
+   FloatPoint::new(
+      (target.x - x) * stretch + x,
+      target.y,
+   )
+}
+wrap_3_arg!(flip_x_fpt_f64_f64, flip_x_fpt_f64_f64_);
+
+fn flip_x_fpt_i64_f64_(target: &FloatPoint, x: &i64, amount: &f64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(target, &(*x as f64), amount)
+}
+wrap_3_arg!(flip_x_fpt_i64_f64, flip_x_fpt_i64_f64_);
+
+fn flip_x_fpt_f64_i64_(target: &FloatPoint, x: &f64, amount: &i64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(target, x, &(*amount as f64))
+}
+wrap_3_arg!(flip_x_fpt_f64_i64, flip_x_fpt_f64_i64_);
+
+fn flip_x_fpt_i64_i64_(target: &FloatPoint, x: &i64, amount: &i64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(target, &(*x as f64), &(*amount as f64))
+}
+wrap_3_arg!(flip_x_fpt_i64_i64, flip_x_fpt_i64_i64_);
+
+fn flip_x_ipt_f64_f64_(target: &IntPoint, x: &f64, amount: &f64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(&target.as_float(), x, amount)
+}
+wrap_3_arg!(flip_x_ipt_f64_f64, flip_x_ipt_f64_f64_);
+
+fn flip_x_ipt_i64_f64_(target: &IntPoint, x: &i64, amount: &f64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(&target.as_float(), &(*x as f64), amount)
+}
+wrap_3_arg!(flip_x_ipt_i64_f64, flip_x_ipt_i64_f64_);
+
+fn flip_x_ipt_f64_i64_(target: &IntPoint, x: &f64, amount: &i64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(&target.as_float(), x, &(*amount as f64))
+}
+wrap_3_arg!(flip_x_ipt_f64_i64, flip_x_ipt_f64_i64_);
+
+fn flip_x_ipt_i64_i64_(target: &IntPoint, x: &i64, amount: &i64) -> FloatPoint {
+   flip_x_fpt_f64_f64_(&target.as_float(), &(*x as f64), &(*amount as f64))
+}
+wrap_3_arg!(flip_x_ipt_i64_i64, flip_x_ipt_i64_i64_);
+
+
+fn flip_y_fpt_f64_f64_(target: &FloatPoint, y: &f64, amount: &f64) -> FloatPoint {
+   let stretch = (amount * PI).cos();
+
+   FloatPoint::new(
+      target.x,
+      (target.y - y) * stretch + y,
+   )
+}
+wrap_3_arg!(flip_y_fpt_f64_f64, flip_y_fpt_f64_f64_);
+
+fn flip_y_fpt_i64_f64_(target: &FloatPoint, y: &i64, amount: &f64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(target, &(*y as f64), amount)
+}
+wrap_3_arg!(flip_y_fpt_i64_f64, flip_y_fpt_i64_f64_);
+
+fn flip_y_fpt_f64_i64_(target: &FloatPoint, y: &f64, amount: &i64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(target, y, &(*amount as f64))
+}
+wrap_3_arg!(flip_y_fpt_f64_i64, flip_y_fpt_f64_i64_);
+
+fn flip_y_fpt_i64_i64_(target: &FloatPoint, y: &i64, amount: &i64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(target, &(*y as f64), &(*amount as f64))
+}
+wrap_3_arg!(flip_y_fpt_i64_i64, flip_y_fpt_i64_i64_);
+
+fn flip_y_ipt_f64_f64_(target: &IntPoint, y: &f64, amount: &f64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(&target.as_float(), y, amount)
+}
+wrap_3_arg!(flip_y_ipt_f64_f64, flip_y_ipt_f64_f64_);
+
+fn flip_y_ipt_i64_f64_(target: &IntPoint, y: &i64, amount: &f64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(&target.as_float(), &(*y as f64), amount)
+}
+wrap_3_arg!(flip_y_ipt_i64_f64, flip_y_ipt_i64_f64_);
+
+fn flip_y_ipt_f64_i64_(target: &IntPoint, y: &f64, amount: &i64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(&target.as_float(), y, &(*amount as f64))
+}
+wrap_3_arg!(flip_y_ipt_f64_i64, flip_y_ipt_f64_i64_);
+
+fn flip_y_ipt_i64_i64_(target: &IntPoint, y: &i64, amount: &i64) -> FloatPoint {
+   flip_y_fpt_f64_f64_(&target.as_float(), &(*y as f64), &(*amount as f64))
+}
+wrap_3_arg!(flip_y_ipt_i64_i64, flip_y_ipt_i64_i64_);
 

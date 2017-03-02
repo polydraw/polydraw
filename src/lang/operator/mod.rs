@@ -55,6 +55,12 @@ use self::point::{
    rotate_fpt_ipt_i64, rotate_ipt_ipt_i64,
    equal_ipt_ipt, equal_fpt_fpt, equal_ipt_fpt, equal_fpt_ipt,
    unequal_ipt_ipt, unequal_fpt_fpt, unequal_ipt_fpt, unequal_fpt_ipt,
+   flip_x_fpt_f64_f64, flip_x_fpt_i64_f64, flip_x_fpt_f64_i64,
+   flip_x_fpt_i64_i64, flip_x_ipt_f64_f64, flip_x_ipt_i64_f64,
+   flip_x_ipt_f64_i64, flip_x_ipt_i64_i64,
+   flip_y_fpt_f64_f64, flip_y_fpt_i64_f64, flip_y_fpt_f64_i64,
+   flip_y_fpt_i64_i64, flip_y_ipt_f64_f64, flip_y_ipt_i64_f64,
+   flip_y_ipt_f64_i64, flip_y_ipt_i64_i64,
 };
 
 use self::functional::{
@@ -431,6 +437,34 @@ pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
    register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_ipt, tyid_lst, tyid_lst), list_val_lst_lst);
 
    register_3_arg(&mut indices, &mut fn_list, "rotate", (tyid_lst, tyid_lst, tyid_lst), list_lst_lst_lst);
+
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_fpt, tyid_f64, tyid_f64), flip_x_fpt_f64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_fpt, tyid_i64, tyid_f64), flip_x_fpt_i64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_fpt, tyid_f64, tyid_i64), flip_x_fpt_f64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_fpt, tyid_i64, tyid_i64), flip_x_fpt_i64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_ipt, tyid_f64, tyid_f64), flip_x_ipt_f64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_ipt, tyid_i64, tyid_f64), flip_x_ipt_i64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_ipt, tyid_f64, tyid_i64), flip_x_ipt_f64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_ipt, tyid_i64, tyid_i64), flip_x_ipt_i64_i64);
+
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_lst, tyid_f64, tyid_f64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_lst, tyid_i64, tyid_f64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_lst, tyid_f64, tyid_i64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "flip_x", (tyid_lst, tyid_i64, tyid_i64), list_lst_val_val);
+
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_fpt, tyid_f64, tyid_f64), flip_y_fpt_f64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_fpt, tyid_i64, tyid_f64), flip_y_fpt_i64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_fpt, tyid_f64, tyid_i64), flip_y_fpt_f64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_fpt, tyid_i64, tyid_i64), flip_y_fpt_i64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_ipt, tyid_f64, tyid_f64), flip_y_ipt_f64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_ipt, tyid_i64, tyid_f64), flip_y_ipt_i64_f64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_ipt, tyid_f64, tyid_i64), flip_y_ipt_f64_i64);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_ipt, tyid_i64, tyid_i64), flip_y_ipt_i64_i64);
+
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_lst, tyid_f64, tyid_f64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_lst, tyid_i64, tyid_f64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_lst, tyid_f64, tyid_i64), list_lst_val_val);
+   register_3_arg(&mut indices, &mut fn_list, "flip_y", (tyid_lst, tyid_i64, tyid_i64), list_lst_val_val);
 
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_f64, tyid_f64, tyid_f64), rgb_f64_f64_f64);
    register_3_arg(&mut indices, &mut fn_list, "rgb", (tyid_i64, tyid_f64, tyid_f64), rgb_i64_f64_f64);
