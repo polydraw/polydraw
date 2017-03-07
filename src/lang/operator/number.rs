@@ -130,3 +130,26 @@ fn unequal_f64_i64_(a: &f64, b: &i64) -> bool {
 }
 wrap_2_arg!(unequal_f64_i64, unequal_f64_i64_);
 
+
+fn sin_f64_(a: &f64) -> f64 {
+   let radians = a.to_radians();
+   radians.sin()
+}
+wrap_1_arg!(sin_f64, sin_f64_);
+
+fn sin_i64_(a: &i64) -> f64 {
+   sin_f64_(&(*a as f64))
+}
+wrap_1_arg!(sin_i64, sin_i64_);
+
+
+fn cos_f64_(a: &f64) -> f64 {
+   let radians = a.to_radians();
+   radians.cos()
+}
+wrap_1_arg!(cos_f64, cos_f64_);
+
+fn cos_i64_(a: &i64) -> f64 {
+   cos_f64_(&(*a as f64))
+}
+wrap_1_arg!(cos_i64, cos_i64_);

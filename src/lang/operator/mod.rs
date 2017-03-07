@@ -29,6 +29,7 @@ use self::number::{
    divide_i64_i64, divide_f64_f64, divide_i64_f64, divide_f64_i64,
    equal_i64_i64, equal_f64_f64, equal_i64_f64, equal_f64_i64,
    unequal_i64_i64, unequal_f64_f64, unequal_i64_f64, unequal_f64_i64,
+   sin_f64, sin_i64, cos_f64, cos_i64,
 };
 
 use self::boolean::{
@@ -376,6 +377,12 @@ pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_lst, tyid_lst), list_lst_lst);
 
    register_2_arg(&mut indices, &mut fn_list, "unequal", (tyid_rgb, tyid_rgb), unequal_rgb_rgb);
+
+   register_1_arg(&mut indices, &mut fn_list, "sin", tyid_f64, sin_f64);
+   register_1_arg(&mut indices, &mut fn_list, "sin", tyid_i64, sin_i64);
+
+   register_1_arg(&mut indices, &mut fn_list, "cos", tyid_f64, cos_f64);
+   register_1_arg(&mut indices, &mut fn_list, "cos", tyid_i64, cos_i64);
 
    register_1_arg(&mut indices, &mut fn_list, "all", tyid_lst, all);
 
