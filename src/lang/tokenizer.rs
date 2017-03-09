@@ -3,7 +3,6 @@
 pub enum Token {
    Name(String),
    String(String),
-   Int(i64),
    Float(f64),
    NewLine,
    Function,
@@ -401,7 +400,7 @@ fn extract_number(source: &[char]) -> TokenResult {
       }
 
       return Some((
-         Token::Int(integral),
+         Token::Float(integral as f64),
          full_len - len
       ));
    }

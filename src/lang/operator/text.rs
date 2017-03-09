@@ -1,8 +1,8 @@
 use sys::ft::{Face, TextAlign};
 
-use data::{FloatPoint, IntPoint};
+use data::FloatPoint;
 
-use lang::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
+use lang::value_ptr::{ValuePtr, VoidPtr};
 use lang::compiler::FnRef;
 use lang::execute::Executor;
 
@@ -31,51 +31,6 @@ pub fn text_fce_str_f64_fpt(
 
    text_fce_str_f64_fpt_(
       face, string, size, origin, text_align,
-   )
-}
-
-
-pub fn text_fce_str_i64_fpt(
-   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
-) -> ValuePtrList {
-   let face = value_ptr_as_ref!(arguments[0], Face);
-   let string = value_ptr_as_ref!(arguments[1], String);
-   let size = value_ptr_as_ref!(arguments[2], i64);
-   let origin = value_ptr_as_ref!(arguments[3], FloatPoint);
-   let text_align = alignment_argument(arguments);
-
-   text_fce_str_f64_fpt_(
-      face, string, &(*size as f64), origin, text_align
-   )
-}
-
-
-pub fn text_fce_str_f64_ipt(
-   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
-) -> ValuePtrList {
-   let face = value_ptr_as_ref!(arguments[0], Face);
-   let string = value_ptr_as_ref!(arguments[1], String);
-   let size = value_ptr_as_ref!(arguments[2], f64);
-   let origin = value_ptr_as_ref!(arguments[3], IntPoint);
-   let text_align = alignment_argument(arguments);
-
-   text_fce_str_f64_fpt_(
-      face, string, size, &origin.as_float(), text_align
-   )
-}
-
-
-pub fn text_fce_str_i64_ipt(
-   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
-) -> ValuePtrList {
-   let face = value_ptr_as_ref!(arguments[0], Face);
-   let string = value_ptr_as_ref!(arguments[1], String);
-   let size = value_ptr_as_ref!(arguments[2], i64);
-   let origin = value_ptr_as_ref!(arguments[3], IntPoint);
-   let text_align = alignment_argument(arguments);
-
-   text_fce_str_f64_fpt_(
-      face, string, &(*size as f64), &origin.as_float(), text_align
    )
 }
 

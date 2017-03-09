@@ -575,7 +575,6 @@ fn match_single(tokens: &[Token]) -> Option<Value> {
    let value = match &tokens[0] {
       &Token::String(ref value) => Value::String(Box::new(value.clone())),
       &Token::Name(ref value) => name_value(value),
-      &Token::Int(ref value) => Value::Int(*value),
       &Token::Float(ref value) => Value::Float(*value),
       _ => return None,
    };
