@@ -48,3 +48,9 @@ fn cos_f64_(a: &f64) -> f64 {
    radians.cos()
 }
 wrap_1_arg!(cos_f64, cos_f64_);
+
+
+fn pow_f64_(a: &f64, b: &f64) -> f64 {
+   a.powf(*b)
+}
+wrap_2_arg!(pow_f64, pow_f64_);

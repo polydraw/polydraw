@@ -13,6 +13,7 @@ pub enum Token {
    Subtract,
    Multiply,
    Divide,
+   Power,
    Not,
    ParenLeft,
    ParenRight,
@@ -298,7 +299,13 @@ fn extract_symbol_token(source: &[char]) -> TokenResult {
             },
             '+' => Token::Add,
             '-' => Token::Subtract,
-            '*' => Token::Multiply,
+            '*' => match chars.next() {
+               Some(ch) => match *ch {
+                  '*' => return Some((Token::Power, 2)),
+                  _ => Token::Multiply,
+               },
+               None => Token::Multiply,
+            },
             '/' => Token::Divide,
             '!' => match chars.next() {
                Some(ch) => match *ch {

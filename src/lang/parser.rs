@@ -499,6 +499,7 @@ fn match_binary(tokens: &[Token]) -> Option<Value> {
       (Token::Add, "add"),
       (Token::Divide, "divide"),
       (Token::Multiply, "multiply"),
+      (Token::Power, "pow"),
       (Token::Equal, "equal"),
       (Token::Unequal, "unequal"),
       (Token::Range, "range"),
