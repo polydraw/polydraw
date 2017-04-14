@@ -9,6 +9,7 @@ mod color;
 mod text;
 mod draw;
 mod svg;
+mod control;
 
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -63,6 +64,8 @@ use self::text::{
 };
 
 use self::svg::svg_path;
+
+use self::control::if_;
 
 
 type CALL = fn(&[&ValuePtr], &Executor, &FnRef) -> Vec<ValuePtr>;
@@ -349,6 +352,8 @@ pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
    register_1_arg(&mut indices, &mut fn_list, "svg_path", tyid_str, svg_path);
 
    register_2_arg(&mut indices, &mut fn_list, "repeat", (tyid_i64, tyid_fnp), repeat);
+
+   register_n_arg(&mut indices, &mut fn_list, "if", if_);
 
    let equal_ref = FnRef::builtin(indices.get("equal").unwrap().index);
 

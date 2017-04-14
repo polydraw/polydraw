@@ -27,6 +27,24 @@ impl ValuePtr {
          type_id: TypeId::of::<()>(),
       }
    }
+
+   pub fn as_ref<T: 'static>(&self) -> &mut T {
+      unsafe {
+         ::std::mem::transmute::<VoidPtr, &mut T>(self.data)
+      }
+   }
+
+   pub fn as_ref_checked<T: 'static>(&self) -> Option<&mut T> {
+      if TypeId::of::<T>() == self.type_id {
+         Some(
+            unsafe {
+               ::std::mem::transmute::<VoidPtr, &mut T>(self.data)
+            }
+         )
+      } else {
+         None
+      }
+   }
 }
 
 
