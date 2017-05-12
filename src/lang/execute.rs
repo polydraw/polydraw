@@ -139,22 +139,7 @@ fn execute_compiled_function(
             argument_references.push(reference);
          }
 
-         match exec_fn.fn_type {
-            FnType::Builtin => {
-               execute_builtin_function(
-                  &FnRef::builtin(exec_fn.fn_index.index),
-                  &argument_references,
-                  executor,
-               )
-            },
-            FnType::Defined => {
-               execute_compiled_function(
-                  &FnRef::defined(exec_fn.fn_index.index),
-                  &argument_references,
-                  executor,
-               )
-            }
-         }
+         executor.execute_function(&exec_fn.fn_ref(), &argument_references)
       };
 
       for value_ptr in value_ptr_list {

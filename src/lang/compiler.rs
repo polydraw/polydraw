@@ -84,6 +84,13 @@ impl ExecFn {
          target: target,
       }
    }
+
+   pub fn fn_ref(&self) -> FnRef {
+      FnRef {
+         fn_type: self.fn_type.clone(),
+         index: self.fn_index.index,
+      }
+   }
 }
 
 
