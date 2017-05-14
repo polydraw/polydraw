@@ -19,7 +19,7 @@ use draw::RGB;
 use data::FloatPoint;
 
 use super::compiler::{BuiltinIndices, FnRef};
-use super::value_ptr::{ValuePtr, ValuePtrList};
+use super::variant::{Variant, VariantVec};
 use super::execute::Executor;
 use super::parser::FnIndex;
 
@@ -68,7 +68,7 @@ use self::svg::svg_path;
 use self::control::if_;
 
 
-type CALL = fn(&[&ValuePtr], &Executor, &FnRef) -> Vec<ValuePtr>;
+type CALL = fn(&[&Variant], &Executor, &FnRef) -> Vec<Variant>;
 
 type HMA1R1 = HashMap<TypeId, CALL>;
 
@@ -167,7 +167,7 @@ pub fn register_builtin_fns() -> (BuiltinIndices, BuiltinFns) {
 
    let tyid_i64 = TypeId::of::<i64>();
    let tyid_f64 = TypeId::of::<f64>();
-   let tyid_lst = TypeId::of::<ValuePtrList>();
+   let tyid_lst = TypeId::of::<VariantVec>();
    let tyid_fpt = TypeId::of::<FloatPoint>();
    let tyid_fnp = TypeId::of::<FnRef>();
    let tyid_rgb = TypeId::of::<RGB>();

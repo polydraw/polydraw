@@ -1,39 +1,34 @@
 use data::Empty;
 
-use lang::value_ptr::ValuePtr;
+use lang::variant::Variant;
 use lang::execute::Executor;
 use lang::compiler::FnRef;
-use lang::clone::clone_value_ptr;
 
 
 pub fn if_(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    let len = arguments.len();
 
    if len < 2 {
-      return vecval!(Empty);
+      return vecval!(executor, Empty);
    }
 
    for i in 0..len / 2 {
       if let Some(guard) = arguments[i*2].as_ref_checked::<bool>() {
          if *guard {
-            return vec![
-               clone_value_ptr(arguments[i*2+1], executor.clone_registry)
-            ];
+            return vec![arguments[i*2+1].clone()];
          }
       } else {
-         return vecval!(Empty);
+         return vecval!(executor, Empty);
       }
    }
 
    if len % 2 == 1 {
-      return vec![
-         clone_value_ptr(arguments[len-1], executor.clone_registry)
-      ];
+      return vec![arguments[len-1].clone()];
    }
 
-   vecval!(Empty)
+   vecval!(executor, Empty)
 }

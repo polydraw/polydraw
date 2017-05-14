@@ -6,8 +6,8 @@ use renderer::{Renderer};
 use frame::Frame;
 use draw::RGB;
 
-use super::{Environment, ValuePtr, Program};
-use super::value_ptr::{ValuePtrList, VoidPtr};
+use super::{Environment, Program};
+use super::variant::{Variant, VariantVec};
 
 
 pub struct LangRenderer {
@@ -49,9 +49,9 @@ impl Renderer for LangRenderer {
    #[inline]
    fn render(&mut self, frame: &mut Frame) {
       let arguments = vec![
-         ValuePtr::new(self.frame),
-         ValuePtr::new(frame.width as i64 * SUBDIVISIONS),
-         ValuePtr::new(frame.height as i64 * SUBDIVISIONS),
+         self.environment.registry.variant(self.frame),
+         self.environment.registry.variant(frame.width as i64 * SUBDIVISIONS),
+         self.environment.registry.variant(frame.height as i64 * SUBDIVISIONS),
       ];
 
       let result = self.environment.execute_program(&self.program, arguments);
@@ -67,57 +67,39 @@ impl Renderer for LangRenderer {
 
       self.renderer.render(frame);
 
-
-      self.environment.drop_result_contents(&result);
-
       self.frame += 1;
    }
 }
 
 
-impl Drop for LangRenderer {
-   fn drop (&mut self) {
-      self.environment.drop_program_contents(&self.program);
-   }
-}
-
-
-fn collect_polys(scene: &mut Scene, value_ptr: &ValuePtr) {
-   if TypeId::of::<ValuePtrList>() == value_ptr.type_id {
-      let list = value_ptr_as_ref!(value_ptr, ValuePtrList);
+fn collect_polys(scene: &mut Scene, variant: &Variant) {
+   if let Some(list) = variant.as_ref_checked::<VariantVec>() {
       collect_polys_from_list(scene, list);
 
-   } else if TypeId::of::<Poly>() == value_ptr.type_id {
-      let poly = value_ptr_as_ref!(value_ptr, Poly);
+   } else if let Some(poly) = variant.as_ref_checked::<Poly>() {
       scene.push(Box::new(poly.clone()));
    }
 }
 
 
-fn collect_polys_from_list(scene: &mut Scene, value_ptrs: &Vec<ValuePtr>) {
-   if value_ptrs.len() == 0 {
+fn collect_polys_from_list(scene: &mut Scene, variants: &Vec<Variant>) {
+   if variants.len() == 0 {
       return;
    }
 
-   if is_point_list(value_ptrs) {
-      let points = collect_poly_points(value_ptrs);
+   if is_point_list(variants) {
+      let points = collect_poly_points(variants);
 
       let poly = Poly::new(vec![points], RGB::new(255, 255, 255));
 
       scene.push(Box::new(poly));
 
    } else {
-      let poly_ty = TypeId::of::<Poly>();
-      let list_ty = TypeId::of::<ValuePtrList>();
-
-      for value_ptr in value_ptrs.iter() {
-         if value_ptr.type_id == list_ty {
-            let list = value_ptr_as_ref!(value_ptr, ValuePtrList);
-
+      for variant in variants.iter() {
+         if let Some(list) = variant.as_ref_checked::<VariantVec>() {
             collect_polys_from_list(scene, list);
 
-         } else if value_ptr.type_id == poly_ty {
-            let poly = value_ptr_as_ref!(value_ptr, Poly);
+         } else if let Some(poly) = variant.as_ref_checked::<Poly>() {
             scene.push(Box::new(poly.clone()));
          }
       }
@@ -125,12 +107,12 @@ fn collect_polys_from_list(scene: &mut Scene, value_ptrs: &Vec<ValuePtr>) {
 }
 
 
-fn is_point_list(value_ptrs: &Vec<ValuePtr>) -> bool {
+fn is_point_list(variants: &Vec<Variant>) -> bool {
    let int_point_ty = TypeId::of::<IntPoint>();
    let float_point_ty = TypeId::of::<FloatPoint>();
 
-   for value_ptr in value_ptrs.iter() {
-      if value_ptr.type_id != int_point_ty && value_ptr.type_id != float_point_ty {
+   for variant in variants.iter() {
+      if *variant.type_id() != int_point_ty && *variant.type_id() != float_point_ty {
          return false;
       }
    }
@@ -139,17 +121,17 @@ fn is_point_list(value_ptrs: &Vec<ValuePtr>) -> bool {
 }
 
 
-fn collect_poly_points(value_ptrs: &Vec<ValuePtr>) -> Vec<IntPoint> {
+fn collect_poly_points(variants: &Vec<Variant>) -> Vec<IntPoint> {
    let mut points = Vec::new();
 
-   for value_ptr in value_ptrs.iter() {
-      if value_ptr.type_id == TypeId::of::<IntPoint>() {
+   for variant in variants.iter() {
+      if *variant.type_id() == TypeId::of::<IntPoint>() {
          points.push(
-            value_ptr_as_ref!(value_ptr, IntPoint).clone()
+            variant.as_ref::<IntPoint>().clone()
          );
       } else {
          points.push(
-            value_ptr_as_ref!(value_ptr, FloatPoint).as_int()
+            variant.as_ref::<FloatPoint>().as_int()
          );
       }
    }

@@ -2,45 +2,45 @@ use sys::ft::{Face, TextAlign};
 
 use data::FloatPoint;
 
-use lang::value_ptr::{ValuePtr, VoidPtr};
+use lang::variant::Variant;
 use lang::compiler::FnRef;
 use lang::execute::Executor;
 
 
 pub fn font_face(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
-   let path = value_ptr_as_ref!(arguments[0], String);
+) -> Vec<Variant> {
+   let path = arguments[0].as_ref::<String>();
 
    let face = executor.freetype.load_face(path);
 
-   vecval!(face)
+   vecval!(executor, face)
 }
 
 
 pub fn text_fce_str_f64_fpt(
-   arguments: &[&ValuePtr], _: &Executor, _: &FnRef
-) -> Vec<ValuePtr> {
-   let face = value_ptr_as_ref!(arguments[0], Face);
-   let string = value_ptr_as_ref!(arguments[1], String);
-   let size = value_ptr_as_ref!(arguments[2], f64);
-   let origin = value_ptr_as_ref!(arguments[3], FloatPoint);
+   arguments: &[&Variant], executor: &Executor, _: &FnRef
+) -> Vec<Variant> {
+   let face = arguments[0].as_ref::<Face>();
+   let string = arguments[1].as_ref::<String>();
+   let size = arguments[2].as_ref::<f64>();
+   let origin = arguments[3].as_ref::<FloatPoint>();
    let text_align = alignment_argument(arguments);
 
    text_fce_str_f64_fpt_(
-      face, string, size, origin, text_align,
+      executor, face, string, size, origin, text_align,
    )
 }
 
 
-fn alignment_argument(arguments: &[&ValuePtr]) -> TextAlign {
+fn alignment_argument(arguments: &[&Variant]) -> TextAlign {
    if arguments.len() < 5 {
       return TextAlign::Left;
    }
 
-   let alignment = value_ptr_as_ref!(arguments[4], i64);
+   let alignment = arguments[4].as_ref::<i64>();
 
    match *alignment {
       1 => TextAlign::Center,
@@ -51,8 +51,8 @@ fn alignment_argument(arguments: &[&ValuePtr]) -> TextAlign {
 
 
 fn text_fce_str_f64_fpt_(
-   face: &Face, string: &String, size: &f64, origin: &FloatPoint, text_align: TextAlign
-) -> Vec<ValuePtr> {
+   executor: &Executor, face: &Face, string: &String, size: &f64, origin: &FloatPoint, text_align: TextAlign
+) -> Vec<Variant> {
 
    let capped_size = if *size <= 0.0 { 0.0000001 } else { *size };
    let scale = capped_size / (2048.0 * 64.0);
@@ -72,15 +72,15 @@ fn text_fce_str_f64_fpt_(
                point.x * scale + origin.x,
                point.y * scale + origin.y,
             );
-            char_inner.push(ValuePtr::new(transformed));
+            char_inner.push(executor.registry.variant(transformed));
          }
 
-         char_outer.push(ValuePtr::new(char_inner));
+         char_outer.push(executor.registry.variant(char_inner));
       }
 
-      result.push(ValuePtr::new(char_outer));
+      result.push(executor.registry.variant(char_outer));
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 

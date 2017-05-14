@@ -5,44 +5,44 @@ use draw::RGB;
 use devel::Poly;
 use data::{IntPoint, FloatPoint, Empty};
 
-use lang::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
+use lang::variant::{Variant, VariantVec};
 use lang::compiler::FnRef;
 use lang::execute::Executor;
 
 
 
 pub fn solid_fill(
-   arguments: &[&ValuePtr],
-   _: &Executor,
+   arguments: &[&Variant],
+   executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
    if list.len() == 0 {
-      return vecval!(Empty);
+      return vecval!(executor, Empty);
    }
 
-   let color = value_ptr_as_ref!(arguments[1], RGB);
+   let color = arguments[1].as_ref::<RGB>();
 
    let depth = drill_points_depth(list);
 
    match depth {
-      Some(depth_value) => vec![extract_poly_points(list, color, depth_value)],
-      None => vecval!(Empty),
+      Some(depth_value) => vec![extract_poly_points(executor, list, color, depth_value)],
+      None => vecval!(executor, Empty),
    }
 }
 
 
-fn extract_poly_points(list: &ValuePtrList, color: &RGB, depth: usize) -> ValuePtr {
+fn extract_poly_points(executor: &Executor, list: &VariantVec, color: &RGB, depth: usize) -> Variant {
    match depth {
       1 => {
          let flat_points = extract_flat_points(list);
 
          if flat_points.len() < 3 {
-            ValuePtr::new(Empty)
+            executor.registry.variant(Empty)
          } else {
-            ValuePtr::new(
+            executor.registry.variant(
                Poly::new(vec![flat_points], color.clone())
             )
          }
@@ -50,10 +50,10 @@ fn extract_poly_points(list: &ValuePtrList, color: &RGB, depth: usize) -> ValueP
       2 => {
          let mut contours = Vec::new();
 
-         for value_ptr in list.iter() {
-            assert_eq!(TypeId::of::<ValuePtrList>(), value_ptr.type_id);
+         for variant in list.iter() {
+            assert_eq!(TypeId::of::<VariantVec>(), *variant.type_id());
 
-            let inner_list = value_ptr_as_ref!(value_ptr, ValuePtrList);
+            let inner_list = variant.as_ref::<VariantVec>();
 
             let flat_points = extract_flat_points(inner_list);
 
@@ -65,9 +65,9 @@ fn extract_poly_points(list: &ValuePtrList, color: &RGB, depth: usize) -> ValueP
          }
 
          if contours.len() == 0 {
-            ValuePtr::new(Empty)
+            executor.registry.variant(Empty)
          } else {
-            ValuePtr::new(
+            executor.registry.variant(
                Poly::new(contours, color.clone())
             )
          }
@@ -75,36 +75,29 @@ fn extract_poly_points(list: &ValuePtrList, color: &RGB, depth: usize) -> ValueP
       _ => {
          let mut ptr_lists = Vec::new();
 
-         for value_ptr in list.iter() {
-            assert_eq!(TypeId::of::<ValuePtrList>(), value_ptr.type_id);
+         for variant in list.iter() {
+            assert_eq!(TypeId::of::<VariantVec>(), *variant.type_id());
 
-            let inner_list = value_ptr_as_ref!(value_ptr, ValuePtrList);
+            let inner_list = variant.as_ref::<VariantVec>();
 
-            let ptr_list = extract_poly_points(inner_list, color, depth - 1);
+            let ptr_list = extract_poly_points(executor, inner_list, color, depth - 1);
 
             ptr_lists.push(ptr_list);
          }
 
-         ValuePtr::new(ptr_lists)
+         executor.registry.variant(ptr_lists)
       },
    }
 }
 
 
-fn extract_flat_points(list: &ValuePtrList) -> Vec<IntPoint> {
-   let tyid_ipt = TypeId::of::<IntPoint>();
-   let tyid_fpt = TypeId::of::<FloatPoint>();
-
+fn extract_flat_points(list: &VariantVec) -> Vec<IntPoint> {
    let mut points = Vec::new();
 
-   for value_ptr in list.iter() {
-      if tyid_ipt == value_ptr.type_id {
-         let point = value_ptr_as_ref!(value_ptr, IntPoint);
-
+   for variant in list.iter() {
+      if let Some(point) = variant.as_ref_checked::<IntPoint>() {
          points.push(point.clone());
-      } else if tyid_fpt == value_ptr.type_id {
-         let point = value_ptr_as_ref!(value_ptr, FloatPoint);
-
+      } else if let Some(point) = variant.as_ref_checked::<FloatPoint>() {
          points.push(point.as_int());
       }
    }
@@ -113,17 +106,14 @@ fn extract_flat_points(list: &ValuePtrList) -> Vec<IntPoint> {
 }
 
 
-fn drill_points_depth(list: &ValuePtrList) -> Option<usize> {
+fn drill_points_depth(list: &VariantVec) -> Option<usize> {
    let mut depth: Option<usize> = None;
 
-   let tyid_lst = TypeId::of::<ValuePtrList>();
    let tyid_ipt = TypeId::of::<IntPoint>();
    let tyid_fpt = TypeId::of::<FloatPoint>();
 
-   for value_ptr in list.iter() {
-      if tyid_lst == value_ptr.type_id {
-         let inner_list = value_ptr_as_ref!(value_ptr, ValuePtrList);
-
+   for variant in list.iter() {
+      if let Some(inner_list) = variant.as_ref_checked::<VariantVec>() {
          let inner_depth = drill_points_depth(inner_list);
 
          if let Some(inner_depth_value) = inner_depth {
@@ -137,7 +127,7 @@ fn drill_points_depth(list: &ValuePtrList) -> Option<usize> {
          } else {
             return None;
          }
-      } else if tyid_ipt != value_ptr.type_id && tyid_fpt != value_ptr.type_id {
+      } else if tyid_ipt != *variant.type_id() && tyid_fpt != *variant.type_id() {
          return None;
       }
    }

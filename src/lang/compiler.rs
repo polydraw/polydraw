@@ -3,16 +3,13 @@ use std::cmp::max;
 use std::iter::repeat;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::any::TypeId;
 
 use sys::ft::FreeType;
 
-use super::value_ptr::{ValuePtr, VoidPtr};
+use super::variant::Variant;
 use super::parser::{FnType, FnIndex, Argument, Function, Value};
 use super::operator::BuiltinFns;
-use super::clone::CloneRegistry;
-use super::drop::DropRegistry;
-use super::debug::DebugRegistry;
+use super::registry::TypeRegistry;
 use super::execute::{execute_builtin_function, Executor};
 
 
@@ -177,7 +174,7 @@ pub type BuiltinIndices = HashMap<&'static str, FnIndex>;
 pub struct Program {
    pub compiled_fns: Vec<CompiledFn>,
    pub main_index: usize,
-   pub consts: Vec<ValuePtr>,
+   pub consts: Vec<Variant>,
 }
 
 impl Program {
@@ -185,7 +182,7 @@ impl Program {
    pub fn new(
       compiled_fns: Vec<CompiledFn>,
       main_index: usize,
-      consts: Vec<ValuePtr>,
+      consts: Vec<Variant>,
    ) -> Self {
       Program {
          compiled_fns: compiled_fns,
@@ -199,16 +196,14 @@ pub fn compile_program (
    functions: &Vec<Function>,
    builtin_indices: &BuiltinIndices,
    builtin_fns: &BuiltinFns,
-   clone_registry: &CloneRegistry,
-   drop_registry: &DropRegistry,
-   debug_registry: &DebugRegistry,
+   registry: &TypeRegistry,
    freetype: &FreeType,
 ) -> Result<Program, String> {
    let defined_indices = try!(map_defined_indices(&functions));
 
    let mut main_index = usize::MAX;
 
-   let mut consts: Vec<ValuePtr> = Vec::new();
+   let mut consts: Vec<Variant> = Vec::new();
 
    let mut compiled_fns = Vec::new();
 
@@ -220,9 +215,7 @@ pub fn compile_program (
             builtin_indices,
             builtin_fns,
             &defined_indices,
-            clone_registry,
-            drop_registry,
-            debug_registry,
+            registry,
             freetype,
          ))
       );
@@ -294,13 +287,11 @@ fn as_return_variable(name: &str) -> Option<usize> {
 
 fn compile_function(
    function: &Function,
-   consts: &mut Vec<ValuePtr>,
+   consts: &mut Vec<Variant>,
    builtin_indices: &BuiltinIndices,
    builtin_fns: &BuiltinFns,
    defined_indices: &DefinedIndices,
-   clone_registry: &CloneRegistry,
-   drop_registry: &DropRegistry,
-   debug_registry: &DebugRegistry,
+   registry: &TypeRegistry,
    freetype: &FreeType,
 ) -> Result<CompiledFn, String> {
 
@@ -327,9 +318,7 @@ fn compile_function(
          builtin_indices,
          builtin_fns,
          defined_indices,
-         clone_registry,
-         drop_registry,
-         debug_registry,
+         registry,
          freetype,
       ));
 
@@ -369,20 +358,18 @@ fn compile_value(
    compiled_fn: &mut CompiledFn,
    variable_map: &HashMap<&str, CallArg>,
    value: &Value,
-   consts: &mut Vec<ValuePtr>,
+   consts: &mut Vec<Variant>,
    builtin_indices: &BuiltinIndices,
    builtin_fns: &BuiltinFns,
    defined_indices: &DefinedIndices,
-   clone_registry: &CloneRegistry,
-   drop_registry: &DropRegistry,
-   debug_registry: &DebugRegistry,
+   registry: &TypeRegistry,
    freetype: &FreeType,
 ) -> Result<(CallArg, usize), String> {
    match value {
-      &Value::Int(value) => push_const(consts, value),
-      &Value::Float(value) => push_const(consts, value),
-      &Value::Bool(value) => push_const(consts, value),
-      &Value::String(ref value) => push_const(consts, (**value).clone()),
+      &Value::Int(value) => push_const(registry, consts, value),
+      &Value::Float(value) => push_const(registry, consts, value),
+      &Value::Bool(value) => push_const(registry, consts, value),
+      &Value::String(ref value) => push_const(registry, consts, (**value).clone()),
       &Value::Name(ref name) => {
          Ok(((*variable_map.get(name as &str).unwrap()).clone(), 1))
       },
@@ -395,7 +382,7 @@ fn compile_value(
             return Err(format!("Reference to unrecognized function '{}'", name));
          };
 
-         push_const(consts, fn_ref)
+         push_const(registry, consts, fn_ref)
       },
       &Value::Call(ref call) => {
          let mut consts_only = true;
@@ -411,9 +398,7 @@ fn compile_value(
                builtin_indices,
                builtin_fns,
                defined_indices,
-               clone_registry,
-               drop_registry,
-               debug_registry,
+               registry,
                freetype,
             ));
 
@@ -454,9 +439,7 @@ fn compile_value(
                      &compiled_fns,
                      builtin_fns,
                      consts,
-                     clone_registry,
-                     drop_registry,
-                     debug_registry,
+                     registry,
                      freetype,
                   );
 
@@ -475,7 +458,7 @@ fn compile_value(
                   if value_ptr_list.len() == 1 {
                      value_ptr_list.remove(0)
                   } else {
-                     ValuePtr::new(value_ptr_list)
+                     registry.variant(value_ptr_list)
                   }
                );
 
@@ -495,11 +478,8 @@ fn compile_value(
    }
 }
 
-fn is_defined_fn_ref(value_ptr: &ValuePtr) -> bool {
-   let tyid_fnp = TypeId::of::<FnRef>();
-
-   if value_ptr.type_id == tyid_fnp {
-      let fn_ref = value_ptr_as_ref!(value_ptr, FnRef);
+fn is_defined_fn_ref(variant: &Variant) -> bool {
+   if let Some(fn_ref) = variant.as_ref_checked::<FnRef>() {
       return fn_ref.fn_type == FnType::Defined;
    }
 
@@ -507,12 +487,13 @@ fn is_defined_fn_ref(value_ptr: &ValuePtr) -> bool {
 }
 
 fn push_const<T: 'static>(
-   consts: &mut Vec<ValuePtr>,
+   registry: &TypeRegistry,
+   consts: &mut Vec<Variant>,
    value: T
 ) -> Result<(CallArg, usize), String> where T: fmt::Debug {
    let pos = consts.len();
 
-   consts.push(ValuePtr::new(value));
+   consts.push(registry.variant(value));
 
    Ok((CallArg::const_(pos), 1))
 }

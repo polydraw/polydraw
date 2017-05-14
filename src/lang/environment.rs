@@ -1,20 +1,16 @@
 use sys::ft::FreeType;
 
-use super::clone::{CloneRegistry, create_clone_registry};
-use super::drop::{DropRegistry, create_drop_registry, drop_value_ptr_vec};
-use super::debug::{DebugRegistry, create_debug_registry};
 use super::compiler::{BuiltinIndices, Program, compile_program};
 use super::operator::{BuiltinFns, register_builtin_fns};
-use super::value_ptr::ValuePtr;
+use super::variant::Variant;
 use super::tokenizer::tokenize;
 use super::parser::parse;
 use super::execute::execute_program;
+use super::registry::TypeRegistry;
 
 
 pub struct Environment {
-   pub clone_registry: CloneRegistry,
-   pub drop_registry: DropRegistry,
-   pub debug_registry: DebugRegistry,
+   pub registry: TypeRegistry,
    pub builtin_indices: BuiltinIndices,
    pub builtin_fns: BuiltinFns,
    pub freetype: FreeType,
@@ -27,9 +23,7 @@ impl Environment {
       let freetype = FreeType::new();
 
       Environment {
-         clone_registry: create_clone_registry(),
-         drop_registry: create_drop_registry(),
-         debug_registry: create_debug_registry(),
+         registry: TypeRegistry::new(),
          builtin_indices: builtin_indices,
          builtin_fns: builtin_fns,
          freetype: freetype,
@@ -45,9 +39,7 @@ impl Environment {
          &functions,
          &self.builtin_indices,
          &self.builtin_fns,
-         &self.clone_registry,
-         &self.drop_registry,
-         &self.debug_registry,
+         &self.registry,
          &self.freetype,
       )
    }
@@ -55,25 +47,15 @@ impl Environment {
    pub fn execute_program(
       &self,
       program: &Program,
-      arguments: Vec<ValuePtr>
-   ) -> Vec<ValuePtr> {
+      arguments: Vec<Variant>
+   ) -> Vec<Variant> {
       execute_program(
          program,
          arguments,
          &self.builtin_fns,
-         &self.clone_registry,
-         &self.drop_registry,
-         &self.debug_registry,
+         &self.registry,
          &self.freetype,
       )
-   }
-
-   pub fn drop_result_contents(&self, result: &Vec<ValuePtr>) {
-      drop_value_ptr_vec(result, &self.drop_registry);
-   }
-
-   pub fn drop_program_contents(&self, program: &Program) {
-      drop_value_ptr_vec(&program.consts, &self.drop_registry);
    }
 }
 

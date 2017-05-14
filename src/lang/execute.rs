@@ -1,107 +1,94 @@
 use std::mem;
-use std::any::TypeId;
 
 use sys::ft::FreeType;
 use data::Empty;
 
 use super::compiler::{Program, CompiledFn, CallArgType, ArgTemplate, FnRef};
-use super::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
+use super::variant::{Variant, VariantVec};
 use super::operator::{BuiltinFns, TypeFnMap};
-use super::clone::{CloneRegistry, clone_value_ptr};
-use super::drop::{DropRegistry, drop_value_ptr_vec};
-use super::debug::DebugRegistry;
 use super::parser::FnType;
+use super::registry::TypeRegistry;
 
 
 pub fn execute_program(
    program: &Program,
-   arguments: Vec<ValuePtr>,
+   arguments: Vec<Variant>,
    builtin_fns: &BuiltinFns,
-   clone_registry: &CloneRegistry,
-   drop_registry: &DropRegistry,
-   debug_registry: &DebugRegistry,
+   registry: &TypeRegistry,
    freetype: &FreeType,
-) -> Vec<ValuePtr> {
-   let result = {
-      let mut arg_refs = Vec::new();
+) -> Vec<Variant> {
+   let mut arg_refs = Vec::new();
 
-      for arg in arguments.iter() {
-         arg_refs.push(arg);
-      }
+   for arg in arguments.iter() {
+      arg_refs.push(arg);
+   }
 
-      let executor = Executor::new(
-         &program.compiled_fns,
-         builtin_fns,
-         &program.consts,
-         clone_registry,
-         drop_registry,
-         debug_registry,
-         freetype,
-      );
+   let executor = Executor::new(
+      &program.compiled_fns,
+      builtin_fns,
+      &program.consts,
+      registry,
+      freetype,
+   );
 
-      let fn_ref = FnRef::defined(program.main_index);
+   let fn_ref = FnRef::defined(program.main_index);
 
-      execute_compiled_function(
-         &fn_ref,
-         &arg_refs,
-         &executor,
-      )
-   };
-
-   drop_value_ptr_vec(&arguments, drop_registry);
-
-   result
+   execute_compiled_function(
+      &fn_ref,
+      &arg_refs,
+      &executor,
+   )
 }
 
 
 pub fn execute_builtin_function(
    fn_ref: &FnRef,
-   args: &[&ValuePtr],
+   args: &[&Variant],
    executor: &Executor,
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    match &executor.builtin_fns.fn_list[fn_ref.index] {
       &TypeFnMap::HMA1R1(ref map) => {
          if args.len() < 1 {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          } else if let Some(func) = map.get(
-            &args[0].type_id
+            args[0].type_id()
          ) {
             func(args, executor, fn_ref)
          } else {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          }
       },
       &TypeFnMap::HMA2R1(ref map) => {
          if args.len() < 2 {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          } else if let Some(func) = map.get(
-            &(args[0].type_id, args[1].type_id)
+            &(*args[0].type_id(), *args[1].type_id())
          ) {
             func(args, executor, fn_ref)
          } else {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          }
       },
       &TypeFnMap::HMA3R1(ref map) => {
          if args.len() < 3 {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          } else if let Some(func) = map.get(
-            &(args[0].type_id, args[1].type_id, args[2].type_id)
+            &(*args[0].type_id(), *args[1].type_id(), *args[2].type_id())
          ) {
             func(args, executor, fn_ref)
          } else {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          }
       },
       &TypeFnMap::HMA4R1(ref map) => {
          if args.len() < 4 {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          } else if let Some(func) = map.get(
-            &(args[0].type_id, args[1].type_id, args[2].type_id, args[3].type_id)
+            &(*args[0].type_id(), *args[1].type_id(), *args[2].type_id(), *args[3].type_id())
          ) {
             func(args, executor, fn_ref)
          } else {
-            vecval!(Empty)
+            vecval!(executor, Empty)
          }
       },
       &TypeFnMap::CALL(ref func) => {
@@ -113,10 +100,10 @@ pub fn execute_builtin_function(
 
 fn execute_compiled_function(
    fn_ref: &FnRef,
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
-) -> Vec<ValuePtr> {
-   let mut stack: Vec<ValuePtr> = Vec::new();
+) -> Vec<Variant> {
+   let mut stack: Vec<Variant> = Vec::new();
 
    let func = &executor.compiled_fns[fn_ref.index];
 
@@ -153,19 +140,19 @@ fn execute_compiled_function(
       result.push(
          match call_arg.arg_type {
             CallArgType::Argument => {
-               clone_value_ptr(expanded_arguments[call_arg.index], executor.clone_registry)
+               expanded_arguments[call_arg.index].clone()
             },
             CallArgType::Const => {
-               clone_value_ptr(&executor.consts[call_arg.index], executor.clone_registry)
+               executor.consts[call_arg.index].clone()
             },
             CallArgType::Variable => unsafe {
-               mem::replace(stack.get_unchecked_mut(call_arg.index), ValuePtr::null())
+               mem::replace(stack.get_unchecked_mut(call_arg.index), Variant::null())
             },
          }
       );
    }
 
-   drop_value_ptr_vec(&stack, executor.drop_registry);
+//   drop_value_ptr_vec(&stack, executor.drop_registry);
 
    result
 }
@@ -174,10 +161,8 @@ fn execute_compiled_function(
 pub struct Executor<'a> {
    pub compiled_fns: &'a Vec<CompiledFn>,
    pub builtin_fns: &'a BuiltinFns,
-   pub consts: &'a Vec<ValuePtr>,
-   pub clone_registry: &'a CloneRegistry,
-   pub drop_registry: &'a DropRegistry,
-   pub debug_registry: &'a DebugRegistry,
+   pub consts: &'a Vec<Variant>,
+   pub registry: &'a TypeRegistry,
    pub freetype: &'a FreeType,
 }
 
@@ -185,24 +170,20 @@ impl<'a> Executor<'a> {
    pub fn new(
       compiled_fns: &'a Vec<CompiledFn>,
       builtin_fns: &'a BuiltinFns,
-      consts: &'a Vec<ValuePtr>,
-      clone_registry: &'a CloneRegistry,
-      drop_registry: &'a DropRegistry,
-      debug_registry: &'a DebugRegistry,
+      consts: &'a Vec<Variant>,
+      registry: &'a TypeRegistry,
       freetype: &'a FreeType,
    ) -> Self {
       Executor {
          compiled_fns: compiled_fns,
          builtin_fns: builtin_fns,
          consts: consts,
-         clone_registry: clone_registry,
-         drop_registry: drop_registry,
-         debug_registry: debug_registry,
+         registry: registry,
          freetype: freetype,
       }
    }
 
-   pub fn execute_function(&self, fn_ref: &FnRef, arguments: &[&ValuePtr]) -> Vec<ValuePtr> {
+   pub fn execute_function(&self, fn_ref: &FnRef, arguments: &[&Variant]) -> Vec<Variant> {
       match fn_ref.fn_type {
          FnType::Builtin => {
             execute_builtin_function(
@@ -224,9 +205,9 @@ impl<'a> Executor<'a> {
 
 
 fn expand_arguments<'a>(
-   arguments: &[&'a ValuePtr],
+   arguments: &[&'a Variant],
    template: &Vec<ArgTemplate>,
-) -> Option<Vec<&'a ValuePtr>> {
+) -> Option<Vec<&'a Variant>> {
 
    if arguments.len() != template.len() {
       return None;
@@ -238,9 +219,7 @@ fn expand_arguments<'a>(
       match arg_template {
          &ArgTemplate::Value => result.push(*arg),
          &ArgTemplate::List(ref inner_template) => {
-            if TypeId::of::<ValuePtrList>() == arg.type_id {
-               let list = value_ptr_as_ref!(*arg, ValuePtrList);
-
+            if let Some(list) = arg.as_ref_checked::<VariantVec>() {
                if !recurse_expand_list_value(
                   list,
                   inner_template,
@@ -260,9 +239,9 @@ fn expand_arguments<'a>(
 
 
 fn recurse_expand_list_value<'a>(
-   list: &'a Vec<ValuePtr>,
+   list: &'a Vec<Variant>,
    template: &Vec<ArgTemplate>,
-   result: &mut Vec<&'a ValuePtr>,
+   result: &mut Vec<&'a Variant>,
 ) -> bool {
 
    if list.len() != template.len() {
@@ -275,9 +254,7 @@ fn recurse_expand_list_value<'a>(
             result.push(arg)
          },
          &ArgTemplate::List(ref inner_template) => {
-            if TypeId::of::<ValuePtrList>() == arg.type_id {
-               let list = value_ptr_as_ref!(arg, ValuePtrList);
-
+            if let Some(list) = arg.as_ref_checked::<VariantVec>() {
                if !recurse_expand_list_value(
                   list,
                   inner_template,

@@ -1,23 +1,20 @@
-use std::any::TypeId;
 use std::usize;
 
 use data::Empty;
 
-use lang::value_ptr::{ValuePtr, ValuePtrList, VoidPtr};
-use lang::clone::clone_value_ptr;
-use lang::drop::drop_value_ptr;
+use lang::variant::{Variant, VariantVec};
 use lang::execute::Executor;
 use lang::compiler::FnRef;
 
 
 
 macro_rules! push_result {
-   ($result:ident, $values:ident) => {
+   ($executor:ident, $result:ident, $values:ident) => {
       $result.push(
          if $values.len() == 1 {
             $values.remove(0)
          } else {
-            ValuePtr::new($values)
+            $executor.registry.variant($values)
          }
       );
    }
@@ -25,29 +22,29 @@ macro_rules! push_result {
 
 
 pub fn list(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let mut list = Vec::new();
+   let mut list: Vec<Variant> = Vec::new();
 
-   for value_ptr in arguments.iter() {
+   for variant in arguments.iter() {
       list.push(
-         clone_value_ptr(value_ptr, executor.clone_registry)
+         (*variant).clone()
       );
    }
 
-   vecval!(list)
+   vecval!(executor, list)
 }
 
 
 pub fn call_lst_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
-   let fn_refs = value_ptr_as_ref!(arguments[1], ValuePtrList);
+) -> Vec<Variant> {
+   let fn_refs = arguments[1].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -56,23 +53,23 @@ pub fn call_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn call_lst_fnp(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
-   let arg_list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+) -> Vec<Variant> {
+   let arg_list = arguments[0].as_ref::<VariantVec>();
 
-   let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
+   let fn_ref = arguments[1].as_ref::<FnRef>();
 
-   let mut call_arguments: Vec<&ValuePtr> = Vec::new();
+   let mut call_arguments: Vec<&Variant> = Vec::new();
 
    for arg in arg_list.iter() {
       call_arguments.push(arg);
@@ -87,19 +84,19 @@ pub fn call_lst_fnp(
 
 
 pub fn each(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
-   let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
+   let fn_ref = arguments[1].as_ref::<FnRef>();
 
    let mut result = Vec::new();
 
-   for value_ptr in list.iter() {
-      let mut call_arguments = vec![value_ptr];
+   for variant in list.iter() {
+      let mut call_arguments = vec![variant];
 
       for arg in arguments[2..].iter() {
          call_arguments.push(*arg);
@@ -107,34 +104,34 @@ pub fn each(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn each_with_last(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
    if arguments.len() < 3 {
-      return vecval!(Empty);
+      return vecval!(executor, Empty);
    }
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
-   let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
+   let fn_ref = arguments[1].as_ref::<FnRef>();
 
    let mut result = Vec::new();
 
    let mut last_item = arguments[2].clone();
 
-   for value_ptr in list.iter() {
+   for variant in list.iter() {
       let mut values = {
-         let mut call_arguments = vec![value_ptr, &last_item];
+         let mut call_arguments = vec![variant, &last_item];
 
          for arg in arguments[3..].iter() {
             call_arguments.push(*arg);
@@ -146,7 +143,7 @@ pub fn each_with_last(
       let value = if values.len() == 1 {
          values.remove(0)
       } else {
-         ValuePtr::new(values)
+         executor.registry.variant(values)
       };
 
       last_item = value.clone();
@@ -154,24 +151,24 @@ pub fn each_with_last(
       result.push(value);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn each_with_index(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
-   let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
+   let fn_ref = arguments[1].as_ref::<FnRef>();
 
    let mut result = Vec::new();
 
    for (index, value_ptr) in list.iter().enumerate() {
-      let index_value = ValuePtr::new(index as i64);
+      let index_value = executor.registry.variant(index as i64);
 
       let mut call_arguments = vec![value_ptr, &index_value];
 
@@ -181,89 +178,85 @@ pub fn each_with_index(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
-
-      drop_value_ptr(&index_value, executor.drop_registry);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn zip(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
    if arguments.len() == 0 {
-      return vecval!(Empty);
+      return vecval!(executor, Empty);
    }
 
    let mut lists = Vec::with_capacity(arguments.len());
 
    let mut min_len = usize::MAX;
 
-   for value_ptr in arguments.iter() {
-      if TypeId::of::<ValuePtrList>() == value_ptr.type_id {
-         let list = value_ptr_as_ref!(value_ptr, ValuePtrList);
-
+   for variant in arguments.iter() {
+      if let Some(list) = variant.as_ref_checked::<VariantVec>() {
          if list.len() < min_len {
             min_len = list.len();
          }
 
          lists.push(list);
       } else {
-         return vecval!(Empty);
+         return vecval!(executor, Empty);
       }
    }
 
-   let mut result: ValuePtrList = Vec::new();
+   let mut result: VariantVec = Vec::new();
 
    for i in 0..min_len {
-      let mut inner: ValuePtrList = Vec::new();
+      let mut inner: VariantVec = Vec::new();
 
       for list in lists.iter() {
          inner.push(
-            clone_value_ptr(&list[i], executor.clone_registry)
+            list[i].clone()
          );
       }
 
-      result.push(ValuePtr::new(inner));
+      result.push(executor.registry.variant(inner));
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn range(
-   arguments: &[&ValuePtr],
-   _: &Executor,
+   arguments: &[&Variant],
+   executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let start = value_ptr_as_ref!(arguments[0], i64);
+   let start = arguments[0].as_ref::<i64>();
 
-   let end = value_ptr_as_ref!(arguments[1], i64);
+   let end = arguments[1].as_ref::<i64>();
 
    let mut result = Vec::new();
 
    for value in *start..*end {
-      result.push(ValuePtr::new(value));
+      result.push(executor.registry.variant(value));
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_val_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
    let left = arguments[0];
-   let right = value_ptr_as_ref!(arguments[1], ValuePtrList);
+   let right = arguments[1].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -272,20 +265,20 @@ pub fn list_val_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_lst_val(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let left = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let left = arguments[0].as_ref::<VariantVec>();
    let right = arguments[1];
 
    let mut result = Vec::new();
@@ -295,21 +288,21 @@ pub fn list_lst_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_lst_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let left = value_ptr_as_ref!(arguments[0], ValuePtrList);
-   let right = value_ptr_as_ref!(arguments[1], ValuePtrList);
+   let left = arguments[0].as_ref::<VariantVec>();
+   let right = arguments[1].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -318,19 +311,19 @@ pub fn list_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_lst_val_val(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
-   let left = value_ptr_as_ref!(arguments[0], ValuePtrList);
+) -> Vec<Variant> {
+   let left = arguments[0].as_ref::<VariantVec>();
    let middle = arguments[1];
    let right = arguments[2];
 
@@ -341,20 +334,20 @@ pub fn list_lst_val_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_val_lst_val(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    let left = arguments[0];
-   let middle = value_ptr_as_ref!(arguments[1], ValuePtrList);
+   let middle = arguments[1].as_ref::<VariantVec>();
    let right = arguments[2];
 
    let mut result = Vec::new();
@@ -364,21 +357,21 @@ pub fn list_val_lst_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_val_val_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    let left = arguments[0];
    let middle = arguments[1];
-   let right = value_ptr_as_ref!(arguments[2], ValuePtrList);
+   let right = arguments[2].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -387,20 +380,20 @@ pub fn list_val_val_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn list_lst_lst_val(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
-   let left = value_ptr_as_ref!(arguments[0], ValuePtrList);
-   let middle = value_ptr_as_ref!(arguments[1], ValuePtrList);
+) -> Vec<Variant> {
+   let left = arguments[0].as_ref::<VariantVec>();
+   let middle = arguments[1].as_ref::<VariantVec>();
    let right = arguments[2];
 
    let mut result = Vec::new();
@@ -410,20 +403,20 @@ pub fn list_lst_lst_val(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 pub fn list_lst_val_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
-   let left = value_ptr_as_ref!(arguments[0], ValuePtrList);
+) -> Vec<Variant> {
+   let left = arguments[0].as_ref::<VariantVec>();
    let middle = arguments[1];
-   let right = value_ptr_as_ref!(arguments[2], ValuePtrList);
+   let right = arguments[2].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -432,20 +425,20 @@ pub fn list_lst_val_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 pub fn list_val_lst_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    let left = arguments[0];
-   let middle = value_ptr_as_ref!(arguments[1], ValuePtrList);
-   let right = value_ptr_as_ref!(arguments[2], ValuePtrList);
+   let middle = arguments[1].as_ref::<VariantVec>();
+   let right = arguments[2].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -454,20 +447,20 @@ pub fn list_val_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 pub fn list_lst_lst_lst(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
-   let left = value_ptr_as_ref!(arguments[0], ValuePtrList);
-   let middle = value_ptr_as_ref!(arguments[1], ValuePtrList);
-   let right = value_ptr_as_ref!(arguments[2], ValuePtrList);
+) -> Vec<Variant> {
+   let left = arguments[0].as_ref::<VariantVec>();
+   let middle = arguments[1].as_ref::<VariantVec>();
+   let right = arguments[2].as_ref::<VariantVec>();
 
    let mut result = Vec::new();
 
@@ -476,23 +469,23 @@ pub fn list_lst_lst_lst(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn all(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    if arguments.len() < 2 {
       return all_true(arguments, executor, fn_ref);
    }
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
    for value_ptr in list.iter() {
       let call_arguments = vec![value_ptr, arguments[1]];
@@ -506,26 +499,24 @@ pub fn all(
 
       let is_true = is_true(&result);
 
-      drop_value_ptr(&result, executor.drop_registry);
-
       if !is_true {
-         return vecval!(false);
+         return vecval!(executor, false);
       }
    }
 
-   vecval!(true)
+   vecval!(executor, true)
 }
 
 
 pub fn all_true(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
-   let true_value = ValuePtr::new(true);
+   let true_value = executor.registry.variant(true);
 
    for value_ptr in list.iter() {
       let call_arguments = vec![value_ptr, &true_value];
@@ -539,31 +530,25 @@ pub fn all_true(
 
       let is_true = is_true(&result);
 
-      drop_value_ptr(&result, executor.drop_registry);
-
       if !is_true {
-         drop_value_ptr(&true_value, executor.drop_registry);
-
-         return vecval!(false);
+         return vecval!(executor, false);
       }
    }
 
-   drop_value_ptr(&true_value, executor.drop_registry);
-
-   vecval!(true)
+   vecval!(executor, true)
 }
 
 
 pub fn any(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    fn_ref: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
    if arguments.len() < 2 {
       return any_true(arguments, executor, fn_ref);
    }
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
    for value_ptr in list.iter() {
       let call_arguments = vec![value_ptr, arguments[1]];
@@ -577,26 +562,24 @@ pub fn any(
 
       let is_true = is_true(&result);
 
-      drop_value_ptr(&result, executor.drop_registry);
-
       if is_true {
-         return vecval!(true);
+         return vecval!(executor, true);
       }
    }
 
-   vecval!(false)
+   vecval!(executor, false)
 }
 
 
 pub fn any_true(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let list = value_ptr_as_ref!(arguments[0], ValuePtrList);
+   let list = arguments[0].as_ref::<VariantVec>();
 
-   let true_value = ValuePtr::new(true);
+   let true_value = executor.registry.variant(true);
 
    for value_ptr in list.iter() {
       let call_arguments = vec![value_ptr, &true_value];
@@ -610,24 +593,18 @@ pub fn any_true(
 
       let is_true = is_true(&result);
 
-      drop_value_ptr(&result, executor.drop_registry);
-
       if is_true {
-         drop_value_ptr(&true_value, executor.drop_registry);
-
-         return vecval!(true);
+         return vecval!(executor, true);
       }
    }
 
-   drop_value_ptr(&true_value, executor.drop_registry);
-
-   vecval!(false)
+   vecval!(executor, false)
 }
 
 
-fn is_true(value_ptr: &ValuePtr) -> bool {
-   if value_ptr.type_id == TypeId::of::<bool>() {
-      *value_ptr_as_ref!(value_ptr, bool)
+fn is_true(variant: &Variant) -> bool {
+   if let Some(val) = variant.as_ref_checked::<bool>() {
+      *val
    } else {
       false
    }
@@ -635,23 +612,23 @@ fn is_true(value_ptr: &ValuePtr) -> bool {
 
 
 pub fn repeat(
-   arguments: &[&ValuePtr],
+   arguments: &[&Variant],
    executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
+) -> Vec<Variant> {
 
-   let count = value_ptr_as_ref!(arguments[0], i64);
+   let count = arguments[0].as_ref::<i64>();
 
    if *count < 0 {
-      return vecval!(Empty);
+      return vecval!(executor, Empty);
    }
 
-   let fn_ref = value_ptr_as_ref!(arguments[1], FnRef);
+   let fn_ref = arguments[1].as_ref::<FnRef>();
 
    let mut result = Vec::new();
 
    for index in 0..(*count) as usize {
-      let index_value = ValuePtr::new(index as i64);
+      let index_value = executor.registry.variant(index as i64);
 
       let mut call_arguments = vec![&index_value];
 
@@ -661,10 +638,8 @@ pub fn repeat(
 
       let mut values = executor.execute_function(fn_ref, &call_arguments);
 
-      push_result!(result, values);
-
-      drop_value_ptr(&index_value, executor.drop_registry);
+      push_result!(executor, result, values);
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }

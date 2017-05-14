@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 use devel::SUBDIVISIONS;
 use data::{Empty, FloatPoint};
 
-use lang::value_ptr::{ValuePtr, VoidPtr};
+use lang::variant::Variant;
 use lang::execute::Executor;
 use lang::compiler::FnRef;
 
@@ -785,40 +785,40 @@ fn angle_of(center: FloatPoint, point: FloatPoint) -> f64 {
 }
 
 
-fn to_value_ptr_points(contours: Vec<Vec<FloatPoint>>) -> Vec<ValuePtr> {
+fn to_value_ptr_points(executor: &Executor, contours: Vec<Vec<FloatPoint>>) -> Vec<Variant> {
    let mut result = Vec::new();
 
    for contour in contours {
       let mut inner = Vec::new();
 
       for point in contour {
-         inner.push(ValuePtr::new(point * SUBDIVISIONS as f64));
+         inner.push(executor.registry.variant(point * SUBDIVISIONS as f64));
       }
 
-      result.push(ValuePtr::new(inner));
+      result.push(executor.registry.variant(inner));
    }
 
-   vecval!(result)
+   vecval!(executor, result)
 }
 
 
 pub fn svg_path(
-   arguments: &[&ValuePtr],
-   _: &Executor,
+   arguments: &[&Variant],
+   executor: &Executor,
    _: &FnRef
-) -> Vec<ValuePtr> {
-   let path = value_ptr_as_ref!(arguments[0], String);
+) -> Vec<Variant> {
+   let path = arguments[0].as_ref::<String>();
 
    if let Some(tokens) = tokenize_svg_path(path) {
       if let Some(commands) = parse_svg_path(&tokens) {
          let contours = process_path(commands, 20);
 
-         to_value_ptr_points(contours)
+         to_value_ptr_points(executor, contours)
       } else {
-         vecval!(Empty)
+         vecval!(executor, Empty)
       }
    } else {
-      vecval!(Empty)
+      vecval!(executor, Empty)
    }
 }
 
